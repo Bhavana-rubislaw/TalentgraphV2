@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: talentgraph-backend
+    env: python
+    repo: https://github.com/Bhavana-rubislaw/TalentgraphV2.git
+    rootDir: backend2
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        value: "super-secret-jwt-key-change-in-production"
+      
+  - type: static
+    name: talentgraph-frontend  
+    repo: https://github.com/Bhavana-rubislaw/TalentgraphV2.git
+    rootDir: frontend2
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: talentgraph-backend
+          property: host
+
+databases:
+  - name: talentgraph-db
+    databaseName: talentgraph_v2
+    user: talentgraph_user
