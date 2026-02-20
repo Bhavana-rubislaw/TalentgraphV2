@@ -93,8 +93,8 @@ class ErrorBoundary extends Component<Props, State> {
             </button>
           </div>
 
-          {/* Debug information (only show in development) */}
-          {import.meta.env.DEV && this.state.error && (
+          {/* Debug information (always visible for better debugging) */}
+          {this.state.error && (
             <details style={{ 
               textAlign: 'left', 
               marginTop: '20px',
