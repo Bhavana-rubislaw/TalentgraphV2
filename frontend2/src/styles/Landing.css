@@ -1,0 +1,369 @@
+/* Landing Page - TalentGraph V2 */
+
+.landing-page {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Background gradient with animation */
+.landing-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #6A4F99 0%, #7B5EA7 40%, #9B7ED8 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 15s ease infinite;
+  z-index: 0;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Main hero container */
+.landing-hero {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  width: 100%;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header with brand */
+.landing-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.brand-name {
+  font-size: 4rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  letter-spacing: -0.03em;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.brand-subtitle {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 12px 0 0 0;
+  letter-spacing: 0.02em;
+  animation: fadeIn 0.8s ease-out 0.2s backwards;
+}
+
+/* Two-card layout */
+.landing-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 40px;
+  margin: 0 auto;
+  max-width: 1100px;
+}
+
+/* Option card styling */
+.option-card {
+  background: white;
+  border-radius: 24px;
+  padding: 48px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.option-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #6A4F99, #9474C4);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+
+.option-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+}
+
+.option-card:hover::before {
+  transform: scaleX(1);
+}
+
+/* Card icon */
+.card-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #6A4F99 0%, #9474C4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(106, 79, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.option-card:hover .card-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Card text */
+.card-headline {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 16px 0;
+  line-height: 1.3;
+}
+
+.card-description {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 32px 0;
+  max-width: 420px;
+}
+
+/* CTA buttons */
+.btn-cta {
+  width: 100%;
+  max-width: 320px;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-bottom: 20px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-cta:hover::before {
+  left: 100%;
+}
+
+.btn-candidate {
+  background: linear-gradient(135deg, #6A4F99 0%, #9474C4 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(106, 79, 153, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.btn-candidate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(106, 79, 153, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-candidate:active {
+  transform: translateY(0);
+}
+
+.btn-company {
+  background: linear-gradient(135deg, #7B5EA7 0%, #B896E0 100%);
+  color: white;
+  box-shadow: 0 8px 24px rgba(123, 94, 167, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.btn-company:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 36px rgba(123, 94, 167, 0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn-company:active {
+  transform: translateY(0);
+}
+
+/* Sign-in link */
+.signin-link {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-block;
+}
+
+.signin-link span {
+  color: var(--primary);
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.signin-link:hover {
+  color: var(--text-primary);
+}
+
+.signin-link:hover span {
+  border-bottom-color: var(--primary);
+}
+
+/* Footer tagline */
+.landing-footer {
+  text-align: center;
+  margin-top: 60px;
+  animation: fadeIn 1s ease-out 0.4s backwards;
+}
+
+.landing-footer p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+  .brand-name {
+    font-size: 3rem;
+  }
+
+  .brand-subtitle {
+    font-size: 1.25rem;
+  }
+
+  .landing-cards {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    max-width: 500px;
+  }
+
+  .option-card {
+    padding: 40px 32px;
+  }
+
+  .card-headline {
+    font-size: 1.5rem;
+  }
+
+  .card-description {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .landing-header {
+    margin-bottom: 40px;
+  }
+
+  .brand-name {
+    font-size: 2.5rem;
+  }
+
+  .brand-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .option-card {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+
+  .card-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 20px;
+  }
+
+  .card-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .card-headline {
+    font-size: 1.4rem;
+  }
+
+  .card-description {
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+
+  .btn-cta {
+    font-size: 1rem;
+    padding: 14px 28px;
+  }
+
+  .landing-footer {
+    margin-top: 40px;
+  }
+
+  .landing-footer p {
+    font-size: 0.95rem;
+  }
+}
+
+/* Focus states for accessibility */
+.btn-cta:focus-visible,
+.signin-link:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 4px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .landing-bg {
+    animation: none;
+  }
+
+  .landing-hero,
+  .brand-name,
+  .brand-subtitle,
+  .landing-footer {
+    animation: none;
+  }
+
+  .option-card,
+  .card-icon,
+  .btn-cta {
+    transition: none;
+  }
+}

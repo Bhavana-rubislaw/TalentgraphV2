@@ -1,0 +1,262 @@
+/* Swiping Card Component - Dating App Style */
+
+.swipe-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--gradient-light);
+  padding: 20px;
+}
+
+.card-stack {
+  position: relative;
+  width: 100%;
+  max-width: 450px;
+  height: 600px;
+  perspective: 1000px;
+}
+
+/* Swipeable Card */
+.swipe-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  transform: translateY(0) translateX(0) scale(1) rotateY(0deg);
+  transition: all 0.1s ease-out;
+  touch-action: none;
+}
+
+.swipe-card.active {
+  z-index: 10;
+}
+
+.swipe-card.next {
+  z-index: 5;
+  transform: translateY(10px) scale(0.95);
+  opacity: 0.8;
+}
+
+/* Exit animations */
+.swipe-card.exit-right {
+  animation: swipeRight 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+.swipe-card.exit-left {
+  animation: swipeLeft 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes swipeRight {
+  0% {
+    transform: translateX(0) translateY(0) scale(1) rotateZ(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(500px) translateY(-100px) scale(0.8) rotateZ(20deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swipeLeft {
+  0% {
+    transform: translateX(0) translateY(0) scale(1) rotateZ(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-500px) translateY(-100px) scale(0.8) rotateZ(-20deg);
+    opacity: 0;
+  }
+}
+
+/* Card Header */
+.swipe-card-header {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 24px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.swipe-card-header h2 {
+  font-size: 28px;
+  margin: 0;
+}
+
+.match-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.match-score {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.match-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+/* Card Content */
+.swipe-card-body {
+  padding: 24px 20px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.card-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.detail-value {
+  color: var(--text-primary);
+  text-align: right;
+  flex: 1;
+  margin-left: 12px;
+}
+
+/* Skills Display */
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-badge {
+  background: var(--gradient-accent);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  border: 1.5px solid var(--accent);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Card Actions */
+.swipe-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px;
+  background: var(--bg-lighter);
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn.pass {
+  background: white;
+  color: var(--error);
+}
+
+.action-btn.pass:hover {
+  background: var(--error);
+  color: white;
+  transform: scale(1.1);
+}
+
+.action-btn.like {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.action-btn.like:hover {
+  transform: scale(1.15);
+  box-shadow: var(--shadow-lg);
+}
+
+.action-btn.ask {
+  background: white;
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.action-btn.ask:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Empty State */
+.swipe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 20px;
+}
+
+.swipe-empty-icon {
+  font-size: 64px;
+  opacity: 0.3;
+}
+
+.swipe-empty-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.swipe-empty-message {
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 300px;
+}

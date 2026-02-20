@@ -1,0 +1,653 @@
+# TALENTGRAPH V2 — CLEAR COMMAND GUIDE (Windows PowerShell)
+
+This file is a **copy‑paste friendly command reference** for TalentGraph V2.
+
+Each item includes:
+- **Command**
+- **Purpose / Use**
+- **Expected Output**
+- **Test / Verification (if applicable)**
+
+---
+
+## 0) Important defaults (from project notes)
+
+- **Backend**: FastAPI (uvicorn), usually `http://127.0.0.1:8001`
+- **Frontend**: Vite React, usually `http://localhost:3003`
+- **DB**: PostgreSQL `localhost:5432`, DB `talentgraph_v2`
+- **JWT Auth**: Bearer token in `Authorization: Bearer <token>`
+
+> If you see **8000** or **3001** in logs/netstat, it means another instance ran on those ports at that time. The “real” port is whatever you start your server with.
+
+---
+
+# A) First‑Time Setup
+
+## A1) Go to backend folder
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2"
+```
+
+**Use**
+- Moves terminal into backend project directory.
+
+**Expected Output**
+- No output (PowerShell changes directory).
+
+---
+
+## A2) Create Python virtual environment
+
+**Command**
+```powershell
+python -m venv venv
+```
+
+**Use**
+- Creates isolated Python environment under `backend2\venv`.
+
+**Expected Output**
+- Usually silent; `venv\` folder appears.
+
+**Test**
+```powershell
+Test-Path .\venv
+```
+Expected: `True`
+
+---
+
+## A3) Activate virtual environment
+
+**Command**
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+**Use**
+- Activates `venv` so installs/run use the project Python.
+
+**Expected Output**
+- Prompt changes to:
+  - `(venv) PS C:\...`
+
+**Test**
+```powershell
+python --version
+pip --version
+```
+
+---
+
+## A4) Install backend dependencies
+
+**Command**
+```powershell
+pip install -r requirements.txt
+```
+
+**Use**
+- Installs FastAPI/SQLModel/Uvicorn/JWT/Postgres drivers, etc.
+
+**Expected Output**
+- Install logs; ends without errors.
+
+**Test**
+```powershell
+python -c "import fastapi; import sqlmodel; print('OK')"
+```
+Expected: `OK`
+
+---
+
+## A5) Go to frontend folder
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+```
+
+**Use**
+- Moves to React/Vite frontend directory.
+
+**Expected Output**
+- No output.
+
+---
+
+## A6) Install frontend dependencies
+
+**Command**
+```powershell
+npm install
+```
+
+**Use**
+- Installs React/TypeScript/Vite packages into `node_modules`.
+
+**Expected Output**
+- Install logs; `node_modules` folder created.
+
+**Test**
+```powershell
+Test-Path .\node_modules
+```
+Expected: `True`
+
+---
+
+# B) Database Setup & Management
+
+## B1) Reset DB (drop + recreate schema)
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2"
+.\venv\Scripts\Activate.ps1
+python reset_db.py
+```
+
+**Use**
+- Wipes all tables and recreates schema.
+
+**Expected Output**
+- Something like: `Database reset complete`
+
+---
+
+## B2) Seed DB with test users/companies/jobs
+
+**Command**
+```powershell
+python seed_data_v2.py
+```
+
+**Use**
+- Creates test users + company users + job postings.
+
+**Expected Output**
+- e.g., “21 users, 18 companies, 24 job postings created”
+
+**Test**
+```powershell
+python check_jobs.py
+```
+Expected: lists job counts per company, total 24.
+
+---
+
+## B3) Migrate job postings schema (add columns/tables)
+
+**Command**
+```powershell
+python migrate_job_postings.py
+```
+
+**Use**
+- Adds new enum values/columns and creates any new tables needed.
+
+**Expected Output**
+- `[OK] Added column: ...`
+- `[DONE] Migration complete!`
+
+---
+
+## B4) Create/update all tables from models
+
+**Command**
+```powershell
+python -c "from app.database import engine; from app.models import *; from sqlmodel import SQLModel; SQLModel.metadata.create_all(engine); print('DB migration complete - all tables/columns synced')"
+```
+
+**Use**
+- Ensures all SQLModel tables exist in DB.
+
+**Expected Output**
+- `DB migration complete - all tables/columns synced`
+
+---
+
+## B5) Inspect jobprofile columns (verify migrations)
+
+**Command**
+```powershell
+python -c "
+from app.database import engine
+from sqlalchemy import inspect
+insp = inspect(engine)
+cols = [c['name'] for c in insp.get_columns('jobprofile')]
+print('Existing columns:', cols)
+"
+```
+
+**Use**
+- Lists current columns in `jobprofile` table.
+
+**Expected Output**
+- Prints list of column names.
+
+---
+
+## B6) Add missing columns to jobprofile manually
+
+**Command**
+```powershell
+python -c "
+from app.database import engine
+from sqlalchemy import text
+
+new_cols = [
+  ('preferred_job_titles', 'TEXT'),
+  ('job_category', 'TEXT'),
+  ('seniority_level', 'VARCHAR'),
+  ('travel_willingness', 'VARCHAR'),
+  ('shift_preference', 'VARCHAR'),
+  ('remote_acceptance', 'VARCHAR'),
+  ('relocation_willingness', 'VARCHAR'),
+  ('pay_type', 'VARCHAR'),
+  ('negotiability', 'VARCHAR'),
+  ('core_strengths', 'TEXT'),
+  ('relevant_experience', 'INTEGER'),
+  ('notice_period', 'VARCHAR'),
+  ('start_date_preference', 'VARCHAR'),
+  ('security_clearance', 'VARCHAR'),
+  ('highest_education', 'VARCHAR'),
+  ('primary_resume_id', 'INTEGER'),
+  ('attached_resume_ids', 'TEXT'),
+]
+
+with engine.begin() as conn:
+  for col_name, col_type in new_cols:
+    try:
+      conn.execute(text(f'ALTER TABLE jobprofile ADD COLUMN {col_name} {col_type}'))
+      print(f'Added: {col_name}')
+    except Exception as e:
+      if 'already exists' in str(e).lower() or 'duplicate' in str(e).lower():
+        print(f'Exists: {col_name}')
+      else:
+        print(f'Error {col_name}: {e}')
+print('Done!')
+"
+```
+
+**Use**
+- Adds columns without dropping data.
+
+**Expected Output**
+- `Added:` or `Exists:` per column, then `Done!`
+
+---
+
+# C) Start Servers
+
+## C1) Start backend (FastAPI)
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2"
+.\venv\Scripts\Activate.ps1
+uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+```
+
+**Use**
+- Runs backend API with live reload.
+
+**Expected Output**
+- `Application startup complete`
+- API available at `http://127.0.0.1:8001`
+- Swagger docs: `http://127.0.0.1:8001/docs`
+
+**Test**
+```powershell
+curl.exe -s http://127.0.0.1:8001/health
+```
+Expected: `{"status":"ok"}`
+
+---
+
+## C2) Start frontend (Vite)
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+npm run dev -- --port 3003
+```
+
+**Use**
+- Runs React frontend with hot reload.
+
+**Expected Output**
+- Vite prints local URL (example): `http://localhost:3003`
+
+**Test**
+- Open browser: `http://localhost:3003`
+
+---
+
+# D) Monitoring & Debugging
+
+## D1) Check which ports are listening
+
+**Command**
+```powershell
+netstat -ano | findstr ":8001"
+netstat -ano | findstr ":3003"
+```
+
+**Use**
+- Confirms backend/frontend are listening.
+
+**Expected Output**
+- Lines showing `LISTENING` and a PID.
+
+---
+
+## D2) View backend logs (last lines)
+
+**Command**
+```powershell
+Get-Content "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2\talentgraph_v2.log" -Tail 30
+```
+
+**Use**
+- See latest runtime logs.
+
+**Expected Output**
+- Last 30 log lines.
+
+---
+
+## D3) Filter logs for errors
+
+**Command**
+```powershell
+Get-Content "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2\talentgraph_v2.log" -Tail 50 | Select-String -Pattern "ERROR|Exception|Traceback" -Context 2
+```
+
+**Use**
+- Finds crash traces quickly.
+
+**Expected Output**
+- Matching lines + context OR nothing if no errors.
+
+---
+
+## D4) List Python/Uvicorn processes
+
+**Command**
+```powershell
+Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*uvicorn*"}
+```
+
+**Use**
+- Shows running backend processes.
+
+**Expected Output**
+- Process list with PID.
+
+---
+
+## D5) Kill a stuck process (by PID)
+
+**Command**
+```powershell
+Stop-Process -Id XXXX -Force
+```
+
+**Use**
+- Terminates a specific process (replace `XXXX` with PID).
+
+**Expected Output**
+- Usually none, or an error if PID invalid.
+
+---
+
+## D6) Kill all Python processes (careful)
+
+**Command**
+```powershell
+Get-Process -Name "python" -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
+**Use**
+- Force-stops all python processes (kills backend + scripts).
+
+---
+
+# E) API Testing (Auth + Protected Endpoints)
+
+## E1) Candidate login → extract token
+
+**Command**
+```powershell
+$loginData = @{email='sarah.anderson@email.com'; password='Kutty_1304'} | ConvertTo-Json
+$response = Invoke-WebRequest -Uri 'http://127.0.0.1:8001/auth/candidate/login' -Method POST -Body $loginData -ContentType 'application/json' -UseBasicParsing
+$jsonResponse = $response.Content | ConvertFrom-Json
+Write-Host "Token received: $($jsonResponse.access_token.Substring(0,20))..."
+```
+
+**Use**
+- Logs in candidate and confirms JWT token.
+
+**Expected Output**
+- Prints first part of token.
+
+---
+
+## E2) Company login (PowerShell‑friendly)
+
+**Command**
+```powershell
+$body = '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}'
+$res = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body $body -ContentType "application/json"
+$res | ConvertTo-Json
+```
+
+**Use**
+- Logs in company user and returns JSON response.
+
+**Expected Output**
+- JSON with `access_token`, `role`, `company_name`, etc.
+
+---
+
+## E3) Note: `curl -H` in PowerShell
+
+In PowerShell, `curl` is often an alias for `Invoke-WebRequest`, so `-H` behaves differently.
+
+✅ Use `curl.exe` explicitly OR use `Invoke-RestMethod`.
+
+---
+
+## E4) Test protected route (candidate matches)
+
+**Command**
+```powershell
+$login = curl.exe -s -X POST http://localhost:8001/auth/candidate/login -H "Content-Type: application/json" -d '{\"email\":\"sarah.anderson@email.com\",\"password\":\"Kutty_1304\"}' | ConvertFrom-Json
+$token = $login.access_token
+$matches = curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/dashboard/candidate/matches | ConvertFrom-Json
+Write-Host "Matches found: $($matches.Count)"
+```
+
+**Use**
+- Confirms token works + endpoint returns list.
+
+**Expected Output**
+- `Matches found: <number>`
+
+---
+
+## E5) Apply to a job (candidate)
+
+**Command**
+```powershell
+$result = curl.exe -s -X POST http://localhost:8001/applications/apply `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $token" `
+  -d '{\"job_posting_id\":5,\"job_profile_id\":1}'
+Write-Host "Apply result: $result"
+```
+
+**Use**
+- Creates an application from candidate.
+
+**Expected Output**
+- JSON with `Application submitted successfully`
+
+**Verification**
+```powershell
+$apps = curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/applications/my-applications | ConvertFrom-Json
+Write-Host "Current applications: $($apps.Count)"
+```
+
+---
+
+## E6) Withdraw an application (candidate)
+
+**Command**
+```powershell
+curl.exe -s -X DELETE -H "Authorization: Bearer $token" http://localhost:8001/applications/3
+```
+
+**Use**
+- Withdraws application ID 3.
+
+**Expected Output**
+- `{"message":"Application withdrawn successfully"}`
+
+---
+
+## E7) Swipe endpoint requires auth (401 if missing token)
+
+**Command (expected to fail with 401)**
+```powershell
+$body = '{"job_profile_id": 1, "job_posting_id": 1}'
+Invoke-WebRequest -Uri "http://localhost:8001/swipes/like" -Method POST -Body $body -ContentType "application/json" -UseBasicParsing -TimeoutSec 5
+```
+
+**Use**
+- Confirms auth is enforced.
+
+**Expected Output**
+- `401 Unauthorized`
+
+✅ Proper test (with token):
+```powershell
+curl.exe -s -X POST http://localhost:8001/swipes/like `
+  -H "Content-Type: application/json" `
+  -H "Authorization: Bearer $token" `
+  -d '{\"job_profile_id\":1,\"job_posting_id\":1}'
+```
+
+---
+
+## E8) Check CORS preflight
+
+**Command**
+```powershell
+curl.exe -s -X OPTIONS `
+  -H "Origin: http://localhost:3001" `
+  -H "Access-Control-Request-Method: POST" `
+  -H "Access-Control-Request-Headers: content-type,authorization" `
+  http://127.0.0.1:8001/applications/apply -D - -o nul 2>&1 | Select-String "access-control|HTTP/"
+```
+
+**Use**
+- Confirms frontend origin can call backend.
+
+**Expected Output**
+- `HTTP/1.1 200 OK`
+- `access-control-allow-origin: http://localhost:3001`
+- `access-control-allow-headers: content-type,authorization`
+
+---
+
+# F) Code Quality (TypeScript)
+
+## F1) Run TypeScript typecheck
+
+**Command**
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+npx tsc --noEmit
+```
+
+**Use**
+- Finds missing imports/typing errors without building.
+
+**Expected Output**
+- If clean: no output.
+- If errors: file + line + TS error code.
+
+---
+
+# G) Route Introspection (Backend)
+
+## G1) Print all registered routes
+
+**Command**
+```powershell
+python -c "
+from app.main import app
+routes = []
+for route in app.routes:
+    if hasattr(route, 'path'):
+        methods = getattr(route, 'methods', ['GET'])
+        routes.append(f'{list(methods)} {route.path}')
+for route in sorted(routes):
+    print(route)
+"
+```
+
+**Use**
+- Confirms endpoints exist (helps match UI → backend).
+
+**Expected Output**
+- List like `['GET'] /health`, `['POST'] /auth/candidate/login`, etc.
+
+---
+
+## G2) Verify candidate router endpoints (skill catalogs / job-profiles)
+
+**Command**
+```powershell
+python -c "
+from app.routers.candidates import router
+for r in router.routes:
+    if hasattr(r,'path'):
+        print(f'{r.methods} {r.path}')
+"
+```
+
+**Use**
+- Confirms which routes exist under candidates router.
+
+**Expected Output**
+- Includes `/candidates/job-profiles`, `/candidates/skill-catalogs`, resume/certifications routes, etc.
+
+---
+
+# H) Quick End‑to‑End Sanity Checklist
+
+## H1) Backend health
+```powershell
+curl.exe -s http://127.0.0.1:8001/health
+```
+
+## H2) Candidate login works
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST -Body '{"email":"sarah.anderson@email.com","password":"Kutty_1304"}' -ContentType "application/json"
+```
+
+## H3) Authenticated endpoint works (matches)
+```powershell
+curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/dashboard/candidate/matches
+```
+
+## H4) Frontend typecheck
+```powershell
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+npx tsc --noEmit
+```
