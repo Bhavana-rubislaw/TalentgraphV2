@@ -27,7 +27,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ card, onLike, onPass, onAsk }) =>
   const [isLoading, setIsLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = () => {
     setIsDragging(true);
   };
 
