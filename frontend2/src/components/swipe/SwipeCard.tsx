@@ -23,20 +23,12 @@ interface SwipeCardProps {
 
 const SwipeCard: React.FC<SwipeCardProps> = ({ card, onLike, onPass, onAsk }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [dragData, setDragData] = useState({ x: 0, y: 0 });
   const [isExiting, setIsExiting] = useState<'right' | 'left' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
-    const rect = cardRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragData({
-        x: e.clientX - rect.left - rect.width / 2,
-        y: e.clientY - rect.top - rect.height / 2,
-      });
-    }
   };
 
   const handleMouseMove = (e: MouseEvent) => {

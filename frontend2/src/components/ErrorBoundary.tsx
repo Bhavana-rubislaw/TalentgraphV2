@@ -94,7 +94,7 @@ class ErrorBoundary extends Component<Props, State> {
           </div>
 
           {/* Debug information (only show in development) */}
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {import.meta.env.DEV && this.state.error && (
             <details style={{ 
               textAlign: 'left', 
               marginTop: '20px',
