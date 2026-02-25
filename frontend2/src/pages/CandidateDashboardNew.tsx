@@ -3,7 +3,6 @@ import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/CandidateApplied.css';
-import NotificationBell from '../components/NotificationBell';
 
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -1941,19 +1940,12 @@ const CandidateDashboard: React.FC = () => {
           <h1 className="page-title">Candidate Dashboard</h1>
         </div>
         <div className="navbar-right">
-          <NotificationBell
-            onNavigate={(type) => {
-              const tabMap: Record<string, string> = {
-                recruiter_liked: 'recommendations',
-                recruiter_invite: 'invites',
-                new_match: 'matches',
-                job_preference_added: 'applied',
-                application_submitted: 'applied',
-              };
-              const tab = tabMap[type];
-              if (tab) setActiveTab(tab);
-            }}
-          />
+          <button className="icon-btn notification-btn" title="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+            </svg>
+            {(invites.length + matches.length) > 0 && <span className="badge-dot"></span>}
+          </button>
           <div className="profile-dropdown">
             <button 
               className="profile-avatar-btn" 

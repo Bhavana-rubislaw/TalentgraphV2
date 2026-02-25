@@ -165,18 +165,6 @@ def create_job_profile(
     session.commit()
     session.refresh(job_profile)
     
-    # Notify candidate: new job preference/profile added
-    from app.notify import create_notification
-    session.add(create_notification(
-        user_id=user.id,
-        notification_type="job_preference_added",
-        title="Job Preference Profile Created",
-        message=f"Your job preference profile '{job_profile.profile_name}' has been added successfully.",
-        job_profile_id=job_profile.id,
-        job_profile_name=job_profile.profile_name,
-    ))
-    session.commit()
-    
     return {
         "message": "Job profile created",
         "job_profile_id": job_profile.id,

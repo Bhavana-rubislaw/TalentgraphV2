@@ -3,7 +3,6 @@ import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/RecruiterApplications.css';
-import NotificationBell from '../components/NotificationBell';
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -2185,18 +2184,13 @@ const RecruiterDashboard: React.FC = () => {
         </div>
         
         <div className="navbar-right">
-          <NotificationBell
-            onNavigate={(type) => {
-              const tabMap: Record<string, string> = {
-                job_posting_created: 'recommendations',
-                new_application: 'applications',
-                new_match: 'matches',
-                candidate_shortlisted: 'shortlist',
-              };
-              const tab = tabMap[type];
-              if (tab) setActiveTab(tab);
-            }}
-          />
+          <button className="icon-btn" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span className="badge-dot"></span>
+          </button>
           
           <div className="profile-dropdown">
             <button 
