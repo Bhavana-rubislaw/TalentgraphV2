@@ -328,3 +328,23 @@ class Application(SQLModel, table=True):
     # Relationships
     candidate: Candidate = Relationship(back_populates="applications")
     job_posting: JobPosting = Relationship(back_populates="applications")
+
+
+# ============ NOTIFICATION MODEL ============
+
+class Notification(SQLModel, table=True):
+    """Notifications for candidates and recruiters"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    notification_type: str  # recruiter_liked, recruiter_invite, new_match, job_preference_added,
+                             # application_submitted, job_posting_created, new_application, candidate_shortlisted
+    title: str
+    message: str
+    job_posting_id: Optional[int] = Field(default=None)
+    job_title: Optional[str] = None
+    candidate_id: Optional[int] = Field(default=None)
+    candidate_name: Optional[str] = None
+    job_profile_id: Optional[int] = Field(default=None)
+    job_profile_name: Optional[str] = None
+    is_read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
