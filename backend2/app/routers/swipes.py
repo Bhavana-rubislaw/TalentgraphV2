@@ -82,8 +82,11 @@ def swipe_like(
         .where(Match.job_posting_id == job_posting_id)
     ).first()
     
+    mutual_match = False
     if existing_match:
         existing_match.candidate_liked = True
+        if existing_match.company_liked:
+            mutual_match = True
     else:
         match = Match(
             candidate_id=candidate.id,
@@ -97,6 +100,36 @@ def swipe_like(
     
     session.add(swipe)
     session.commit()
+
+    # Notify on mutual match
+    if mutual_match:
+        from app.notify import create_notification
+        company = session.get(Company, job_posting.company_id)
+        company_user = session.get(User, company.user_id) if company else None
+        # Notify candidate
+        session.add(create_notification(
+            user_id=user.id,
+            notification_type="new_match",
+            title="New Mutual Match!",
+            message=f"You and {company.company_name if company else 'a recruiter'} both liked each other for '{job_posting.job_title}'.",
+            job_posting_id=job_posting_id,
+            job_title=job_posting.job_title,
+            job_profile_id=job_profile_id,
+        ))
+        # Notify recruiter
+        if company_user:
+            session.add(create_notification(
+                user_id=company_user.id,
+                notification_type="new_match",
+                title="New Mutual Match!",
+                message=f"{candidate.name} and your company both liked each other for '{job_posting.job_title}'.",
+                job_posting_id=job_posting_id,
+                job_title=job_posting.job_title,
+                candidate_id=candidate.id,
+                candidate_name=candidate.name,
+                job_profile_id=job_profile_id,
+            ))
+        session.commit()
     
     return {"message": "Liked job posting", "action": "like"}
 
@@ -255,8 +288,11 @@ def recruiter_like(
         .where(Match.job_posting_id == data.job_posting_id)
     ).first()
     
+    mutual_match = False
     if existing_match:
         existing_match.company_liked = True
+        if existing_match.candidate_liked:
+            mutual_match = True
     else:
         match = Match(
             candidate_id=data.candidate_id,
@@ -271,6 +307,62 @@ def recruiter_like(
     session.add(swipe)
     session.commit()
     logger.info(f"[RECRUITER LIKE] Success - swipe recorded for candidate {data.candidate_id}")
+
+    from app.notify import create_notification
+    job_profile = session.get(JobProfile, data.job_profile_id)
+    # Notify candidate: recruiter liked their profile
+    candidate_user = session.get(User, candidate.user_id)
+    if candidate_user:
+        session.add(create_notification(
+            user_id=candidate_user.id,
+            notification_type="recruiter_liked",
+            title="A Recruiter Liked Your Profile",
+            message=f"{company.company_name} liked your profile for '{job_posting.job_title}'.",
+            job_posting_id=data.job_posting_id,
+            job_title=job_posting.job_title,
+            job_profile_id=data.job_profile_id,
+            job_profile_name=job_profile.profile_name if job_profile else None,
+        ))
+    # Notify recruiter: candidate shortlisted
+    session.add(create_notification(
+        user_id=user.id,
+        notification_type="candidate_shortlisted",
+        title="Candidate Shortlisted",
+        message=f"You shortlisted {candidate.name} for '{job_posting.job_title}'.",
+        job_posting_id=data.job_posting_id,
+        job_title=job_posting.job_title,
+        candidate_id=candidate.id,
+        candidate_name=candidate.name,
+        job_profile_id=data.job_profile_id,
+        job_profile_name=job_profile.profile_name if job_profile else None,
+    ))
+    if mutual_match:
+        # Notify candidate: mutual match
+        if candidate_user:
+            session.add(create_notification(
+                user_id=candidate_user.id,
+                notification_type="new_match",
+                title="New Mutual Match!",
+                message=f"You and {company.company_name} both liked each other for '{job_posting.job_title}'.",
+                job_posting_id=data.job_posting_id,
+                job_title=job_posting.job_title,
+                job_profile_id=data.job_profile_id,
+                job_profile_name=job_profile.profile_name if job_profile else None,
+            ))
+        # Notify recruiter: mutual match
+        session.add(create_notification(
+            user_id=user.id,
+            notification_type="new_match",
+            title="New Mutual Match!",
+            message=f"{candidate.name} and your company both liked each other for '{job_posting.job_title}'.",
+            job_posting_id=data.job_posting_id,
+            job_title=job_posting.job_title,
+            candidate_id=candidate.id,
+            candidate_name=candidate.name,
+            job_profile_id=data.job_profile_id,
+            job_profile_name=job_profile.profile_name if job_profile else None,
+        ))
+    session.commit()
     
     return {"message": "Liked candidate", "action": "like"}
 
@@ -374,5 +466,24 @@ def recruiter_ask_to_apply(
     
     session.add(swipe)
     session.commit()
+
+    # Notify candidate: recruiter invite (ask-to-apply)
+    from app.notify import create_notification
+    candidate = session.get(Candidate, data.candidate_id)
+    job_profile = session.get(JobProfile, data.job_profile_id)
+    if candidate:
+        candidate_user = session.get(User, candidate.user_id)
+        if candidate_user:
+            session.add(create_notification(
+                user_id=candidate_user.id,
+                notification_type="recruiter_invite",
+                title="Recruiter Invited You to Apply",
+                message=f"{company.company_name} has invited you to apply for '{job_posting.job_title}'.",
+                job_posting_id=data.job_posting_id,
+                job_title=job_posting.job_title,
+                job_profile_id=data.job_profile_id,
+                job_profile_name=job_profile.profile_name if job_profile else None,
+            ))
+        session.commit()
     
     return {"message": "Asked candidate to apply", "action": "ask_to_apply"}

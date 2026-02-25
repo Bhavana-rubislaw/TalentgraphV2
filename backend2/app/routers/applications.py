@@ -75,6 +75,37 @@ def apply_to_job(
     session.commit()
     session.refresh(application)
     
+    # Notify candidate: application submitted
+    from app.notify import create_notification
+    session.add(create_notification(
+        user_id=user.id,
+        notification_type="application_submitted",
+        title="Application Submitted",
+        message=f"Your application for '{job_posting.job_title}' using profile '{job_profile.profile_name}' has been submitted.",
+        job_posting_id=job_posting_id,
+        job_title=job_posting.job_title,
+        job_profile_id=job_profile_id,
+        job_profile_name=job_profile.profile_name,
+    ))
+    # Notify recruiter: new application received
+    recruiter_company = session.get(Company, job_posting.company_id)
+    if recruiter_company:
+        recruiter_user = session.get(User, recruiter_company.user_id)
+        if recruiter_user:
+            session.add(create_notification(
+                user_id=recruiter_user.id,
+                notification_type="new_application",
+                title="New Application Received",
+                message=f"{candidate.name} has applied for '{job_posting.job_title}'.",
+                job_posting_id=job_posting_id,
+                job_title=job_posting.job_title,
+                candidate_id=candidate.id,
+                candidate_name=candidate.name,
+                job_profile_id=job_profile_id,
+                job_profile_name=job_profile.profile_name,
+            ))
+    session.commit()
+    
     return {
         "message": "Application submitted successfully",
         "application_id": application.id,
