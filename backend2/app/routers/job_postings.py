@@ -116,6 +116,18 @@ def create_job_posting(
     
     if skills_data:
         session.commit()
+
+    # Notify recruiter that a new job posting was created
+    from app.notify import create_notification
+    session.add(create_notification(
+        user_id=user.id,
+        notification_type="job_posting_created",
+        title="New Job Posting Created",
+        message=f"Your job posting '{job_posting.job_title}' has been published successfully.",
+        job_posting_id=job_posting.id,
+        job_title=job_posting.job_title,
+    ))
+    session.commit()
     
     return {
         "message": "Job posting created successfully",
