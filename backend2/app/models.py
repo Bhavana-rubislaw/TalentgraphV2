@@ -343,3 +343,43 @@ class Notification(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # JSON payload: {"route": "...", "route_context": {...}}
     payload: Optional[str] = Field(default=None)
+
+
+# ============ AUDIT / ACTIVITY EVENT LOG ============
+
+class ActivityEvent(SQLModel, table=True):
+    """Immutable append-only audit log of every UI-triggered mutation.
+
+    Rules:
+    - No UPDATE or DELETE on this table (application-enforced).
+    - Rows are written in the same transaction as the operational change.
+    - before_value / after_value are serialised JSON strings (safe subset).
+    - dedupe_key prevents storing the same logical event twice (optional).
+    """
+    __tablename__ = "activityevent"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # What changed
+    entity_type: str  # application | swipe | notification | match | job_posting | profile | company
+    entity_id: str    # stringified int / uuid of the affected row
+    action: str       # created | updated | status_changed | read | bulk_read | deleted
+                      # liked | passed | invited | withdrawn | submitted | offered | rejected
+
+    # Snapshot (JSON strings – serialised safe subsets, nullable)
+    before_value: Optional[str] = Field(default=None)
+    after_value: Optional[str] = Field(default=None)
+
+    # Who
+    performed_by_user_id: int = Field(index=True)
+    performed_by_role: str  # candidate | recruiter | hr | admin
+
+    # When – ALWAYS server-stamped UTC
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Tracing
+    request_id: Optional[str] = Field(default=None, index=True)
+    source: str = Field(default="web")  # web | ios | android
+
+    # Deduplication (unique constraint enforced at DB level via migration)
+    dedupe_key: Optional[str] = Field(default=None)

@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database import init_db
+from app.middleware.request_id import RequestIdMiddleware
 import os
 
 # Load environment variables from .env file
@@ -65,6 +66,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Request-ID tracing — must be added AFTER CORSMiddleware
+app.add_middleware(RequestIdMiddleware)
 
 
 # ============ ROOT ============
@@ -88,7 +91,7 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications
+from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed
 
 logger.info("[STARTUP] Registering routers...")
 app.include_router(auth.router)
@@ -101,6 +104,7 @@ app.include_router(swipes.router)
 app.include_router(dashboard.router)
 app.include_router(applications.router)
 app.include_router(notifications.router)
+app.include_router(activity_feed.router)
 logger.info("[STARTUP] All routers registered successfully")
 
 

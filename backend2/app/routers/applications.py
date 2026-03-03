@@ -4,7 +4,8 @@ Candidate job applications and recruiter application management
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from typing import List
@@ -13,6 +14,7 @@ from app.models import Application, Candidate, Company, JobPosting, JobProfile, 
 from app.schemas import ApplicationRead
 from app.security import get_current_user
 from app.routers.notifications import push_notification
+from app.services.audit import log_activity_event, snap_application
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -30,6 +32,7 @@ class ApplicationStatusRequest(BaseModel):
 @router.post("/apply", response_model=dict)
 def apply_to_job(
     data: ApplicationApplyRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -54,7 +57,7 @@ def apply_to_job(
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
     
-    # Check if already applied
+    # Enforce: only one application per candidate per job posting
     existing = session.exec(
         select(Application)
         .where(Application.candidate_id == candidate.id)
@@ -64,15 +67,32 @@ def apply_to_job(
     if existing:
         raise HTTPException(status_code=400, detail="Already applied to this job")
     
-    # Create application
+    # Create application — backend stamps applied_at
     application = Application(
         candidate_id=candidate.id,
         job_posting_id=job_posting_id,
         job_profile_id=job_profile_id,
-        status="applied"
+        status="applied",
+        applied_at=datetime.utcnow(),
     )
     
     session.add(application)
+    # Flush to get application.id before audit log
+    session.flush()
+
+    # Audit log — same transaction
+    log_activity_event(
+        session,
+        entity_type="application",
+        entity_id=application.id,
+        action="created",
+        performed_by_user=user,
+        before_value=None,
+        after_value=snap_application(application),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"application:created:{candidate.id}:{job_posting_id}",
+    )
+
     session.commit()
     session.refresh(application)
     
@@ -124,6 +144,7 @@ def get_my_applications(
 def update_application_status(
     application_id: int,
     data: ApplicationStatusRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -146,13 +167,29 @@ def update_application_status(
     if not job_posting or job_posting.company_id != company.id:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
-    # Valid statuses: applied, reviewed, shortlisted, rejected, offered
+    # Valid statuses with enforced transitions
     valid_statuses = ["applied", "reviewed", "shortlisted", "rejected", "offered"]
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
     
+    before_snap = snap_application(application)
+    old_status = application.status
     application.status = status
     session.add(application)
+    session.flush()
+
+    # Audit log
+    log_activity_event(
+        session,
+        entity_type="application",
+        entity_id=application.id,
+        action="status_changed",
+        performed_by_user=user,
+        before_value=before_snap,
+        after_value=snap_application(application),
+        request_id=getattr(request.state, "request_id", None),
+    )
+
     session.commit()
     
     # Notify candidate of the status change
@@ -188,6 +225,7 @@ def update_application_status(
 @router.delete("/{application_id}", response_model=dict)
 def withdraw_application(
     application_id: int,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -204,6 +242,18 @@ def withdraw_application(
     if not application or application.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Application not found")
     
+    before_snap = snap_application(application)
+    log_activity_event(
+        session,
+        entity_type="application",
+        entity_id=application.id,
+        action="withdrawn",
+        performed_by_user=user,
+        before_value=before_snap,
+        after_value=None,
+        request_id=getattr(request.state, "request_id", None),
+    )
+
     session.delete(application)
     session.commit()
     

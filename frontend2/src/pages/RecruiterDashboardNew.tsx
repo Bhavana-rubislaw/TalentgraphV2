@@ -1835,154 +1835,102 @@ const RecruiterDashboard: React.FC = () => {
       return (
         <div className="empty-state-modern">
           <div className="empty-icon-professional">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
             </svg>
           </div>
-          <h3 className="empty-title">No Mutual Matches</h3>
-          <p className="empty-subtitle">
-            When both you and a candidate like each other, mutual matches will appear here for direct contact.
-          </p>
+          <h3 className="empty-title">No matches yet</h3>
+          <p className="empty-subtitle">Continue reviewing candidates. When both you and a candidate express mutual interest, matches will appear here.</p>
+          <button onClick={() => setActiveTab('recommendations')} className="btn btn-primary">
+            View Recommendations
+          </button>
         </div>
       );
     }
 
-    const getMatchColor = (pct: number) => {
-      if (pct >= 85) return 'excellent';
-      if (pct >= 70) return 'good';
-      return 'moderate';
-    };
-
     return (
-      <div className="matches-section-modern">
-        {/* Section Header */}
-        <div className="matches-section-header">
-          <div className="matches-header-left">
-            <div className="matches-header-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </div>
-            <div>
-              <h3 className="matches-header-title">{matches.length} Mutual {matches.length === 1 ? 'Match' : 'Matches'}</h3>
-              <p className="matches-header-subtitle">Candidates who have mutually expressed interest — ready to connect</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Match Cards Grid */}
-        <div className="matches-grid-modern">
-          {matches.map((match: any, index) => (
-            <div key={`match-${match.match_id}-${index}`} className="match-card-modern">
-              {/* Card Top: Candidate Identity + Match Score */}
-              <div className="match-card-top">
-                <div className="match-candidate-identity">
-                  <div className="match-avatar">
-                    {match.candidate.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="match-candidate-info">
-                    <h3 className="match-candidate-name">{match.candidate.name}</h3>
-                    <p className="match-role-label">{match.job_profile.profile_name}</p>
-                  </div>
-                </div>
-                <div className={`match-score-badge ${getMatchColor(match.match_percentage)}`}>
-                  <span className="match-score-value">{match.match_percentage}%</span>
-                  <span className="match-score-label">Match</span>
-                </div>
-              </div>
-
-              {/* Mutual Match Banner */}
-              <div className="mutual-match-banner">
+      <>
+      <div className="jobs-grid-modern">
+        {matches.map((match: any, index) => (
+          <div key={`match-${match.match_id}-${index}`} className="job-card-modern match-card">
+            {/* Mutual Match Banner */}
+            <div className="job-header-modern match-header">
+              <div className="match-badge-header">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="20 6 9 17 4 12"/>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                <span>Mutual Match — Both parties interested</span>
+                <span>Mutual Match - {match.match_percentage}%</span>
               </div>
+            </div>
 
-              {/* Card Body: Info Grid */}
-              <div className="match-card-body">
-                <div className="match-info-grid">
-                  {/* Contact Column */}
-                  <div className="match-info-column">
-                    <h4 className="match-info-heading">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      Contact Details
-                    </h4>
-                    <div className="match-info-rows">
-                      <div className="match-info-row">
-                        <svg className="match-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                          <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                        <a href={`mailto:${match.candidate.email}`} className="match-info-link">{match.candidate.email}</a>
-                      </div>
-                      <div className="match-info-row">
-                        <svg className="match-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                        </svg>
-                        <span className="match-info-text">{match.candidate.phone}</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Card Header: Candidate name + position */}
+            <div className="job-header-modern">
+              <div className="job-title-section">
+                <h3 className="job-title-modern">{match.candidate.name}</h3>
+                <div className="job-company">{match.job_posting.job_title} · {match.job_profile.profile_name}</div>
+              </div>
+              <div className="match-date">
+                <small>Matched {new Date(match.matched_at).toLocaleDateString()}</small>
+              </div>
+            </div>
 
-                  {/* Position Column */}
-                  <div className="match-info-column">
-                    <h4 className="match-info-heading">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* Card Body */}
+            <div className="job-content-modern">
+              <div className="job-info-section">
+                <div className="info-group">
+                  <h4 className="info-group-title">Position Details</h4>
+                  <div className="info-items">
+                    <div className="info-item">
+                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                       </svg>
-                      Position Details
-                    </h4>
-                    <div className="match-info-rows">
-                      <div className="match-info-row">
-                        <svg className="match-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                          <line x1="8" y1="21" x2="16" y2="21"/>
-                          <line x1="12" y1="17" x2="12" y2="21"/>
-                        </svg>
-                        <span className="match-info-text">{match.job_posting.job_title}</span>
-                      </div>
-                      <div className="match-info-row">
-                        <svg className="match-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/>
-                          <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        <span className="match-info-text match-date-text">Matched {new Date(match.matched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
+                      <span className="info-value">{match.job_posting.job_title}</span>
                     </div>
+                    {match.job_posting.location && (
+                      <div className="info-item">
+                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <span className="info-value">{match.job_posting.location}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Card Actions */}
-              <div className="match-card-actions">
-                <a
-                  href={`mailto:${match.candidate.email}`}
-                  className="match-action-btn match-primary"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Send Email
-                </a>
-                <button
-                  onClick={() => window.open(`tel:${match.candidate.phone}`, '_self')}
-                  className="match-action-btn match-secondary"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                  </svg>
-                  Call
-                </button>
+              <div className="job-compensation-section">
+                <div className="info-group">
+                  <h4 className="info-group-title">Contact Information</h4>
+                  <div className="contact-info">
+                    <div className="info-item">
+                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                      <span className="info-value">{match.candidate.email}</span>
+                    </div>
+                    {match.candidate.phone && (
+                      <div className="info-item">
+                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span className="info-value">{match.candidate.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card Actions */}
+            <div className="job-actions-modern">
+              <div className="action-buttons-grid">
                 <button
                   onClick={() => setViewProfileMatch(match)}
-                  className="match-action-btn match-view-profile"
-                  title="View full profile"
+                  className="action-btn light"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -1990,10 +1938,32 @@ const RecruiterDashboard: React.FC = () => {
                   </svg>
                   View Profile
                 </button>
+                <a
+                  href={`mailto:${match.candidate.email}`}
+                  className="action-btn primary"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Send Email
+                </a>
+                {match.candidate.phone && (
+                  <a
+                    href={`tel:${match.candidate.phone}`}
+                    className="action-btn success"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Call
+                  </a>
+                )}
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
         {/* ── View Profile Modal ── */}
         {viewProfileMatch && (() => {
@@ -2199,7 +2169,7 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           );
         })()}
-      </div>
+      </>
     );
   };
 
