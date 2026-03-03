@@ -1,15 +1,55 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../api/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/CandidateApplied.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 
+const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches'] as const;
+
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('recommendations');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── Tab: driven from ?tab= URL param (survives refresh) ──────────
+  const rawTab = searchParams.get('tab') || '';
+  const activeTab: string = (CANDIDATE_TABS as readonly string[]).includes(rawTab)
+    ? rawTab
+    : 'recommendations';
+
+  const setActiveTab = useCallback(
+    (tab: string) => {
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
   const [jobProfiles, setJobProfiles] = useState<any[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+
+  // ── Selected profile: initialised from ?profile= URL param ───────
+  const [selectedProfileId, setSelectedProfileIdInternal] = useState<number | null>(() => {
+    const p = new URLSearchParams(window.location.search).get('profile');
+    return p ? parseInt(p, 10) : null;
+  });
+
+  const setSelectedProfileId = useCallback(
+    (id: number | null) => {
+      setSelectedProfileIdInternal(id);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (id != null) next.set('profile', String(id));
+          else next.delete('profile');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
   
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [invites, setInvites] = useState<any[]>([]);
@@ -75,7 +115,14 @@ const CandidateDashboard: React.FC = () => {
       const response = await apiClient.getJobProfiles();
       console.log('[API SUCCESS] Job profiles fetched, count:', response.data.length);
       setJobProfiles(response.data);
-      if (response.data.length > 0 && !selectedProfileId) {
+      if (response.data.length === 0) return;
+      const validIds: number[] = response.data.map((p: any) => p.id);
+      // Honour ?profile= URL param; validate it exists, else fall back to first
+      const urlProfileId = new URLSearchParams(window.location.search).get('profile');
+      const parsedId = urlProfileId ? parseInt(urlProfileId, 10) : null;
+      if (parsedId && validIds.includes(parsedId)) {
+        setSelectedProfileId(parsedId);
+      } else {
         console.log('[STATE] Auto-selecting first profile:', response.data[0].id);
         setSelectedProfileId(response.data[0].id);
       }
