@@ -246,6 +246,14 @@ export const apiClient = {
     api.post('/notifications/read-all'),
   deleteNotification: (id: number) =>
     api.delete(`/notifications/${id}`),
+
+  // Activity Feed (backend source-of-truth audit log)
+  getActivityFeed: (params?: {
+    category?: 'applications' | 'swipes' | 'notifications' | 'matches' | 'profile' | 'job_posting';
+    page?: number;
+    limit?: number;
+    job_id?: number;
+  }) => api.get('/activity-feed', { params }),
 };
 
 export default api;

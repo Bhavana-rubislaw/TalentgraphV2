@@ -4,13 +4,14 @@ Like/Pass interactions from candidates
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status, Body
+from fastapi import APIRouter, HTTPException, Depends, status, Body, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Swipe, Candidate, Company, JobPosting, JobProfile, User, Match
 from app.security import get_current_user
 from app.routers.notifications import push_notification
+from app.services.audit import log_activity_event, snap_swipe
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/swipes", tags=["Swipes"])
@@ -30,6 +31,7 @@ class RecruiterSwipeRequest(BaseModel):
 @router.post("/like")
 def swipe_like(
     data: CandidateSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -135,6 +137,7 @@ def swipe_like(
 @router.post("/pass")
 def swipe_pass(
     data: CandidateSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -158,6 +161,17 @@ def swipe_pass(
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
     
+    # Idempotency: skip duplicate pass swipe
+    existing_pass = session.exec(
+        select(Swipe)
+        .where(Swipe.candidate_id == candidate.id)
+        .where(Swipe.job_posting_id == job_posting_id)
+        .where(Swipe.action == "pass")
+        .where(Swipe.action_by == "candidate")
+    ).first()
+    if existing_pass:
+        return {"message": "Already passed on this job posting", "action": "pass"}
+    
     # Create swipe
     swipe = Swipe(
         candidate_id=candidate.id,
@@ -169,6 +183,19 @@ def swipe_pass(
     )
     
     session.add(swipe)
+    session.flush()
+
+    log_activity_event(
+        session,
+        entity_type="swipe",
+        entity_id=swipe.id,
+        action="passed",
+        performed_by_user=user,
+        after_value=snap_swipe(swipe),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"swipe:candidate:pass:{candidate.id}:{job_posting_id}",
+    )
+
     session.commit()
     
     return {"message": "Passed on job posting", "action": "pass"}
@@ -177,6 +204,7 @@ def swipe_pass(
 @router.post("/ask-to-apply")
 def ask_to_apply(
     data: CandidateSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -232,6 +260,19 @@ def ask_to_apply(
         session.add(match)
     
     session.add(swipe)
+    session.flush()
+
+    log_activity_event(
+        session,
+        entity_type="swipe",
+        entity_id=swipe.id,
+        action="asked_to_apply",
+        performed_by_user=user,
+        after_value=snap_swipe(swipe),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"swipe:candidate:ask:{candidate.id}:{job_posting_id}",
+    )
+
     session.commit()
     
     return {"message": "Asked to apply for job", "action": "ask_to_apply"}
@@ -242,6 +283,7 @@ def ask_to_apply(
 @router.post("/recruiter/like")
 def recruiter_like(
     data: RecruiterSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -300,6 +342,19 @@ def recruiter_like(
         session.add(match)
     
     session.add(swipe)
+    session.flush()
+
+    log_activity_event(
+        session,
+        entity_type="swipe",
+        entity_id=swipe.id,
+        action="liked",
+        performed_by_user=user,
+        after_value=snap_swipe(swipe),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"swipe:recruiter:like:{data.candidate_id}:{data.job_posting_id}",
+    )
+
     session.commit()
     logger.info(f"[RECRUITER LIKE] Success - swipe recorded for candidate {data.candidate_id}")
     
@@ -323,6 +378,7 @@ def recruiter_like(
 @router.post("/recruiter/pass")
 def recruiter_pass(
     data: RecruiterSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -345,6 +401,17 @@ def recruiter_pass(
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
     
+    # Idempotency: skip duplicate recruiter pass
+    existing_pass = session.exec(
+        select(Swipe)
+        .where(Swipe.candidate_id == data.candidate_id)
+        .where(Swipe.job_posting_id == data.job_posting_id)
+        .where(Swipe.action == "pass")
+        .where(Swipe.action_by == "recruiter")
+    ).first()
+    if existing_pass:
+        return {"message": "Already passed on candidate", "action": "pass"}
+
     # Create swipe
     swipe = Swipe(
         candidate_id=data.candidate_id,
@@ -356,6 +423,19 @@ def recruiter_pass(
     )
     
     session.add(swipe)
+    session.flush()
+
+    log_activity_event(
+        session,
+        entity_type="swipe",
+        entity_id=swipe.id,
+        action="passed",
+        performed_by_user=user,
+        after_value=snap_swipe(swipe),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"swipe:recruiter:pass:{data.candidate_id}:{data.job_posting_id}",
+    )
+
     session.commit()
     
     return {"message": "Passed on candidate", "action": "pass"}
@@ -364,6 +444,7 @@ def recruiter_pass(
 @router.post("/recruiter/ask-to-apply")
 def recruiter_ask_to_apply(
     data: RecruiterSwipeRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -418,6 +499,19 @@ def recruiter_ask_to_apply(
         session.add(match)
     
     session.add(swipe)
+    session.flush()
+
+    log_activity_event(
+        session,
+        entity_type="swipe",
+        entity_id=swipe.id,
+        action="invited",
+        performed_by_user=user,
+        after_value=snap_swipe(swipe),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"swipe:recruiter:ask:{data.candidate_id}:{data.job_posting_id}",
+    )
+
     session.commit()
     
     # Notify candidate of the invitation

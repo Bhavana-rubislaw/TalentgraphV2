@@ -12,12 +12,13 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlmodel import Session, select, desc
 
 from app.database import get_session
 from app.models import Notification, User
 from app.security import get_current_user
+from app.services.audit import log_activity_event, snap_notification
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -116,6 +117,7 @@ def unread_count(
 
 @router.post("/read-all", response_model=Dict[str, str])
 def mark_all_read(
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -132,6 +134,19 @@ def mark_all_read(
     for n in unread:
         n.is_read = True
         session.add(n)
+
+    # One bulk_read audit event summarising all reads
+    if unread:
+        log_activity_event(
+            session,
+            entity_type="notification",
+            entity_id="bulk",
+            action="bulk_read",
+            performed_by_user=user,
+            after_value={"count": len(unread), "ids": [n.id for n in unread]},
+            request_id=getattr(request.state, "request_id", None),
+        )
+
     session.commit()
     return {"message": f"Marked {len(unread)} notifications as read"}
 
@@ -139,6 +154,7 @@ def mark_all_read(
 @router.post("/{notification_id}/read", response_model=Dict[str, str])
 def mark_read(
     notification_id: int,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -150,8 +166,22 @@ def mark_read(
     if not notif or notif.user_id != user.id:
         raise HTTPException(status_code=404, detail="Notification not found")
 
+    before_snap = snap_notification(notif)
     notif.is_read = True
     session.add(notif)
+
+    log_activity_event(
+        session,
+        entity_type="notification",
+        entity_id=notif.id,
+        action="read",
+        performed_by_user=user,
+        before_value=before_snap,
+        after_value=snap_notification(notif),
+        request_id=getattr(request.state, "request_id", None),
+        dedupe_key=f"notification:read:{notif.id}",
+    )
+
     session.commit()
     return {"message": "Marked as read"}
 
@@ -159,6 +189,7 @@ def mark_read(
 @router.delete("/{notification_id}", response_model=Dict[str, str])
 def delete_notification(
     notification_id: int,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
@@ -169,6 +200,17 @@ def delete_notification(
     notif = session.get(Notification, notification_id)
     if not notif or notif.user_id != user.id:
         raise HTTPException(status_code=404, detail="Notification not found")
+
+    before_snap = snap_notification(notif)
+    log_activity_event(
+        session,
+        entity_type="notification",
+        entity_id=notif.id,
+        action="deleted",
+        performed_by_user=user,
+        before_value=before_snap,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
     session.delete(notif)
     session.commit()

@@ -177,20 +177,31 @@ const CandidateDashboard: React.FC = () => {
     if (!selectedProfileId) return;
     console.log('[APPLICATION] Applying to job:', jobPostingId, 'with profile:', selectedProfileId);
     setApplyingJobId(jobPostingId);
+    // Optimistic update — show Applied immediately, same as Like/Pass
+    setRecommendations(prev => prev.map(r =>
+      r.job_posting.id === jobPostingId
+        ? { ...r, already_applied: true }
+        : r
+    ));
     try {
       await apiClient.applyToJob(jobPostingId, selectedProfileId);
       console.log('[API SUCCESS] Application submitted');
-      // Optimistically update so card stays with "Applied" status — no page alert
-      setRecommendations(prev => prev.map(r =>
-        r.job_posting.id === jobPostingId
-          ? { ...r, already_applied: true }
-          : r
-      ));
       fetchAppliedLiked();
       fetchAvailableJobs();
     } catch (error: any) {
       const msg = error?.response?.data?.detail;
-      alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
+      // If already applied (400), keep the Applied state; otherwise rollback
+      if (error?.response?.status === 400 && typeof msg === 'string' && msg.toLowerCase().includes('already applied')) {
+        // Already applied — keep the optimistic applied state, no alert needed
+      } else {
+        // Real error — rollback
+        setRecommendations(prev => prev.map(r =>
+          r.job_posting.id === jobPostingId
+            ? { ...r, already_applied: false }
+            : r
+        ));
+        alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
+      }
     } finally {
       setApplyingJobId(null);
     }
