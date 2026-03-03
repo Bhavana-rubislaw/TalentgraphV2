@@ -148,6 +148,16 @@ def get_candidate_recommendations(
             )
         ).first()
         
+        # Check if already applied
+        existing_application = session.exec(
+            select(Application).where(
+                and_(
+                    Application.candidate_id == candidate.id,
+                    Application.job_posting_id == job.id
+                )
+            )
+        ).first()
+
         # Get match if exists
         match = session.exec(
             select(Match).where(
@@ -183,6 +193,7 @@ def get_candidate_recommendations(
             "match_details": match_info["details"],
             "already_swiped": existing_swipe is not None,
             "swipe_action": existing_swipe.action if existing_swipe else None,
+            "already_applied": existing_application is not None,
             "is_match": match.candidate_liked and match.company_liked if match else False,
             "recruiter_interested": match.company_liked if match else False,
             "recruiter_invited": match.company_asked_to_apply if match else False

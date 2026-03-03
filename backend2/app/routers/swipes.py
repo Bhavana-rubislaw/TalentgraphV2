@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import Swipe, Candidate, Company, JobPosting, JobProfile, User, Match
 from app.security import get_current_user
+from app.routers.notifications import push_notification
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/swipes", tags=["Swipes"])
@@ -97,6 +98,36 @@ def swipe_like(
     
     session.add(swipe)
     session.commit()
+    
+    # Check for mutual match and notify both parties
+    refreshed_match = session.exec(
+        select(Match)
+        .where(Match.candidate_id == candidate.id)
+        .where(Match.job_posting_id == job_posting_id)
+    ).first()
+    if refreshed_match and refreshed_match.candidate_liked and refreshed_match.company_liked:
+        # Notify candidate of mutual match
+        push_notification(
+            session, user.id,
+            title="🎉 It's a Match!",
+            message=f"You and {job_posting.job_title} have mutually matched. Check your matches!",
+            event_type="match",
+            route="/candidate-dashboard",
+            route_context={"tab": "matches", "jobPostingId": job_posting_id},
+        )
+        # Notify recruiter company user
+        company_user = session.exec(
+            select(User).where(User.id == job_posting.company.user_id)
+        ).first() if job_posting.company else None
+        if company_user:
+            push_notification(
+                session, company_user.id,
+                title="🎉 New Mutual Match!",
+                message=f"A candidate matched your posting: {job_posting.job_title}",
+                event_type="match",
+                route="/recruiter-dashboard",
+                route_context={"tab": "matches", "jobPostingId": job_posting_id},
+            )
     
     return {"message": "Liked job posting", "action": "like"}
 
@@ -272,6 +303,20 @@ def recruiter_like(
     session.commit()
     logger.info(f"[RECRUITER LIKE] Success - swipe recorded for candidate {data.candidate_id}")
     
+    # Notify candidate they were shortlisted
+    candidate_user = session.exec(
+        select(User).where(User.id == candidate.user_id)
+    ).first()
+    if candidate_user:
+        push_notification(
+            session, candidate_user.id,
+            title="⭐ You've been shortlisted!",
+            message=f"A recruiter from {company.company_name} shortlisted you for {job_posting.job_title}",
+            event_type="shortlisted",
+            route="/candidate-dashboard",
+            route_context={"tab": "invites", "jobPostingId": data.job_posting_id},
+        )
+    
     return {"message": "Liked candidate", "action": "like"}
 
 
@@ -374,5 +419,21 @@ def recruiter_ask_to_apply(
     
     session.add(swipe)
     session.commit()
+    
+    # Notify candidate of the invitation
+    candidate_obj = session.get(Candidate, data.candidate_id)
+    if candidate_obj:
+        candidate_user = session.exec(
+            select(User).where(User.id == candidate_obj.user_id)
+        ).first()
+        if candidate_user:
+            push_notification(
+                session, candidate_user.id,
+                title="📩 Recruiter invited you to apply!",
+                message=f"{company.company_name} wants you to apply for {job_posting.job_title}",
+                event_type="invite",
+                route="/candidate-dashboard",
+                route_context={"tab": "invites", "jobPostingId": data.job_posting_id},
+            )
     
     return {"message": "Asked candidate to apply", "action": "ask_to_apply"}

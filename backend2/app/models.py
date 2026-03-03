@@ -328,3 +328,18 @@ class Application(SQLModel, table=True):
     # Relationships
     candidate: Candidate = Relationship(back_populates="applications")
     job_posting: JobPosting = Relationship(back_populates="applications")
+
+
+# ============ NOTIFICATION MODEL ============
+
+class Notification(SQLModel, table=True):
+    """In-app notifications for candidates and recruiters"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    title: str
+    message: str
+    event_type: str  # match, invite, application, status_update, shortlisted
+    is_read: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    # JSON payload: {"route": "...", "route_context": {...}}
+    payload: Optional[str] = Field(default=None)

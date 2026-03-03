@@ -3,6 +3,7 @@ import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/RecruiterApplications.css';
+import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -111,7 +112,7 @@ const RecruiterDashboard: React.FC = () => {
   // Keyboard navigation for recommendation cards
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (activeTab !== 'recommendations' || !recommendations?.recommendations?.length) return;
-    const total = recommendations.recommendations.filter((r: any) => !r.already_actioned).length;
+    const total = recommendations.recommendations.length;
     if (e.key === 'ArrowRight') {
       setRecCardIndex(prev => Math.min(prev + 1, total - 1));
     } else if (e.key === 'ArrowLeft') {
@@ -189,15 +190,19 @@ const RecruiterDashboard: React.FC = () => {
     try {
       await apiClient.recruiterLike(candidateId, jobProfileId, selectedJobId);
       console.log('[API SUCCESS] Recruiter like recorded');
-      alert('Liked candidate! They have been added to your shortlist.');
-      fetchRecommendations();
+      // Optimistic update — card stays with Shortlisted badge
+      setRecommendations((prev: any) => ({
+        ...prev,
+        recommendations: prev.recommendations.map((r: any) =>
+          r.candidate.id === candidateId && r.job_profile.id === jobProfileId
+            ? { ...r, already_actioned: true, action_taken: 'like' }
+            : r
+        )
+      }));
       fetchShortlist();
       fetchMatches();
-      // Switch to shortlist tab to show the liked candidate
-      setActiveTab('shortlist');
     } catch (error: any) {
       console.error('[API ERROR] Failed to like candidate:', error);
-      console.error('[API ERROR] Response data:', error.response?.data);
       alert(`Failed to like candidate: ${error.response?.data?.detail || error.message}`);
     }
   };
@@ -208,7 +213,15 @@ const RecruiterDashboard: React.FC = () => {
     try {
       await apiClient.recruiterPass(candidateId, jobProfileId, selectedJobId);
       console.log('[API SUCCESS] Recruiter pass recorded');
-      fetchRecommendations();
+      // Optimistic update — card stays with Passed badge
+      setRecommendations((prev: any) => ({
+        ...prev,
+        recommendations: prev.recommendations.map((r: any) =>
+          r.candidate.id === candidateId && r.job_profile.id === jobProfileId
+            ? { ...r, already_actioned: true, action_taken: 'pass' }
+            : r
+        )
+      }));
     } catch (error) {
       console.error('[API ERROR] Failed to pass candidate:', error);
       alert('Failed to pass candidate');
@@ -221,8 +234,15 @@ const RecruiterDashboard: React.FC = () => {
     try {
       await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
       console.log('[API SUCCESS] Invitation sent to candidate');
-      alert('Invitation sent to candidate!');
-      fetchRecommendations();
+      // Optimistic update — card stays with Invited badge
+      setRecommendations((prev: any) => ({
+        ...prev,
+        recommendations: prev.recommendations.map((r: any) =>
+          r.candidate.id === candidateId && r.job_profile.id === jobProfileId
+            ? { ...r, already_actioned: true, action_taken: 'ask_to_apply' }
+            : r
+        )
+      }));
       fetchShortlist();
     } catch (error) {
       console.error('[API ERROR] Failed to send invitation:', error);
@@ -358,23 +378,8 @@ const RecruiterDashboard: React.FC = () => {
             </p>
           </div>
         ) : (() => {
-          const visibleRecs = recommendations.recommendations.filter((r: any) => !r.already_actioned);
-          const actionedRecs = recommendations.recommendations.filter((r: any) => r.already_actioned);
-          if (visibleRecs.length === 0) {
-            return (
-              <div className="empty-state-modern">
-                <div className="empty-icon-professional">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </div>
-                <h3 className="empty-title">All Caught Up!</h3>
-                <p className="empty-subtitle">
-                  You have reviewed all {actionedRecs.length} candidate{actionedRecs.length !== 1 ? 's' : ''} for this position.
-                </p>
-              </div>
-            );
-          }
+          // Show ALL cards with their status badges (shortlisted, passed, invited)
+          const visibleRecs = recommendations.recommendations;
           const safeIndex = Math.min(recCardIndex, visibleRecs.length - 1);
           const rec = visibleRecs[safeIndex];
           return (
@@ -406,6 +411,29 @@ const RecruiterDashboard: React.FC = () => {
               {/* Single Card */}
               <div className="carousel-card-wrapper" key={`rec-${rec.candidate.id}-${rec.job_profile.id}`}>
                 <div className="candidate-card-modern carousel-card" onClick={() => setViewRecommendationProfile(rec)} style={{ cursor: 'pointer' }}>
+                  {/* Status Strip: shows action taken for this candidate */}
+                  {rec.already_actioned && (
+                    <div className="rec-status-strip">
+                      {rec.action_taken === 'like' && (
+                        <span className="rec-status-chip liked">
+                          <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                          Shortlisted
+                        </span>
+                      )}
+                      {rec.action_taken === 'pass' && (
+                        <span className="rec-status-chip passed">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          Passed
+                        </span>
+                      )}
+                      {rec.action_taken === 'ask_to_apply' && (
+                        <span className="rec-status-chip applied">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                          Invited
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {/* Card Header */}
                   <div className="candidate-header-modern">
                     <div className="candidate-avatar-modern">
@@ -518,33 +546,36 @@ const RecruiterDashboard: React.FC = () => {
                   <div className="candidate-actions-modern">
                     <div className="action-buttons-grid">
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleRecruiterPass(rec.candidate.id, rec.job_profile.id); setRecCardIndex(Math.min(safeIndex, visibleRecs.length - 2)); }}
-                        className="action-btn secondary"
+                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'pass') handleRecruiterPass(rec.candidate.id, rec.job_profile.id); }}
+                        className={`action-btn ${rec.action_taken === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
+                        disabled={rec.action_taken === 'pass'}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <line x1="18" y1="6" x2="6" y2="18"/>
                           <line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
-                        Pass
+                        {rec.action_taken === 'pass' ? 'Passed ✓' : 'Pass'}
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleRecruiterLike(rec.candidate.id, rec.job_profile.id); }}
-                        className="action-btn primary"
+                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'like') handleRecruiterLike(rec.candidate.id, rec.job_profile.id); }}
+                        className={`action-btn ${rec.action_taken === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
+                        disabled={rec.action_taken === 'like'}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
-                        Like
+                        {rec.action_taken === 'like' ? 'Shortlisted ✓' : 'Like'}
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleAskToApply(rec.candidate.id, rec.job_profile.id); }}
-                        className="action-btn success"
+                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'ask_to_apply') handleAskToApply(rec.candidate.id, rec.job_profile.id); }}
+                        className={`action-btn ${rec.action_taken === 'ask_to_apply' ? 'action-btn-done applied-done' : 'success'}`}
+                        disabled={rec.action_taken === 'ask_to_apply'}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                           <polyline points="22,6 12,13 2,6"/>
                         </svg>
-                        Ask to Apply
+                        {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
                       </button>
                     </div>
                   </div>
@@ -690,33 +721,36 @@ const RecruiterDashboard: React.FC = () => {
               <div className="vp-footer">
                 <div className="vp-actions">
                   <button
-                    className="vp-btn vp-btn-secondary"
-                    onClick={() => { handleRecruiterPass(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    className={`vp-btn ${rec.action_taken === 'pass' ? 'vp-btn-done-pass' : 'vp-btn-secondary'}`}
+                    onClick={() => { if (rec.action_taken !== 'pass') handleRecruiterPass(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    disabled={rec.action_taken === 'pass'}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <line x1="18" y1="6" x2="6" y2="18"/>
                       <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
-                    Pass
+                    {rec.action_taken === 'pass' ? 'Passed ✓' : 'Pass'}
                   </button>
                   <button
-                    className="vp-btn vp-btn-primary"
-                    onClick={() => { handleRecruiterLike(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    className={`vp-btn ${rec.action_taken === 'like' ? 'vp-btn-done-like' : 'vp-btn-primary'}`}
+                    onClick={() => { if (rec.action_taken !== 'like') handleRecruiterLike(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    disabled={rec.action_taken === 'like'}
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                     </svg>
-                    Like
+                    {rec.action_taken === 'like' ? 'Shortlisted ✓' : 'Like'}
                   </button>
                   <button
-                    className="vp-btn vp-btn-success"
-                    onClick={() => { handleAskToApply(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    className={`vp-btn ${rec.action_taken === 'ask_to_apply' ? 'vp-btn-done-invite' : 'vp-btn-success'}`}
+                    onClick={() => { if (rec.action_taken !== 'ask_to_apply') handleAskToApply(rec.candidate.id, rec.job_profile.id); setViewRecommendationProfile(null); }}
+                    disabled={rec.action_taken === 'ask_to_apply'}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                       <polyline points="22,6 12,13 2,6"/>
                     </svg>
-                    Ask to Apply
+                    {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
                   </button>
                 </div>
               </div>
@@ -2184,13 +2218,7 @@ const RecruiterDashboard: React.FC = () => {
         </div>
         
         <div className="navbar-right">
-          <button className="icon-btn" title="Notifications">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-            </svg>
-            <span className="badge-dot"></span>
-          </button>
+          <NotificationBellDrawer role="recruiter" />
           
           <div className="profile-dropdown">
             <button 

@@ -1450,6 +1450,108 @@ body {
   height: 16px;
 }
 
+/* ====== RECOMMENDATION STATUS STRIP & CHIPS ====== */
+.rec-status-strip {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.025);
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+
+.rec-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.rec-status-chip.liked {
+  background: linear-gradient(135deg, rgba(123, 94, 167, 0.12), rgba(148, 116, 196, 0.12));
+  color: #7B5EA7;
+  border: 1px solid rgba(123, 94, 167, 0.3);
+}
+
+.rec-status-chip.applied {
+  background: linear-gradient(135deg, rgba(39, 174, 96, 0.12), rgba(46, 204, 113, 0.12));
+  color: #219A52;
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.rec-status-chip.passed {
+  background: linear-gradient(135deg, rgba(108, 117, 125, 0.12), rgba(130, 140, 150, 0.12));
+  color: #6c757d;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Done-state for action buttons (liked / applied) */
+.action-btn.action-btn-done {
+  cursor: default;
+  opacity: 0.9;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.action-btn.action-btn-done:hover {
+  transform: none !important;
+}
+
+.action-btn.liked-done {
+  background: linear-gradient(135deg, #7B5EA7, #9474C4) !important;
+  color: white;
+}
+
+.action-btn.applied-done {
+  background: linear-gradient(135deg, #27AE60, #2ECC71) !important;
+  color: white;
+}
+
+.action-btn.passed-done {
+  background: linear-gradient(135deg, #6c757d, #868e96) !important;
+  color: white;
+}
+
+/* Recruiter drawer done-state buttons */
+.vp-btn-done-pass,
+.vp-btn-done-like,
+.vp-btn-done-invite {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.vp-btn-done-pass {
+  background: linear-gradient(135deg, #6c757d, #868e96) !important;
+  color: white;
+  border-color: transparent !important;
+}
+
+.vp-btn-done-like {
+  background: linear-gradient(135deg, #7B5EA7, #9474C4) !important;
+  color: white;
+  border-color: transparent !important;
+}
+
+.vp-btn-done-invite {
+  background: linear-gradient(135deg, #27AE60, #2ECC71) !important;
+  color: white;
+  border-color: transparent !important;
+}
+
+/* Candidate drawer done-state pass button */
+.cal-btn-done-pass {
+  background: linear-gradient(135deg, #6c757d, #868e96) !important;
+  color: white;
+  border-color: transparent !important;
+  cursor: default;
+  opacity: 0.9;
+}
+
 .candidate-card-modern.shortlisted {
   border-color: #C6B8E6;
   background: #fff;
@@ -3521,4 +3623,262 @@ body {
   width: 16px;
   height: 16px;
   stroke: #9ca3af;
+}
+
+/* ===========================
+   NOTIFICATION BELL + DRAWER
+   =========================== */
+
+.notif-bell-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Badge on bell */
+.notif-bell-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger, #e53e3e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* Drawer panel */
+.notif-drawer {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 360px;
+  max-height: 520px;
+  background: #fff;
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.16);
+  border: 1px solid #ede9f6;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: notifSlideIn 0.18s ease;
+}
+
+@keyframes notifSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* Header */
+.notif-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f0ebfa;
+}
+
+.notif-drawer-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #1a1a2e;
+}
+
+.notif-mark-all-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--primary-color, #7B5EA7);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.notif-mark-all-btn:hover {
+  background: #f0ebfa;
+}
+
+/* Filter tabs */
+.notif-filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px 6px;
+  border-bottom: 1px solid #f5f3fc;
+}
+
+.notif-tab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  padding: 5px 12px;
+  border-radius: 20px;
+  transition: background 0.15s, color 0.15s;
+}
+.notif-tab:hover {
+  background: #f5f3fc;
+  color: var(--primary-color, #7B5EA7);
+}
+.notif-tab.active {
+  background: var(--primary-color, #7B5EA7);
+  color: #fff;
+}
+.notif-tab-count {
+  background: #fff3;
+  color: inherit;
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.notif-tab.active .notif-tab-count {
+  background: rgba(255,255,255,0.25);
+}
+
+/* Scrollable list */
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 6px 0 8px;
+}
+
+/* Group header */
+.notif-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 8px 16px 4px;
+}
+
+/* Notification row */
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+  border-radius: 0;
+}
+.notif-row:hover {
+  background: #faf8fe;
+}
+.notif-row.unread {
+  background: #f5f0fc;
+}
+.notif-row.unread:hover {
+  background: #ede7f8;
+}
+
+/* Unread dot */
+.notif-unread-dot {
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  background: var(--primary-color, #7B5EA7);
+  margin-top: 5px;
+}
+
+/* Row content */
+.notif-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notif-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-row-msg {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.notif-row-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* Row action icons */
+.notif-row-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+.notif-row:hover .notif-row-actions {
+  opacity: 1;
+}
+
+.notif-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, color 0.12s;
+}
+.notif-action-btn:hover {
+  background: #ede7f8;
+  color: var(--primary-color, #7B5EA7);
+}
+.notif-action-btn.delete:hover {
+  background: #fee2e2;
+  color: var(--danger, #e53e3e);
+}
+
+/* Empty state */
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 8px;
+}
+.notif-empty-main {
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+.notif-empty-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.5;
 }
