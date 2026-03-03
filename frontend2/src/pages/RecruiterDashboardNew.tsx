@@ -1,19 +1,59 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiClient } from '../api/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/RecruiterApplications.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches'] as const;
+
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('recommendations');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── Tab: driven from ?tab= URL param ────────────────────────
+  const rawTab = searchParams.get('tab') || '';
+  const activeTab: string = (RECRUITER_TABS as readonly string[]).includes(rawTab)
+    ? rawTab
+    : 'recommendations';
+
+  const setActiveTab = useCallback(
+    (tab: string) => {
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  console.log('[STATE] Initial tab:', activeTab);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfilePage, setShowProfilePage] = useState(false);
-  console.log('[STATE] Initial tab:', activeTab);
   const [jobPostings, setJobPostings] = useState<any[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
+
+  // ── Selected job: driven from ?job= URL param ─────────────────
+  const [selectedJobId, setSelectedJobIdInternal] = useState<number | null>(() => {
+    const j = new URLSearchParams(window.location.search).get('job');
+    return j ? parseInt(j, 10) : null;
+  });
+
+  const setSelectedJobId = useCallback(
+    (id: number | null) => {
+      setSelectedJobIdInternal(id);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (id != null) next.set('job', String(id));
+          else next.delete('job');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
   
   const [recommendations, setRecommendations] = useState<any>(null);
   const [shortlist, setShortlist] = useState<any[]>([]);
@@ -25,11 +65,38 @@ const RecruiterDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [recCardIndex, setRecCardIndex] = useState(0);
 
-  // ── Applications Redesign State ──
+  // ── Applications filters: driven from URL params ───────────────
+  // ?search=  ?status=all|<jobId>  ?sort=newest|oldest
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
-  const [appSearch, setAppSearch] = useState('');
-  const [appJobFilter, setAppJobFilter] = useState<string>('all');
-  const [appSortOrder, setAppSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const appSearch   = searchParams.get('search') ?? '';
+  const appJobFilter = searchParams.get('status') ?? 'all';
+  const appSortOrder: 'newest' | 'oldest' =
+    searchParams.get('sort') === 'oldest' ? 'oldest' : 'newest';
+
+  const setAppSearch = useCallback(
+    (value: string) =>
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); if (value) next.set('search', value); else next.delete('search'); return next; },
+        { replace: true }
+      ),
+    [setSearchParams]
+  );
+  const setAppJobFilter = useCallback(
+    (value: string) =>
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('status', value); else next.delete('status'); return next; },
+        { replace: true }
+      ),
+    [setSearchParams]
+  );
+  const setAppSortOrder = useCallback(
+    (value: 'newest' | 'oldest') =>
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); if (value === 'oldest') next.set('sort', 'oldest'); else next.delete('sort'); return next; },
+        { replace: true }
+      ),
+    [setSearchParams]
+  );
   const [comboOpen, setComboOpen] = useState(false);
   const [comboSearch, setComboSearch] = useState('');
   const [comboFocusIdx, setComboFocusIdx] = useState(-1);
@@ -131,7 +198,14 @@ const RecruiterDashboard: React.FC = () => {
       const response = await apiClient.getJobPostings();
       console.log('[API SUCCESS] Job postings fetched, count:', response.data.length);
       setJobPostings(response.data);
-      if (response.data.length > 0 && !selectedJobId) {
+      if (response.data.length === 0) return;
+      const validIds: number[] = response.data.map((j: any) => j.id);
+      // Honour ?job= URL param; validate it exists, else fall back to first
+      const urlJobId = new URLSearchParams(window.location.search).get('job');
+      const parsedId = urlJobId ? parseInt(urlJobId, 10) : null;
+      if (parsedId && validIds.includes(parsedId)) {
+        setSelectedJobId(parsedId);
+      } else {
         console.log('[STATE] Auto-selecting first job:', response.data[0].id);
         setSelectedJobId(response.data[0].id);
       }
@@ -1409,7 +1483,7 @@ const RecruiterDashboard: React.FC = () => {
             )}
           </div>
 
-          <button className="ra-sort-btn" onClick={() => setAppSortOrder(o => o === 'newest' ? 'oldest' : 'newest')}>
+          <button className="ra-sort-btn" onClick={() => setAppSortOrder(appSortOrder === 'newest' ? 'oldest' : 'newest')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5h10M11 9h7M11 13h4"/><path d="M3 17l3 3 3-3"/><line x1="6" y1="18" x2="6" y2="7"/></svg>
             {appSortOrder === 'newest' ? 'Newest first' : 'Oldest first'}
           </button>
