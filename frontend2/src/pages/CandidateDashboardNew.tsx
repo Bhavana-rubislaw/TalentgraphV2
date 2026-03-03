@@ -3,6 +3,7 @@ import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/CandidateApplied.css';
+import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ const CandidateDashboard: React.FC = () => {
   // Keyboard navigation for recommendation cards
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (activeTab !== 'recommendations' || !recommendations?.length) return;
-    const total = recommendations.filter((r: any) => !r.already_swiped).length;
+    const total = recommendations.length;
     if (e.key === 'ArrowRight') {
       setRecCardIndex(prev => Math.min(prev + 1, total - 1));
     } else if (e.key === 'ArrowLeft') {
@@ -140,7 +141,12 @@ const CandidateDashboard: React.FC = () => {
     try {
       await apiClient.swipeLike(selectedProfileId, jobPostingId);
       console.log('[API SUCCESS] Swipe like recorded');
-      fetchRecommendations();
+      // Optimistically update so card stays visible with "Liked" status
+      setRecommendations(prev => prev.map(r =>
+        r.job_posting.id === jobPostingId
+          ? { ...r, already_swiped: true, swipe_action: 'like' }
+          : r
+      ));
       fetchMatches();
       fetchAppliedLiked();
     } catch (error) {
@@ -155,7 +161,12 @@ const CandidateDashboard: React.FC = () => {
     try {
       await apiClient.swipePass(selectedProfileId, jobPostingId);
       console.log('[API SUCCESS] Swipe pass recorded');
-      fetchRecommendations();
+      // Optimistically mark as passed — card stays visible with Passed badge
+      setRecommendations(prev => prev.map(r =>
+        r.job_posting.id === jobPostingId
+          ? { ...r, already_swiped: true, swipe_action: 'pass' }
+          : r
+      ));
     } catch (error) {
       console.error('[API ERROR] Failed to pass on job:', error);
       alert('Failed to pass on job');
@@ -169,9 +180,13 @@ const CandidateDashboard: React.FC = () => {
     try {
       await apiClient.applyToJob(jobPostingId, selectedProfileId);
       console.log('[API SUCCESS] Application submitted');
-      alert('Application submitted successfully!');
+      // Optimistically update so card stays with "Applied" status — no page alert
+      setRecommendations(prev => prev.map(r =>
+        r.job_posting.id === jobPostingId
+          ? { ...r, already_applied: true }
+          : r
+      ));
       fetchAppliedLiked();
-      fetchRecommendations();
       fetchAvailableJobs();
     } catch (error: any) {
       const msg = error?.response?.data?.detail;
@@ -377,23 +392,8 @@ const CandidateDashboard: React.FC = () => {
             <p className="empty-subtitle">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
           </div>
         ) : (() => {
-          const visibleRecs = recommendations.filter((r: any) => !r.already_swiped);
-          const actionedRecs = recommendations.filter((r: any) => r.already_swiped);
-          if (visibleRecs.length === 0) {
-            return (
-              <div className="empty-state-modern">
-                <div className="empty-icon-professional">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </div>
-                <h3 className="empty-title">All Caught Up!</h3>
-                <p className="empty-subtitle">
-                  You have reviewed all {actionedRecs.length} job{actionedRecs.length !== 1 ? 's' : ''}.
-                </p>
-              </div>
-            );
-          }
+          // Show ALL cards with their status badges (liked, applied, passed)
+          const visibleRecs = recommendations;
           const safeIndex = Math.min(recCardIndex, visibleRecs.length - 1);
           const rec = visibleRecs[safeIndex];
           return (
@@ -425,6 +425,29 @@ const CandidateDashboard: React.FC = () => {
               {/* Single Card */}
               <div className="carousel-card-wrapper" key={`rec-${rec.job_posting.id}`}>
                 <div className="job-card-modern carousel-card" onClick={() => setViewRecommendationJob(rec)} style={{ cursor: 'pointer' }}>
+                  {/* Status Strip: shows if candidate has already liked or applied */}
+                  {(rec.already_applied || rec.already_swiped) && (
+                    <div className="rec-status-strip">
+                      {rec.already_applied && (
+                        <span className="rec-status-chip applied">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                          Applied
+                        </span>
+                      )}
+                      {rec.already_swiped && rec.swipe_action === 'like' && (
+                        <span className="rec-status-chip liked">
+                          <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                          Liked
+                        </span>
+                      )}
+                      {rec.already_swiped && rec.swipe_action === 'pass' && (
+                        <span className="rec-status-chip passed">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                          Passed
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {/* Card Header */}
                   <div className="job-header-modern">
                     <div className="job-title-section">
@@ -507,33 +530,42 @@ const CandidateDashboard: React.FC = () => {
                   <div className="job-actions-modern">
                     <div className="action-buttons-grid">
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleSwipePass(rec.job_posting.id); setRecCardIndex(Math.min(safeIndex, visibleRecs.length - 2)); }}
-                        className="action-btn secondary"
+                        onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'pass')) handleSwipePass(rec.job_posting.id); }}
+                        className={`action-btn ${rec.already_swiped && rec.swipe_action === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
+                        disabled={rec.already_swiped && rec.swipe_action === 'pass'}
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <line x1="18" y1="6" x2="6" y2="18"/>
                           <line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
-                        Pass
+                        {rec.already_swiped && rec.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleSwipeLike(rec.job_posting.id); }}
-                        className="action-btn primary"
+                        onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'like')) handleSwipeLike(rec.job_posting.id); }}
+                        className={`action-btn ${rec.already_swiped && rec.swipe_action === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
+                        disabled={rec.already_swiped && rec.swipe_action === 'like'}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill={rec.already_swiped && rec.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
-                        Like
+                        {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleApply(rec.job_posting.id); }}
-                        className="action-btn success"
+                        onClick={(e) => { e.stopPropagation(); if (!rec.already_applied) handleApply(rec.job_posting.id); }}
+                        className={`action-btn ${rec.already_applied ? 'action-btn-done applied-done' : 'success'}`}
+                        disabled={rec.already_applied || applyingJobId === rec.job_posting.id}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                          <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                        Apply Now
+                        {rec.already_applied ? (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <polyline points="20 6 9 17 4 12"/>
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                          </svg>
+                        )}
+                        {rec.already_applied ? 'Applied ✓' : (applyingJobId === rec.job_posting.id ? 'Applying...' : 'Apply Now')}
                       </button>
                     </div>
                   </div>
@@ -702,37 +734,60 @@ const CandidateDashboard: React.FC = () => {
             <div className="cal-drawer-footer">
               <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
                 <button
-                  className="cal-btn cal-btn-secondary"
-                  onClick={() => { handleSwipePass(viewRecommendationJob.job_posting.id); setViewRecommendationJob(null); }}
+                  className={`cal-btn ${viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass' ? 'cal-btn-done-pass' : 'cal-btn-secondary'}`}
+                  onClick={() => {
+                    if (!(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass')) {
+                      handleSwipePass(viewRecommendationJob.job_posting.id);
+                    }
+                    setViewRecommendationJob(null);
+                  }}
                   style={{ flex: 1 }}
+                  disabled={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass'}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
-                  Pass
+                  {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
                 </button>
                 <button
                   className="cal-btn cal-btn-primary"
-                  onClick={() => { handleSwipeLike(viewRecommendationJob.job_posting.id); setViewRecommendationJob(null); }}
-                  style={{ flex: 1 }}
+                  onClick={() => {
+                    if (!(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like')) {
+                      handleSwipeLike(viewRecommendationJob.job_posting.id);
+                    }
+                    setViewRecommendationJob(null);
+                  }}
+                  style={{ flex: 1, ...(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? { opacity: 0.8 } : {}) }}
+                  disabled={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like'}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                  <svg viewBox="0 0 24 24" fill={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
-                  Like
+                  {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
                 </button>
                 <button
                   className="cal-btn cal-btn-primary"
-                  onClick={() => { handleApply(viewRecommendationJob.job_posting.id); setViewRecommendationJob(null); }}
-                  style={{ flex: 1, background: 'linear-gradient(135deg, #27AE60, #2ECC71)' }}
-                  disabled={!selectedProfileId}
+                  onClick={() => {
+                    if (!viewRecommendationJob.already_applied) {
+                      handleApply(viewRecommendationJob.job_posting.id);
+                    }
+                    setViewRecommendationJob(null);
+                  }}
+                  style={{ flex: 1, background: 'linear-gradient(135deg, #27AE60, #2ECC71)', ...(viewRecommendationJob.already_applied ? { opacity: 0.8 } : {}) }}
+                  disabled={!selectedProfileId || viewRecommendationJob.already_applied}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Apply Now
+                  {viewRecommendationJob.already_applied ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 16, height: 16 }}>
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  )}
+                  {viewRecommendationJob.already_applied ? 'Applied ✓' : 'Apply Now'}
                 </button>
               </div>
             </div>
@@ -1940,12 +1995,7 @@ const CandidateDashboard: React.FC = () => {
           <h1 className="page-title">Candidate Dashboard</h1>
         </div>
         <div className="navbar-right">
-          <button className="icon-btn notification-btn" title="Notifications">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
-            </svg>
-            {(invites.length + matches.length) > 0 && <span className="badge-dot"></span>}
-          </button>
+          <NotificationBellDrawer role="candidate" />
           <div className="profile-dropdown">
             <button 
               className="profile-avatar-btn" 

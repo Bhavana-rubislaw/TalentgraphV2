@@ -12,6 +12,7 @@ from app.database import get_session
 from app.models import Application, Candidate, Company, JobPosting, JobProfile, User
 from app.schemas import ApplicationRead
 from app.security import get_current_user
+from app.routers.notifications import push_notification
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -75,6 +76,22 @@ def apply_to_job(
     session.commit()
     session.refresh(application)
     
+    # Notify recruiter of the new application
+    company_obj = session.get(Company, job_posting.company_id)
+    if company_obj:
+        recruiter_user = session.exec(
+            select(User).where(User.id == company_obj.user_id)
+        ).first()
+        if recruiter_user:
+            push_notification(
+                session, recruiter_user.id,
+                title="📎 New Application Received!",
+                message=f"A candidate applied for {job_posting.job_title}",
+                event_type="application",
+                route="/recruiter-dashboard",
+                route_context={"tab": "applications", "applicationId": application.id, "jobPostingId": job_posting_id},
+            )
+    
     return {
         "message": "Application submitted successfully",
         "application_id": application.id,
@@ -137,6 +154,29 @@ def update_application_status(
     application.status = status
     session.add(application)
     session.commit()
+    
+    # Notify candidate of the status change
+    candidate_obj = session.get(Candidate, application.candidate_id)
+    if candidate_obj:
+        cand_user = session.exec(
+            select(User).where(User.id == candidate_obj.user_id)
+        ).first()
+        if cand_user:
+            status_labels = {
+                "reviewed": "Your application is being reviewed",
+                "shortlisted": "Great news! You've been shortlisted",
+                "rejected": "Unfortunately your application was not selected",
+                "offered": "🎉 Congratulations! You've received a job offer!",
+            }
+            msg = status_labels.get(status, f"Your application status changed to {status}")
+            push_notification(
+                session, cand_user.id,
+                title=f"Application Update — {job_posting.job_title}",
+                message=msg,
+                event_type="status_update",
+                route="/candidate-dashboard",
+                route_context={"tab": "applied", "applicationId": application.id, "jobPostingId": application.job_posting_id},
+            )
     
     return {
         "message": f"Application status updated to {status}",

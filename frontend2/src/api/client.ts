@@ -234,6 +234,18 @@ export const apiClient = {
   // Team Management
   getTeamMembers: () =>
     api.get('/dashboard/team-members'),
+
+  // Notifications
+  getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number }) =>
+    api.get('/notifications', { params }),
+  getUnreadCount: () =>
+    api.get('/notifications/unread-count'),
+  markNotificationRead: (id: number) =>
+    api.post(`/notifications/${id}/read`),
+  markAllNotificationsRead: () =>
+    api.post('/notifications/read-all'),
+  deleteNotification: (id: number) =>
+    api.delete(`/notifications/${id}`),
 };
 
 export default api;
