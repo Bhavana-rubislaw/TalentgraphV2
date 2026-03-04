@@ -199,8 +199,6 @@ const JobPreferencesPage: React.FC = () => {
   // Resume/cert IDs
   const certIds: number[] = (() => { try { return JSON.parse(form.certification_ids || '[]'); } catch { return []; } })();
   const setCertIds = (ids: number[]) => setForm(prev => ({ ...prev, certification_ids: JSON.stringify(ids) }));
-  const attachedIds: number[] = (() => { try { return JSON.parse(form.attached_resume_ids || '[]'); } catch { return []; } })();
-  const setAttachedIds = (ids: number[]) => setForm(prev => ({ ...prev, attached_resume_ids: JSON.stringify(ids) }));
 
   const addLocation = () => {
     if (!locInput.city.trim() || !locInput.state.trim()) return;
@@ -651,9 +649,7 @@ const JobPreferencesPage: React.FC = () => {
               <ResumeSelector
                 resumes={resumes}
                 primaryResumeId={form.primary_resume_id}
-                attachedResumeIds={attachedIds}
                 onPrimaryChange={(id) => setForm(prev => ({ ...prev, primary_resume_id: id }))}
-                onAttachedChange={setAttachedIds}
               />
             </Section>
 
@@ -714,7 +710,6 @@ const JobPreferencesPage: React.FC = () => {
           certifications={certifications}
           selectedCertIds={certIds}
           primaryResumeId={form.primary_resume_id}
-          attachedResumeIds={attachedIds}
         />
       </div>
     </div>

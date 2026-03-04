@@ -12,8 +12,8 @@ interface PreviewProps {
   resumes: ResumeOption[];
   certifications: CertOption[];
   selectedCertIds: number[];
+  /** The single resume attached to this job preference. */
   primaryResumeId: number | null;
-  attachedResumeIds: number[];
 }
 
 const LABELS: Record<string, Record<string, string>> = {
@@ -47,7 +47,7 @@ const fmtSalary = (min: number, max: number, currency: string) => {
 const RATING_LABELS = ['Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'];
 
 const LivePreview: React.FC<PreviewProps> = ({
-  formData, technicalSkills, softSkills, resumes, certifications, selectedCertIds, primaryResumeId, attachedResumeIds
+  formData, technicalSkills, softSkills, resumes, certifications, selectedCertIds, primaryResumeId
 }) => {
   const titles = (() => {
     try { return JSON.parse(formData.preferred_job_titles || '[]'); } catch { return []; }
@@ -61,7 +61,6 @@ const LivePreview: React.FC<PreviewProps> = ({
   const locations: LocationPref[] = formData.location_preferences || [];
 
   const primaryResume = resumes.find(r => r.id === primaryResumeId);
-  const attachedResumes = resumes.filter(r => attachedResumeIds.includes(r.id));
   const selectedCerts = certifications.filter(c => selectedCertIds.includes(c.id));
 
   const isEmpty = !formData.profile_name && titles.length === 0 && technicalSkills.length === 0;
@@ -233,12 +232,7 @@ const LivePreview: React.FC<PreviewProps> = ({
           {primaryResume && (
             <div className="cp-pv-section">
               <div className="cp-pv-label">Resume</div>
-              <div className="cp-pv-value">{primaryResume.filename} <span className="cp-pv-badge">Primary</span></div>
-              {attachedResumes.length > 0 && (
-                <div className="cp-pv-meta-row" style={{ marginTop: 4 }}>
-                  {attachedResumes.map(r => <span key={r.id}>{r.filename}</span>)}
-                </div>
-              )}
+              <div className="cp-pv-value">{primaryResume.filename}</div>
             </div>
           )}
 
