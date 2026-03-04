@@ -8,10 +8,9 @@ export interface ResumeOption {
 
 interface ResumeSelectorProps {
   resumes: ResumeOption[];
+  /** ID of the single resume to attach to this job preference (max 1). */
   primaryResumeId: number | null;
-  attachedResumeIds: number[];
   onPrimaryChange: (id: number | null) => void;
-  onAttachedChange: (ids: number[]) => void;
 }
 
 const ResumeSelector: React.FC<ResumeSelectorProps> = ({
