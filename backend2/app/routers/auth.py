@@ -397,20 +397,32 @@ def company_login(credentials: CompanyLogin, session: Session = Depends(get_sess
 @router.get("/me", response_model=dict)
 def get_current_user_info(current_user: dict = Depends(get_current_user), session: Session = Depends(get_session)):
     """Get current user info from token"""
-    logger.info(f"[AUTH] Get current user info - Email: {current_user.get('sub')}, Role: {current_user.get('role')}")
+    logger.info(f"[AUTH] Get current user info - sub: {current_user.get('sub')}, JWT role: {current_user.get('role')}")
     user_id = current_user.get("user_id")
     user = session.get(User, user_id)
-    
+
+    # If the user no longer exists in the DB (e.g. after a DB reset), treat the
+    # token as expired so the frontend clears localStorage and redirects to login.
+    if not user:
+        logger.warning(f"[AUTH] /me: user_id {user_id} not found in DB – invalidating token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Always use the DB as source-of-truth for role so the frontend reflects any
+    # role changes and doesn't show the wrong dashboard.
     result = {
-        "email": current_user.get("sub"),
-        "user_id": user_id,
-        "role": current_user.get("role"),
-        "full_name": user.full_name if user else "",
+        "email": user.email,
+        "user_id": user.id,
+        "role": user.role,        # DB role – not the JWT claim
+        "full_name": user.full_name,
     }
-    
+
     # If company user, include company info
-    if user and user.role != UserRole.CANDIDATE:
-        company = session.exec(select(Company).where(Company.user_id == user_id)).first()
+    if user.role != UserRole.CANDIDATE:
+        company = session.exec(select(Company).where(Company.user_id == user.id)).first()
         result["company_name"] = company.company_name if company else ""
-    
+
     return result

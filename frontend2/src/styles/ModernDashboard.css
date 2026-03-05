@@ -3882,3 +3882,260 @@ body {
   max-width: 260px;
   line-height: 1.5;
 }
+
+/* ============================================
+   CANDIDATE REC FILTER TOOLBAR
+   Modern pill-style filter card
+   ============================================ */
+
+.rec-filter-toolbar {
+  background: #ffffff;
+  border: 1px solid var(--border-light, #E2E4EC);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.07), 0 1px 3px rgba(0,0,0,0.04);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.rec-filter-toolbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* -- Individual filter pill -- */
+.rec-filter-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px 0 13px;
+  height: 42px;
+  background: var(--bg-primary, #F5F6FB);
+  border: 1.5px solid var(--border-light, #E2E4EC);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.rec-filter-pill:hover {
+  border-color: #7B5EA7;
+  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.10);
+  background: #faf9ff;
+}
+
+/* Focus ring on the pill itself (not focus-within) */
+.rec-filter-pill:focus {
+  border-color: #7B5EA7;
+  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.18);
+  outline: none;
+}
+
+/* Active (filter value != default) */
+.rec-filter-pill--active {
+  background: #f0ecfa;
+  border-color: #7B5EA7;
+}
+
+/* Open state */
+.rec-filter-pill--open {
+  border-color: #7B5EA7;
+  background: #faf9ff;
+  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.13);
+}
+
+/* Icon wrapper */
+.rec-filter-pill__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.rec-filter-pill__icon-wrap svg {
+  width: 17px;
+  height: 17px;
+  stroke: #8E93A6;
+  transition: stroke 0.2s ease;
+}
+
+.rec-filter-pill--active .rec-filter-pill__icon-wrap svg {
+  stroke: #7B5EA7;
+}
+
+/* Label text */
+.rec-filter-pill__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary, #44495C);
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  pointer-events: none;
+}
+
+.rec-filter-pill--active .rec-filter-pill__label {
+  color: #5a3d8a;
+  font-weight: 600;
+}
+
+/* Chevron icon */
+.rec-filter-pill__chevron {
+  width: 16px;
+  height: 16px;
+  fill: #8E93A6;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: fill 0.2s ease, transform 0.2s ease;
+}
+
+.rec-filter-pill--open .rec-filter-pill__chevron,
+.rec-filter-pill__chevron--open {
+  fill: #7B5EA7;
+  transform: rotate(180deg);
+}
+
+/* ── Custom dropdown menu ── */
+.rec-filter-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  z-index: 1200;
+  min-width: 190px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(123, 94, 167, 0.10);
+  border: 1px solid rgba(226, 228, 236, 0.8);
+  list-style: none;
+  padding: 6px;
+  animation: rfMenuIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top left;
+}
+
+@keyframes rfMenuIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+
+/* Thin custom scrollbar */
+.rec-filter-menu::-webkit-scrollbar { width: 4px; }
+.rec-filter-menu::-webkit-scrollbar-track { background: transparent; }
+.rec-filter-menu::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+.rec-filter-menu__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary, #1A1D2E);
+  transition: background 0.1s ease;
+}
+
+.rec-filter-menu__option--focused {
+  background: #f5f3ff;
+}
+
+.rec-filter-menu__option--selected {
+  background: #ede8f8;
+  color: #5a3d8a;
+  font-weight: 600;
+}
+
+.rec-filter-menu__option--selected.rec-filter-menu__option--focused {
+  background: #e0d8f5;
+}
+
+.rec-filter-menu__option-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-filter-menu__checkmark {
+  width: 16px;
+  height: 16px;
+  fill: #7B5EA7;
+  flex-shrink: 0;
+}
+
+/* -- Divider between pills and actions -- */
+.rec-filter-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border-light, #E2E4EC);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* -- Clear Filters button -- */
+.rec-filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #7B5EA7;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+  white-space: nowrap;
+}
+
+.rec-filter-clear svg {
+  width: 13px;
+  height: 13px;
+  stroke: #7B5EA7;
+  flex-shrink: 0;
+}
+
+.rec-filter-clear:hover {
+  background: #f0ecfa;
+  color: #5a3d8a;
+}
+
+.rec-filter-clear:active {
+  background: #e6e0f5;
+}
+
+/* -- Result count -- */
+.rec-filter-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-tertiary, #8E93A6);
+  white-space: nowrap;
+}
+
+.rec-filter-count strong {
+  color: var(--text-secondary, #44495C);
+  font-weight: 600;
+}
+
+/* -- Responsive: stack on narrow viewports -- */
+@media (max-width: 600px) {
+  .rec-filter-toolbar__inner {
+    gap: 8px;
+  }
+
+  .rec-filter-pill {
+    height: 38px;
+    padding: 0 12px 0 10px;
+  }
+
+  .rec-filter-count {
+    margin-left: 0;
+    width: 100%;
+  }
+}

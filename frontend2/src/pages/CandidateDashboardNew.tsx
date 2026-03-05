@@ -7,6 +7,131 @@ import NotificationBellDrawer from '../components/notifications/NotificationBell
 
 const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches'] as const;
 
+// ── FilterPill: fully custom accessible dropdown ──────────────────────────────
+interface FilterPillOption {
+  value: string | number;
+  label: string;
+}
+interface FilterPillProps {
+  id: string;
+  icon: React.ReactNode;
+  options: FilterPillOption[];
+  value: string | number;
+  onChange: (val: string | number) => void;
+  ariaLabel?: string;
+}
+const FilterPill: React.FC<FilterPillProps> = ({ id, icon, options, value, onChange, ariaLabel }) => {
+  const [open, setOpen] = React.useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const menuRef = React.useRef<HTMLUListElement>(null);
+  const [focusedIdx, setFocusedIdx] = React.useState(0);
+
+  const selectedOption = options.find(o => o.value === value) ?? options[0];
+  const isActive = value !== options[0]?.value;
+
+  // Close on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Sync focused index to current value when opening
+  React.useEffect(() => {
+    if (open) {
+      const idx = options.findIndex(o => o.value === value);
+      setFocusedIdx(idx >= 0 ? idx : 0);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll focused item into view
+  React.useEffect(() => {
+    if (open && menuRef.current && focusedIdx >= 0) {
+      const item = menuRef.current.children[focusedIdx] as HTMLElement;
+      item?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusedIdx, open]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!open) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); }
+      return;
+    }
+    if      (e.key === 'Escape')    { setOpen(false); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIdx(i => Math.min(i + 1, options.length - 1)); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); setFocusedIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onChange(options[focusedIdx].value);
+      setOpen(false);
+    }
+    else if (e.key === 'Tab') { setOpen(false); }
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      id={id}
+      className={[
+        'rec-filter-pill',
+        isActive ? 'rec-filter-pill--active' : '',
+        open    ? 'rec-filter-pill--open'   : '',
+      ].filter(Boolean).join(' ')}
+      role="combobox"
+      aria-haspopup="listbox"
+      aria-expanded={open}
+      aria-label={ariaLabel}
+      tabIndex={0}
+      onClick={() => setOpen(o => !o)}
+      onKeyDown={handleKeyDown}
+    >
+      <span className="rec-filter-pill__icon-wrap" aria-hidden="true">{icon}</span>
+      <span className="rec-filter-pill__label">{selectedOption?.label}</span>
+      <svg
+        className={`rec-filter-pill__chevron${open ? ' rec-filter-pill__chevron--open' : ''}`}
+        viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+      >
+        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+      </svg>
+      {open && (
+        <ul
+          ref={menuRef}
+          className="rec-filter-menu"
+          role="listbox"
+          aria-label={ariaLabel}
+        >
+          {options.map((opt, i) => (
+            <li
+              key={String(opt.value)}
+              className={[
+                'rec-filter-menu__option',
+                opt.value === value ? 'rec-filter-menu__option--selected'  : '',
+                i === focusedIdx    ? 'rec-filter-menu__option--focused'   : '',
+              ].filter(Boolean).join(' ')}
+              role="option"
+              aria-selected={opt.value === value}
+              onMouseEnter={() => setFocusedIdx(i)}
+              onMouseDown={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
+            >
+              <span className="rec-filter-menu__option-text">{opt.label}</span>
+              {opt.value === value && (
+                <svg className="rec-filter-menu__checkmark" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                </svg>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -67,6 +192,14 @@ const CandidateDashboard: React.FC = () => {
   const [viewAvailableJob, setViewAvailableJob] = useState<any | null>(null);
   const [viewMatchJob, setViewMatchJob] = useState<any | null>(null);
   const [viewRecommendationJob, setViewRecommendationJob] = useState<any | null>(null);
+
+  // ── Candidate filter states ──────────────────────────────────
+  const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
+  const [candidateRecWorktypeFilter, setCandidateRecWorktypeFilter] = useState<string>('all');
+  const [candidateRecMinMatch, setCandidateRecMinMatch] = useState<number>(0);
+  const [appliedLikedRoleFilter, setAppliedLikedRoleFilter] = useState<string>('all');
+  const [appliedLikedStatusFilter, setAppliedLikedStatusFilter] = useState<string>('all');
+  const [appliedLikedSort, setAppliedLikedSort] = useState<'newest' | 'oldest'>('newest');
 
   useEffect(() => {
     fetchUserProfile();
@@ -450,11 +583,166 @@ const CandidateDashboard: React.FC = () => {
             <p className="empty-subtitle">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
           </div>
         ) : (() => {
+          // Build unique filter options
+          const recRoleOptions: string[] = Array.from(
+            new Set(
+              recommendations
+                .map((r: any): string =>
+                  (r.job_posting?.job_role as string | undefined) ||
+                  (r.job_posting?.job_title as string | undefined) ||
+                  ''
+                )
+                .filter((s: string) => s.length > 0)
+            )
+          ).sort();
+
+          const recWorktypeOptions: string[] = Array.from(
+            new Set(
+              recommendations
+                .map((r: any): string =>
+                  (r.job_posting?.worktype as string | undefined) ||
+                  (r.job_posting?.work_type as string | undefined) ||
+                  ''
+                )
+                .filter((s: string) => s.length > 0)
+            )
+          ).sort();
+
+          // Filter logic
+          const filteredRecs = recommendations.filter((r: any) => {
+            const role =
+              (r.job_posting?.job_role as string | undefined) ||
+              (r.job_posting?.job_title as string | undefined) ||
+              '';
+            if (candidateRecRoleFilter !== 'all' && role !== candidateRecRoleFilter) return false;
+            const worktype =
+              (r.job_posting?.worktype as string | undefined) ||
+              (r.job_posting?.work_type as string | undefined) ||
+              '';
+            if (candidateRecWorktypeFilter !== 'all' && worktype !== candidateRecWorktypeFilter) return false;
+            const matchScore = Number(r.match_percentage ?? 0);
+            if (matchScore < candidateRecMinMatch) return false;
+            return true;
+          });
+
+          const hasActiveFilters =
+            candidateRecRoleFilter !== 'all' ||
+            candidateRecWorktypeFilter !== 'all' ||
+            candidateRecMinMatch > 0;
+
           // Show ALL cards with their status badges (liked, applied, passed)
-          const visibleRecs = recommendations;
-          const safeIndex = Math.min(recCardIndex, visibleRecs.length - 1);
-          const rec = visibleRecs[safeIndex];
+          const visibleRecs = filteredRecs;
+          const safeIndex = Math.min(recCardIndex, visibleRecs.length > 0 ? visibleRecs.length - 1 : 0);
+
           return (
+            <div>
+              {/* ── Modern Filter Toolbar Card ── */}
+              <div className="rec-filter-toolbar">
+                <div className="rec-filter-toolbar__inner">
+
+                  {/* Role dropdown */}
+                  {recRoleOptions.length > 0 && (
+                    <FilterPill
+                      id="cand-rec-role"
+                      ariaLabel="Filter by role"
+                      icon={
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                          <rect x="2" y="7" width="16" height="11" rx="2"/>
+                          <path d="M7 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/>
+                          <line x1="2" y1="12" x2="18" y2="12"/>
+                        </svg>
+                      }
+                      options={[
+                        { value: 'all', label: 'All Roles' },
+                        ...recRoleOptions.map(r => ({ value: r, label: r })),
+                      ]}
+                      value={candidateRecRoleFilter}
+                      onChange={(v) => { setCandidateRecRoleFilter(v as string); setRecCardIndex(0); }}
+                    />
+                  )}
+
+                  {/* Work Type dropdown */}
+                  {recWorktypeOptions.length > 0 && (
+                    <FilterPill
+                      id="cand-rec-worktype"
+                      ariaLabel="Filter by work type"
+                      icon={
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                          <path d="M10 2a5 5 0 015 5c0 4-5 11-5 11S5 11 5 7a5 5 0 015-5z"/>
+                          <circle cx="10" cy="7" r="1.5"/>
+                        </svg>
+                      }
+                      options={[
+                        { value: 'all', label: 'All Work Types' },
+                        ...recWorktypeOptions.map(wt => ({ value: wt, label: wt })),
+                      ]}
+                      value={candidateRecWorktypeFilter}
+                      onChange={(v) => { setCandidateRecWorktypeFilter(v as string); setRecCardIndex(0); }}
+                    />
+                  )}
+
+                  {/* Min Match dropdown */}
+                  <FilterPill
+                    id="cand-rec-match"
+                    ariaLabel="Minimum match percentage"
+                    icon={
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                        <circle cx="10" cy="10" r="7"/>
+                        <circle cx="10" cy="10" r="3"/>
+                        <line x1="10" y1="3" x2="10" y2="1"/>
+                        <line x1="10" y1="19" x2="10" y2="17"/>
+                      </svg>
+                    }
+                    options={[
+                      { value: 0,  label: 'Min Match: Any' },
+                      { value: 50, label: '50%+' },
+                      { value: 60, label: '60%+' },
+                      { value: 70, label: '70%+' },
+                      { value: 80, label: '80%+' },
+                      { value: 90, label: '90%+' },
+                    ]}
+                    value={candidateRecMinMatch}
+                    onChange={(v) => { setCandidateRecMinMatch(v as number); setRecCardIndex(0); }}
+                  />
+
+                  {/* Divider */}
+                  {hasActiveFilters && <div className="rec-filter-divider" aria-hidden="true"/>}
+
+                  {/* Clear Filters */}
+                  {hasActiveFilters && (
+                    <button
+                      className="rec-filter-clear"
+                      onClick={() => {
+                        setCandidateRecRoleFilter('all');
+                        setCandidateRecWorktypeFilter('all');
+                        setCandidateRecMinMatch(0);
+                        setRecCardIndex(0);
+                      }}
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <line x1="5" y1="5" x2="15" y2="15"/>
+                        <line x1="15" y1="5" x2="5" y2="15"/>
+                      </svg>
+                      Clear filters
+                    </button>
+                  )}
+
+                  {/* Result count — pushed to the right */}
+                  <span className="rec-filter-count" aria-live="polite">
+                    Showing <strong>{visibleRecs.length}</strong> of <strong>{recommendations.length}</strong> jobs
+                  </span>
+
+                </div>
+              </div>
+
+              {visibleRecs.length === 0 ? (
+                <div className="empty-state-modern">
+                  <h3 className="empty-title">No jobs match your filters</h3>
+                  <p className="empty-subtitle">Try adjusting or clearing the filters above.</p>
+                </div>
+              ) : (() => {
+                const rec = visibleRecs[safeIndex];
+                return (
             <div className="carousel-container">
               {/* Navigation Header */}
               <div className="carousel-nav-header">
@@ -634,6 +922,9 @@ const CandidateDashboard: React.FC = () => {
               <div className="carousel-keyboard-hint">
                 Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to browse
               </div>
+            </div>
+                );
+              })()}
             </div>
           );
         })()}
@@ -1380,7 +1671,60 @@ const CandidateDashboard: React.FC = () => {
 
   const renderAppliedLiked = () => {
     const { applied_jobs, liked_jobs } = appliedLiked;
-    const items = jobListTab === 'applied' ? applied_jobs : liked_jobs;
+    const rawItems = jobListTab === 'applied' ? applied_jobs : liked_jobs;
+
+    // Derive unique role options from both lists
+    const alRoleOptions: string[] = Array.from<string>(new Set<string>(
+        rawItems
+          .map((job: any): string =>
+            (job.job_role as string | undefined) ||
+            (job.job_title as string | undefined) ||
+            ''
+          )
+          .filter((s: string) => s.length > 0)
+      )).sort();
+
+    // Derive unique status options from applied list
+    const alStatusOptions: string[] = Array.from<string>(new Set<string>(
+        (applied_jobs as any[])
+          .map((job: any): string => (job.status as string | undefined) || '')
+          .filter((s: string) => s.length > 0)
+      )).sort();
+
+    // Filter logic
+    let filteredItems = rawItems.filter((job: any) => {
+      const role =
+        (job.job_role as string | undefined) ||
+        (job.job_title as string | undefined) ||
+        '';
+      if (appliedLikedRoleFilter !== 'all' && role !== appliedLikedRoleFilter) return false;
+      if (jobListTab === 'applied' && appliedLikedStatusFilter !== 'all') {
+        const status = (job.status as string | undefined) || '';
+        if (status !== appliedLikedStatusFilter) return false;
+      }
+      return true;
+    });
+
+    // Sorting
+    filteredItems = [...filteredItems].sort((a: any, b: any) => {
+      const getTime = (item: any) => {
+        const ts =
+          item.applied_at ||
+          item.liked_at ||
+          item.created_at ||
+          item.timestamp ||
+          '';
+        return ts ? new Date(ts).getTime() : 0;
+      };
+      return appliedLikedSort === 'newest'
+        ? getTime(b) - getTime(a)
+        : getTime(a) - getTime(b);
+    });
+
+    const hasActiveFilters =
+      appliedLikedRoleFilter !== 'all' ||
+      (jobListTab === 'applied' && appliedLikedStatusFilter !== 'all') ||
+      appliedLikedSort !== 'newest';
 
     const formatSalary = (min: number | null, max: number | null, currency: string | null) => {
       if (!min && !max) return null;
@@ -1695,8 +2039,73 @@ const CandidateDashboard: React.FC = () => {
           </button>
         </div>
 
+        {/* Applied/Liked Filters */}
+        {rawItems.length > 0 && (
+          <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '12px 0', flexWrap: 'wrap' }}>
+            {alRoleOptions.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label htmlFor="al-role-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Role</label>
+                <select
+                  id="al-role-filter"
+                  className="job-select-modern"
+                  style={{ minWidth: '150px', padding: '6px 10px', fontSize: '13px' }}
+                  value={appliedLikedRoleFilter}
+                  onChange={(e) => setAppliedLikedRoleFilter(e.target.value)}
+                >
+                  <option value="all">All Roles</option>
+                  {alRoleOptions.map(role => <option key={role} value={role}>{role}</option>)}
+                </select>
+              </div>
+            )}
+            {jobListTab === 'applied' && alStatusOptions.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label htmlFor="al-status-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Status</label>
+                <select
+                  id="al-status-filter"
+                  className="job-select-modern"
+                  style={{ minWidth: '140px', padding: '6px 10px', fontSize: '13px' }}
+                  value={appliedLikedStatusFilter}
+                  onChange={(e) => setAppliedLikedStatusFilter(e.target.value)}
+                >
+                  <option value="all">All Statuses</option>
+                  {alStatusOptions.map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label htmlFor="al-sort" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Sort</label>
+              <select
+                id="al-sort"
+                className="job-select-modern"
+                style={{ minWidth: '120px', padding: '6px 10px', fontSize: '13px' }}
+                value={appliedLikedSort}
+                onChange={(e) => setAppliedLikedSort(e.target.value as 'newest' | 'oldest')}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                className="action-btn secondary"
+                style={{ padding: '6px 12px', fontSize: '12px' }}
+                onClick={() => {
+                  setAppliedLikedRoleFilter('all');
+                  setAppliedLikedStatusFilter('all');
+                  setAppliedLikedSort('newest');
+                }}
+              >
+                Clear filters
+              </button>
+            )}
+            <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginLeft: 'auto' }}>
+              Showing {filteredItems.length} of {rawItems.length}
+            </span>
+          </div>
+        )}
+
         {/* List or Empty */}
-        {items.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="cal-empty">
             <div className="cal-empty-icon">
               {jobListTab === 'liked' ? (
@@ -1706,12 +2115,16 @@ const CandidateDashboard: React.FC = () => {
               )}
             </div>
             <h3 className="cal-empty-title">
-              {jobListTab === 'liked' ? 'No liked jobs yet' : 'No applications yet'}
+              {rawItems.length === 0
+                ? (jobListTab === 'liked' ? 'No liked jobs yet' : 'No applications yet')
+                : 'No results match your filters'}
             </h3>
             <p className="cal-empty-subtitle">
-              {jobListTab === 'liked'
-                ? 'Swipe right on recommended jobs to save them here for quick reference.'
-                : 'Start applying to positions from your liked jobs or browse new opportunities.'}
+              {rawItems.length === 0
+                ? (jobListTab === 'liked'
+                    ? 'Swipe right on recommended jobs to save them here for quick reference.'
+                    : 'Start applying to positions from your liked jobs or browse new opportunities.')
+                : 'Try adjusting or clearing the filters above.'}
             </p>
             <button className="cal-empty-link" onClick={() => setActiveTab('recommendations')}>
               Browse Jobs
@@ -1719,7 +2132,7 @@ const CandidateDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="cal-list">
-            {items.map((job: any) => renderCard(job, jobListTab))}
+            {filteredItems.map((job: any) => renderCard(job, jobListTab))}
           </div>
         )}
 

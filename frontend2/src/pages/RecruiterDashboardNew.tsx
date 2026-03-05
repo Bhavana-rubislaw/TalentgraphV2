@@ -110,6 +110,10 @@ const RecruiterDashboard: React.FC = () => {
   const [emailTemplate, setEmailTemplate] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
+  // ── Filter states ─────────────────────────────────────────────
+  const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
+  const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
+
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
@@ -391,6 +395,49 @@ const RecruiterDashboard: React.FC = () => {
           </select>
         </div>
 
+        {/* Recommendations Role Filter */}
+        {(() => {
+          const recRoleOptions: string[] = Array.from<string>(new Set<string>(
+              recommendations.recommendations
+                .map((r: any): string =>
+                  (r.job_profile?.job_role as string | undefined) ||
+                  (r.job_posting?.job_title as string | undefined) ||
+                  (r.role as string | undefined) ||
+                  ''
+                )
+                .filter((s: string) => s.length > 0)
+            )).sort();
+          if (recRoleOptions.length === 0) return null;
+          return (
+            <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <label htmlFor="rec-role-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Role</label>
+                <select
+                  id="rec-role-filter"
+                  className="job-select-modern"
+                  style={{ minWidth: '160px', padding: '6px 10px', fontSize: '13px' }}
+                  value={recommendationRoleFilter}
+                  onChange={(e) => { setRecommendationRoleFilter(e.target.value); setRecCardIndex(0); }}
+                >
+                  <option value="all">All Roles</option>
+                  {recRoleOptions.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
+              {recommendationRoleFilter !== 'all' && (
+                <button
+                  className="action-btn secondary"
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  onClick={() => { setRecommendationRoleFilter('all'); setRecCardIndex(0); }}
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Enhanced Analytics Panel */}
         <div className="analytics-panel-modern">
           <div className="analytics-header">
@@ -453,11 +500,35 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         ) : (() => {
           // Show ALL cards with their status badges (shortlisted, passed, invited)
-          const visibleRecs = recommendations.recommendations;
+          const allRecs = recommendations.recommendations;
+          const visibleRecs = recommendationRoleFilter === 'all'
+            ? allRecs
+            : allRecs.filter((r: any) => {
+                const role =
+                  (r.job_profile?.job_role as string | undefined) ||
+                  (r.job_posting?.job_title as string | undefined) ||
+                  (r.role as string | undefined) ||
+                  '';
+                return role === recommendationRoleFilter;
+              });
+          if (visibleRecs.length === 0) {
+            return (
+              <div className="empty-state-modern" style={{ marginTop: '24px' }}>
+                <h3 className="empty-title">No candidates match the selected role</h3>
+                <p className="empty-subtitle">Try selecting a different role or clear the filter.</p>
+              </div>
+            );
+          }
           const safeIndex = Math.min(recCardIndex, visibleRecs.length - 1);
           const rec = visibleRecs[safeIndex];
           return (
             <div className="carousel-container">
+              {/* Showing count */}
+              {recommendationRoleFilter !== 'all' && (
+                <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginBottom: '8px' }}>
+                  Showing {visibleRecs.length} of {allRecs.length} candidates
+                </div>
+              )}
               {/* Navigation Header */}
               <div className="carousel-nav-header">
                 <button
@@ -853,10 +924,66 @@ const RecruiterDashboard: React.FC = () => {
       );
     }
 
+    // Derive unique role options from shortlist data
+    const shortlistRoleOptions: string[] = Array.from(
+      new Set(
+        shortlist
+          .map((item: any): string =>
+            (item.job_profile?.job_role as string | undefined) ||
+            (item.job_profile?.profile_name as string | undefined) ||
+            (item.job_posting?.job_title as string | undefined) ||
+            ''
+          )
+          .filter((s: string) => s.length > 0)
+      )
+    ).sort();
+
+    const filteredShortlist = shortlistRoleFilter === 'all'
+      ? shortlist
+      : shortlist.filter((item: any) => {
+          const role =
+            (item.job_profile?.job_role as string | undefined) ||
+            (item.job_profile?.profile_name as string | undefined) ||
+            (item.job_posting?.job_title as string | undefined) ||
+            '';
+          return role === shortlistRoleFilter;
+        });
+
     return (
       <>
+      {/* Shortlist Filters */}
+      <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <label htmlFor="shortlist-role-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Role</label>
+          <select
+            id="shortlist-role-filter"
+            className="job-select-modern"
+            style={{ minWidth: '160px', padding: '6px 10px', fontSize: '13px' }}
+            value={shortlistRoleFilter}
+            onChange={(e) => setShortlistRoleFilter(e.target.value)}
+          >
+            <option value="all">All Roles</option>
+            {shortlistRoleOptions.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+        </div>
+        {shortlistRoleFilter !== 'all' && (
+          <button
+            className="action-btn secondary"
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+            onClick={() => setShortlistRoleFilter('all')}
+          >
+            Clear filters
+          </button>
+        )}
+        <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginLeft: 'auto' }}>
+          Showing {filteredShortlist.length} of {shortlist.length}
+        </span>
+      </div>
+
       <div className="candidates-grid-modern">
-        {shortlist.map((item: any, index) => (
+        {filteredShortlist.map((item: any, index) => (
           <div key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} className="candidate-card-modern shortlisted">
             <div className="candidate-header-modern">
               <div className="candidate-avatar-modern">

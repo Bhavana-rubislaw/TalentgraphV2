@@ -536,7 +536,9 @@ def get_recruiter_recommendations(
 ):
     """Get recommended candidates for a specific job posting with match analytics"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user or user.role == UserRole.CANDIDATE:
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
         raise HTTPException(status_code=403, detail="Recruiters only")
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
@@ -667,7 +669,9 @@ def get_recruiter_shortlist(
 ):
     """Get shortlisted candidates (liked or asked to apply)"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user or user.role == UserRole.CANDIDATE:
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
         raise HTTPException(status_code=403, detail="Recruiters only")
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
@@ -812,7 +816,9 @@ def get_recruiter_applications(
 ):
     """Get all applications to recruiter's job postings"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user or user.role == UserRole.CANDIDATE:
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
         raise HTTPException(status_code=403, detail="Recruiters only")
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
@@ -906,7 +912,9 @@ def get_recruiter_matches(
 ):
     """Get mutual matches for recruiter"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user or user.role == UserRole.CANDIDATE:
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
         raise HTTPException(status_code=403, detail="Recruiters only")
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
