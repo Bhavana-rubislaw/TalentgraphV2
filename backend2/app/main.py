@@ -57,6 +57,8 @@ origins = [
     "http://127.0.0.1:3002",
     "http://localhost:3003",
     "http://127.0.0.1:3003",
+    "http://localhost:5173",  # Vite default port
+    "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
@@ -91,7 +93,7 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed
+from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed, chat
 
 logger.info("[STARTUP] Registering routers...")
 app.include_router(auth.router)
@@ -105,6 +107,7 @@ app.include_router(dashboard.router)
 app.include_router(applications.router)
 app.include_router(notifications.router)
 app.include_router(activity_feed.router)
+app.include_router(chat.router)
 logger.info("[STARTUP] All routers registered successfully")
 
 

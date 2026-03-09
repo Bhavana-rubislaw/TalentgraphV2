@@ -5,6 +5,7 @@ Candidate-centric talent marketplace with enhanced job profiles and postings
 
 from typing import Optional, List
 from datetime import datetime
+from sqlalchemy import UniqueConstraint
 from sqlmodel import SQLModel, Field, Relationship
 from enum import Enum
 
@@ -55,6 +56,7 @@ class User(SQLModel, table=True):
     password_hash: str
     role: UserRole = Field(default=UserRole.CANDIDATE)
     is_active: bool = Field(default=True)
+    last_seen_at: Optional[datetime] = Field(default=None)  # presence tracking
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -383,3 +385,42 @@ class ActivityEvent(SQLModel, table=True):
 
     # Deduplication (unique constraint enforced at DB level via migration)
     dedupe_key: Optional[str] = Field(default=None)
+
+
+# ============ CHAT MODELS ============
+
+class Conversation(SQLModel, table=True):
+    """One conversation per (candidate, recruiter-company, job_posting)."""
+    __tablename__ = "conversation"
+    __table_args__ = (
+        UniqueConstraint("company_id", "candidate_id", "job_posting_id",
+                         name="uq_conversation_company_candidate_job"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    candidate_id: int = Field(foreign_key="candidate.id", index=True)
+    job_posting_id: int = Field(foreign_key="jobposting.id", index=True)
+    created_by_user_id: int = Field(foreign_key="user.id")
+    last_message_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    messages: List["Message"] = Relationship(back_populates="conversation")
+
+
+class Message(SQLModel, table=True):
+    """A single chat message inside a Conversation."""
+    __tablename__ = "message"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="conversation.id", index=True)
+    sender_user_id: int = Field(foreign_key="user.id", index=True)
+    sender_role: Optional[str] = Field(default=None)  # "candidate", "recruiter", "hr", "admin"
+    text: str
+    is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)  # Timestamp when message was read
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    conversation: Conversation = Relationship(back_populates="messages")

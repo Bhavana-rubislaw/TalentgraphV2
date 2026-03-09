@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import PageContainer from '../components/PageContainer';
 import { apiClient } from '../api/client';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/Form.css';
 
 const SignupPage: React.FC = () => {
   console.log('[COMPONENT MOUNT] SignupPage loaded');
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   
@@ -75,10 +77,20 @@ const SignupPage: React.FC = () => {
 
       // Save token and user info
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user_id', String(response.data.user_id));
       localStorage.setItem('email', response.data.email);
       localStorage.setItem('role', response.data.role);
       if (response.data.full_name) localStorage.setItem('full_name', response.data.full_name);
       if (response.data.company_name) localStorage.setItem('company_name', response.data.company_name);
+
+      // Immediately sync AuthContext so ProtectedRoute uses the fresh role
+      setUser({
+        user_id: response.data.user_id,
+        email: response.data.email,
+        role: (response.data.role || '').toLowerCase().trim(),
+        full_name: response.data.full_name || '',
+        company_name: response.data.company_name,
+      });
 
       // Redirect based on user type
       if (formData.userType === 'candidate') {
@@ -140,10 +152,20 @@ const SignupPage: React.FC = () => {
 
       // Save token and user info
       localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user_id', String(response.data.user_id));
       localStorage.setItem('email', response.data.email);
       localStorage.setItem('role', response.data.role);
       if (response.data.full_name) localStorage.setItem('full_name', response.data.full_name);
       if (response.data.company_name) localStorage.setItem('company_name', response.data.company_name);
+
+      // Immediately sync AuthContext so ProtectedRoute uses the fresh role
+      setUser({
+        user_id: response.data.user_id,
+        email: response.data.email,
+        role: (response.data.role || '').toLowerCase().trim(),
+        full_name: response.data.full_name || '',
+        company_name: response.data.company_name,
+      });
 
       // Redirect based on user type
       if (formData.userType === 'candidate') {

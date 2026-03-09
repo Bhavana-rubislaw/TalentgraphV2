@@ -153,6 +153,35 @@ const App: React.FC = () => {
               }
             />
 
+            {/* Standalone Messages routes — deep-link from notifications */}
+            <Route
+              path="/candidate/messages"
+              element={
+                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                  <ErrorBoundary>
+                    {/* Redirect to dashboard messages tab, preserving ?c= param */}
+                    <Navigate
+                      to={`/candidate-dashboard?tab=messages${window.location.search.includes('c=') ? '&' + window.location.search.slice(1) : ''}`}
+                      replace
+                    />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recruiter/messages"
+              element={
+                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                  <ErrorBoundary>
+                    <Navigate
+                      to={`/recruiter-dashboard?tab=messages${window.location.search.includes('c=') ? '&' + window.location.search.slice(1) : ''}`}
+                      replace
+                    />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

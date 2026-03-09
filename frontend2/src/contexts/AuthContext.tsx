@@ -61,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setUser(authUser);
         // Sync back to localStorage so legacy reads still work
+        localStorage.setItem('user_id', String(authUser.user_id));
         localStorage.setItem('role', authUser.role);
         if (authUser.full_name) localStorage.setItem('full_name', authUser.full_name);
         if (authUser.company_name) localStorage.setItem('company_name', authUser.company_name);
@@ -88,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('user_id');
     localStorage.removeItem('email');
     localStorage.removeItem('full_name');
     localStorage.removeItem('company_name');
