@@ -4,8 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/CandidateApplied.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
+import MessagesPage from './MessagesPage';
 
-const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches'] as const;
+const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches', 'messages'] as const;
 
 // ── FilterPill: fully custom accessible dropdown ──────────────────────────────
 interface FilterPillOption {
@@ -2557,6 +2558,15 @@ const CandidateDashboard: React.FC = () => {
               <span className="nav-label">Matches</span>
               {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
             </button>
+            <button
+              className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
+              onClick={() => setActiveTab('messages')}
+            >
+              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span className="nav-label">Messages</span>
+            </button>
           </nav>
         </aside>
 
@@ -2570,6 +2580,11 @@ const CandidateDashboard: React.FC = () => {
             {activeTab === 'available' && renderAvailableJobs()}
             {activeTab === 'applied' && renderAppliedLiked()}
             {activeTab === 'matches' && renderMatches()}
+            {activeTab === 'messages' && (
+              <div style={{ height: '70vh', minHeight: 480 }}>
+                <MessagesPage userRole="candidate" />
+              </div>
+            )}
           </div>
         </main>
       </div>

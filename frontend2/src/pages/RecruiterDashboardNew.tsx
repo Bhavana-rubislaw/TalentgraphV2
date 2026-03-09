@@ -4,8 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/RecruiterApplications.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
+import MessagesPage from './MessagesPage';
 
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'messages'] as const;
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -325,6 +326,26 @@ const RecruiterDashboard: React.FC = () => {
     } catch (error) {
       console.error('[API ERROR] Failed to send invitation:', error);
       alert('Failed to send invitation');
+    }
+  };
+
+  const handleStartMessage = async (candidateId: number) => {
+    if (!selectedJobId) {
+      alert('Please select a job posting first');
+      return;
+    }
+    try {
+      const res = await apiClient.createConversation(candidateId, selectedJobId);
+      const convId = res.data.id;
+      setActiveTab('messages');
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', 'messages');
+        next.set('c', String(convId));
+        return next;
+      }, { replace: true });
+    } catch (err: any) {
+      alert(err.response?.data?.detail || 'Failed to start conversation');
     }
   };
 
@@ -723,6 +744,18 @@ const RecruiterDashboard: React.FC = () => {
                         {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
                       </button>
                     </div>
+                    {(rec.action_taken === 'like' || rec.action_taken === 'ask_to_apply') && (
+                      <button
+                        className="btn-message"
+                        onClick={(e) => { e.stopPropagation(); handleStartMessage(rec.candidate.id); }}
+                        style={{ marginTop: 8 }}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Message
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -897,6 +930,17 @@ const RecruiterDashboard: React.FC = () => {
                     </svg>
                     {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
                   </button>
+                  {(rec.action_taken === 'like' || rec.action_taken === 'ask_to_apply') && (
+                    <button
+                      className="btn-message vp-btn"
+                      onClick={() => { handleStartMessage(rec.candidate.id); setViewRecommendationProfile(null); }}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Message
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1089,6 +1133,32 @@ const RecruiterDashboard: React.FC = () => {
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
                   Ask to Apply
+                </button>
+                <button
+                  className="btn-message action-btn"
+                  onClick={() => {
+                    const jobPostingId = item.job_posting?.id ?? item.job_posting_id;
+                    if (jobPostingId) {
+                      apiClient.createConversation(item.candidate.id, jobPostingId)
+                        .then((res) => {
+                          setActiveTab('messages');
+                          setSearchParams((prev) => {
+                            const next = new URLSearchParams(prev);
+                            next.set('tab', 'messages');
+                            next.set('c', String(res.data.id));
+                            return next;
+                          }, { replace: true });
+                        })
+                        .catch((err: any) => alert(err.response?.data?.detail || 'Failed to start conversation'));
+                    } else {
+                      alert('No job posting associated with this shortlist item');
+                    }
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Message
                 </button>
               </div>
             </div>
@@ -2496,6 +2566,18 @@ const RecruiterDashboard: React.FC = () => {
               {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
             </button>
 
+            <button
+              className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
+              onClick={() => setActiveTab('messages')}
+            >
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </span>
+              <span className="nav-label">Messages</span>
+            </button>
+
             <button 
               type="button"
               className="nav-item"
@@ -2599,6 +2681,11 @@ const RecruiterDashboard: React.FC = () => {
             {activeTab === 'shortlist' && renderShortlist()}
             {activeTab === 'applications' && renderApplications()}
             {activeTab === 'matches' && renderMatches()}
+            {activeTab === 'messages' && (
+              <div style={{ height: '70vh', minHeight: 480 }}>
+                <MessagesPage userRole="recruiter" />
+              </div>
+            )}
           </div>
         </div>
       </div>

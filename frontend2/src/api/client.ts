@@ -254,6 +254,25 @@ export const apiClient = {
     limit?: number;
     job_id?: number;
   }) => api.get('/activity-feed', { params }),
+
+  // ── Chat / Messaging ────────────────────────────────────────────────────────
+  createConversation: (candidateId: number, jobPostingId: number) =>
+    api.post('/chat/conversations', { candidate_id: candidateId, job_posting_id: jobPostingId }),
+
+  getConversations: () =>
+    api.get('/chat/conversations'),
+
+  getMessages: (conversationId: number, params?: { limit?: number; before?: number }) =>
+    api.get(`/chat/conversations/${conversationId}/messages`, { params }),
+
+  sendMessage: (conversationId: number, text: string) =>
+    api.post(`/chat/conversations/${conversationId}/messages`, { text }),
+
+  markConversationRead: (conversationId: number) =>
+    api.post(`/chat/conversations/${conversationId}/read`),
+
+  getPresence: (userId: number) =>
+    api.get(`/presence/${userId}`),
 };
 
 export default api;
