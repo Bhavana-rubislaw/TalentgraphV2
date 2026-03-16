@@ -31,16 +31,27 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
   const token = localStorage.getItem('token');
   const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
 
+  console.log('[ProtectedRoute] Check:', {
+    allowedRoles,
+    userRole,
+    fromUser: user?.role,
+    fromLS: localStorage.getItem('role'),
+    isMatch: allowedRoles.includes(userRole)
+  });
+
   if (!token) {
     return <Navigate to="/signin" replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    console.log('[ProtectedRoute] Role mismatch - redirecting. UserRole:', userRole, 'Allowed:', allowedRoles);
     // Smart redirect: send to the correct dashboard instead of root
     if (CANDIDATE_ROLES.includes(userRole)) {
+      console.log('[ProtectedRoute] Redirecting candidate to /candidate-dashboard');
       return <Navigate to="/candidate-dashboard" replace />;
     }
     if (RECRUITER_ROLES.includes(userRole)) {
+      console.log('[ProtectedRoute] Redirecting recruiter to /recruiter-dashboard');
       return <Navigate to="/recruiter-dashboard" replace />;
     }
     return <Navigate to="/" replace />;

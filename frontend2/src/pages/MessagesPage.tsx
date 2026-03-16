@@ -30,6 +30,9 @@ interface Conversation {
   job_posting_id: number;
   company_id: number;
   candidate_name: string;
+  candidate_user_id: number | null;
+  recruiter_name: string;
+  recruiter_user_id: number | null;
   job_title: string;
   last_message_preview: string;
   last_message_at: string | null;
@@ -78,6 +81,83 @@ function presenceLabel(isOnline: boolean, lastSeenAt: string | null): string | n
   return `Last seen ${Math.floor(diff / 86400)}d ago`;
 }
 
+/**
+ * Get the other participant's name dynamically based on current user.
+ * - If current user is the candidate → returns recruiter name
+ * - If current user is the recruiter → returns candidate name
+ */
+function getOtherParticipantName(conversation: Conversation, currentUserId: number): string {
+  // Debug logging in development
+  if (import.meta.env.DEV) {
+    console.log('[getOtherParticipantName]', {
+      conversationId: conversation.id,
+      currentUserId,
+      candidateUserId: conversation.candidate_user_id,
+      recruiterUserId: conversation.recruiter_user_id,
+      candidateName: conversation.candidate_name,
+      recruiterName: conversation.recruiter_name,
+      otherUserFullName: conversation.other_user?.full_name,
+    });
+  }
+
+  // Use the pre-computed other_user from backend (most reliable)
+  if (conversation.other_user?.full_name && conversation.other_user.full_name !== 'Unknown') {
+    console.log('[getOtherParticipantName] Using other_user.full_name:', conversation.other_user.full_name);
+    return conversation.other_user.full_name;
+  }
+  
+  // Fallback: manually determine based on user IDs
+  // Check which participant the current user is NOT
+  if (conversation.candidate_user_id && currentUserId === conversation.candidate_user_id) {
+    // Current user is the candidate → show recruiter
+    console.log('[getOtherParticipantName] Current user is candidate, showing recruiter:', conversation.recruiter_name);
+    return conversation.recruiter_name || 'Recruiter';
+  } else if (conversation.recruiter_user_id && currentUserId === conversation.recruiter_user_id) {
+    // Current user is the recruiter → show candidate
+    console.log('[getOtherParticipantName] Current user is recruiter, showing candidate:', conversation.candidate_name);
+    return conversation.candidate_name || 'Candidate';
+  }
+  
+  // Additional fallback: if IDs don't match, determine by checking which name isn't the current user's
+  // This handles cases where user_id relationships might be missing
+  const currentUserName = localStorage.getItem('full_name') || '';
+  if (conversation.candidate_name && conversation.candidate_name !== currentUserName) {
+    console.log('[getOtherParticipantName] Using candidate_name (name mismatch):', conversation.candidate_name);
+    return conversation.candidate_name;
+  }
+  if (conversation.recruiter_name && conversation.recruiter_name !== currentUserName) {
+    console.log('[getOtherParticipantName] Using recruiter_name (name mismatch):', conversation.recruiter_name);
+    return conversation.recruiter_name;
+  }
+  
+  // Ultimate fallback
+  console.warn('[getOtherParticipantName] Could not determine other participant, using Unknown');
+  return 'Unknown';
+}
+
+/**
+ * Check if a message is from the current user (for bubble ownership).
+ * Uses strict number comparison with explicit coercion to avoid type mismatches.
+ */
+function isOwnMessage(message: Message, currentUserId: number): boolean {
+  const senderUserId = Number(message.sender_user_id);
+  const currentUserIdNum = Number(currentUserId);
+  const result = senderUserId === currentUserIdNum;
+  
+  // Debug log (remove after verification)
+  if (import.meta.env.DEV) {
+    console.log('Message ownership check:', {
+      senderUserId,
+      currentUserIdNum,
+      senderName: message.sender_name,
+      text: message.text.substring(0, 20),
+      isMine: result,
+    });
+  }
+  
+  return result;
+}
+
 // ─── Read Receipt Tick Icon ───────────────────────────────────────────────────
 
 const ReadReceiptIcon: React.FC<{ status: string }> = ({ status }) => {
@@ -117,6 +197,7 @@ interface ConversationListProps {
   selectedId: number | null;
   onSelect: (conv: Conversation) => void;
   loading: boolean;
+  currentUserId: number;
 }
 
 const ConversationList: React.FC<ConversationListProps> = ({
@@ -124,6 +205,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   selectedId,
   onSelect,
   loading,
+  currentUserId,
 }) => {
   if (loading) {
     return (
@@ -154,48 +236,51 @@ const ConversationList: React.FC<ConversationListProps> = ({
 
   return (
     <ul className="conv-list" role="listbox" aria-label="Conversations">
-      {conversations.map((conv) => (
-        <li
-          key={conv.id}
-          role="option"
-          aria-selected={conv.id === selectedId}
-          className={`conv-item${conv.id === selectedId ? ' conv-item--active' : ''}${conv.unread_count > 0 ? ' conv-item--unread' : ''}`}
-          onClick={() => onSelect(conv)}
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && onSelect(conv)}
-        >
-          <div className="conv-avatar-wrap">
-            <div className="conv-avatar">
-              {conv.other_user.full_name.charAt(0).toUpperCase()}
-            </div>
-            {conv.other_user.is_online && (
-              <span
-                className="presence-dot presence-dot--online"
-                title="Active now"
-              />
-            )}
-          </div>
-          <div className="conv-info">
-            <div className="conv-row-top">
-              <span className="conv-name">{conv.other_user.full_name}</span>
-              {conv.last_message_at && (
-                <span className="conv-time">{formatTime(conv.last_message_at)}</span>
+      {conversations.map((conv) => {
+        const otherParticipantName = getOtherParticipantName(conv, currentUserId);
+        return (
+          <li
+            key={conv.id}
+            role="option"
+            aria-selected={conv.id === selectedId}
+            className={`conv-item${conv.id === selectedId ? ' conv-item--active' : ''}${conv.unread_count > 0 ? ' conv-item--unread' : ''}`}
+            onClick={() => onSelect(conv)}
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onSelect(conv)}
+          >
+            <div className="conv-avatar-wrap">
+              <div className="conv-avatar">
+                {otherParticipantName.charAt(0).toUpperCase()}
+              </div>
+              {conv.other_user.is_online && (
+                <span
+                  className="presence-dot presence-dot--online"
+                  title="Active now"
+                />
               )}
             </div>
-            <div className="conv-row-sub">
-              <span className="conv-job">{conv.job_title}</span>
+            <div className="conv-info">
+              <div className="conv-row-top">
+                <span className="conv-name">{otherParticipantName}</span>
+                {conv.last_message_at && (
+                  <span className="conv-time">{formatTime(conv.last_message_at)}</span>
+                )}
+              </div>
+              <div className="conv-row-sub">
+                <span className="conv-job">{conv.job_title}</span>
+              </div>
+              <div className="conv-row-preview">
+                <span className="conv-preview">{conv.last_message_preview || 'No messages yet'}</span>
+                {conv.unread_count > 0 && (
+                  <span className="conv-badge" aria-label={`${conv.unread_count} unread`}>
+                    {conv.unread_count}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="conv-row-preview">
-              <span className="conv-preview">{conv.last_message_preview || 'No messages yet'}</span>
-              {conv.unread_count > 0 && (
-                <span className="conv-badge" aria-label={`${conv.unread_count} unread`}>
-                  {conv.unread_count}
-                </span>
-              )}
-            </div>
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 };
@@ -238,7 +323,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({
   // Mark incoming messages as read when the thread is opened / messages change
   useEffect(() => {
     const hasUnread = messages.some(
-      (m) => m.sender_user_id !== currentUserId && !m.is_read
+      (m) => Number(m.sender_user_id) !== Number(currentUserId) && !m.is_read
     );
     if (hasUnread) {
       onMarkRead(conversation.id).catch(() => {/* non-critical */});
@@ -254,7 +339,24 @@ const ChatThread: React.FC<ChatThreadProps> = ({
     try {
       await onSend(text);
     } catch (err: any) {
-      setSendError(err?.response?.data?.detail || 'Failed to send message');
+      // Provide helpful error messages based on the error type
+      let errorMessage = 'Failed to send message';
+      
+      if (err?.response?.status === 401) {
+        errorMessage = 'Your session has expired. Please refresh the page and log in again.';
+      } else if (err?.response?.status === 403) {
+        errorMessage = 'You do not have permission to send messages in this conversation.';
+      } else if (err?.response?.status === 404) {
+        errorMessage = 'Conversation not found. Please refresh the page.';
+      } else if (!err?.response) {
+        // Network error - no response received
+        errorMessage = 'Cannot connect to server. Please check your connection and try again.';
+      } else if (err?.response?.data?.detail) {
+        // Use backend error message if available
+        errorMessage = err.response.data.detail;
+      }
+      
+      setSendError(errorMessage);
       setDraft(text); // restore draft so user can retry
     } finally {
       setSending(false);
@@ -277,21 +379,26 @@ const ChatThread: React.FC<ChatThreadProps> = ({
   const groupedMessages = messages.map((msg, idx) => {
     const prevMsg = messages[idx - 1];
     const nextMsg = messages[idx + 1];
-    const isMine = msg.sender_user_id === currentUserId;
-    const isFirstInGroup = !prevMsg || prevMsg.sender_user_id !== msg.sender_user_id;
-    const isLastInGroup = !nextMsg || nextMsg.sender_user_id !== msg.sender_user_id;
+    // Use helper function for ownership (with type-safe comparison)
+    const isMine = isOwnMessage(msg, currentUserId);
+    // Group detection uses same IDs
+    const isFirstInGroup = !prevMsg || Number(prevMsg.sender_user_id) !== Number(msg.sender_user_id);
+    const isLastInGroup = !nextMsg || Number(nextMsg.sender_user_id) !== Number(msg.sender_user_id);
     return { msg, isMine, isFirstInGroup, isLastInGroup };
   });
+
+  // Get the other participant's name for the header
+  const otherParticipantName = getOtherParticipantName(conversation, currentUserId);
 
   return (
     <div className="chat-thread">
       {/* Thread header */}
       <div className="thread-header">
         <div className="thread-avatar">
-          {conversation.other_user.full_name.charAt(0).toUpperCase()}
+          {otherParticipantName.charAt(0).toUpperCase()}
         </div>
         <div className="thread-header-info">
-          <div className="thread-header-name">{conversation.other_user.full_name}</div>
+          <div className="thread-header-name">{otherParticipantName}</div>
           <div className="thread-header-meta">
             {conversation.job_title}
             {presence && (
@@ -436,10 +543,23 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
   const { user } = useAuth();
 
   // Resolve current user ID from AuthContext with localStorage fallback
-  const currentUserId: number =
-    user?.user_id ?? parseInt(localStorage.getItem('user_id') || '0', 10);
+  // Always ensure it's a proper number to avoid type comparison issues
+  const currentUserId: number = Number(
+    user?.user_id ?? parseInt(localStorage.getItem('user_id') || '0', 10)
+  );
   const currentUserRole: string =
     (user?.role ?? localStorage.getItem('role') ?? '').toLowerCase().trim();
+  
+  // Debug: Log current user info on mount
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('MessagesPage: Current user:', {
+        currentUserId,
+        currentUserRole,
+        fromAuth: !!user?.user_id,
+      });
+    }
+  }, [currentUserId, currentUserRole, user]);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
@@ -457,7 +577,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
     // Update local message statuses to 'read' for incoming messages
     setMessages((prev) =>
       prev.map((m) =>
-        m.sender_user_id !== currentUserId && !m.is_read
+        Number(m.sender_user_id) !== Number(currentUserId) && !m.is_read
           ? { ...m, is_read: true, status: 'read' }
           : m
       )
@@ -483,8 +603,17 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
         }
         setHasMore(newMsgs.length === 50);
       } catch (err: any) {
-        const msg = err.response?.data?.detail || 'Failed to load messages';
-        setError(msg);
+        let errorMessage = 'Failed to load messages';
+        
+        if (err?.response?.status === 401) {
+          errorMessage = 'Your session has expired. Please refresh the page and log in again.';
+        } else if (!err?.response) {
+          errorMessage = 'Cannot connect to server. Please check your connection.';
+        } else if (err?.response?.data?.detail) {
+          errorMessage = err.response.data.detail;
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoadingMsgs(false);
       }
@@ -531,8 +660,17 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
         } catch { /* non-critical */ }
       }
     } catch (err: any) {
-      const msg = err.response?.data?.detail || 'Failed to load conversations';
-      setError(msg);
+      let errorMessage = 'Failed to load conversations';
+      
+      if (err?.response?.status === 401) {
+        errorMessage = 'Your session has expired. Please refresh the page and log in again.';
+      } else if (!err?.response) {
+        errorMessage = 'Cannot connect to server. Please check your connection.';
+      } else if (err?.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoadingConvs(false);
     }
@@ -643,6 +781,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
           selectedId={selectedConv?.id ?? null}
           onSelect={handleSelectConversation}
           loading={loadingConvs}
+          currentUserId={currentUserId}
         />
       </div>
 

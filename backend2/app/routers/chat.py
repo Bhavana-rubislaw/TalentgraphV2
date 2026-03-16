@@ -96,6 +96,13 @@ def _serialize_conversation(
     candidate = session.get(Candidate, conv.candidate_id)
     candidate_user = session.get(User, candidate.user_id) if candidate else None
     candidate_name = candidate.name if candidate else "Unknown"
+    candidate_user_id = candidate_user.id if candidate_user else None
+
+    # Company/Recruiter info
+    company = session.get(Company, conv.company_id)
+    company_user = session.get(User, company.user_id) if company else None
+    recruiter_name = company_user.full_name if company_user else "Unknown"
+    recruiter_user_id = company_user.id if company_user else None
 
     # Job info
     job = session.get(JobPosting, conv.job_posting_id)
@@ -123,25 +130,47 @@ def _serialize_conversation(
     ).all()
     unread_count = len(unread)
 
-    # Presence: determine "other" participant
-    # Get both company user and candidate user explicitly
-    company = session.get(Company, conv.company_id)
-    company_user = session.get(User, company.user_id) if company else None
+    # Debug logging to help diagnose identity issues
+    logger.debug(
+        f"Conversation {conv.id}: viewer={viewer_user_id} (type={type(viewer_user_id).__name__}), "
+        f"candidate_user_id={candidate_user_id} (type={type(candidate_user_id).__name__ if candidate_user_id else 'None'}), "
+        f"recruiter_user_id={recruiter_user_id} (type={type(recruiter_user_id).__name__ if recruiter_user_id else 'None'}), "
+        f"candidate_name={candidate_name}, recruiter_name={recruiter_name}"
+    )
+
+    # Determine "other" participant based on viewer's identity
+    # Strategy: Check which participant the viewer is, then show the OTHER person
+    # IMPORTANT: Convert all IDs to int for comparison to avoid type mismatches
+    other_user = None
+    other_user_name = "Unknown"
     
-    # Determine who the "other" person is based on viewer's identity
-    # Compare with both user IDs to be explicit
-    candidate_user_id = candidate_user.id if candidate_user else None
-    company_user_id = company_user.id if company_user else None
+    viewer_id = int(viewer_user_id) if viewer_user_id else None
+    candidate_uid = int(candidate_user_id) if candidate_user_id else None
+    recruiter_uid = int(recruiter_user_id) if recruiter_user_id else None
     
-    if viewer_user_id == candidate_user_id:
-        # Viewer is the candidate → show recruiter as other user
+    # Case 1: Viewer is the candidate (check by user_id match)
+    if candidate_uid and viewer_id == candidate_uid:
+        logger.debug(f"✓ Viewer {viewer_id} is the CANDIDATE → showing recruiter: {recruiter_name}")
         other_user = company_user
-    elif viewer_user_id == company_user_id:
-        # Viewer is the recruiter → show candidate as other user
+        other_user_name = recruiter_name
+    # Case 2: Viewer is the recruiter (check by user_id match)
+    elif recruiter_uid and viewer_id == recruiter_uid:
+        logger.debug(f"✓ Viewer {viewer_id} is the RECRUITER → showing candidate: {candidate_name}")
         other_user = candidate_user
+        other_user_name = candidate_name
+    # Case 3: Fallback - check if viewer matches company_user directly
+    elif company_user and viewer_id == company_user.id:
+        logger.debug(f"✓ Viewer {viewer_id} matches company_user → showing candidate: {candidate_name}")
+        other_user = candidate_user
+        other_user_name = candidate_name
+    # Case 4: Final fallback - viewer is likely the candidate, show recruiter
     else:
-        # Fallback: try to determine based on role or first available
-        other_user = company_user if company_user else candidate_user
+        logger.warning(
+            f"⚠ Viewer {viewer_id} identity unclear (candidate_uid={candidate_uid}, "
+            f"recruiter_uid={recruiter_uid}) → defaulting to show recruiter: {recruiter_name}"
+        )
+        other_user = company_user
+        other_user_name = recruiter_name
 
     is_online = _is_online(other_user.last_seen_at if other_user else None)
     last_seen_at = (
@@ -150,6 +179,8 @@ def _serialize_conversation(
         else None
     )
 
+    logger.debug(f"→ Conversation {conv.id}: Final other_user_name = '{other_user_name}'")
+
     return {
         "id": conv.id,
         "company_id": conv.company_id,
@@ -157,13 +188,18 @@ def _serialize_conversation(
         "job_posting_id": conv.job_posting_id,
         "created_at": conv.created_at.isoformat() + "Z",
         "last_message_at": last_message_at,
+        # Explicit participant info (always present for both sides)
         "candidate_name": candidate_name,
+        "candidate_user_id": candidate_user_id,
+        "recruiter_name": recruiter_name,
+        "recruiter_user_id": recruiter_user_id,
         "job_title": job_title,
         "last_message_preview": last_message_preview,
         "unread_count": unread_count,
+        # Dynamic "other" user based on viewer - use determined name
         "other_user": {
             "id": other_user.id if other_user else None,
-            "full_name": other_user.full_name if other_user else "Unknown",
+            "full_name": other_user_name,  # Use the determined name (not other_user.full_name)
             "is_online": is_online,
             "last_seen_at": last_seen_at,
         },
@@ -292,6 +328,7 @@ def create_conversation(
             event_type="chat_started_by_recruiter",
             route=f"/candidate-dashboard?tab=messages&c={conv.id}",
             route_context={"conversation_id": conv.id},
+            notification_type="message",
         )
     except Exception:
         logger.warning("Failed to push chat_started notification", exc_info=True)
@@ -533,6 +570,7 @@ def _notify_other_participant(
                     event_type="new_message_received",
                     route=f"/candidate-dashboard?tab=messages&c={conv.id}",
                     route_context={"conversation_id": conv.id},
+                    notification_type="message",
                 )
         else:
             # Message from candidate → notify company user (creator or any company user)
@@ -546,6 +584,7 @@ def _notify_other_participant(
                     event_type="new_message_received",
                     route=f"/recruiter-dashboard?tab=messages&c={conv.id}",
                     route_context={"conversation_id": conv.id},
+                    notification_type="message",
                 )
     except Exception:
         logger.warning("Failed to push new_message notification", exc_info=True)

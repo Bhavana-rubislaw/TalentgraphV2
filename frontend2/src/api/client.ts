@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -230,6 +230,13 @@ export const apiClient = {
   
   getRecruiterMatches: () =>
     api.get('/dashboard/recruiter/matches'),
+  
+  // Dashboard - Browse All Candidates
+  browseCandidates: (params?: { page?: number; limit?: number; search?: string; work_type?: string; location?: string }) =>
+    api.get('/dashboard/recruiter/candidates', { params }),
+  
+  getCandidateDetail: (candidateId: number) =>
+    api.get(`/dashboard/recruiter/candidate/${candidateId}`),
 
   // Team Management
   getTeamMembers: () =>
@@ -273,6 +280,40 @@ export const apiClient = {
 
   getPresence: (userId: number) =>
     api.get(`/presence/${userId}`),
+
+  // ── Direct Messaging (WhatsApp-style) ──────────────────────────────────────
+  startConversation: (candidateUserId: number) =>
+    api.post('/messages/conversations/start', { candidate_user_id: candidateUserId }),
+
+  getDirectConversations: () =>
+    api.get('/messages/conversations'),
+
+  getConversationMessages: (conversationId: number, limit?: number, offset?: number) =>
+    api.get(`/messages/conversations/${conversationId}/messages`, { 
+      params: { limit, offset } 
+    }),
+
+  sendDirectMessage: (conversationId: number, content: string) =>
+    api.post(`/messages/conversations/${conversationId}/messages`, { content }),
+
+  markDirectConversationRead: (conversationId: number) =>
+    api.post(`/messages/conversations/${conversationId}/read`),
+
+  // ── Meeting Scheduler ───────────────────────────────────────────────────────
+  scheduleMeeting: (data: {
+    candidate_email: string;
+    candidate_name: string;
+    platform: string;
+    date: string;
+    time: string;
+    duration: number;
+    topic: string;
+    agenda?: string;
+  }) =>
+    api.post('/meetings/schedule', data),
+
+  testEmailConfig: () =>
+    api.get('/meetings/test-email-config'),
 };
 
 export default api;

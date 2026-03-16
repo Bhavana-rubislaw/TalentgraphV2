@@ -10,7 +10,12 @@ from datetime import datetime
 from app.database import get_session
 from app.models import JobPosting, JobPostingSkill, Company, User
 from app.schemas import JobPostingRead, JobPostingCreate, JobPostingSkillCreate, JobPostingSkillRead
-from app.security import get_current_user
+from app.security import (
+    get_current_user,
+    require_company_role,
+    get_user_company_id,
+    verify_company_owns_job
+)
 
 router = APIRouter(prefix="/job-postings", tags=["Job Postings"])
 
@@ -318,10 +323,18 @@ def toggle_job_posting_active(
 def add_skill_to_posting(
     job_id: int,
     skill_data: JobPostingSkillCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_company_role),
     session: Session = Depends(get_session)
 ):
-    """Add a single skill to an existing job posting"""
+    """Add a single skill to an existing job posting (company role with ownership required)"""
+    # Verify ownership
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company_id = get_user_company_id(session, user.id)
+    verify_company_owns_job(session, company_id, job_id)
+    
     job_posting = session.get(JobPosting, job_id)
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
@@ -354,10 +367,18 @@ def update_skill_rating(
     job_id: int,
     skill_id: int,
     skill_data: JobPostingSkillCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_company_role),
     session: Session = Depends(get_session)
 ):
-    """Update a skill rating on a job posting"""
+    """Update a skill rating on a job posting (company role with ownership required)"""
+    # Verify ownership
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company_id = get_user_company_id(session, user.id)
+    verify_company_owns_job(session, company_id, job_id)
+    
     skill = session.get(JobPostingSkill, skill_id)
     if not skill or skill.job_posting_id != job_id:
         raise HTTPException(status_code=404, detail="Skill not found")
@@ -375,10 +396,18 @@ def update_skill_rating(
 def delete_skill_from_posting(
     job_id: int,
     skill_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_company_role),
     session: Session = Depends(get_session)
 ):
-    """Remove a skill from a job posting"""
+    """Remove a skill from a job posting (company role with ownership required)"""
+    # Verify ownership
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company_id = get_user_company_id(session, user.id)
+    verify_company_owns_job(session, company_id, job_id)
+    
     skill = session.get(JobPostingSkill, skill_id)
     if not skill or skill.job_posting_id != job_id:
         raise HTTPException(status_code=404, detail="Skill not found")

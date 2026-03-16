@@ -863,6 +863,7 @@ def get_recruiter_applications(
             "application_id": app.id,
             "candidate": {
                 "id": candidate.id,
+                "user_id": candidate.user_id,
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,
@@ -1125,4 +1126,286 @@ def get_team_members(
         "team_members": team_members,
         "my_role": user_role,
         "company_name": company_name
+    }
+
+
+# ============================================================================
+# BROWSE ALL CANDIDATES (RECRUITER)
+# ============================================================================
+
+@router.get("/recruiter/candidates", response_model=Dict[str, Any])
+def browse_all_candidates(
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    search: str = Query(None, description="Search by name, role, or skills"),
+    work_type: str = Query(None, description="Filter by work type"),
+    location: str = Query(None, description="Filter by location"),
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Browse all available candidates across the platform (recruiter-only)"""
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Recruiters only")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+    
+    # Get all company IDs with the same company name for action checking
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    
+    # Base query: all candidates
+    query = select(Candidate)
+    
+    # Apply search filter
+    if search:
+        search_lower = search.lower()
+        query = query.where(
+            or_(
+                Candidate.name.ilike(f"%{search}%"),
+                Candidate.email.ilike(f"%{search}%"),
+                Candidate.location_state.ilike(f"%{search}%"),
+                Candidate.profile_summary.ilike(f"%{search}%")
+            )
+        )
+    
+    # Apply location filter
+    if location:
+        query = query.where(Candidate.location_state.ilike(f"%{location}%"))
+    
+    # Get total count
+    total_candidates = len(session.exec(query).all())
+    
+    # Apply pagination
+    offset = (page - 1) * limit
+    candidates = session.exec(query.offset(offset).limit(limit)).all()
+    
+    result_items = []
+    for candidate in candidates:
+        # Get candidate's job profiles
+        job_profiles = session.exec(
+            select(JobProfile).where(JobProfile.candidate_id == candidate.id)
+        ).all()
+        
+        # Get primary or first job profile for headline/main role
+        primary_profile = job_profiles[0] if job_profiles else None
+        
+        # Collect skills from all profiles
+        all_skills = []
+        for profile in job_profiles:
+            profile_skills = session.exec(
+                select(Skill).where(Skill.job_profile_id == profile.id)
+            ).all()
+            all_skills.extend([{
+                "skill_name": s.skill_name,
+                "proficiency_level": s.proficiency_level
+            } for s in profile_skills[:5]])  # Limit to top 5 per profile
+        
+        # Deduplicate skills
+        unique_skills = {s["skill_name"]: s for s in all_skills}
+        top_skills = list(unique_skills.values())[:10]  # Top 10 unique skills
+        
+        # Check if already liked or invited by this recruiter/company
+        already_liked = False
+        already_invited = False
+        
+        if primary_profile:
+            # Check for like actions
+            like_swipe = session.exec(
+                select(Swipe).where(
+                    and_(
+                        Swipe.candidate_id == candidate.id,
+                        Swipe.job_profile_id == primary_profile.id,
+                        Swipe.action == "like",
+                        Swipe.action_by == "recruiter",
+                        Swipe.company_id.in_(company_ids)
+                    )
+                )
+            ).first()
+            already_liked = like_swipe is not None
+            
+            # Check for ask_to_apply actions
+            invite_swipe = session.exec(
+                select(Swipe).where(
+                    and_(
+                        Swipe.candidate_id == candidate.id,
+                        Swipe.job_profile_id == primary_profile.id,
+                        Swipe.action == "ask_to_apply",
+                        Swipe.action_by == "recruiter",
+                        Swipe.company_id.in_(company_ids)
+                    )
+                )
+            ).first()
+            already_invited = invite_swipe is not None
+        
+        # Format job profiles for response
+        formatted_profiles = []
+        for profile in job_profiles:
+            formatted_profiles.append({
+                "id": profile.id,
+                "profile_name": profile.profile_name,
+                "job_role": profile.job_role,
+                "product_vendor": profile.product_vendor,
+                "product_type": profile.product_type,
+                "years_of_experience": profile.years_of_experience,
+                "worktype": profile.worktype,
+                "employment_type": profile.employment_type,
+                "salary_min": profile.salary_min,
+                "salary_max": profile.salary_max,
+                "salary_currency": profile.salary_currency,
+                "seniority_level": profile.seniority_level
+            })
+        
+        # Build candidate item
+        candidate_item = {
+            "candidate_id": candidate.id,
+            "user_id": candidate.user_id,
+            "full_name": candidate.name,
+            "email": candidate.email,
+            "headline": f"{primary_profile.job_role} - {primary_profile.product_vendor} {primary_profile.product_type}" if primary_profile else "Professional",
+            "location": f"{candidate.location_state}",
+            "years_experience": primary_profile.years_of_experience if primary_profile else 0,
+            "skills": top_skills,
+            "work_type": primary_profile.worktype if primary_profile else None,
+            "availability": "Open to work" if primary_profile else "Available",
+            "profile_summary": candidate.profile_summary or "No summary available",
+            "job_profiles": formatted_profiles,
+            "already_liked": already_liked,
+            "already_invited": already_invited
+        }
+        
+        # Apply work_type filter if specified
+        if work_type and primary_profile:
+            if primary_profile.worktype.lower() != work_type.lower():
+                continue
+        
+        result_items.append(candidate_item)
+    
+    return {
+        "items": result_items,
+        "page": page,
+        "limit": limit,
+        "total": total_candidates
+    }
+
+
+@router.get("/recruiter/candidate/{candidate_id}", response_model=Dict[str, Any])
+def get_candidate_detail(
+    candidate_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Get detailed candidate profile (recruiter-only)"""
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Recruiters only")
+    
+    # Get candidate
+    candidate = session.get(Candidate, candidate_id)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    
+    # Get job profiles
+    job_profiles = session.exec(
+        select(JobProfile).where(JobProfile.candidate_id == candidate.id)
+    ).all()
+    
+    # Format job profiles with skills and location preferences
+    formatted_profiles = []
+    for profile in job_profiles:
+        # Get skills for this profile
+        skills = session.exec(
+            select(Skill).where(Skill.job_profile_id == profile.id)
+        ).all()
+        
+        # Get location preferences
+        location_prefs = session.exec(
+            select(LocationPreference).where(LocationPreference.job_profile_id == profile.id)
+        ).all()
+        
+        formatted_profiles.append({
+            "id": profile.id,
+            "profile_name": profile.profile_name,
+            "product_vendor": profile.product_vendor,
+            "product_type": profile.product_type,
+            "job_role": profile.job_role,
+            "years_of_experience": profile.years_of_experience,
+            "worktype": profile.worktype,
+            "employment_type": profile.employment_type,
+            "salary_min": profile.salary_min,
+            "salary_max": profile.salary_max,
+            "salary_currency": profile.salary_currency,
+            "visa_status": profile.visa_status,
+            "seniority_level": profile.seniority_level,
+            "availability_date": profile.availability_date,
+            "notice_period": profile.notice_period,
+            "highest_education": profile.highest_education,
+            "profile_summary": profile.profile_summary,
+            "travel_willingness": profile.travel_willingness,
+            "remote_acceptance": profile.remote_acceptance,
+            "relocation_willingness": profile.relocation_willingness,
+            "linkedin_url": profile.linkedin_url,
+            "github_url": profile.github_url,
+            "portfolio_url": profile.portfolio_url,
+            "skills": [{
+                "skill_name": s.skill_name,
+                "skill_category": s.skill_category,
+                "proficiency_level": s.proficiency_level,
+                "years_experience": s.years_experience
+            } for s in skills],
+            "location_preferences": [{
+                "city": lp.city,
+                "state": lp.state,
+                "country": lp.country,
+                "preference_order": lp.preference_order
+            } for lp in location_prefs]
+        })
+    
+    # Get resumes
+    resumes = session.exec(
+        select(Resume).where(Resume.candidate_id == candidate.id)
+    ).all()
+    
+    # Get certifications
+    certifications = session.exec(
+        select(Certification).where(Certification.candidate_id == candidate.id)
+    ).all()
+    
+    return {
+        "candidate_id": candidate.id,
+        "user_id": candidate.user_id,
+        "full_name": candidate.name,
+        "email": candidate.email,
+        "phone": candidate.phone,
+        "location": {
+            "address": candidate.residential_address,
+            "state": candidate.location_state,
+            "county": candidate.location_county,
+            "zipcode": candidate.location_zipcode
+        },
+        "profile_summary": candidate.profile_summary,
+        "linkedin_url": candidate.linkedin_url,
+        "github_url": candidate.github_url,
+        "portfolio_url": candidate.portfolio_url,
+        "job_profiles": formatted_profiles,
+        "resumes": [{
+            "id": r.id,
+            "filename": r.filename,
+            "uploaded_at": r.uploaded_at.isoformat() if r.uploaded_at else None
+        } for r in resumes],
+        "certifications": [{
+            "id": c.id,
+            "name": c.name,
+            "issuer": c.issuer,
+            "filename": c.filename,
+            "issued_date": c.issued_date,
+            "expiry_date": c.expiry_date
+        } for c in certifications]
     }

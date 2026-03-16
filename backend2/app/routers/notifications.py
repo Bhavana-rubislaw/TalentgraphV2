@@ -33,11 +33,13 @@ def push_notification(
     event_type: str,
     route: str = "",
     route_context: Optional[Dict[str, Any]] = None,
+    notification_type: str = "general",
 ) -> Notification:
     """Create and persist a notification. Call from other routers."""
     payload = json.dumps({"route": route, "route_context": route_context or {}})
     notif = Notification(
         user_id=user_id,
+        type=notification_type,
         title=title,
         message=message,
         event_type=event_type,

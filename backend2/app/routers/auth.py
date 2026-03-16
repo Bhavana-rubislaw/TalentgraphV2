@@ -419,6 +419,8 @@ def get_current_user_info(current_user: dict = Depends(get_current_user), sessio
         "role": user.role,        # DB role – not the JWT claim
         "full_name": user.full_name,
     }
+    
+    logger.info(f"[AUTH] /me returning - user_id: {user.id}, email: {user.email}, DB role: {user.role}, role type: {type(user.role)}")
 
     # If company user, include company info
     if user.role != UserRole.CANDIDATE:
