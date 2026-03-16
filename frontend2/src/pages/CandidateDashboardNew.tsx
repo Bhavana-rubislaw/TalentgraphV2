@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { apiClient } from '../api/client';
+import { apiClient, API_BASE } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/CandidateApplied.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
-import MessagesPage from './MessagesPage';
+import ChatWindow from '../components/chat/ChatWindow';
 
 const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches', 'messages'] as const;
 
@@ -146,8 +146,8 @@ const CandidateDashboard: React.FC = () => {
   const setActiveTab = useCallback(
     (tab: string) => {
       setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; },
-        { replace: true }
+        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; }
+        // Don't use replace:true here - we want tab changes in browser history for back button
       );
     },
     [setSearchParams]
@@ -193,6 +193,12 @@ const CandidateDashboard: React.FC = () => {
   const [viewAvailableJob, setViewAvailableJob] = useState<any | null>(null);
   const [viewMatchJob, setViewMatchJob] = useState<any | null>(null);
   const [viewRecommendationJob, setViewRecommendationJob] = useState<any | null>(null);
+
+  // ── Available Jobs filter states ──────────────────────────────────
+  const [jobSearchTerm, setJobSearchTerm] = useState('');
+  const [selectedJobRole, setSelectedJobRole] = useState('');
+  const [selectedJobWorkType, setSelectedJobWorkType] = useState('');
+  const [jobLocationFilter, setJobLocationFilter] = useState('');
 
   // ── Candidate filter states ──────────────────────────────────
   const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
@@ -393,7 +399,7 @@ const CandidateDashboard: React.FC = () => {
     setApplyingJobId(jobPostingId);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8001/applications/apply', {
+      const response = await fetch(`${API_BASE}/applications/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1397,6 +1403,74 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const renderAvailableJobs = () => {
+    // Derive available job roles dynamically from job data
+    const availableJobRoles = React.useMemo(() => {
+      const rolesSet = new Set<string>();
+      availableJobs.forEach((job: any) => {
+        if (job.job_title) rolesSet.add(job.job_title);
+        if (job.job_role) rolesSet.add(job.job_role);
+      });
+      return Array.from(rolesSet).sort();
+    }, [availableJobs]);
+
+    // Derive work types from job data
+    const availableWorkTypes = React.useMemo(() => {
+      const typesSet = new Set<string>();
+      availableJobs.forEach((job: any) => {
+        if (job.worktype) {
+          const normalized = job.worktype.toLowerCase();
+          if (normalized === 'remote') typesSet.add('Remote');
+          else if (normalized === 'hybrid') typesSet.add('Hybrid');
+          else if (normalized === 'onsite' || normalized === 'on-site') typesSet.add('Onsite');
+        }
+      });
+      return Array.from(typesSet).sort();
+    }, [availableJobs]);
+
+    // Filter jobs based on all active filters
+    const filteredJobs = React.useMemo(() => {
+      return availableJobs.filter((job: any) => {
+        // Search filter
+        if (jobSearchTerm) {
+          const searchLower = jobSearchTerm.toLowerCase();
+          const matchesSearch = 
+            job.job_title?.toLowerCase().includes(searchLower) ||
+            job.company_name?.toLowerCase().includes(searchLower) ||
+            job.job_description?.toLowerCase().includes(searchLower) ||
+            job.job_role?.toLowerCase().includes(searchLower);
+          if (!matchesSearch) return false;
+        }
+
+        // Role filter
+        if (selectedJobRole) {
+          const matchesRole = 
+            job.job_title === selectedJobRole ||
+            job.job_role === selectedJobRole;
+          if (!matchesRole) return false;
+        }
+
+        // Work type filter
+        if (selectedJobWorkType) {
+          const jobWorkType = job.worktype?.toLowerCase();
+          const filterWorkType = selectedJobWorkType.toLowerCase();
+          if (jobWorkType !== filterWorkType) return false;
+        }
+
+        // Location filter
+        if (jobLocationFilter) {
+          const locationLower = jobLocationFilter.toLowerCase();
+          const matchesLocation = job.location?.toLowerCase().includes(locationLower);
+          if (!matchesLocation) return false;
+        }
+
+        return true;
+      });
+    }, [availableJobs, jobSearchTerm, selectedJobRole, selectedJobWorkType, jobLocationFilter]);
+
+    const hasActiveFilters = jobSearchTerm || selectedJobRole || selectedJobWorkType || jobLocationFilter;
+    const resultCount = filteredJobs.length;
+    const totalCount = availableJobs.length;
+
     if (availableJobs.length === 0) {
       return (
         <div className="empty-state-modern">
@@ -1413,8 +1487,148 @@ const CandidateDashboard: React.FC = () => {
 
     return (
       <>
+        {/* Page Header Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Available Jobs</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Browse and filter open roles that match your interests</p>
+        </div>
+
+        {/* Enhanced Filter Toolbar */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '12px', 
+          padding: '20px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', 
+          marginBottom: '24px',
+          border: '1px solid var(--border-color, #e2e8f0)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Search Input */}
+            <div style={{ flex: '1 1 280px', minWidth: '280px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Search</label>
+              <div style={{ position: 'relative' }}>
+                <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-muted, #94a3b8)', pointerEvents: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  className="job-select-modern"
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '40px', fontSize: '14px', borderRadius: '8px' }}
+                  placeholder="Job title, company, or keywords..."
+                  value={jobSearchTerm}
+                  onChange={(e) => setJobSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Role Dropdown */}
+            <div style={{ flex: '0 1 200px', minWidth: '180px' }}>
+              <label htmlFor="job-role-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</label>
+              <select
+                id="job-role-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={selectedJobRole}
+                onChange={(e) => setSelectedJobRole(e.target.value)}
+              >
+                <option value="">All Roles</option>
+                {availableJobRoles.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Work Type Dropdown */}
+            <div style={{ flex: '0 1 160px', minWidth: '140px' }}>
+              <label htmlFor="job-worktype-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</label>
+              <select
+                id="job-worktype-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={selectedJobWorkType}
+                onChange={(e) => setSelectedJobWorkType(e.target.value)}
+              >
+                <option value="">All Types</option>
+                <option value="remote">Remote</option>
+                <option value="hybrid">Hybrid</option>
+                <option value="onsite">Onsite</option>
+              </select>
+            </div>
+
+            {/* Location Input */}
+            <div style={{ flex: '0 1 180px', minWidth: '160px' }}>
+              <label htmlFor="job-location-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</label>
+              <input
+                type="text"
+                id="job-location-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px' }}
+                placeholder="City or State"
+                value={jobLocationFilter}
+                onChange={(e) => setJobLocationFilter(e.target.value)}
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'flex-end' }}>
+                <button
+                  className="action-btn secondary"
+                  style={{ height: '40px', padding: '0 16px', fontSize: '13px', fontWeight: 500, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => { setJobSearchTerm(''); setSelectedJobRole(''); setSelectedJobWorkType(''); setJobLocationFilter(''); }}
+                >
+                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Results Count */}
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
+              {hasActiveFilters 
+                ? `Showing ${resultCount} of ${totalCount} jobs`
+                : `Showing ${totalCount} jobs`
+              }
+            </span>
+            {hasActiveFilters && (
+              <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)' }}>
+                {[jobSearchTerm && 'search', selectedJobRole && 'role', selectedJobWorkType && 'work type', jobLocationFilter && 'location'].filter(Boolean).join(', ')} active
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Empty State for Filtered Results */}
+        {filteredJobs.length === 0 && hasActiveFilters && (
+          <div className="empty-state-modern">
+            <div className="empty-icon-professional">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+            </div>
+            <h3 className="empty-title">No jobs match your filters</h3>
+            <p className="empty-subtitle">Try adjusting your search criteria or clearing filters to see more results.</p>
+            <button
+              className="action-btn primary"
+              style={{ marginTop: '16px' }}
+              onClick={() => { setJobSearchTerm(''); setSelectedJobRole(''); setSelectedJobWorkType(''); setJobLocationFilter(''); }}
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+
+        {/* Jobs Grid */}
+        {filteredJobs.length > 0 && (
       <div className="jobs-grid-modern">
-        {availableJobs.map((job: any) => (
+        {filteredJobs.map((job: any) => (
           <div key={job.id} className="job-card-modern">
             <div className="job-header-modern">
               <div className="job-title-section">
@@ -1508,6 +1722,7 @@ const CandidateDashboard: React.FC = () => {
           </div>
         ))}
       </div>
+        )}
 
       {/* Available Job Detail Drawer */}
       {viewAvailableJob && (
@@ -2575,16 +2790,24 @@ const CandidateDashboard: React.FC = () => {
           {renderWelcomeCard()}
           
           <div className="content-panel">
-            {activeTab === 'recommendations' && renderRecommendations()}
-            {activeTab === 'invites' && renderInvites()}
-            {activeTab === 'available' && renderAvailableJobs()}
-            {activeTab === 'applied' && renderAppliedLiked()}
-            {activeTab === 'matches' && renderMatches()}
-            {activeTab === 'messages' && (
-              <div style={{ height: '70vh', minHeight: 480 }}>
-                <MessagesPage userRole="candidate" />
-              </div>
-            )}
+            <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
+              {renderRecommendations()}
+            </div>
+            <div style={{ display: activeTab === 'invites' ? 'block' : 'none' }}>
+              {renderInvites()}
+            </div>
+            <div style={{ display: activeTab === 'available' ? 'block' : 'none' }}>
+              {renderAvailableJobs()}
+            </div>
+            <div style={{ display: activeTab === 'applied' ? 'block' : 'none' }}>
+              {renderAppliedLiked()}
+            </div>
+            <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
+              {renderMatches()}
+            </div>
+            <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
+              <ChatWindow />
+            </div>
           </div>
         </main>
       </div>

@@ -1432,6 +1432,77 @@ body {
   box-shadow: 0 6px 18px rgba(46, 204, 113, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
+/* Message Action Button */
+.action-btn.message {
+  background: #EEF2FF;
+  color: #5B45E0;
+  border: 1.5px solid #5B45E0;
+  font-weight: 600;
+  position: relative;
+  overflow: visible;
+}
+
+.action-btn.message:hover {
+  background: #5B45E0;
+  color: white;
+  border-color: #5B45E0;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(91, 69, 224, 0.3);
+}
+
+.action-btn.message svg {
+  transition: transform 0.2s ease;
+}
+
+.action-btn.message:hover svg {
+  transform: scale(1.1);
+}
+
+/* Message Badge for unread count */
+.message-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #EF4444;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Responsive: Stack actions on smaller screens */
+@media (max-width: 640px) {
+  .action-buttons-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  
+  .action-btn {
+    min-width: auto;
+    max-width: none;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  
+  .action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .action-btn.message {
+    grid-column: 1 / -1; /* Full width on mobile */
+  }
+}
+
 .action-taken-badge {
   display: flex;
   align-items: center;
@@ -1824,6 +1895,7 @@ body {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
 }
 
@@ -3617,6 +3689,29 @@ body {
   background: linear-gradient(135deg, #16a34a, #15803d);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+}
+
+/* Profile Drawer Message Button */
+.vp-btn-message {
+  background: #EEF2FF;
+  color: #5B45E0;
+  border: 1.5px solid #5B45E0;
+}
+
+.vp-btn-message:hover {
+  background: #5B45E0;
+  color: white;
+  border-color: #5B45E0;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(91, 69, 224, 0.3);
+}
+
+.vp-btn-message svg {
+  transition: transform 0.2s ease;
+}
+
+.vp-btn-message:hover svg {
+  transform: scale(1.1);
 }
 
 .vp-section-icon {

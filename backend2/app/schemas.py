@@ -303,3 +303,50 @@ class ApplicationRead(BaseModel):
     job_posting_id: int
     status: str
     applied_at: datetime
+
+
+# ============ DIRECT MESSAGING SCHEMAS (WhatsApp-style) ============
+
+# Request Schemas
+class ConversationStartRequest(BaseModel):
+    candidate_user_id: int
+
+
+class MessageCreateRequest(BaseModel):
+    content: str
+
+
+# Response Schemas
+class MessageResponse(BaseModel):
+    id: int
+    conversation_id: int
+    sender_user_id: int
+    receiver_user_id: int
+    sender_name: str
+    receiver_name: str
+    content: str
+    is_read: bool
+    read_at: Optional[datetime]
+    created_at: datetime
+
+
+class ConversationResponse(BaseModel):
+    id: int
+    recruiter_user_id: int
+    candidate_user_id: int
+    created_by_user_id: int
+    created_at: datetime
+    updated_at: datetime
+    last_message_at: Optional[datetime]
+
+
+class ConversationListItemResponse(BaseModel):
+    id: int
+    candidate_name: str
+    recruiter_name: str
+    last_message_preview: str
+    last_message_at: Optional[datetime]
+    unread_count: int
+    other_user_name: str
+    other_user_id: Optional[int]
+

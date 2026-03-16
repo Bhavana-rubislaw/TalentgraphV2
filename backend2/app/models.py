@@ -338,6 +338,7 @@ class Notification(SQLModel, table=True):
     """In-app notifications for candidates and recruiters"""
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", index=True)
+    type: Optional[str] = Field(default="general")  # notification type (general, message, alert, etc.)
     title: str
     message: str
     event_type: str  # match, invite, application, status_update, shortlisted
@@ -424,3 +425,42 @@ class Message(SQLModel, table=True):
 
     # Relationships
     conversation: Conversation = Relationship(back_populates="messages")
+
+
+# ============ DIRECT MESSAGING MODELS (WhatsApp-style) ============
+
+class DirectConversation(SQLModel, table=True):
+    """Direct conversation between recruiter and candidate (no job posting requirement)."""
+    __tablename__ = "direct_conversation"
+    __table_args__ = (
+        UniqueConstraint("recruiter_user_id", "candidate_user_id",
+                         name="uq_direct_conversation_recruiter_candidate"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    recruiter_user_id: int = Field(foreign_key="user.id", index=True)
+    candidate_user_id: int = Field(foreign_key="user.id", index=True)
+    created_by_user_id: int = Field(foreign_key="user.id", index=True)  # Always recruiter
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_message_at: Optional[datetime] = Field(default=None)
+
+    # Relationships
+    direct_messages: List["DirectMessage"] = Relationship(back_populates="direct_conversation")
+
+
+class DirectMessage(SQLModel, table=True):
+    """A message in a direct conversation."""
+    __tablename__ = "direct_message"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="direct_conversation.id", index=True)
+    sender_user_id: int = Field(foreign_key="user.id", index=True)
+    receiver_user_id: int = Field(foreign_key="user.id", index=True)
+    content: str
+    is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    direct_conversation: DirectConversation = Relationship(back_populates="direct_messages")

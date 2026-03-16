@@ -20,8 +20,9 @@ if not JWT_SECRET:
 JWT_ALGORITHM = "HS256"
 JWT_EXP_HOURS = int(os.getenv("APP_JWT_EXP_HOURS", "24"))
 
-# Password hashing - Argon2 (matching original backend)
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# Password hashing - Support both Argon2 and bcrypt for compatibility
+# Argon2 is preferred for new hashes, bcrypt is supported for existing data
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
@@ -92,3 +93,89 @@ async def get_current_user_id(current_user: dict = Depends(get_current_user)) ->
             detail="Invalid token: no user_id"
         )
     return user_id
+
+
+# ─── Role-based access control helpers ─────────────────────────────────────────
+
+COMPANY_ROLES = {"recruiter", "hr", "admin"}
+CANDIDATE_ROLE = "candidate"
+
+
+def require_candidate_role(current_user: dict = Depends(get_current_user)) -> dict:
+    """Enforce candidate-only access."""
+    role = current_user.get("role", "").lower()
+    if role != CANDIDATE_ROLE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Candidate role required, got: {role}"
+        )
+    return current_user
+
+
+def require_company_role(current_user: dict = Depends(get_current_user)) -> dict:
+    """Enforce company-side role access (recruiter/hr/admin)."""
+    role = current_user.get("role", "").lower()
+    if role not in COMPANY_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Company role required (recruiter/hr/admin), got: {role}"
+        )
+    return current_user
+
+
+# ─── Company ownership validation ──────────────────────────────────────────────
+
+def get_user_company_id(session, user_id: int) -> int:
+    """
+    Get the company_id for a company-side user.
+    Raises 404 if user has no company profile.
+    """
+    from app.models import Company  # Import here to avoid circular dependency
+    from sqlmodel import select
+    
+    company = session.exec(select(Company).where(Company.user_id == user_id)).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company profile not found for user"
+        )
+    return company.id
+
+
+def verify_company_owns_job(session, company_id: int, job_id: int) -> None:
+    """
+    Verify that a job posting belongs to the specified company.
+    Raises 403 if ownership check fails.
+    """
+    from app.models import JobPosting
+    from sqlmodel import select
+    
+    job = session.exec(select(JobPosting).where(JobPosting.id == job_id)).first()
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job posting {job_id} not found"
+        )
+    
+    if job.company_id != company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this job posting"
+        )
+
+
+def get_user_candidate_id(session, user_id: int) -> int:
+    """
+    Get the candidate_id for a candidate user.
+    Raises 404 if user has no candidate profile.
+    """
+    from app.models import Candidate
+    from sqlmodel import select
+    
+    candidate = session.exec(select(Candidate).where(Candidate.user_id == user_id)).first()
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Candidate profile not found for user"
+        )
+    return candidate.id
