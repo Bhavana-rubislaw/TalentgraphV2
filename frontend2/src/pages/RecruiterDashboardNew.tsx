@@ -5,7 +5,7 @@ import '../styles/ModernDashboard.css';
 import '../styles/RecruiterApplications.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
-import MeetingScheduler from '../components/MeetingScheduler';
+import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
 
 const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages'] as const;
 
@@ -33,8 +33,8 @@ const RecruiterDashboard: React.FC = () => {
   console.log('[STATE] Initial tab:', activeTab);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showProfilePage, setShowProfilePage] = useState(false);
-  const [schedulerOpen, setSchedulerOpen] = useState(false);
-  const [schedulerCandidate, setSchedulerCandidate] = useState('');
+  const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
+  const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
   const [jobPostings, setJobPostings] = useState<any[]>([]);
 
   // ── Selected job: driven from ?job= URL param ─────────────────
@@ -83,10 +83,11 @@ const RecruiterDashboard: React.FC = () => {
   const [browseLoading, setBrowseLoading] = useState(false);
 
   // ── Applications filters: driven from URL params ───────────────
-  // ?search=  ?status=all|<jobId>  ?sort=newest|oldest
+  // ?search=  ?job=all|<jobId>  ?appStatus=all|applied|scheduled|...  ?sort=newest|oldest
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
   const appSearch   = searchParams.get('search') ?? '';
-  const appJobFilter = searchParams.get('status') ?? 'all';
+  const appJobFilter = searchParams.get('job') ?? 'all';
+  const appStatusFilter = searchParams.get('appStatus') ?? 'all';
   const appSortOrder: 'newest' | 'oldest' =
     searchParams.get('sort') === 'oldest' ? 'oldest' : 'newest';
 
@@ -101,11 +102,21 @@ const RecruiterDashboard: React.FC = () => {
   const setAppJobFilter = useCallback(
     (value: string) =>
       setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('status', value); else next.delete('status'); return next; },
+        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('job', value); else next.delete('job'); return next; },
         { replace: true }
       ),
     [setSearchParams]
   );
+
+  const setAppStatusFilter = useCallback(
+    (value: string) =>
+      setSearchParams(
+        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('appStatus', value); else next.delete('appStatus'); return next; },
+        { replace: true }
+      ),
+    [setSearchParams]
+  );
+
   const setAppSortOrder = useCallback(
     (value: 'newest' | 'oldest') =>
       setSearchParams(
@@ -378,15 +389,20 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  const handleStartMessage = async (candidateId: number) => {
-    if (!selectedJobId) {
-      alert('Please select a job posting first');
+  const handleStartMessage = async (candidateUserId: number) => {
+    if (!candidateUserId) {
+      alert('Cannot start conversation: Invalid candidate user ID');
       return;
     }
     try {
-      const res = await apiClient.createConversation(candidateId, selectedJobId);
-      const convId = res.data.id;
-      // Navigate to messages tab with conversation - single history entry
+      console.log('[MESSAGE] Starting conversation with candidate user ID:', candidateUserId);
+      const res = await apiClient.startConversation(candidateUserId);
+      console.log('[MESSAGE] Conversation response:', res.data);
+      
+      const convId = res.data.conversation.id;
+      
+      // Navigate to messages tab with conversation
+      console.log('[MESSAGE] Navigating to messages tab with conversation ID:', convId);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'messages');
@@ -394,15 +410,28 @@ const RecruiterDashboard: React.FC = () => {
         return next;
       });
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to start conversation');
+      console.error('[MESSAGE ERROR] Failed to start conversation:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to start conversation';
+      alert(`Unable to start conversation: ${errorMessage}`);
     }
   };
 
   const handleStartDirectMessage = async (candidateUserId: number) => {
+    // Validate that we have a valid user ID
+    if (!candidateUserId) {
+      alert('Cannot start conversation: Invalid candidate user ID');
+      return;
+    }
+
     try {
+      console.log('[MESSAGE] Starting conversation with candidate user ID:', candidateUserId);
       const res = await apiClient.startConversation(candidateUserId);
+      console.log('[MESSAGE] Conversation response:', res.data);
+      
       const convId = res.data.conversation.id;
+      
       // Navigate to messages tab with conversation
+      console.log('[MESSAGE] Navigating to messages tab with conversation ID:', convId);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'messages');
@@ -410,7 +439,9 @@ const RecruiterDashboard: React.FC = () => {
         return next;
       });
     } catch (err: any) {
-      alert(err.response?.data?.detail || 'Failed to start conversation');
+      console.error('[MESSAGE ERROR] Failed to start conversation:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to start conversation';
+      alert(`Unable to start conversation: ${errorMessage}`);
     }
   };
 
@@ -424,6 +455,29 @@ const RecruiterDashboard: React.FC = () => {
     } catch (error) {
       console.error('[API ERROR] Failed to update application status:', error);
       alert('Failed to update application status');
+    }
+  };
+
+  // Save recruiter notes for an application
+  const handleSaveApplicationNotes = async (applicationId: number) => {
+    try {
+      const notes = appNotes[applicationId] || '';
+      await apiClient.updateApplicationReview(applicationId, {
+        recruiter_notes: notes.trim() || undefined
+      });
+      alert('Notes saved successfully');
+      // Clear local edit state for this application
+      setAppNotes(prev => {
+        const next = { ...prev };
+        delete next[applicationId];
+        return next;
+      });
+      // Refresh applications to get updated notes and timestamp
+      await fetchApplications();
+    } catch (error: any) {
+      console.error('Failed to save notes:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to save notes';
+      alert(errorMsg);
     }
   };
 
@@ -809,7 +863,14 @@ const RecruiterDashboard: React.FC = () => {
                         {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
                       </button>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleStartMessage(rec.candidate.id); }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (rec.candidate.user_id) {
+                            handleStartMessage(rec.candidate.user_id);
+                          } else {
+                            alert('Cannot message this candidate: User ID not available');
+                          }
+                        }}
                         className="action-btn message"
                         aria-label={`Message ${rec.candidate.name}`}
                         title="Start conversation with candidate"
@@ -1201,21 +1262,10 @@ const RecruiterDashboard: React.FC = () => {
                 <button
                   className="action-btn message"
                   onClick={() => {
-                    const jobPostingId = item.job_posting?.id ?? item.job_posting_id;
-                    if (jobPostingId) {
-                      apiClient.createConversation(item.candidate.id, jobPostingId)
-                        .then((res) => {
-                          // Navigate to messages tab with conversation - single history entry
-                          setSearchParams((prev) => {
-                            const next = new URLSearchParams(prev);
-                            next.set('tab', 'messages');
-                            next.set('c', String(res.data.id));
-                            return next;
-                          });
-                        })
-                        .catch((err: any) => alert(err.response?.data?.detail || 'Failed to start conversation'));
+                    if (item.candidate.user_id) {
+                      handleStartDirectMessage(item.candidate.user_id);
                     } else {
-                      alert('No job posting associated with this shortlist item');
+                      alert('Cannot message this candidate: User ID not available');
                     }
                   }}
                   aria-label={`Message ${item.candidate.name}`}
@@ -1503,6 +1553,10 @@ const RecruiterDashboard: React.FC = () => {
     if (appJobFilter !== 'all') {
       result = result.filter((a: any) => String(a.job_posting.id) === appJobFilter);
     }
+    // Status filter
+    if (appStatusFilter !== 'all') {
+      result = result.filter((a: any) => a.status === appStatusFilter);
+    }
     // Search
     if (appSearch.trim()) {
       const q = appSearch.toLowerCase();
@@ -1520,7 +1574,7 @@ const RecruiterDashboard: React.FC = () => {
       return appSortOrder === 'newest' ? db - da : da - db;
     });
     return result;
-  }, [applications, appJobFilter, appSearch, appSortOrder]);
+  }, [applications, appJobFilter, appStatusFilter, appSearch, appSortOrder]);
 
   const selectedApp = useMemo(() => {
     return applications.find((a: any) => a.application_id === selectedAppId) || null;
@@ -1740,6 +1794,36 @@ const RecruiterDashboard: React.FC = () => {
             )}
           </div>
 
+          {/* Status Filter */}
+          <select
+            className="ra-status-filter"
+            value={appStatusFilter}
+            onChange={(e) => setAppStatusFilter(e.target.value)}
+            style={{
+              padding: '8px 32px 8px 12px',
+              fontSize: '13px',
+              fontWeight: 500,
+              border: '1px solid var(--ra-border-1)',
+              borderRadius: '8px',
+              background: 'white',
+              color: 'var(--ra-text-1)',
+              cursor: 'pointer',
+              appearance: 'none',
+              backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748b\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 10px center',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="applied">Applied</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="under_review">Under Review</option>
+            <option value="shortlisted">Shortlisted</option>
+            <option value="selected">Selected</option>
+            <option value="rejected">Rejected</option>
+          </select>
+
           <button className="ra-sort-btn" onClick={() => setAppSortOrder(appSortOrder === 'newest' ? 'oldest' : 'newest')}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5h10M11 9h7M11 13h4"/><path d="M3 17l3 3 3-3"/><line x1="6" y1="18" x2="6" y2="7"/></svg>
             {appSortOrder === 'newest' ? 'Newest first' : 'Oldest first'}
@@ -1834,14 +1918,6 @@ const RecruiterDashboard: React.FC = () => {
 
                 {/* Actions Row */}
                 <div className="ra-detail-actions">
-                  <a className="ra-btn ra-btn-primary" href={`mailto:${selectedApp.candidate.email}`} style={{ textDecoration: 'none' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Send Email
-                  </a>
-                  <button className="ra-btn ra-btn-outline" onClick={() => copyToClipboard(selectedApp.candidate.email)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copy Email
-                  </button>
                   <button 
                     className="ra-btn ra-btn-outline" 
                     onClick={() => {
@@ -1863,8 +1939,12 @@ const RecruiterDashboard: React.FC = () => {
                   <button 
                     className="ra-btn ra-btn-outline" 
                     onClick={() => {
-                      setSchedulerCandidate(selectedApp.candidate.name);
-                      setSchedulerOpen(true);
+                      // Map application_id to id for the modal
+                      setSelectedAppForSchedule({
+                        ...selectedApp,
+                        id: selectedApp.application_id
+                      });
+                      setIsScheduleInterviewModalOpen(true);
                     }}
                     title="Schedule an interview with this candidate"
                   >
@@ -1874,7 +1954,7 @@ const RecruiterDashboard: React.FC = () => {
                       <line x1="8" y1="2" x2="8" y2="6"/>
                       <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    Schedule
+                    Schedule Interview
                   </button>
                   <select
                     className="ra-detail-status-select"
@@ -1885,9 +1965,10 @@ const RecruiterDashboard: React.FC = () => {
                     }}
                   >
                     <option value="applied">Applied</option>
-                    <option value="reviewed">Reviewed</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="under_review">Under Review</option>
                     <option value="shortlisted">Shortlisted</option>
-                    <option value="offered">Offered</option>
+                    <option value="selected">Selected</option>
                     <option value="rejected">Rejected</option>
                   </select>
                 </div>
@@ -2066,18 +2147,68 @@ const RecruiterDashboard: React.FC = () => {
                   <div className="ra-detail-section">
                     <div className="ra-section-title">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      Internal Notes
+                      Recruiter Notes
                     </div>
+                    
+                    {/* Display saved notes if they exist */}
+                    {selectedApp.recruiter_notes && (
+                      <div style={{ 
+                        padding: '12px', 
+                        backgroundColor: '#f8fafc', 
+                        borderRadius: '6px', 
+                        marginBottom: '12px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center',
+                          marginBottom: '8px'
+                        }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                            Saved Notes
+                          </span>
+                          {selectedApp.notes_updated_at && (
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                              Last updated: {new Date(selectedApp.notes_updated_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ 
+                          fontSize: '13px', 
+                          color: '#334155', 
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-wrap'
+                        }}>
+                          {selectedApp.recruiter_notes}
+                        </div>
+                      </div>
+                    )}
+                    
                     <textarea
                       className="ra-notes-textarea"
-                      placeholder="Add private notes about this candidate…"
-                      value={appNotes[selectedApp.application_id] || ''}
+                      placeholder="Add interview feedback, evaluation notes, or next-step comments..."
+                      value={appNotes[selectedApp.application_id] ?? selectedApp.recruiter_notes ?? ''}
                       onChange={(e) => setAppNotes(prev => ({ ...prev, [selectedApp.application_id]: e.target.value }))}
                     />
                     <div className="ra-notes-footer">
-                      <button className="ra-btn ra-btn-outline" style={{ height: 30, fontSize: 12 }} onClick={() => showToast('Notes saved locally')}>
-                        Save Note
+                      <button 
+                        className="ra-btn ra-btn-outline" 
+                        style={{ height: 30, fontSize: 12 }} 
+                        onClick={() => handleSaveApplicationNotes(selectedApp.application_id)}
+                      >
+                        Save Notes
                       </button>
+                      <span style={{ fontSize: 11, color: '#64748b', marginLeft: 8 }}>
+                        Notes are private and only visible to recruiters
+                      </span>
                     </div>
                   </div>
 
@@ -2089,14 +2220,15 @@ const RecruiterDashboard: React.FC = () => {
                     </div>
                     <div className="ra-timeline">
                       {(() => {
-                        const statusOrder = ['applied', 'reviewed', 'shortlisted', 'offered'];
+                        const statusOrder = ['applied', 'scheduled', 'under_review', 'shortlisted', 'selected'];
                         const currentIdx = statusOrder.indexOf(selectedApp.status);
                         const steps = [
                           { label: 'Applied', date: formatDate(selectedApp.applied_at) },
-                          ...(currentIdx >= 1 ? [{ label: 'Reviewed', date: 'Status updated' }] : []),
-                          ...(currentIdx >= 2 ? [{ label: 'Shortlisted', date: 'Status updated' }] : []),
-                          ...(currentIdx >= 3 ? [{ label: 'Offered', date: 'Status updated' }] : []),
-                          ...(selectedApp.status === 'rejected' ? [{ label: 'Rejected', date: 'Status updated' }] : [])
+                          ...(currentIdx >= 1 ? [{ label: 'Scheduled', date: 'Interview scheduled' }] : []),
+                          ...(currentIdx >= 2 ? [{ label: 'Under Review', date: 'Application reviewed' }] : []),
+                          ...(currentIdx >= 3 ? [{ label: 'Shortlisted', date: 'Candidate shortlisted' }] : []),
+                          ...(currentIdx >= 4 ? [{ label: 'Selected', date: 'Candidate selected' }] : []),
+                          ...(selectedApp.status === 'rejected' ? [{ label: 'Rejected', date: 'Application closed' }] : [])
                         ];
                         return steps.map((step, i) => (
                           <div key={i} className="ra-timeline-item">
@@ -2303,15 +2435,30 @@ const RecruiterDashboard: React.FC = () => {
                   </svg>
                   View Profile
                 </button>
+                <button
+                  onClick={() => {
+                    if (match.candidate.user_id) {
+                      handleStartDirectMessage(match.candidate.user_id);
+                    } else {
+                      alert('Cannot message this candidate: User ID not available');
+                    }
+                  }}
+                  className="action-btn primary"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  Message
+                </button>
                 <a
                   href={`mailto:${match.candidate.email}`}
-                  className="action-btn primary"
+                  className="action-btn secondary"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  Send Email
+                  Email
                 </a>
                 {match.candidate.phone && (
                   <a
@@ -2956,34 +3103,6 @@ const RecruiterDashboard: React.FC = () => {
                     Message
                   </button>
                   <button
-                    className="action-btn secondary"
-                    style={{ 
-                      padding: '0 16px',
-                      height: '40px',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSchedulerCandidate(candidate.full_name || 'Candidate');
-                      setSchedulerOpen(true);
-                    }}
-                    title="Schedule an interview with this candidate"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                      <rect x="3" y="4" width="18" height="18" rx="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/>
-                      <line x1="8" y1="2" x2="8" y2="6"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    Schedule
-                  </button>
-                  <button
                     className={`action-btn ${candidate.already_invited ? 'success' : 'primary'}`}
                     style={{ 
                       padding: '0 16px',
@@ -3560,11 +3679,20 @@ const RecruiterDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Meeting Scheduler */}
-      {schedulerOpen && (
-        <MeetingScheduler
-          candidateName={schedulerCandidate}
-          onClose={() => setSchedulerOpen(false)}
+      {/* Schedule Interview Modal */}
+      {isScheduleInterviewModalOpen && selectedAppForSchedule && (
+        <ScheduleInterviewModal
+          isOpen={isScheduleInterviewModalOpen}
+          onClose={() => {
+            setIsScheduleInterviewModalOpen(false);
+            setSelectedAppForSchedule(null);
+          }}
+          application={selectedAppForSchedule}
+          onSuccess={() => {
+            // Refresh applications list
+            fetchApplications();
+            showToast('Interview scheduled successfully!');
+          }}
         />
       )}
     </div>
