@@ -16,7 +16,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
-import MeetingScheduler from '../MeetingScheduler';
 import '../../styles/ChatWindow.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -83,7 +82,6 @@ export default function ChatWindow() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showScheduler, setShowScheduler] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -292,43 +290,6 @@ export default function ChatWindow() {
               <div className="chat-header-info">
                 <h3>{selectedConv.other_user_name}</h3>
               </div>
-              {user?.role === 'recruiter' && (
-                <button
-                  onClick={() => setShowScheduler(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '7px',
-                    padding: '9px 16px',
-                    borderRadius: '11px',
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
-                    color: 'white',
-                    fontWeight: 700,
-                    fontSize: '12px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(109,40,217,0.35)',
-                    transition: 'all 0.2s ease',
-                    marginLeft: 'auto',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(109,40,217,0.45)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(109,40,217,0.35)';
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  Schedule Interview
-                </button>
-              )}
             </div>
 
             {/* Messages */}
@@ -392,14 +353,6 @@ export default function ChatWindow() {
           </div>
         )}
       </div>
-
-      {/* Meeting Scheduler Modal */}
-      {showScheduler && selectedConv && (
-        <MeetingScheduler
-          candidateName={selectedConv.other_user_name}
-          onClose={() => setShowScheduler(false)}
-        />
-      )}
     </div>
   );
 }

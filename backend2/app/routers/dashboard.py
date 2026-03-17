@@ -617,6 +617,7 @@ def get_recruiter_recommendations(
         recommendations.append({
             "candidate": {
                 "id": candidate.id,
+                "user_id": candidate.user_id,
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,
@@ -751,6 +752,7 @@ def get_recruiter_shortlist(
         result.append({
             "candidate": {
                 "id": candidate.id,
+                "user_id": candidate.user_id,
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,
@@ -900,7 +902,9 @@ def get_recruiter_applications(
                 "seniority_level": job_posting.seniority_level
             },
             "status": app.status,
-            "applied_at": app.applied_at.isoformat()
+            "applied_at": app.applied_at.isoformat(),
+            "recruiter_notes": app.recruiter_notes,
+            "notes_updated_at": app.notes_updated_at.isoformat() if app.notes_updated_at else None
         })
     
     return result
@@ -993,6 +997,7 @@ def get_recruiter_matches(
             "match_id": match.id,
             "candidate": {
                 "id": candidate.id,
+                "user_id": candidate.user_id,
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,

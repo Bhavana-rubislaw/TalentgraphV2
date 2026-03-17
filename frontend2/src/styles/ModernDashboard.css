@@ -1421,15 +1421,23 @@ body {
 }
 
 .action-btn.success {
-  background: linear-gradient(135deg, #27AE60, #2ECC71);
+  background: linear-gradient(135deg, #7B5EA7, #9474C4, #8B6FB8);
   color: white;
-  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+              inset 0 2px 4px rgba(255,255,255,0.25),
+              inset 0 -2px 4px rgba(0,0,0,0.15),
+              0 0 20px rgba(148, 116, 196, 0.3);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .action-btn.success:hover {
-  background: linear-gradient(135deg, #219A52, #27AE60);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(46, 204, 113, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, #6B4E97, #8464B4, #7B5EA7);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(123, 94, 167, 0.6), 
+              inset 0 2px 5px rgba(255,255,255,0.3),
+              inset 0 -2px 4px rgba(0,0,0,0.15),
+              0 0 30px rgba(148, 116, 196, 0.4);
 }
 
 /* Message Action Button */
@@ -1579,8 +1587,15 @@ body {
 }
 
 .action-btn.applied-done {
-  background: linear-gradient(135deg, #27AE60, #2ECC71) !important;
+  background: linear-gradient(135deg, #7B5EA7, #9474C4, #8B6FB8) !important;
   color: white;
+  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+              inset 0 2px 4px rgba(255,255,255,0.25),
+              inset 0 -2px 4px rgba(0,0,0,0.15),
+              0 0 20px rgba(148, 116, 196, 0.3);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: default;
 }
 
 .action-btn.passed-done {
@@ -1711,8 +1726,13 @@ body {
 }
 
 .candidate-dashboard .action-btn.success {
-  background: linear-gradient(135deg, #2ECC71, #45D988);
-  box-shadow: 0 2px 8px rgba(46, 204, 113, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  background: linear-gradient(135deg, #7B5EA7, #9474C4, #8B6FB8);
+  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+              inset 0 2px 4px rgba(255,255,255,0.25),
+              inset 0 -2px 4px rgba(0,0,0,0.15),
+              0 0 20px rgba(148, 116, 196, 0.3);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .candidate-dashboard .match-badge-modern {

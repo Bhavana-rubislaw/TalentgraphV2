@@ -202,6 +202,23 @@ export const apiClient = {
   withdrawApplication: (applicationId: number) =>
     api.delete(`/applications/${applicationId}`),
   
+  scheduleInterview: (applicationId: number, payload: {
+    candidate_email: string;
+    interview_datetime: string;
+    timezone: string;
+    meeting_link: string;
+    notes?: string;
+    subject?: string;
+  }) =>
+    api.post(`/applications/${applicationId}/schedule-interview`, payload),
+  
+  // Update application status and/or recruiter notes (recruiter only)
+  updateApplicationReview: (applicationId: number, payload: {
+    status?: string;
+    recruiter_notes?: string;
+  }) =>
+    api.put(`/applications/${applicationId}/review`, payload),
+  
   // Dashboard - Candidate
   getCandidateRecommendations: (jobProfileId: number) =>
     api.get(`/dashboard/candidate/recommendations?job_profile_id=${jobProfileId}`),

@@ -324,8 +324,16 @@ class Application(SQLModel, table=True):
     candidate_id: int = Field(foreign_key="candidate.id", index=True)
     job_posting_id: int = Field(foreign_key="jobposting.id", index=True)
     job_profile_id: int = Field(foreign_key="jobprofile.id")
-    status: str = Field(default="applied")  # applied, reviewed, shortlisted, rejected, offered
+    status: str = Field(default="applied")  # applied, scheduled, under_review, shortlisted, selected, rejected
     applied_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Recruiter notes (internal only, not visible to candidate)
+    recruiter_notes: Optional[str] = Field(default=None)
+    notes_updated_at: Optional[datetime] = Field(default=None)
+    
+    # Audit fields for tracking status changes
+    last_status_updated_at: Optional[datetime] = Field(default=None)
+    last_status_updated_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="applications")

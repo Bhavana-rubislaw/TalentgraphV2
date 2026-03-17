@@ -303,6 +303,10 @@ class ApplicationRead(BaseModel):
     job_posting_id: int
     status: str
     applied_at: datetime
+    recruiter_notes: Optional[str] = None
+    notes_updated_at: Optional[datetime] = None
+    last_status_updated_at: Optional[datetime] = None
+    last_status_updated_by_user_id: Optional[int] = None
 
 
 # ============ DIRECT MESSAGING SCHEMAS (WhatsApp-style) ============
