@@ -6,7 +6,7 @@ Pydantic models mirroring database structure
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole
+from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus
 
 
 # ============ USER SCHEMAS ============
@@ -270,9 +270,28 @@ class JobPostingRead(JobPostingBase):
     company_id: int
     required_skills: Optional[str]
     is_active: bool
+    status: JobPostingStatus
+    frozen_at: Optional[datetime] = None
+    reposted_at: Optional[datetime] = None
+    last_reactivated_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     posting_skills: List[JobPostingSkillRead] = []
+
+
+class JobPostingStatusUpdateRequest(BaseModel):
+    """Request schema for updating job posting lifecycle status"""
+    action: str  # "freeze", "reactivate", "repost"
+
+
+class JobPostingStatusUpdateResponse(BaseModel):
+    """Response schema for lifecycle status updates"""
+    message: str
+    job_id: int
+    status: JobPostingStatus
+    frozen_at: Optional[datetime] = None
+    reposted_at: Optional[datetime] = None
+    last_reactivated_at: Optional[datetime] = None
 
 
 # ============ INTERACTION SCHEMAS ============

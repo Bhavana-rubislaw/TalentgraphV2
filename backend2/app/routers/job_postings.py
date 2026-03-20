@@ -8,14 +8,18 @@ from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
 from app.database import get_session
-from app.models import JobPosting, JobPostingSkill, Company, User
-from app.schemas import JobPostingRead, JobPostingCreate, JobPostingSkillCreate, JobPostingSkillRead
+from app.models import JobPosting, JobPostingSkill, Company, User, JobPostingStatus, Application, Candidate
+from app.schemas import (
+    JobPostingRead, JobPostingCreate, JobPostingSkillCreate, JobPostingSkillRead,
+    JobPostingStatusUpdateRequest, JobPostingStatusUpdateResponse
+)
 from app.security import (
     get_current_user,
     require_company_role,
     get_user_company_id,
     verify_company_owns_job
 )
+from app.routers.notifications import push_notification
 
 router = APIRouter(prefix="/job-postings", tags=["Job Postings"])
 
@@ -149,10 +153,14 @@ def get_job_postings(
         ).all()
         query = select(JobPosting).where(JobPosting.company_id.in_(company_ids))
     else:
-        query = select(JobPosting).where(JobPosting.is_active == True)
+        query = select(JobPosting).where(
+            JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
+        )
     
     if active_only and company:
-        query = query.where(JobPosting.is_active == True)
+        query = query.where(
+            JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
+        )
     
     postings = session.exec(query).all()
     
@@ -259,7 +267,12 @@ def delete_job_posting(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Delete/archive a job posting (Recruiter only)"""
+    """
+    Delete/archive a job posting (Recruiter only)
+    
+    Implements soft-delete by freezing the job posting.
+    Historical applications and candidate relationships are preserved.
+    """
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -276,12 +289,14 @@ def delete_job_posting(
     if posting_company.company_name != company.company_name:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
-    # Soft delete - just mark as inactive
-    job_posting.is_active = False
+    # Soft delete - freeze the job to preserve historical data
+    job_posting.status = JobPostingStatus.FROZEN
+    job_posting.frozen_at = datetime.utcnow()
+    job_posting.is_active = False  # Legacy field sync
     session.add(job_posting)
     session.commit()
     
-    return {"message": "Job posting archived"}
+    return {"message": "Job posting archived", "status": "frozen"}
 
 
 @router.post("/{job_id}/toggle-active", response_model=dict)
@@ -290,7 +305,13 @@ def toggle_job_posting_active(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Toggle job posting active status"""
+    """
+    Toggle job posting active status (Legacy endpoint - mapped to lifecycle system)
+    
+    Legacy compatibility:
+    - If currently active/reposted -> freeze
+    - If currently frozen -> repost
+    """
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -307,13 +328,28 @@ def toggle_job_posting_active(
     if posting_company.company_name != company.company_name:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
-    job_posting.is_active = not job_posting.is_active
+    # Map old boolean toggle to new lifecycle system
+    if job_posting.status in [JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]:
+        # Currently active -> freeze
+        job_posting.status = JobPostingStatus.FROZEN
+        job_posting.frozen_at = datetime.utcnow()
+        job_posting.is_active = False
+        new_active = False
+    else:
+        # Currently frozen -> repost
+        job_posting.status = JobPostingStatus.REPOSTED
+        job_posting.reposted_at = datetime.utcnow()
+        job_posting.last_reactivated_at = datetime.utcnow()
+        job_posting.is_active = True
+        new_active = True
+    
     session.add(job_posting)
     session.commit()
     
     return {
-        "message": f"Job posting is now {'active' if job_posting.is_active else 'inactive'}",
-        "is_active": job_posting.is_active
+        "message": f"Job posting is now {'active' if new_active else 'inactive'}",
+        "is_active": new_active,
+        "status": job_posting.status
     }
 
 
@@ -416,3 +452,134 @@ def delete_skill_from_posting(
     session.commit()
     
     return {"message": "Skill removed"}
+
+
+# ============ JOB POSTING LIFECYCLE MANAGEMENT ============
+
+@router.post("/{job_id}/status", response_model=JobPostingStatusUpdateResponse)
+def update_job_posting_status(
+    job_id: int,
+    request: JobPostingStatusUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Update job posting lifecycle status (freeze, reactivate, repost)
+    
+    Actions:
+    - freeze: Temporarily close job, stop accepting applications, preserve historical data
+    - reactivate: Reopen frozen job and notify previous applicants
+    - repost: Explicitly refresh/relist job for sourcing visibility
+    """
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="Unauthorized - Company profile required")
+    
+    job_posting = session.get(JobPosting, job_id)
+    if not job_posting:
+        raise HTTPException(status_code=404, detail="Job posting not found")
+    
+    # Verify company ownership
+    posting_company = session.get(Company, job_posting.company_id)
+    if posting_company.company_name != company.company_name:
+        raise HTTPException(status_code=403, detail="Unauthorized - Different company")
+    
+    action = request.action.lower()
+    current_status = job_posting.status
+    now = datetime.utcnow()
+    
+    # Validate and execute state transition
+    if action == "freeze":
+        if current_status not in [JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot freeze job from '{current_status}' status. Only active or reposted jobs can be frozen."
+            )
+        
+        job_posting.status = JobPostingStatus.FROZEN
+        job_posting.frozen_at = now
+        job_posting.is_active = False  # Legacy field sync
+        message = "Job posting frozen successfully"
+    
+    elif action == "reactivate":
+        if current_status != JobPostingStatus.FROZEN:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot reactivate job from '{current_status}' status. Only frozen jobs can be reactivated."
+            )
+        
+        job_posting.status = JobPostingStatus.REPOSTED
+        job_posting.last_reactivated_at = now
+        job_posting.reposted_at = now
+        job_posting.is_active = True  # Legacy field sync
+        message = "Job posting reactivated successfully"
+        
+        # Notify recruiter if there are previous applicants
+        previous_applicants = session.exec(
+            select(Application).where(Application.job_posting_id == job_id)
+        ).all()
+        
+        if previous_applicants:
+            push_notification(
+                session,
+                user.id,
+                title="Job Reopened with Previous Applicants",
+                message=f"'{job_posting.job_title}' has {len(previous_applicants)} prior applicant(s). Review existing applications before sourcing again.",
+                event_type="job_reopened_with_previous_applicants",
+                route=f"/recruiter/jobs/{job_id}/applicants",
+                route_context={"job_id": job_id, "applicant_count": len(previous_applicants)}
+            )
+            
+            # Notify previous applicants that job has reopened
+            for app in previous_applicants:
+                candidate = session.get(Candidate, app.candidate_id)
+                if candidate:
+                    candidate_user = session.exec(
+                        select(User).where(User.id == candidate.user_id)
+                    ).first()
+                    if candidate_user:
+                        push_notification(
+                            session,
+                            candidate_user.id,
+                            title="Job Opportunity Reopened",
+                            message=f"'{job_posting.job_title}' at {posting_company.company_name} has reopened. Your prior application remains on file and may be reconsidered.",
+                            event_type="job_reopened_for_previous_applicant",
+                            route=f"/candidate/applications",
+                            route_context={"job_id": job_id, "job_title": job_posting.job_title}
+                        )
+    
+    elif action == "repost":
+        if current_status not in [JobPostingStatus.FROZEN, JobPostingStatus.ACTIVE]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot repost job from '{current_status}' status."
+            )
+        
+        job_posting.status = JobPostingStatus.REPOSTED
+        job_posting.reposted_at = now
+        job_posting.is_active = True  # Legacy field sync
+        message = "Job posting reposted successfully"
+    
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, repost"
+        )
+    
+    job_posting.updated_at = now
+    session.add(job_posting)
+    session.commit()
+    session.refresh(job_posting)
+    
+    return JobPostingStatusUpdateResponse(
+        message=message,
+        job_id=job_posting.id,
+        status=job_posting.status,
+        frozen_at=job_posting.frozen_at,
+        reposted_at=job_posting.reposted_at,
+        last_reactivated_at=job_posting.last_reactivated_at
+    )

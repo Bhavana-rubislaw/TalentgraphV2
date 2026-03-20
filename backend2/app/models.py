@@ -46,6 +46,18 @@ class CurrencyType(str, Enum):
     EUR = "eur"
 
 
+class JobPostingStatus(str, Enum):
+    """
+    Job posting lifecycle status
+    - active: Currently open and accepting applications
+    - frozen: Temporarily closed, not accepting new applications, preserved in system
+    - reposted: Reopened/relisted posting that was previously frozen
+    """
+    ACTIVE = "active"
+    FROZEN = "frozen"
+    REPOSTED = "reposted"
+
+
 # ============ USER MODELS ============
 
 class User(SQLModel, table=True):
@@ -268,7 +280,13 @@ class JobPosting(SQLModel, table=True):
     pay_type: Optional[str] = None  # "hourly" or "annually"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=True)  # Legacy field, kept for backward compatibility
+    
+    # Job Posting Lifecycle Management
+    status: JobPostingStatus = Field(default=JobPostingStatus.ACTIVE)
+    frozen_at: Optional[datetime] = None
+    reposted_at: Optional[datetime] = None
+    last_reactivated_at: Optional[datetime] = None
     
     # Relationships
     company: Company = Relationship(back_populates="job_postings")
