@@ -135,8 +135,8 @@ export const apiClient = {
     api.post(`/job-postings/${id}/toggle-active`),
 
   // Job Posting Lifecycle Management
-  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost') =>
-    api.post(`/job-postings/${id}/status`, { action }),
+  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost' | 'cancel', cancellation_reason?: string) =>
+    api.post(`/job-postings/${id}/status`, { action, cancellation_reason }),
 
   getSkillCatalogs: () =>
     api.get('/job-postings/catalogs'),

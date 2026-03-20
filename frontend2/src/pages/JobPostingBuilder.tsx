@@ -62,10 +62,12 @@ interface JobPosting {
   required_skills?: string;
   posting_skills: PostingSkill[];
   is_active: boolean;
-  status?: string; // 'active', 'frozen', 'reposted'
+  status?: string; // 'active', 'frozen', 'reposted', 'cancelled'
   frozen_at?: string;
   reposted_at?: string;
   last_reactivated_at?: string;
+  cancelled_at?: string;
+  cancellation_reason?: string;
   created_at: string;
   updated_at: string;
 }
@@ -218,8 +220,13 @@ const JobPostingBuilder: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [listSearch, setListSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'reposted'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'reposted' | 'cancelled'>('all');
   const [showPreview, setShowPreview] = useState(true);
+  
+  // Cancel modal state
+  const [showCancelModal, setShowCancelModal] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [customReason, setCustomReason] = useState<string>('');
 
   // Skills state
   const [skillSearchTech, setSkillSearchTech] = useState('');
@@ -478,6 +485,29 @@ const JobPostingBuilder: React.FC = () => {
     }
   };
 
+  const handleCancelJob = async () => {
+    if (!showCancelModal) return;
+    
+    const reasonText = cancelReason === 'Other' ? customReason.trim() : cancelReason;
+    
+    if (!reasonText) {
+      alert('Please provide a cancellation reason');
+      return;
+    }
+    
+    try {
+      await apiClient.updateJobPostingStatus(showCancelModal, 'cancel', reasonText);
+      alert('Job posting cancelled successfully');
+      setShowCancelModal(null);
+      setCancelReason('');
+      setCustomReason('');
+      await fetchPostings();
+    } catch (error: any) {
+      console.error('[CANCEL ERROR]', error);
+      alert(error.response?.data?.detail || 'Failed to cancel job posting');
+    }
+  };
+
   // ============ SKILLS HANDLERS ============
 
   const addSkill = (skillName: string, category: 'technical' | 'soft') => {
@@ -676,6 +706,7 @@ const JobPostingBuilder: React.FC = () => {
               <option value="active">Active Only</option>
               <option value="frozen">Frozen Only</option>
               <option value="reposted">Reposted Only</option>
+              <option value="cancelled">Cancelled Only</option>
             </select>
           </div>
           <div className="jpb-sidebar-list">
@@ -724,62 +755,120 @@ const JobPostingBuilder: React.FC = () => {
                       display: 'flex',
                       gap: '6px',
                     }}>
-                      {(normalizedStatus === 'active' || normalizedStatus === 'reposted') ? (
-                        <button
-                          onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: '11px',
-                            borderRadius: '4px',
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#f9fafb',
-                            cursor: 'pointer',
-                            fontWeight: 500,
-                            flex: 1,
-                            color: '#374151',
-                          }}
-                          title="Freeze this job posting"
-                        >
-                          Freeze
-                        </button>
-                      ) : normalizedStatus === 'frozen' ? (
+                      {normalizedStatus === 'cancelled' ? (
+                        <div style={{
+                          padding: '6px 8px',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          backgroundColor: '#f3f4f6',
+                          color: '#6b7280',
+                          textAlign: 'center',
+                          flex: 1,
+                        }}>
+                          Cancelled: {p.cancellation_reason}
+                        </div>
+                      ) : (
                         <>
-                          <button
-                            onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              borderRadius: '4px',
-                              border: '1px solid #10b981',
-                              backgroundColor: '#d1fae5',
-                              color: '#10b981',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                              flex: 1,
-                            }}
-                            title="Unfreeze this job posting"
-                          >
-                            Unfreeze
-                          </button>
-                          <button
-                            onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}
-                            style={{
-                              padding: '4px 8px',
-                              fontSize: '11px',
-                              borderRadius: '4px',
-                              border: '1px solid #8b5cf6',
-                              backgroundColor: '#ede9fe',
-                              color: '#8b5cf6',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                              flex: 1,
-                            }}
-                            title="Repost this job posting"
-                          >
-                            Repost
-                          </button>
+                          {(normalizedStatus === 'active' || normalizedStatus === 'reposted') ? (
+                            <>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #e5e7eb',
+                                  backgroundColor: '#f9fafb',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                  color: '#374151',
+                                }}
+                                title="Freeze this job posting"
+                              >
+                                Freeze
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowCancelModal(p.id);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ef4444',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Cancel this job posting"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : normalizedStatus === 'frozen' ? (
+                            <>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #10b981',
+                                  backgroundColor: '#d1fae5',
+                                  color: '#10b981',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Unfreeze this job posting"
+                              >
+                                Unfreeze
+                              </button>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #8b5cf6',
+                                  backgroundColor: '#ede9fe',
+                                  color: '#8b5cf6',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Repost this job posting"
+                              >
+                                Repost
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowCancelModal(p.id);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ef4444',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Cancel this job posting"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : null}
                         </>
-                      ) : null}
+                      )}
                     </div>
                   </div>
                 );
@@ -1388,6 +1477,149 @@ const JobPostingBuilder: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Cancel Job Confirmation Modal */}
+      {showCancelModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+              Cancel Job Posting?
+            </h2>
+            <p style={{ margin: '0 0 20px 0', color: '#6b7280', fontSize: '14px' }}>
+              This action is <strong>permanent</strong> and cannot be undone. The job will no longer accept applications.
+            </p>
+
+            {/* Reason Dropdown */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                Reason for cancellation *
+              </label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '14px',
+                }}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Position Filled">Position Filled</option>
+                <option value="Budget Cut">Budget Cut</option>
+                <option value="Requirements Changed">Requirements Changed</option>
+                <option value="Company Restructuring">Company Restructuring</option>
+                <option value="Other">Other (please specify)</option>
+              </select>
+            </div>
+
+            {/* Custom Reason Textarea */}
+            {cancelReason === 'Other' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                  Please specify reason *
+                </label>
+                <textarea
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Brief explanation..."
+                  maxLength={500}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                  }}
+                />
+                <small style={{ fontSize: '11px', color: '#6b7280' }}>
+                  {customReason.length}/500 characters
+                </small>
+              </div>
+            )}
+
+            {/* Info Box */}
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '20px',
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#166534', marginBottom: '6px' }}>
+                What you'll still have access to:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#15803d' }}>
+                <li>All candidate matches and recommendations</li>
+                <li>All applications received</li>
+                <li>All notes and communications</li>
+                <li>Historical data and analytics</li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowCancelModal(null);
+                  setCancelReason('');
+                  setCustomReason('');
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleCancelJob}
+                disabled={!cancelReason || (cancelReason === 'Other' && !customReason.trim())}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: cancelReason && (cancelReason !== 'Other' || customReason.trim()) ? '#ef4444' : '#d1d5db',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: cancelReason && (cancelReason !== 'Other' || customReason.trim()) ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Yes, Cancel Job
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

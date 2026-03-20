@@ -494,6 +494,13 @@ def update_job_posting_status(
     
     # Validate and execute state transition
     if action == "freeze":
+        # Prevent actions on cancelled jobs
+        if current_status == JobPostingStatus.CANCELLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot freeze a cancelled job. Cancelled jobs are permanently closed."
+            )
+        
         if current_status not in [JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]:
             raise HTTPException(
                 status_code=400, 
@@ -504,8 +511,26 @@ def update_job_posting_status(
         job_posting.frozen_at = now
         job_posting.is_active = False  # Legacy field sync
         message = "Job posting frozen successfully"
+        
+        # Notify recruiter about freeze
+        push_notification(
+            session,
+            user.id,
+            title="Job Posting Frozen",
+            message=f"'{job_posting.job_title}' has been frozen and is no longer accepting applications.",
+            event_type="job_posting_frozen",
+            route=f"/recruiter/job-postings",
+            route_context={"job_id": job_id, "job_title": job_posting.job_title}
+        )
     
     elif action == "reactivate":
+        # Prevent actions on cancelled jobs
+        if current_status == JobPostingStatus.CANCELLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot reactivate a cancelled job. Cancelled jobs are permanently closed."
+            )
+        
         if current_status != JobPostingStatus.FROZEN:
             raise HTTPException(
                 status_code=400,
@@ -518,41 +543,31 @@ def update_job_posting_status(
         job_posting.is_active = True  # Legacy field sync
         message = "Job posting reactivated successfully"
         
-        # Notify recruiter if there are previous applicants
+        # Count previous applicants for context
         previous_applicants = session.exec(
             select(Application).where(Application.job_posting_id == job_id)
         ).all()
         
-        if previous_applicants:
-            push_notification(
-                session,
-                user.id,
-                title="Job Reopened with Previous Applicants",
-                message=f"'{job_posting.job_title}' has {len(previous_applicants)} prior applicant(s). Review existing applications before sourcing again.",
-                event_type="job_reopened_with_previous_applicants",
-                route=f"/recruiter/jobs/{job_id}/applicants",
-                route_context={"job_id": job_id, "applicant_count": len(previous_applicants)}
-            )
-            
-            # Notify previous applicants that job has reopened
-            for app in previous_applicants:
-                candidate = session.get(Candidate, app.candidate_id)
-                if candidate:
-                    candidate_user = session.exec(
-                        select(User).where(User.id == candidate.user_id)
-                    ).first()
-                    if candidate_user:
-                        push_notification(
-                            session,
-                            candidate_user.id,
-                            title="Job Opportunity Reopened",
-                            message=f"'{job_posting.job_title}' at {posting_company.company_name} has reopened. Your prior application remains on file and may be reconsidered.",
-                            event_type="job_reopened_for_previous_applicant",
-                            route=f"/candidate/applications",
-                            route_context={"job_id": job_id, "job_title": job_posting.job_title}
-                        )
+        # Notify recruiter about reactivation
+        applicant_msg = f" with {len(previous_applicants)} prior applicant(s)" if previous_applicants else ""
+        push_notification(
+            session,
+            user.id,
+            title="Job Posting Reactivated",
+            message=f"'{job_posting.job_title}' has been reactivated and is now accepting applications{applicant_msg}.",
+            event_type="job_posting_reactivated",
+            route=f"/recruiter/job-postings",
+            route_context={"job_id": job_id, "job_title": job_posting.job_title, "applicant_count": len(previous_applicants)}
+        )
     
     elif action == "repost":
+        # Prevent actions on cancelled jobs
+        if current_status == JobPostingStatus.CANCELLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot repost a cancelled job. Cancelled jobs are permanently closed."
+            )
+        
         if current_status not in [JobPostingStatus.FROZEN, JobPostingStatus.ACTIVE]:
             raise HTTPException(
                 status_code=400,
@@ -563,11 +578,55 @@ def update_job_posting_status(
         job_posting.reposted_at = now
         job_posting.is_active = True  # Legacy field sync
         message = "Job posting reposted successfully"
+        
+        # Notify recruiter about repost
+        push_notification(
+            session,
+            user.id,
+            title="Job Posting Reposted",
+            message=f"'{job_posting.job_title}' has been reposted and refreshed for increased visibility.",
+            event_type="job_posting_reposted",
+            route=f"/recruiter/job-postings",
+            route_context={"job_id": job_id, "job_title": job_posting.job_title}
+        )
+    
+    elif action == "cancel":
+        # Validate cancellation reason is provided
+        if not request.cancellation_reason or not request.cancellation_reason.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Cancellation reason is required. Please provide a reason for cancelling this job posting."
+            )
+        
+        # Can cancel from any state except already cancelled
+        if current_status == JobPostingStatus.CANCELLED:
+            raise HTTPException(
+                status_code=400,
+                detail="Job posting is already cancelled."
+            )
+        
+        job_posting.status = JobPostingStatus.CANCELLED
+        job_posting.cancelled_at = now
+        job_posting.cancellation_reason = request.cancellation_reason.strip()
+        job_posting.is_active = False  # Legacy field sync
+        message = "Job posting cancelled successfully"
+        
+        # Notify recruiter about cancellation
+        reason_preview = request.cancellation_reason[:50] + "..." if len(request.cancellation_reason) > 50 else request.cancellation_reason
+        push_notification(
+            session,
+            user.id,
+            title="Job Posting Cancelled",
+            message=f"'{job_posting.job_title}' has been permanently cancelled. Reason: {reason_preview}",
+            event_type="job_posting_cancelled",
+            route=f"/recruiter/job-postings",
+            route_context={"job_id": job_id, "job_title": job_posting.job_title, "reason": request.cancellation_reason}
+        )
     
     else:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, repost"
+            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, repost, cancel"
         )
     
     job_posting.updated_at = now
@@ -581,5 +640,7 @@ def update_job_posting_status(
         status=job_posting.status,
         frozen_at=job_posting.frozen_at,
         reposted_at=job_posting.reposted_at,
-        last_reactivated_at=job_posting.last_reactivated_at
+        last_reactivated_at=job_posting.last_reactivated_at,
+        cancelled_at=job_posting.cancelled_at,
+        cancellation_reason=job_posting.cancellation_reason
     )
