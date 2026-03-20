@@ -119,8 +119,8 @@ export const apiClient = {
   createJobPosting: (data: any) =>
     api.post('/job-postings', data),
   
-  getJobPostings: () =>
-    api.get('/job-postings'),
+  getJobPostings: (activeOnly: boolean = true) =>
+    api.get('/job-postings', { params: { active_only: activeOnly } }),
   
   getJobPosting: (id: number) =>
     api.get(`/job-postings/${id}`),
@@ -133,6 +133,10 @@ export const apiClient = {
   
   toggleJobPostingActive: (id: number) =>
     api.post(`/job-postings/${id}/toggle-active`),
+
+  // Job Posting Lifecycle Management
+  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost') =>
+    api.post(`/job-postings/${id}/status`, { action }),
 
   getSkillCatalogs: () =>
     api.get('/job-postings/catalogs'),

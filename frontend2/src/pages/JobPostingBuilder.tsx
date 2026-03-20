@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/JobPostingBuilder.css';
+import { StatusBadge, SectionCard, LifecycleActions, JobPreviewPanel, FormProgressBar } from '../components/JobPostingComponents';
 
 // ============ TYPES ============
 interface PostingSkill {
@@ -61,6 +62,10 @@ interface JobPosting {
   required_skills?: string;
   posting_skills: PostingSkill[];
   is_active: boolean;
+  status?: string; // 'active', 'frozen', 'reposted'
+  frozen_at?: string;
+  reposted_at?: string;
+  last_reactivated_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -213,6 +218,7 @@ const JobPostingBuilder: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [listSearch, setListSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'reposted'>('all');
   const [showPreview, setShowPreview] = useState(true);
 
   // Skills state
@@ -239,7 +245,7 @@ const JobPostingBuilder: React.FC = () => {
 
   const fetchPostings = useCallback(async () => {
     try {
-      const res = await apiClient.getJobPostings();
+      const res = await apiClient.getJobPostings(false); // Get all postings including frozen
       setPostings(res.data);
     } catch (err) {
       console.error('Failed to fetch postings:', err);
@@ -459,6 +465,19 @@ const JobPostingBuilder: React.FC = () => {
     setErrors({});
   };
 
+  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate' | 'repost', e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    try {
+      const response = await apiClient.updateJobPostingStatus(jobId, action);
+      alert(`Job ${action}d successfully!`);
+      // Refresh job listings
+      await fetchPostings();
+    } catch (error: any) {
+      console.error('[LIFECYCLE ERROR]', error);
+      alert(error.response?.data?.detail || `Failed to ${action} job`);
+    }
+  };
+
   // ============ SKILLS HANDLERS ============
 
   const addSkill = (skillName: string, category: 'technical' | 'soft') => {
@@ -526,14 +545,22 @@ const JobPostingBuilder: React.FC = () => {
   }, [catalogs.certifications, formData.certifications_required, certSearch]);
 
   const filteredPostings = useMemo(() => {
-    if (!listSearch.trim()) return postings;
+    let filtered = postings;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => (p.status || '').toLowerCase() === statusFilter);
+    }
+    
+    // Apply search filter
+    if (!listSearch.trim()) return filtered;
     const q = listSearch.toLowerCase();
-    return postings.filter(p =>
+    return filtered.filter(p =>
       p.job_title.toLowerCase().includes(q) ||
       p.location?.toLowerCase().includes(q) ||
       p.product_vendor?.toLowerCase().includes(q)
     );
-  }, [postings, listSearch]);
+  }, [postings, listSearch, statusFilter]);
 
   // ============ FORMAT HELPERS ============
 
@@ -629,6 +656,27 @@ const JobPostingBuilder: React.FC = () => {
                 onChange={e => setListSearch(e.target.value)}
               />
             </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                marginTop: '12px',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#374151',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="frozen">Frozen Only</option>
+              <option value="reposted">Reposted Only</option>
+            </select>
           </div>
           <div className="jpb-sidebar-list">
             {filteredPostings.length === 0 ? (
@@ -637,35 +685,105 @@ const JobPostingBuilder: React.FC = () => {
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                   <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                 </svg>
-                <p>No job postings yet</p>
-                <span>Create your first posting using the form</span>
+                <p>No {statusFilter === 'all' ? 'job' : statusFilter} postings {statusFilter === 'all' ? 'yet' : 'found'}</p>
+                <span>{statusFilter === 'all' ? 'Create your first posting' : 'Try adjusting your filters'}</span>
               </div>
             ) : (
-              filteredPostings.map(p => (
-                <div
-                  key={p.id}
-                  className={`jpb-posting-card ${editingId === p.id ? 'active' : ''}`}
-                  onClick={() => loadPosting(p)}
-                >
-                  <div className="jpb-posting-card-top">
-                    <h4>{p.job_title}</h4>
-                    <span className={`jpb-status-dot ${p.is_active ? 'active' : 'inactive'}`} />
+              filteredPostings.map(p => {
+                const normalizedStatus = (p.status || '').toLowerCase();
+                return (
+                  <div
+                    key={p.id}
+                    className={`jpb-posting-card ${editingId === p.id ? 'active' : ''}`}
+                    onClick={() => loadPosting(p)}
+                  >
+                    <div className="jpb-posting-card-top">
+                      <h4>{p.job_title}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {p.status && <StatusBadge status={p.status} size="sm" />}
+                      </div>
+                    </div>
+                    <div className="jpb-posting-card-meta">
+                      <span>{p.location || 'No location'}</span>
+                      <span className="jpb-meta-dot">·</span>
+                      <span>{worktypeLabel(p.worktype)}</span>
+                      <span className="jpb-meta-dot">·</span>
+                      <span>{empTypeLabel(p.employment_type)}</span>
+                    </div>
+                    <div className="jpb-posting-card-bottom">
+                      <span className="jpb-posting-vendor">{p.product_vendor}</span>
+                      {p.posting_skills?.length > 0 && (
+                        <span className="jpb-skill-count">{p.posting_skills.length} skill{p.posting_skills.length > 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                    {/* Lifecycle Control Buttons */}
+                    <div className="jpb-posting-card-actions" style={{
+                      marginTop: '8px',
+                      paddingTop: '8px',
+                      borderTop: '1px solid #e5e7eb',
+                      display: 'flex',
+                      gap: '6px',
+                    }}>
+                      {(normalizedStatus === 'active' || normalizedStatus === 'reposted') ? (
+                        <button
+                          onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}
+                          style={{
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            borderRadius: '4px',
+                            border: '1px solid #e5e7eb',
+                            backgroundColor: '#f9fafb',
+                            cursor: 'pointer',
+                            fontWeight: 500,
+                            flex: 1,
+                            color: '#374151',
+                          }}
+                          title="Freeze this job posting"
+                        >
+                          Freeze
+                        </button>
+                      ) : normalizedStatus === 'frozen' ? (
+                        <>
+                          <button
+                            onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              borderRadius: '4px',
+                              border: '1px solid #10b981',
+                              backgroundColor: '#d1fae5',
+                              color: '#10b981',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              flex: 1,
+                            }}
+                            title="Unfreeze this job posting"
+                          >
+                            Unfreeze
+                          </button>
+                          <button
+                            onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              borderRadius: '4px',
+                              border: '1px solid #8b5cf6',
+                              backgroundColor: '#ede9fe',
+                              color: '#8b5cf6',
+                              cursor: 'pointer',
+                              fontWeight: 500,
+                              flex: 1,
+                            }}
+                            title="Repost this job posting"
+                          >
+                            Repost
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="jpb-posting-card-meta">
-                    <span>{p.location || 'No location'}</span>
-                    <span className="jpb-meta-dot">·</span>
-                    <span>{worktypeLabel(p.worktype)}</span>
-                    <span className="jpb-meta-dot">·</span>
-                    <span>{empTypeLabel(p.employment_type)}</span>
-                  </div>
-                  <div className="jpb-posting-card-bottom">
-                    <span className="jpb-posting-vendor">{p.product_vendor}</span>
-                    {p.posting_skills?.length > 0 && (
-                      <span className="jpb-skill-count">{p.posting_skills.length} skill{p.posting_skills.length > 1 ? 's' : ''}</span>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </aside>

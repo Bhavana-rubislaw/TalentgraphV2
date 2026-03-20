@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 from app.database import get_session
 from app.models import (
     User, Candidate, Company, JobPosting, JobProfile, 
-    Match, Application, Swipe, UserRole, Skill, LocationPreference
+    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus
 )
 from app.security import get_current_user
 
@@ -123,8 +123,12 @@ def get_candidate_recommendations(
     if not job_profile or job_profile.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Job profile not found")
     
-    # Get all active job postings (broader search)
-    all_jobs = session.exec(select(JobPosting).where(JobPosting.is_active == True)).all()
+    # Get all active and reposted job postings (broader search)
+    all_jobs = session.exec(
+        select(JobPosting).where(
+            JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
+        )
+    ).all()
     logger.info(f"[CANDIDATE RECOMMENDATIONS] Evaluating {len(all_jobs)} active jobs")
     
     # Format response with match info
@@ -297,8 +301,12 @@ def get_available_jobs(
     session: Session = Depends(get_session)
 ):
     """Get all available active jobs"""
-    # Get all active job postings
-    jobs = session.exec(select(JobPosting).where(JobPosting.is_active == True)).all()
+    # Get all active and reposted job postings
+    jobs = session.exec(
+        select(JobPosting).where(
+            JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
+        )
+    ).all()
     
     result = []
     for job in jobs:

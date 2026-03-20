@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 from typing import List, Optional
 from app.database import get_session
-from app.models import Application, Candidate, Company, JobPosting, JobProfile, User
+from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus
 from app.schemas import ApplicationRead
 from app.security import get_current_user
 from app.routers.notifications import push_notification
@@ -98,6 +98,13 @@ def apply_to_job(
     job_posting = session.get(JobPosting, job_posting_id)
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
+    
+    # Prevent applications to frozen jobs
+    if job_posting.status == JobPostingStatus.FROZEN:
+        raise HTTPException(
+            status_code=400,
+            detail="This job is not currently accepting applications."
+        )
     
     # Enforce: only one application per candidate per job posting
     existing = session.exec(

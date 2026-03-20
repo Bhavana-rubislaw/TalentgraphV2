@@ -9,7 +9,10 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from typing import List
 from app.database import get_session
-from app.models import JobPosting, Candidate, JobProfile, Company, User, Match, Swipe, Skill, LocationPreference
+from app.models import (
+    JobPosting, Candidate, JobProfile, Company, User, Match, Swipe, 
+    Skill, LocationPreference, JobPostingStatus
+)
 from app.security import get_current_user
 import json
 
@@ -244,11 +247,11 @@ def get_recommendations_dashboard(
     if not company:
         raise HTTPException(status_code=403, detail="Recruiter profile not found")
     
-    # Get all active job postings for this company
+    # Get all active and reposted job postings for this company
     job_postings = session.exec(
         select(JobPosting)
         .where(JobPosting.company_id == company.id)
-        .where(JobPosting.is_active == True)
+        .where(JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]))
     ).all()
     
     logger.info(f"[DASHBOARD] Found {len(job_postings)} active jobs for company {company.company_name}")

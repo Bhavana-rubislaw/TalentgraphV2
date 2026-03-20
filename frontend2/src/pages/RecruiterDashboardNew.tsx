@@ -36,6 +36,7 @@ const RecruiterDashboard: React.FC = () => {
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
   const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
   const [jobPostings, setJobPostings] = useState<any[]>([]);
+  const [allJobPostings, setAllJobPostings] = useState<any[]>([]); // All jobs including frozen
 
   // ── Selected job: driven from ?job= URL param ─────────────────
   const [selectedJobId, setSelectedJobIdInternal] = useState<number | null>(() => {
@@ -242,7 +243,17 @@ const RecruiterDashboard: React.FC = () => {
     try {
       const response = await apiClient.getJobPostings();
       console.log('[API SUCCESS] Job postings fetched, count:', response.data.length);
-      setJobPostings(response.data);
+      console.log('[DEBUG] First job status:', response.data[0]?.status, 'type:', typeof response.data[0]?.status);
+      setAllJobPostings(response.data); // Store all jobs including frozen
+      
+      // Filter to show only active/reposted jobs in main selector (case-insensitive)
+      const activeJobs = response.data.filter((job: any) => {
+        const status = (job.status || '').toLowerCase();
+        return status === 'active' || status === 'reposted';
+      });
+      console.log('[DEBUG] Filtered active jobs:', activeJobs.length);
+      setJobPostings(activeJobs);
+      
       if (response.data.length === 0) return;
       const validIds: number[] = response.data.map((j: any) => j.id);
       // Honour ?job= URL param; validate it exists, else fall back to first
@@ -250,12 +261,66 @@ const RecruiterDashboard: React.FC = () => {
       const parsedId = urlJobId ? parseInt(urlJobId, 10) : null;
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedJobId(parsedId);
-      } else {
-        console.log('[STATE] Auto-selecting first job:', response.data[0].id);
-        setSelectedJobId(response.data[0].id);
+      } else if (activeJobs.length > 0) {
+        console.log('[STATE] Auto-selecting first active job:', activeJobs[0].id);
+        setSelectedJobId(activeJobs[0].id);
       }
     } catch (error) {
       console.error('[API ERROR] Failed to fetch job postings:', error);
+    }
+  };
+
+  // ── Job Lifecycle Management ─────────────────────────────────
+  const getJobStatusBadge = (status: string) => {
+    const normalizedStatus = (status || '').toLowerCase();
+    const badges = {
+      active: { label: 'Active', color: '#10b981', bgColor: '#d1fae5' },
+      frozen: { label: 'Frozen', color: '#6b7280', bgColor: '#f3f4f6' },
+      reposted: { label: 'Reposted', color: '#8b5cf6', bgColor: '#ede9fe' },
+    };
+    const badge = badges[normalizedStatus as keyof typeof badges] || badges.active;
+    return (
+      <span
+        style={{
+          padding: '2px 8px',
+          borderRadius: '4px',
+          fontSize: '11px',
+          fontWeight: 600,
+          color: badge.color,
+          backgroundColor: badge.bgColor,
+          marginLeft: '8px',
+        }}
+      >
+        {badge.label}
+      </span>
+    );
+  };
+
+  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate' | 'repost') => {
+    try {
+      console.log(`[LIFECYCLE] ${action} job ${jobId}`);
+      const response = await apiClient.updateJobPostingStatus(jobId, action);
+      console.log('[LIFECYCLE SUCCESS]', response.data);
+      
+      // Show success message
+      alert(`Job ${action}d successfully!`);
+      
+      // Refresh job listings
+      await fetchJobPostings();
+      
+      // If we just froze the current job, select a different active one
+      if (action === 'freeze' && selectedJobId === jobId) {
+        const activeJobs = allJobPostings.filter(j => {
+          const status = (j.status || '').toLowerCase();
+          return status === 'active' || status === 'reposted';
+        });
+        if (activeJobs.length > 0) {
+          setSelectedJobId(activeJobs[0].id);
+        }
+      }
+    } catch (error: any) {
+      console.error('[LIFECYCLE ERROR]', error);
+      alert(error.response?.data?.detail || `Failed to ${action} job`);
     }
   };
 
@@ -515,25 +580,78 @@ const RecruiterDashboard: React.FC = () => {
     return (
       <>
         <div>
-        {/* Enhanced Job Posting Selector */}
+        {/* Enhanced Job Posting Selector with Lifecycle Controls */}
         <div className="job-selector-modern">
           <div className="selector-header">
             <h3 className="selector-title">Select Job Posting</h3>
             <span className="selector-count">{jobPostings.length} active positions</span>
           </div>
-          <select
-            className="job-select-modern"
-            value={selectedJobId || ''}
-            onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
-          >
-            <option value="" disabled>Choose a position...</option>
-            {jobPostings.map(job => (
-              <option key={job.id} value={job.id}>
-                {job.job_title} • {job.location || 'Remote'}
-              </option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <select
+              className="job-select-modern"
+              style={{ flex: 1 }}
+              value={selectedJobId || ''}
+              onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
+            >
+              <option value="" disabled>Choose a position...</option>
+              {jobPostings.map(job => (
+                <option key={job.id} value={job.id}>
+                  {job.job_title} • {job.location || 'Remote'} 
+                  {(job.status || '').toLowerCase() === 'reposted' ? ' [REOPENED]' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {/* Reopened Job with Prior Applicants Notice */}
+        {selectedJobId && (() => {
+          const currentJob = allJobPostings.find(j => j.id === selectedJobId);
+          if (!currentJob || (currentJob.status || '').toLowerCase() !== 'reposted') return null;
+          
+          const priorApplicants = applications.filter(app => app.job_posting_id === selectedJobId);
+          if (priorApplicants.length === 0) return null;
+          
+          return (
+            <div style={{
+              padding: '14px 18px',
+              borderRadius: '8px',
+              backgroundColor: '#ede9fe',
+              border: '1px solid #8b5cf6',
+              marginTop: '16px',
+              marginBottom: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}>
+              <div style={{ fontSize: '20px' }}>🔄</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, color: '#7c3aed', marginBottom: '4px' }}>
+                  Job Reopened with Previous Applicants
+                </div>
+                <div style={{ fontSize: '13px', color: '#6b21a8' }}>
+                  This job has {priorApplicants.length} prior applicant(s) from before it was frozen. 
+                  Review existing applications in the Applications tab before sourcing new candidates.
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveTab('applications')}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#8b5cf6',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
+              >
+                View Applications
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Recommendations Role Filter */}
         {(() => {
@@ -3361,7 +3479,9 @@ const RecruiterDashboard: React.FC = () => {
                   <div className="kpi-value">{jobPostings.length}</div>
                   <div className="kpi-label">Active Jobs</div>
                 </div>
-                <div className="kpi-trend positive">+12%</div>
+                <div className="kpi-trend" style={{ fontSize: '11px', color: '#64748b' }}>
+                  {allJobPostings.filter(j => (j.status || '').toLowerCase() === 'frozen').length} frozen
+                </div>
               </div>
               
               <div className="kpi-card-enhanced shortlisted">
