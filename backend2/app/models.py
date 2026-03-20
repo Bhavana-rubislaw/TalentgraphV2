@@ -52,10 +52,12 @@ class JobPostingStatus(str, Enum):
     - active: Currently open and accepting applications
     - frozen: Temporarily closed, not accepting new applications, preserved in system
     - reposted: Reopened/relisted posting that was previously frozen
+    - cancelled: Permanently closed, position no longer hiring (cannot be reactivated)
     """
     ACTIVE = "active"
     FROZEN = "frozen"
     REPOSTED = "reposted"
+    CANCELLED = "cancelled"
 
 
 # ============ USER MODELS ============
@@ -287,6 +289,8 @@ class JobPosting(SQLModel, table=True):
     frozen_at: Optional[datetime] = None
     reposted_at: Optional[datetime] = None
     last_reactivated_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = Field(default=None, max_length=500)
     
     # Relationships
     company: Company = Relationship(back_populates="job_postings")

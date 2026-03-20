@@ -13,6 +13,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
     active: { bg: '#ECFDF5', color: '#059669', label: 'Active' },
     frozen: { bg: '#F3F4F6', color: '#6B7280', label: 'Frozen' },
     reposted: { bg: '#EDE9FE', color: '#7C3AED', label: 'Reposted' },
+    cancelled: { bg: '#FEE2E2', color: '#DC2626', label: 'Cancelled' },
   };
 
   const style = styles[normalizedStatus] || styles.active;

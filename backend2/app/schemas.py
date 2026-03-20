@@ -274,6 +274,8 @@ class JobPostingRead(JobPostingBase):
     frozen_at: Optional[datetime] = None
     reposted_at: Optional[datetime] = None
     last_reactivated_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     posting_skills: List[JobPostingSkillRead] = []
@@ -281,7 +283,8 @@ class JobPostingRead(JobPostingBase):
 
 class JobPostingStatusUpdateRequest(BaseModel):
     """Request schema for updating job posting lifecycle status"""
-    action: str  # "freeze", "reactivate", "repost"
+    action: str  # "freeze", "reactivate", "repost", "cancel"
+    cancellation_reason: Optional[str] = None  # Required when action="cancel"
 
 
 class JobPostingStatusUpdateResponse(BaseModel):
@@ -292,6 +295,8 @@ class JobPostingStatusUpdateResponse(BaseModel):
     frozen_at: Optional[datetime] = None
     reposted_at: Optional[datetime] = None
     last_reactivated_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = None
 
 
 # ============ INTERACTION SCHEMAS ============

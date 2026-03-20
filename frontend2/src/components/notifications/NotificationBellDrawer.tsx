@@ -170,10 +170,13 @@ export default function NotificationBellDrawer({ role }: Props) {
                     <div
                       key={n.id}
                       className={`notif-row${n.read ? '' : ' unread'}`}
-                      onClick={() => handleClickNotification(n)}
                     >
                       {!n.read && <span className="notif-unread-dot" />}
-                      <div className="notif-row-body">
+                      <div 
+                        className="notif-row-body"
+                        onClick={() => handleClickNotification(n)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <div className="notif-row-title">{n.title}</div>
                         <div className="notif-row-msg">{n.message}</div>
                         <div
@@ -183,7 +186,7 @@ export default function NotificationBellDrawer({ role }: Props) {
                           {getRelativeTime(n.timestamp)}
                         </div>
                       </div>
-                      <div className="notif-row-actions" onClick={e => e.stopPropagation()}>
+                      <div className="notif-row-actions">
                         {!n.read && (
                           <button
                             className="notif-action-btn"
