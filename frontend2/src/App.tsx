@@ -9,6 +9,8 @@ import CandidateDashboard from './pages/CandidateDashboardNew';
 import RecruiterDashboard from './pages/RecruiterDashboardNew';
 import JobPostingForm from './pages/JobPostingForm';
 import JobPostingBuilder from './pages/JobPostingBuilder';
+import { MeetingsPage } from './pages/MeetingsPage';
+import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './index.css';
@@ -122,6 +124,30 @@ const App: React.FC = () => {
               element={
                 <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
                   <JobPostingBuilder />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Meeting Scheduler (accessible to both recruiters and candidates) */}
+            <Route
+              path="/meetings"
+              element={
+                <ProtectedRoute allowedRoles={[...RECRUITER_ROLES, ...CANDIDATE_ROLES]}>
+                  <ErrorBoundary>
+                    <MeetingsPage />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Calendar & Video Provider Settings */}
+            <Route
+              path="/settings/calendar"
+              element={
+                <ProtectedRoute allowedRoles={[...RECRUITER_ROLES, ...CANDIDATE_ROLES]}>
+                  <ErrorBoundary>
+                    <CalendarSettingsPage />
+                  </ErrorBoundary>
                 </ProtectedRoute>
               }
             />

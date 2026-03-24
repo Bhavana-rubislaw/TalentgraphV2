@@ -210,7 +210,7 @@ export const apiClient = {
     candidate_email: string;
     interview_datetime: string;
     timezone: string;
-    meeting_link: string;
+    meeting_link?: string;  // Optional - auto-generated if not provided
     notes?: string;
     subject?: string;
   }) =>
@@ -320,21 +320,146 @@ export const apiClient = {
   markDirectConversationRead: (conversationId: number) =>
     api.post(`/messages/conversations/${conversationId}/read`),
 
-  // ── Meeting Scheduler ───────────────────────────────────────────────────────
-  scheduleMeeting: (data: {
-    candidate_email: string;
-    candidate_name: string;
-    platform: string;
-    date: string;
-    time: string;
-    duration: number;
-    topic: string;
-    agenda?: string;
+  // ── Meeting Scheduler (Phase 1 - Core Scheduling) ──────────────────────────
+  
+  // Meeting CRUD
+  createMeeting: (data: {
+    title: string;
+    description?: string;
+    meeting_type: 'interview' | 'screening' | 'follow_up' | 'other';
+    scheduled_start: string; // ISO datetime
+    scheduled_end: string;   // ISO datetime
+    duration_minutes: number;
+    timezone?: string;
+    participant_user_ids: number[];
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+    location?: string;
+    video_meeting_url?: string;
+    video_provider?: string;
   }) =>
-    api.post('/meetings/schedule', data),
+    api.post('/meetings/create', data),
 
-  testEmailConfig: () =>
-    api.get('/meetings/test-email-config'),
+  getMeetings: (params?: { 
+    status?: 'scheduled' | 'cancelled' | 'completed' | 'no_show';
+    upcoming_only?: boolean;
+  }) =>
+    api.get('/meetings/list', { params }),
+
+  getMeeting: (meetingId: number) =>
+    api.get(`/meetings/${meetingId}`),
+
+  updateMeeting: (meetingId: number, data: {
+    title?: string;
+    description?: string;
+    scheduled_start?: string;
+    scheduled_end?: string;
+    duration_minutes?: number;
+    timezone?: string;
+    location?: string;
+    video_meeting_url?: string;
+  }) =>
+    api.patch(`/meetings/${meetingId}`, data),
+
+  cancelMeeting: (meetingId: number, cancellation_reason: string) =>
+    api.post(`/meetings/${meetingId}/cancel`, { cancellation_reason }),
+
+  rescheduleMeeting: (meetingId: number, data: {
+    scheduled_start: string;
+    scheduled_end: string;
+    timezone?: string;
+    reason?: string;
+  }) =>
+    api.post(`/meetings/${meetingId}/reschedule`, data),
+
+  // Availability Slot Management
+  proposeAvailabilitySlots: (slots: Array<{
+    proposed_to_user_id: number;
+    slot_start: string;
+    slot_end: string;
+    timezone?: string;
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+  }>) =>
+    api.post('/meetings/availability/propose', slots),
+
+  getMyAvailabilitySlots: (includeSelected?: boolean) =>
+    api.get('/meetings/availability/my-slots', { 
+      params: { include_selected: includeSelected } 
+    }),
+
+  selectAvailabilitySlot: (slotId: number, title: string, description?: string) =>
+    api.post('/meetings/availability/select', { 
+      slot_id: slotId, 
+      title, 
+      description 
+    }),
+
+  // Scheduling Utilities
+  checkAvailability: (userId: number, startTime: string, endTime: string) =>
+    api.get('/meetings/check-availability', {
+      params: { user_id: userId, start_time: startTime, end_time: endTime }
+    }),
+
+  findCommonSlots: (userIds: number[], durationMinutes: number, startRange: string, endRange: string) =>
+    api.get('/meetings/find-slots', {
+      params: { 
+        user_ids: userIds.join(','), 
+        duration_minutes: durationMinutes,
+        start_range: startRange,
+        end_range: endRange
+      }
+    }),
+
+  // ── Calendar Integration (Phase 2) ──────────────────────────────────────────
+  
+  // Calendar OAuth
+  initiateGoogleCalendarAuth: () =>
+    api.get('/calendar/google/authorize'),
+
+  initiateMicrosoftCalendarAuth: () =>
+    api.get('/calendar/microsoft/authorize'),
+
+  // Calendar Account Management
+  getCalendarAccounts: () =>
+    api.get('/calendar/accounts'),
+
+  toggleCalendarSync: (accountId: number, enabled: boolean) =>
+    api.post(`/calendar/accounts/${accountId}/sync`, null, { params: { enabled } }),
+
+  setPrimaryCalendar: (accountId: number) =>
+    api.post(`/calendar/accounts/${accountId}/primary`),
+
+  disconnectCalendar: (accountId: number) =>
+    api.delete(`/calendar/accounts/${accountId}`),
+
+  // Video Provider Account Management
+  createVideoProviderAccount: (data: {
+    provider: 'zoom' | 'microsoft_teams' | 'google_meet' | 'other';
+    api_key?: string;
+    api_secret?: string;
+    access_token?: string;
+    refresh_token?: string;
+    auto_generate_links?: boolean;
+    waiting_room_enabled?: boolean;
+  }) =>
+    api.post('/calendar/video-providers', data),
+
+  getVideoProviderAccounts: () =>
+    api.get('/calendar/video-providers'),
+
+  updateVideoProviderAccount: (accountId: number, data: {
+    api_key?: string;
+    api_secret?: string;
+    auto_generate_links?: boolean;
+    waiting_room_enabled?: boolean;
+  }) =>
+    api.patch(`/calendar/video-providers/${accountId}`, data),
+
+  deleteVideoProviderAccount: (accountId: number) =>
+    api.delete(`/calendar/video-providers/${accountId}`),
 };
 
 export default api;

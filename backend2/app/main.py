@@ -12,9 +12,11 @@ from dotenv import load_dotenv
 from app.database import init_db
 from app.middleware.request_id import RequestIdMiddleware
 import os
+from pathlib import Path
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (look in backend2 root directory)
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Configure logging
 logging.basicConfig(
@@ -93,7 +95,7 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed, messages, meetings
+from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed, messages, meetings, calendar
 
 logger.info("[STARTUP] Registering routers...")
 app.include_router(auth.router)
@@ -109,6 +111,7 @@ app.include_router(notifications.router)
 app.include_router(activity_feed.router)
 app.include_router(messages.router)  # Direct messaging system
 app.include_router(meetings.router)  # Meeting scheduler with email notifications
+app.include_router(calendar.router)  # Calendar & video provider OAuth integration
 logger.info("[STARTUP] All routers registered successfully")
 
 

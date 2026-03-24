@@ -55,6 +55,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [responseData, setResponseData] = useState<any>(null);
   const [formData, setFormData] = useState<FormData>({
     candidateEmail: '',
     interviewDate: '',
@@ -115,10 +116,8 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       newErrors.interviewTime = 'Interview time is required';
     }
     
-    // Validate meeting link
-    if (!formData.meetingLink.trim()) {
-      newErrors.meetingLink = 'Meeting link is required';
-    } else if (!/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
+    // Validate meeting link (optional - will auto-generate if empty)
+    if (formData.meetingLink.trim() && !/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
       newErrors.meetingLink = 'Meeting link must be a valid URL (starting with http:// or https://)';
     }
     
@@ -157,19 +156,24 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       // Get timezone name
       const timezoneName = TIMEZONES.find(tz => tz.value === formData.timezone)?.label || formData.timezone;
       
-      const payload = {
+      const payload: any = {
         candidate_email: formData.candidateEmail.trim(),
         interview_datetime: interviewDatetime,
         timezone: timezoneName,
-        meeting_link: formData.meetingLink.trim(),
         notes: formData.notes.trim() || undefined,
         subject: formData.subject.trim() || undefined
       };
+      
+      // Add meeting_link only if provided
+      if (formData.meetingLink.trim()) {
+        payload.meeting_link = formData.meetingLink.trim();
+      }
       
       const response = await apiClient.scheduleInterview(application.id, payload);
       
       console.log('[INTERVIEW] Successfully scheduled:', response.data);
       
+      setResponseData(response.data);
       setSubmitSuccess(true);
       
       // Call success callback after a short delay to show success state
@@ -236,6 +240,47 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             <div className="schedule-interview-success-icon">✓</div>
             <h3>Interview Scheduled Successfully!</h3>
             <p>Confirmation emails sent to candidate and recruiter from TalentGraph Interviews. Both parties have been notified with interview details.</p>
+            
+            {responseData?.auto_generated && responseData?.meeting_link && (
+              <div style={{
+                marginTop: '20px',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                borderRadius: '8px',
+                borderLeft: '4px solid #10b981'
+              }}>
+                <div style={{ 
+                  fontSize: '13px', 
+                  fontWeight: 700, 
+                  color: '#065f46', 
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  🎥 Auto-Generated Meeting Link
+                </div>
+                <div style={{ fontSize: '14px', color: '#047857', marginBottom: '6px', fontWeight: 600 }}>
+                  Provider: {responseData.video_provider === 'microsoft_teams' ? 'Microsoft Teams' : 
+                            responseData.video_provider === 'google_meet' ? 'Google Meet' : 
+                            responseData.video_provider === 'zoom' ? 'Zoom' : 'Unknown'}
+                </div>
+                <a 
+                  href={responseData.meeting_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#059669',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    wordBreak: 'break-all',
+                    textDecoration: 'none',
+                    borderBottom: '2px solid #059669'
+                  }}
+                >
+                  {responseData.meeting_link}
+                </a>
+              </div>
+            )}
           </div>
         )}
 
@@ -345,14 +390,14 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
 
               <div className="schedule-interview-field">
                 <label htmlFor="meetingLink">
-                  Meeting Link <span className="schedule-interview-required">*</span>
+                  Meeting Link <span className="schedule-interview-optional">(Optional - Auto-generated)</span>
                 </label>
                 <input
                   id="meetingLink"
                   type="url"
                   value={formData.meetingLink}
                   onChange={(e) => handleInputChange('meetingLink', e.target.value)}
-                  placeholder="https://zoom.us/j/... or https://teams.microsoft.com/..."
+                  placeholder="Leave empty to auto-generate from your video provider settings"
                   disabled={isSubmitting}
                   className={errors.meetingLink ? 'schedule-interview-input-error' : ''}
                 />
@@ -360,7 +405,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                   <span className="schedule-interview-error">{errors.meetingLink}</span>
                 )}
                 <span className="schedule-interview-hint">
-                  Provide a Zoom, Teams, Google Meet, or other video call link
+                  💡 Leave empty to automatically generate a meeting link from your configured video provider (Zoom, Teams, or Google Meet)
                 </span>
               </div>
             </div>

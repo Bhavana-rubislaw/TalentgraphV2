@@ -11,12 +11,13 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 from typing import List, Optional
 from app.database import get_session
-from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus
+from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus, VideoProviderAccount, VideoProvider
 from app.schemas import ApplicationRead
 from app.security import get_current_user
 from app.routers.notifications import push_notification
 from app.services.audit import log_activity_event, snap_application
 from app.emailer import send_interview_schedule_email, EmailConfigError
+from app.services.video_providers import VideoProviderFactory, VideoProviderError
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -451,7 +452,7 @@ class InterviewScheduleRequest(BaseModel):
     candidate_email: str
     interview_datetime: str  # e.g., "March 20, 2026 at 10:30 AM"
     timezone: str  # e.g., "EST", "America/New_York"
-    meeting_link: str
+    meeting_link: Optional[str] = None  # Optional - auto-generated from VideoProviderAccount if not provided
     notes: Optional[str] = None
     subject: Optional[str] = None
 
@@ -512,10 +513,99 @@ def schedule_interview(
     if not candidate_email or "@" not in candidate_email:
         raise HTTPException(status_code=400, detail="Invalid candidate email address")
     
-    # Validate meeting link
-    meeting_link = data.meeting_link.strip()
-    if not meeting_link or not (meeting_link.startswith("http://") or meeting_link.startswith("https://")):
-        raise HTTPException(status_code=400, detail="Invalid meeting link - must be a valid URL")
+    # Handle meeting link - auto-generate if not provided
+    meeting_link = None
+    video_provider_used = None
+    
+    if data.meeting_link:
+        # Use provided meeting link
+        meeting_link = data.meeting_link.strip()
+        if not (meeting_link.startswith("http://") or meeting_link.startswith("https://")):
+            raise HTTPException(status_code=400, detail="Invalid meeting link - must be a valid URL")
+    else:
+        # Auto-generate meeting link from recruiter's video provider OR system defaults
+        logger.info(f"[INTERVIEW] No meeting link provided, attempting auto-generation for user {user.id}")
+        
+        # Query user-specific video provider account first
+        video_account = session.exec(
+            select(VideoProviderAccount)
+            .where(VideoProviderAccount.user_id == user.id)
+            .where(VideoProviderAccount.is_primary == True)
+            .where(VideoProviderAccount.auto_generate_links == True)
+        ).first()
+        
+        # Determine credentials source
+        if video_account:
+            # Use user-specific account
+            logger.info(f"[INTERVIEW] Using user-specific {video_account.provider.value} account")
+            provider_enum = video_account.provider
+            api_key = video_account.api_key
+            api_secret = video_account.api_secret
+            access_token = video_account.access_token
+            default_password = video_account.default_meeting_password
+            waiting_room = video_account.waiting_room_enabled
+        else:
+            # Fallback to system-wide .env credentials
+            zoom_api_key = os.getenv("ZOOM_API_KEY")
+            zoom_api_secret = os.getenv("ZOOM_API_SECRET")
+            
+            if not zoom_api_key or not zoom_api_secret:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No meeting link provided and no video provider configured. Please add meeting link or configure Zoom credentials in .env file."
+                )
+            
+            logger.info(f"[INTERVIEW] Using system-wide Zoom credentials from .env")
+            provider_enum = VideoProvider.ZOOM
+            api_key = zoom_api_key
+            api_secret = zoom_api_secret
+            access_token = None
+            default_password = None
+            waiting_room = True  # Default to enabled
+        
+        try:
+            # Get video provider instance
+            provider = VideoProviderFactory.get_provider(
+                provider=provider_enum,
+                api_key=api_key,
+                api_secret=api_secret,
+                access_token=access_token
+            )
+            
+            # Generate meeting
+            meeting_details = provider.create_meeting(
+                topic=f"{job_posting.job_title} Interview - {candidate_name}",
+                start_time=data.interview_datetime,
+                duration=60,  # Default 1 hour
+                timezone=data.timezone,
+                agenda=f"Interview for {job_posting.job_title} position at {company.company_name}",
+                password=default_password,
+                waiting_room=waiting_room
+            )
+            
+            meeting_link = meeting_details.get("join_url") or meeting_details.get("joinUrl")
+            video_provider_used = provider_enum.value
+            
+            logger.info(f"[INTERVIEW] Auto-generated {video_provider_used} meeting link: {meeting_link}")
+            
+        except VideoProviderError as e:
+            logger.error(f"[INTERVIEW] Video provider error: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to generate meeting link: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"[INTERVIEW] Unexpected error generating meeting link: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to generate meeting link. Please provide a manual link or check Zoom API credentials in .env file."
+            )
+    
+    if not meeting_link:
+        raise HTTPException(
+            status_code=400,
+            detail="Meeting link is required. Either provide a link or configure a video provider."
+        )
     
     # Prepare display names
     recruiter_name = getattr(user, 'full_name', None) or getattr(user, 'name', None) or getattr(company, 'company_name', 'Recruiter')
@@ -661,6 +751,8 @@ def schedule_interview(
         "interview_datetime": data.interview_datetime,
         "timezone": data.timezone,
         "meeting_link": meeting_link,
+        "video_provider": video_provider_used,  # "zoom", "microsoft_teams", "google_meet", or None if manual
+        "auto_generated": video_provider_used is not None,
         "email_sent": email_sent,
         "email_error": email_error,
         "notification_sent": candidate_user is not None

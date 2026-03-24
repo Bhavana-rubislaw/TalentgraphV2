@@ -6,7 +6,7 @@ Pydantic models mirroring database structure
 from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus
+from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
 
 
 # ============ USER SCHEMAS ============
@@ -377,4 +377,172 @@ class ConversationListItemResponse(BaseModel):
     unread_count: int
     other_user_name: str
     other_user_id: Optional[int]
+
+
+# ============ MEETING & SCHEDULING SCHEMAS (Phase 1) ============
+
+# Meeting Participant Schemas
+class MeetingParticipantBase(BaseModel):
+    user_id: int
+    is_required: bool = True
+
+
+class MeetingParticipantCreate(MeetingParticipantBase):
+    pass
+
+
+class MeetingParticipantRead(MeetingParticipantBase):
+    id: int
+    meeting_id: int
+    has_confirmed: bool
+    confirmed_at: Optional[datetime] = None
+    attended: Optional[bool] = None
+    reminder_sent_24h: bool
+    reminder_sent_1h: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+# Meeting Core Schemas
+class MeetingBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    meeting_type: MeetingType = MeetingType.INTERVIEW
+    scheduled_start: datetime
+    scheduled_end: datetime
+    duration_minutes: int = 60
+    timezone: str = "UTC"
+    job_posting_id: Optional[int] = None
+    match_id: Optional[int] = None
+    application_id: Optional[int] = None
+    location: Optional[str] = None
+    video_meeting_url: Optional[str] = None
+    video_provider: Optional[str] = None
+
+
+class MeetingCreate(MeetingBase):
+    participant_user_ids: List[int]  # List of user IDs to invite
+
+
+class MeetingUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    scheduled_start: Optional[datetime] = None
+    scheduled_end: Optional[datetime] = None
+    duration_minutes: Optional[int] = None
+    timezone: Optional[str] = None
+    location: Optional[str] = None
+    video_meeting_url: Optional[str] = None
+
+
+class MeetingRead(MeetingBase):
+    id: int
+    status: MeetingStatus
+    organizer_user_id: int
+    google_calendar_event_id: Optional[str] = None
+    microsoft_calendar_event_id: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    cancelled_by_user_id: Optional[int] = None
+    cancellation_reason: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    participants: List[MeetingParticipantRead] = []
+
+
+class MeetingCancelRequest(BaseModel):
+    cancellation_reason: str
+
+
+class MeetingRescheduleRequest(BaseModel):
+    scheduled_start: datetime
+    scheduled_end: datetime
+    timezone: Optional[str] = "UTC"
+    reason: Optional[str] = None
+
+
+# Meeting Availability Slot Schemas
+class MeetingAvailabilitySlotBase(BaseModel):
+    slot_start: datetime
+    slot_end: datetime
+    timezone: str = "UTC"
+    job_posting_id: Optional[int] = None
+    match_id: Optional[int] = None
+    application_id: Optional[int] = None
+
+
+class MeetingAvailabilitySlotCreate(MeetingAvailabilitySlotBase):
+    proposed_to_user_id: int
+
+
+class MeetingAvailabilitySlotRead(MeetingAvailabilitySlotBase):
+    id: int
+    proposed_by_user_id: int
+    proposed_to_user_id: int
+    is_selected: bool
+    selected_at: Optional[datetime] = None
+    meeting_id: Optional[int] = None
+    created_at: datetime
+    expired_at: Optional[datetime] = None
+
+
+class SlotSelectionRequest(BaseModel):
+    slot_id: int
+    title: str = "Interview Meeting"
+    description: Optional[str] = None
+
+
+# ============ CALENDAR & VIDEO INTEGRATION SCHEMAS (Phase 2) ============
+
+# Calendar Account Schemas
+class CalendarAccountBase(BaseModel):
+    provider: CalendarProvider
+    provider_email: str
+    is_primary: bool = False
+    sync_enabled: bool = True
+
+
+class CalendarAccountCreate(CalendarAccountBase):
+    access_token: str
+    refresh_token: Optional[str] = None
+    provider_account_id: str
+    token_expires_at: Optional[datetime] = None
+
+
+class CalendarAccountRead(CalendarAccountBase):
+    id: int
+    user_id: int
+    provider_account_id: str
+    calendar_name: Optional[str] = None
+    calendar_timezone: str
+    last_synced_at: Optional[datetime] = None
+    connected_at: datetime
+    updated_at: datetime
+
+
+# Video Provider Account Schemas
+class VideoProviderAccountBase(BaseModel):
+    provider: VideoProvider
+    is_primary: bool = False
+    auto_generate_links: bool = True
+    waiting_room_enabled: bool = True
+
+
+class VideoProviderAccountCreate(VideoProviderAccountBase):
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    api_key: Optional[str] = None
+    api_secret: Optional[str] = None
+    provider_account_id: Optional[str] = None
+    provider_email: Optional[str] = None
+    token_expires_at: Optional[datetime] = None
+
+
+class VideoProviderAccountRead(VideoProviderAccountBase):
+    id: int
+    user_id: int
+    provider_account_id: Optional[str] = None
+    provider_email: Optional[str] = None
+    default_meeting_password: Optional[str] = None
+    connected_at: datetime
+    updated_at: datetime
 

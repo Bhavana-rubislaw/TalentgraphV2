@@ -60,6 +60,48 @@ class JobPostingStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class MeetingStatus(str, Enum):
+    """
+    Meeting lifecycle status
+    - scheduled: Meeting confirmed and scheduled
+    - cancelled: Meeting cancelled by either party
+    - completed: Meeting took place
+    - no_show: Meeting time passed without attendance
+    """
+    SCHEDULED = "scheduled"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+    NO_SHOW = "no_show"
+
+
+class MeetingType(str, Enum):
+    """
+    Type of meeting
+    - interview: Job interview (recruiter + candidate)
+    - screening: Initial candidate screening
+    - follow_up: Follow-up discussion
+    - other: Generic meeting
+    """
+    INTERVIEW = "interview"
+    SCREENING = "screening"
+    FOLLOW_UP = "follow_up"
+    OTHER = "other"
+
+
+class CalendarProvider(str, Enum):
+    """Calendar provider types"""
+    GOOGLE = "google"
+    MICROSOFT = "microsoft"
+
+
+class VideoProvider(str, Enum):
+    """Video conferencing provider types"""
+    ZOOM = "zoom"
+    MICROSOFT_TEAMS = "microsoft_teams"
+    GOOGLE_MEET = "google_meet"
+    OTHER = "other"
+
+
 # ============ USER MODELS ============
 
 class User(SQLModel, table=True):
@@ -494,3 +536,198 @@ class DirectMessage(SQLModel, table=True):
 
     # Relationships
     direct_conversation: DirectConversation = Relationship(back_populates="direct_messages")
+
+
+# ============ MEETING & SCHEDULING MODELS ============
+
+class Meeting(SQLModel, table=True):
+    """
+    First-class Meeting domain model for interview scheduling
+    Represents scheduled meetings between recruiters and candidates
+    """
+    __tablename__ = "meeting"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Core meeting details
+    title: str = Field(index=True)
+    description: Optional[str] = None
+    meeting_type: MeetingType = Field(default=MeetingType.INTERVIEW)
+    status: MeetingStatus = Field(default=MeetingStatus.SCHEDULED, index=True)
+    
+    # Time & duration
+    scheduled_start: datetime = Field(index=True)  # UTC timestamp
+    scheduled_end: datetime = Field(index=True)    # UTC timestamp
+    duration_minutes: int = Field(default=60)
+    timezone: str = Field(default="UTC")  # IANA timezone (e.g., "America/New_York")
+    
+    # Organizer & context
+    organizer_user_id: int = Field(foreign_key="user.id", index=True)  # Who created/scheduled
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    match_id: Optional[int] = Field(default=None, foreign_key="match.id", index=True)
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id", index=True)
+    
+    # Meeting location/link
+    location: Optional[str] = None  # Physical address or "Virtual"
+    video_meeting_url: Optional[str] = None  # Zoom/Teams/Meet link
+    video_provider: Optional[str] = None  # "zoom", "teams", "meet", etc.
+    
+    # Calendar sync
+    google_calendar_event_id: Optional[str] = None
+    microsoft_calendar_event_id: Optional[str] = None
+    
+    # Cancellation tracking
+    cancelled_at: Optional[datetime] = None
+    cancelled_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    cancellation_reason: Optional[str] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    participants: List["MeetingParticipant"] = Relationship(back_populates="meeting")
+
+
+class MeetingParticipant(SQLModel, table=True):
+    """
+    Participants in a meeting (many-to-many: Meeting <-> User)
+    Tracks attendance, confirmation, and reminders
+    """
+    __tablename__ = "meeting_participant"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # RSVP tracking
+    is_required: bool = Field(default=True)  # Required vs optional participant
+    has_confirmed: bool = Field(default=False)
+    confirmed_at: Optional[datetime] = None
+    
+    # Attendance tracking
+    attended: Optional[bool] = None  # None=unknown, True=attended, False=no-show
+    
+    # Reminder tracking
+    reminder_sent_24h: bool = Field(default=False)
+    reminder_sent_1h: bool = Field(default=False)
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    meeting: Meeting = Relationship(back_populates="participants")
+    
+    # Unique constraint: one record per meeting-user pair
+    __table_args__ = (UniqueConstraint("meeting_id", "user_id", name="unique_meeting_participant"),)
+
+
+class MeetingAvailabilitySlot(SQLModel, table=True):
+    """
+    Availability slots proposed by recruiter or candidate
+    Used for scheduling workflow: propose slots -> candidate picks -> meeting created
+    """
+    __tablename__ = "meeting_availability_slot"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Who proposed this slot
+    proposed_by_user_id: int = Field(foreign_key="user.id", index=True)
+    proposed_to_user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Slot timing
+    slot_start: datetime = Field(index=True)  # UTC timestamp
+    slot_end: datetime = Field(index=True)    # UTC timestamp
+    timezone: str = Field(default="UTC")
+    
+    # Context (what this availability is for)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    match_id: Optional[int] = Field(default=None, foreign_key="match.id", index=True)
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id", index=True)
+    
+    # Selection tracking
+    is_selected: bool = Field(default=False)  # True when candidate picks this slot
+    selected_at: Optional[datetime] = None
+    meeting_id: Optional[int] = Field(default=None, foreign_key="meeting.id", index=True)  # Created meeting
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expired_at: Optional[datetime] = None  # Slots can have expiration
+
+
+# ============ CALENDAR & VIDEO INTEGRATION MODELS (Phase 2) ============
+
+class CalendarAccount(SQLModel, table=True):
+    """
+    External calendar account connections (Google Calendar, Microsoft Calendar)
+    Stores OAuth tokens and sync settings per user
+    """
+    __tablename__ = "calendar_account"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Provider info
+    provider: CalendarProvider = Field(index=True)  # "google" or "microsoft"
+    provider_account_id: str = Field(index=True)  # External account ID
+    provider_email: str  # Email associated with calendar
+    
+    # OAuth credentials (ENCRYPTED in production)
+    access_token: str  # Encrypted access token
+    refresh_token: Optional[str] = None  # Encrypted refresh token
+    token_expires_at: Optional[datetime] = None
+    
+    # Sync settings
+    is_primary: bool = Field(default=False)  # Primary calendar for this user
+    sync_enabled: bool = Field(default=True)  # Auto-sync meetings to this calendar
+    last_synced_at: Optional[datetime] = None
+    
+    # Calendar metadata
+    calendar_name: Optional[str] = None
+    calendar_timezone: str = Field(default="UTC")
+    
+    # Timestamps
+    connected_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one account per user-provider-email combo
+    __table_args__ = (UniqueConstraint("user_id", "provider", "provider_email", name="unique_calendar_account"),)
+
+
+class VideoProviderAccount(SQLModel, table=True):
+    """
+    Video conferencing provider connections (Zoom, Microsoft Teams, Google Meet)
+    Stores API keys and default meeting settings
+    """
+    __tablename__ = "video_provider_account"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Provider info
+    provider: VideoProvider = Field(index=True)  # "zoom", "microsoft_teams", "google_meet"
+    provider_account_id: Optional[str] = None  # External account ID
+    provider_email: Optional[str] = None
+    
+    # OAuth/API credentials (ENCRYPTED in production)
+    access_token: Optional[str] = None  # Encrypted access token
+    refresh_token: Optional[str] = None  # Encrypted refresh token
+    api_key: Optional[str] = None  # For Zoom SDK/API
+    api_secret: Optional[str] = None  # For Zoom SDK/API
+    token_expires_at: Optional[datetime] = None
+    
+    # Meeting defaults
+    is_primary: bool = Field(default=False)  # Primary video provider for this user
+    auto_generate_links: bool = Field(default=True)  # Auto-create meeting links
+    default_meeting_password: Optional[str] = None  # Default password for meetings
+    waiting_room_enabled: bool = Field(default=True)
+    
+    # Timestamps
+    connected_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one account per user-provider combo
+    __table_args__ = (UniqueConstraint("user_id", "provider", name="unique_video_provider_account"),)
+
+

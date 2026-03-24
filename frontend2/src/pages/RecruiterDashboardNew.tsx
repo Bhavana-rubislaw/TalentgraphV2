@@ -3433,6 +3433,22 @@ const RecruiterDashboard: React.FC = () => {
             <button 
               type="button"
               className="nav-item"
+              onClick={() => navigate('/meetings')}
+            >
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span className="nav-label">Meetings</span>
+            </button>
+
+            <button 
+              type="button"
+              className="nav-item"
               onClick={() => {
                 console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
                 navigate('/recruiter/job-postings');
@@ -3445,6 +3461,20 @@ const RecruiterDashboard: React.FC = () => {
                 </svg>
               </span>
               <span className="nav-label">Post Job</span>
+            </button>
+
+            <button 
+              type="button"
+              className="nav-item"
+              onClick={() => navigate('/settings/calendar')}
+            >
+              <span className="nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 1v6m0 6v6m5.657-13.657l-4.243 4.243m-2.828 2.828l-4.243 4.243m16.97 1.313l-6-1.313m-6 0l-6 1.313m13.657-10.97l-4.243 4.243m-2.828 2.828l-4.243 4.243"/>
+                </svg>
+              </span>
+              <span className="nav-label">Settings</span>
             </button>
           </nav>
         </div>
