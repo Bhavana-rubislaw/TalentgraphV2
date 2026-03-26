@@ -398,28 +398,8 @@ const CandidateDashboard: React.FC = () => {
     console.log('[APPLICATION] Applying from match - Job:', jobPostingId, 'Profile:', jobProfileId);
     setApplyingJobId(jobPostingId);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE}/applications/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ job_posting_id: jobPostingId, job_profile_id: jobProfileId })
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        const detail = data?.detail;
-        if (typeof detail === 'string') {
-          alert(detail);
-        } else if (Array.isArray(detail)) {
-          alert(detail.map((d: any) => d.msg).join(', '));
-        } else {
-          alert('Failed to apply. Status: ' + response.status);
-        }
-        return;
-      }
-      console.log('[API SUCCESS] Application submitted from match', data);
+      const response = await apiClient.applyToJob(jobPostingId, jobProfileId);
+      console.log('[API SUCCESS] Application submitted from match', response.data);
       alert('Application submitted successfully!');
       fetchMatches();
       fetchAppliedLiked();

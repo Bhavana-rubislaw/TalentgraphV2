@@ -4,9 +4,9 @@ Candidate-centric talent marketplace with enhanced job profiles and postings
 """
 
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from sqlalchemy import UniqueConstraint
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column, Date
 from enum import Enum
 
 
@@ -98,6 +98,56 @@ class VideoProvider(str, Enum):
     """Video conferencing provider types"""
     ZOOM = "zoom"
     MICROSOFT_TEAMS = "microsoft_teams"
+
+
+class AttachmentScanStatus(str, Enum):
+    """
+    Virus/malware scan status for attachments
+    - pending: Upload complete, scan in progress
+    - clean: Passed security scan, safe to download
+    - blocked: Failed scan, contains malware/virus
+    - error: Scan failed with error
+    """
+    PENDING = "pending"
+    CLEAN = "clean"
+    BLOCKED = "blocked"
+    ERROR = "error"
+
+
+class AnalyticsEventType(str, Enum):
+    """Analytics event types for tracking user actions"""
+    # Job events
+    JOB_VIEWED = "job_viewed"
+    JOB_LIKED = "job_liked"
+    
+    # Application events
+    APPLICATION_SUBMITTED = "application_submitted"
+    APPLICATION_VIEWED = "application_viewed"
+    APPLICATION_STATUS_CHANGED = "application_status_changed"
+    
+    # Interview events
+    INTERVIEW_SCHEDULED = "interview_scheduled"
+    INTERVIEW_COMPLETED = "interview_completed"
+    INTERVIEW_CANCELLED = "interview_cancelled"
+    
+    # Hiring events
+    OFFER_MADE = "offer_made"
+    OFFER_ACCEPTED = "offer_accepted"
+    OFFER_REJECTED = "offer_rejected"
+    CANDIDATE_HIRED = "candidate_hired"
+    CANDIDATE_REJECTED = "candidate_rejected"
+    
+    # Communication events
+    MESSAGE_SENT = "message_sent"
+    MESSAGE_READ = "message_read"
+    EMAIL_SENT = "email_sent"
+    EMAIL_OPENED = "email_opened"
+    EMAIL_CLICKED = "email_clicked"
+    
+    # Other events
+    SEARCH_PERFORMED = "search_performed"
+    PROFILE_VIEWED = "profile_viewed"
+    PAYMENT_COMPLETED = "payment_completed"
     GOOGLE_MEET = "google_meet"
     OTHER = "other"
 
@@ -729,5 +779,163 @@ class VideoProviderAccount(SQLModel, table=True):
     
     # Unique constraint: one account per user-provider combo
     __table_args__ = (UniqueConstraint("user_id", "provider", name="unique_video_provider_account"),)
+
+
+class MessageAttachment(SQLModel, table=True):
+    """
+    File attachments linked to messages
+    Uses S3 presigned URLs for secure upload/download
+    """
+    __tablename__ = "message_attachment"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    message_id: int = Field(foreign_key="message.id", index=True)
+    
+    # Storage information
+    storage_provider: str = Field(default="s3")  # "s3", "azure", etc.
+    storage_bucket: str
+    storage_key: str  # S3 key / file path
+    
+    # File metadata
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    checksum_sha256: Optional[str] = None
+    
+    # Security
+    scan_status: AttachmentScanStatus = Field(default=AttachmentScanStatus.PENDING)
+    scan_completed_at: Optional[datetime] = None
+    scan_result_details: Optional[str] = None  # JSON with scan details
+    
+    # Tracking
+    uploaded_by_user_id: int = Field(foreign_key="user.id")
+    download_count: int = Field(default=0)
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EmailThreadLink(SQLModel, table=True):
+    """
+    Links tokenized reply-to email addresses to conversations/meetings
+    Enables email threading for interview scheduling and messages
+    """
+    __tablename__ = "email_thread_link"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Email provider tracking
+    provider_name: str = Field(default="sendgrid")  # "sendgrid", "postmark", etc.
+    action_token: str = Field(unique=True, index=True)  # Unique token in reply-to address
+    
+    # Link to entities
+    conversation_id: Optional[int] = Field(default=None, foreign_key="conversation.id", index=True)
+    meeting_id: Optional[int] = Field(default=None, foreign_key="meeting.id", index=True)
+    
+    # User tracking
+    candidate_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    recruiter_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    company_id: Optional[int] = Field(default=None, foreign_key="company.id")
+    
+    # Token management
+    token_expires_at: datetime
+    
+    # Usage tracking
+    inbound_count: int = Field(default=0)  # Number of inbound emails received
+    last_inbound_at: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class InboundEmailEvent(SQLModel, table=True):
+    """
+    Audit log of inbound emails received via webhook
+    """
+    __tablename__ = "inbound_email_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Provider info
+    provider_name: str  # "sendgrid", "postmark", etc.
+    provider_event_id: str = Field(index=True)  # Message ID from provider (idempotency)
+    
+    # Email metadata
+    from_email: str
+    to_email: str
+    subject: str
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    
+    # Processing
+    thread_link_id: Optional[int] = Field(default=None, foreign_key="email_thread_link.id")
+    message_created_id: Optional[int] = Field(default=None, foreign_key="message.id")
+    processed: bool = Field(default=False)
+    processed_at: Optional[datetime] = None
+    processing_error: Optional[str] = None
+    
+    # Timestamps
+    received_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AnalyticsEvent(SQLModel, table=True):
+    """
+    Raw analytics events (high volume table)
+    Tracks individual user actions and interactions
+    """
+    __tablename__ = "analytics_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    
+    # Event info
+    event_type: AnalyticsEventType = Field(index=True)
+    event_time: datetime = Field(index=True)
+    
+    # Related entities
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="job_posting.id", index=True)
+    candidate_id: Optional[int] = Field(default=None, foreign_key="candidate.id")
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id")
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    
+    # Additional metadata (source, device, location, etc.)
+    metadata_json: Optional[str] = None  # JSON string
+    
+    # User journey tracking
+    correlation_id: Optional[str] = Field(default=None, index=True)  # Group related events
+
+
+class AnalyticsRollupDaily(SQLModel, table=True):
+    """
+    Daily aggregated analytics metrics
+    Reduces query load on raw events table
+    """
+    __tablename__ = "analytics_rollup_daily"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    rollup_date: date = Field(sa_column=Column(Date, index=True))
+    
+    # Job posting specific (optional)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="job_posting.id", index=True)
+    
+    # Event counts
+    jobs_viewed: int = Field(default=0)
+    jobs_liked: int = Field(default=0)
+    applications_submitted: int = Field(default=0)
+    applications_viewed: int = Field(default=0)
+    interviews_scheduled: int = Field(default=0)
+    interviews_completed: int = Field(default=0)
+    offers_made: int = Field(default=0)
+    hires: int = Field(default=0)
+    
+    # Engagement metrics
+    messages_sent: int = Field(default=0)
+    emails_sent: int = Field(default=0)
+    emails_opened: int = Field(default=0)
+    
+    # Unique constraint: one record per company-date-job combo
+    __table_args__ = (UniqueConstraint("company_id", "rollup_date", "job_posting_id", name="unique_daily_rollup"),)
 
 

@@ -6,8 +6,10 @@ import '../styles/RecruiterApplications.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
+import MeetingsPanel from '../components/meetings/MeetingsPanel';
+import RecruiterSettingsPanel, { type RecruiterSettings } from '../components/settings/RecruiterSettingsPanel';
 
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings', 'settings'] as const;
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -146,6 +148,29 @@ const RecruiterDashboard: React.FC = () => {
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'admin');
+
+  // ── Recruiter Settings state ─────────────────────────────────────
+  const [recruiterSettings, setRecruiterSettings] = useState<RecruiterSettings>(() => {
+    const savedSettings = localStorage.getItem('recruiterMeetingSettings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch (error) {
+        console.error('Failed to parse saved settings:', error);
+      }
+    }
+    return {
+      defaultMeetingProvider: 'jitsi',
+      defaultMeetingDuration: 60,
+      defaultReminderMinutes: 15,
+      defaultTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
+  });
+
+  const handleSettingsSaved = useCallback((settings: RecruiterSettings) => {
+    setRecruiterSettings(settings);
+    console.log('[SETTINGS] Recruiter settings updated:', settings);
+  }, []);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const userName = userFullName || userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
   const userInitial = userName.charAt(0).toUpperCase();
@@ -3431,9 +3456,8 @@ const RecruiterDashboard: React.FC = () => {
             </button>
 
             <button 
-              type="button"
-              className="nav-item"
-              onClick={() => navigate('/meetings')}
+              className={`nav-item ${activeTab === 'meetings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('meetings')}
             >
               <span className="nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3464,9 +3488,8 @@ const RecruiterDashboard: React.FC = () => {
             </button>
 
             <button 
-              type="button"
-              className="nav-item"
-              onClick={() => navigate('/settings/calendar')}
+              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('settings')}
             >
               <span className="nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3578,6 +3601,19 @@ const RecruiterDashboard: React.FC = () => {
             </div>
             <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
               <ChatWindow />
+            </div>
+            <div style={{ display: activeTab === 'meetings' ? 'block' : 'none' }}>
+              <MeetingsPanel
+                defaultProvider={recruiterSettings.defaultMeetingProvider}
+                defaultDuration={recruiterSettings.defaultMeetingDuration}
+                defaultReminderMinutes={recruiterSettings.defaultReminderMinutes}
+              />
+            </div>
+            <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
+              <RecruiterSettingsPanel
+                onSettingsSaved={handleSettingsSaved}
+                initialSettings={recruiterSettings}
+              />
             </div>
           </div>
         </div>

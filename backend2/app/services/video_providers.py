@@ -10,7 +10,11 @@ import os
 import jwt
 import time
 import requests
+import base64
+import logging
 from ..models import VideoProvider
+
+logger = logging.getLogger(__name__)
 
 
 class VideoProviderError(Exception):
@@ -22,10 +26,11 @@ class VideoProviderBase(ABC):
     """Abstract base class for video meeting providers"""
     
     def __init__(self, api_key: Optional[str] = None, api_secret: Optional[str] = None, 
-                 access_token: Optional[str] = None):
+                 access_token: Optional[str] = None, account_id: Optional[str] = None):
         self.api_key = api_key
         self.api_secret = api_secret
         self.access_token = access_token
+        self.account_id = account_id
     
     @abstractmethod
     def create_meeting(
@@ -63,12 +68,86 @@ class VideoProviderBase(ABC):
 
 
 class ZoomProvider(VideoProviderBase):
-    """Zoom meeting provider using JWT or OAuth"""
+    """Zoom meeting provider using OAuth 2.0 Server-to-Server"""
     
     BASE_URL = "https://api.zoom.us/v2"
+    OAUTH_URL = "https://zoom.us/oauth/token"
+    
+    # Class-level token cache to avoid repeated OAuth exchanges
+    _token_cache: Dict[str, Dict[str, Any]] = {}
+    
+    def _get_oauth_token(self) -> str:
+        """
+        Get OAuth 2.0 access token using Server-to-Server OAuth
+        Uses caching to avoid repeated token requests
+        """
+        if not self.account_id or not self.api_key or not self.api_secret:
+            raise VideoProviderError(
+                "Zoom OAuth requires ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET"
+            )
+        
+        # Check cache first
+        cache_key = f"{self.account_id}:{self.api_key}"
+        cached = self._token_cache.get(cache_key)
+        
+        if cached and cached.get("expires_at", 0) > time.time():
+            logger.info("[ZOOM] Using cached OAuth token")
+            return cached["access_token"]
+        
+        # Exchange credentials for access token
+        logger.info("[ZOOM] Requesting new OAuth access token")
+        
+        # Encode credentials as Basic auth
+        credentials = f"{self.api_key}:{self.api_secret}"
+        encoded = base64.b64encode(credentials.encode()).decode()
+        
+        headers = {
+            "Authorization": f"Basic {encoded}",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        
+        data = {
+            "grant_type": "account_credentials",
+            "account_id": self.account_id
+        }
+        
+        try:
+            response = requests.post(
+                self.OAUTH_URL,
+                headers=headers,
+                data=data,
+                timeout=10
+            )
+            response.raise_for_status()
+            token_data = response.json()
+            
+            access_token = token_data.get("access_token")
+            expires_in = token_data.get("expires_in", 3600)  # Default 1 hour
+            
+            if not access_token:
+                raise VideoProviderError("No access token in Zoom OAuth response")
+            
+            # Cache token with 5-minute buffer before expiration
+            self._token_cache[cache_key] = {
+                "access_token": access_token,
+                "expires_at": time.time() + expires_in - 300  # Refresh 5 min early
+            }
+            
+            logger.info(f"[ZOOM] OAuth token obtained, expires in {expires_in}s")
+            return access_token
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    error_msg = f"{error_msg} - {error_detail}"
+                except:
+                    error_msg = f"{error_msg} - {e.response.text}"
+            raise VideoProviderError(f"Zoom OAuth error: {error_msg}")
     
     def _generate_jwt_token(self) -> str:
-        """Generate JWT token for Zoom API authentication"""
+        """Generate JWT token for Zoom API authentication (DEPRECATED by Zoom)"""
         if not self.api_key or not self.api_secret:
             raise VideoProviderError("Zoom API key and secret required")
         
@@ -79,12 +158,18 @@ class ZoomProvider(VideoProviderBase):
         return jwt.encode(payload, self.api_secret, algorithm="HS256")
     
     def _get_headers(self) -> Dict[str, str]:
-        """Get authorization headers"""
+        """Get authorization headers (uses OAuth 2.0 if account_id present, else JWT)"""
         if self.access_token:
-            # OAuth token
+            # Pre-provided access token
+            logger.info("[ZOOM] Using pre-provided access token")
             return {"Authorization": f"Bearer {self.access_token}"}
+        elif self.account_id:
+            # OAuth 2.0 Server-to-Server
+            token = self._get_oauth_token()
+            return {"Authorization": f"Bearer {token}"}
         else:
-            # JWT token
+            # Fallback to JWT (deprecated)
+            logger.warning("[ZOOM] Using deprecated JWT authentication")
             token = self._generate_jwt_token()
             return {"Authorization": f"Bearer {token}"}
     
@@ -404,12 +489,18 @@ class VideoProviderFactory:
         provider: VideoProvider,
         api_key: Optional[str] = None,
         api_secret: Optional[str] = None,
-        access_token: Optional[str] = None
+        access_token: Optional[str] = None,
+        account_id: Optional[str] = None
     ) -> VideoProviderBase:
         """Get video provider instance based on type"""
         
         if provider == VideoProvider.ZOOM:
-            return ZoomProvider(api_key=api_key, api_secret=api_secret, access_token=access_token)
+            return ZoomProvider(
+                api_key=api_key, 
+                api_secret=api_secret, 
+                access_token=access_token,
+                account_id=account_id
+            )
         elif provider == VideoProvider.MICROSOFT_TEAMS:
             return MicrosoftTeamsProvider(access_token=access_token)
         elif provider == VideoProvider.GOOGLE_MEET:

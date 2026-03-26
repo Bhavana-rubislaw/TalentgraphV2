@@ -452,7 +452,8 @@ class InterviewScheduleRequest(BaseModel):
     candidate_email: str
     interview_datetime: str  # e.g., "March 20, 2026 at 10:30 AM"
     timezone: str  # e.g., "EST", "America/New_York"
-    meeting_link: Optional[str] = None  # Optional - auto-generated from VideoProviderAccount if not provided
+    video_provider: Optional[str] = None  # "zoom", "google_meet", or "microsoft_teams" - triggers auto-generation
+    meeting_link: Optional[str] = None  # Optional - provide manual link OR leave empty to auto-generate
     notes: Optional[str] = None
     subject: Optional[str] = None
 
@@ -513,55 +514,90 @@ def schedule_interview(
     if not candidate_email or "@" not in candidate_email:
         raise HTTPException(status_code=400, detail="Invalid candidate email address")
     
-    # Handle meeting link - auto-generate if not provided
+    # Prepare candidate name for emails and meeting topics
+    candidate_name = getattr(candidate, 'name', None) or candidate_email.split('@')[0]
+    
+    # Parse interview_datetime string to datetime object for Zoom API
+    # Frontend sends: "March 27, 2026 at 10:00 AM"
+    # Zoom expects: datetime object
+    interview_dt_obj = None
+    try:
+        from dateutil import parser as date_parser
+        interview_dt_obj = date_parser.parse(data.interview_datetime)
+        logger.info(f"[INTERVIEW] Parsed datetime: {interview_dt_obj}")
+    except ImportError:
+        # Fallback if python-dateutil not installed
+        logger.warning("[INTERVIEW] python-dateutil not installed, using basic datetime parsing")
+        try:
+            # Try basic parsing for common formats
+            interview_dt_obj = datetime.strptime(data.interview_datetime, "%B %d, %Y at %I:%M %p")
+        except ValueError:
+            logger.error(f"[INTERVIEW] Failed to parse datetime: {data.interview_datetime}")
+            pass
+    except Exception as e:
+        logger.error(f"[INTERVIEW] Error parsing datetime: {e}")
+        pass
+    
+    # Handle meeting link - auto-generate if video provider specified, otherwise use manual link
     meeting_link = None
     video_provider_used = None
     
     if data.meeting_link:
-        # Use provided meeting link
+        # Use provided manual meeting link
         meeting_link = data.meeting_link.strip()
         if not (meeting_link.startswith("http://") or meeting_link.startswith("https://")):
             raise HTTPException(status_code=400, detail="Invalid meeting link - must be a valid URL")
-    else:
-        # Auto-generate meeting link from recruiter's video provider OR system defaults
-        logger.info(f"[INTERVIEW] No meeting link provided, attempting auto-generation for user {user.id}")
+        logger.info(f"[INTERVIEW] Using manual meeting link")
+    elif data.video_provider:
+        # Auto-generate meeting link from specified video provider
+        logger.info(f"[INTERVIEW] Auto-generating meeting link using {data.video_provider}")
         
-        # Query user-specific video provider account first
-        video_account = session.exec(
-            select(VideoProviderAccount)
-            .where(VideoProviderAccount.user_id == user.id)
-            .where(VideoProviderAccount.is_primary == True)
-            .where(VideoProviderAccount.auto_generate_links == True)
-        ).first()
+        # Map provider string to enum and get credentials from .env
+        provider_map = {
+            "zoom": VideoProvider.ZOOM,
+            "google_meet": VideoProvider.GOOGLE_MEET,
+            "microsoft_teams": VideoProvider.MICROSOFT_TEAMS
+        }
         
-        # Determine credentials source
-        if video_account:
-            # Use user-specific account
-            logger.info(f"[INTERVIEW] Using user-specific {video_account.provider.value} account")
-            provider_enum = video_account.provider
-            api_key = video_account.api_key
-            api_secret = video_account.api_secret
-            access_token = video_account.access_token
-            default_password = video_account.default_meeting_password
-            waiting_room = video_account.waiting_room_enabled
-        else:
-            # Fallback to system-wide .env credentials
-            zoom_api_key = os.getenv("ZOOM_API_KEY")
-            zoom_api_secret = os.getenv("ZOOM_API_SECRET")
-            
-            if not zoom_api_key or not zoom_api_secret:
-                raise HTTPException(
-                    status_code=400,
-                    detail="No meeting link provided and no video provider configured. Please add meeting link or configure Zoom credentials in .env file."
-                )
-            
-            logger.info(f"[INTERVIEW] Using system-wide Zoom credentials from .env")
-            provider_enum = VideoProvider.ZOOM
-            api_key = zoom_api_key
-            api_secret = zoom_api_secret
-            access_token = None
-            default_password = None
-            waiting_room = True  # Default to enabled
+        if data.video_provider not in provider_map:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid video provider: {data.video_provider}. Must be 'zoom', 'google_meet', or 'microsoft_teams'"
+            )
+        
+        provider_enum = provider_map[data.video_provider]
+        
+        # Get credentials from .env based on provider
+        api_key = None
+        api_secret = None
+        access_token = None
+        account_id = None
+        
+        if provider_enum == VideoProvider.ZOOM:
+            api_key = os.getenv("ZOOM_API_KEY") or os.getenv("ZOOM_CLIENT_ID")
+            api_secret = os.getenv("ZOOM_API_SECRET") or os.getenv("ZOOM_CLIENT_SECRET")
+            account_id = os.getenv("ZOOM_ACCOUNT_ID")  # Required for OAuth 2.0
+        elif provider_enum == VideoProvider.GOOGLE_MEET:
+            api_key = os.getenv("GOOGLE_CLIENT_ID")
+            api_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        elif provider_enum == VideoProvider.MICROSOFT_TEAMS:
+            api_key = os.getenv("MICROSOFT_CLIENT_ID")
+            api_secret = os.getenv("MICROSOFT_CLIENT_SECRET")
+        
+        if not api_key or not api_secret:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No credentials configured for {data.video_provider}. Please configure {provider_enum.value.upper()}_CLIENT_ID and {provider_enum.value.upper()}_CLIENT_SECRET in .env file or provide a manual meeting link."
+            )
+        
+        # Zoom OAuth also requires account_id
+        if provider_enum == VideoProvider.ZOOM and not account_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Zoom OAuth requires ZOOM_ACCOUNT_ID to be configured in .env file. Please add it or provide a manual meeting link."
+            )
+        
+        logger.info(f"[INTERVIEW] Using {data.video_provider} credentials from .env")
         
         try:
             # Get video provider instance
@@ -569,18 +605,21 @@ def schedule_interview(
                 provider=provider_enum,
                 api_key=api_key,
                 api_secret=api_secret,
-                access_token=access_token
+                access_token=access_token,
+                account_id=account_id
             )
             
             # Generate meeting
+            # Use parsed datetime object if available, otherwise pass string and let provider handle it
+            meeting_start_time = interview_dt_obj if interview_dt_obj else data.interview_datetime
+            
             meeting_details = provider.create_meeting(
-                topic=f"{job_posting.job_title} Interview - {candidate_name}",
-                start_time=data.interview_datetime,
-                duration=60,  # Default 1 hour
-                timezone=data.timezone,
-                agenda=f"Interview for {job_posting.job_title} position at {company.company_name}",
-                password=default_password,
-                waiting_room=waiting_room
+                title=f"{job_posting.job_title} Interview - {candidate_name}",
+                start_time=meeting_start_time,  # datetime object
+                duration_minutes=60,  # Default 1 hour
+                description=f"Interview for {job_posting.job_title} position at {company.company_name}",
+                waiting_room=True,  # Default enabled
+                timezone=data.timezone  # Pass as kwarg
             )
             
             meeting_link = meeting_details.get("join_url") or meeting_details.get("joinUrl")
@@ -592,25 +631,30 @@ def schedule_interview(
             logger.error(f"[INTERVIEW] Video provider error: {e}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to generate meeting link: {str(e)}"
+                detail=f"Failed to generate {data.video_provider} meeting link: {str(e)}"
             )
         except Exception as e:
             logger.error(f"[INTERVIEW] Unexpected error generating meeting link: {e}")
             raise HTTPException(
                 status_code=500,
-                detail="Failed to generate meeting link. Please provide a manual link or check Zoom API credentials in .env file."
+                detail=f"Failed to generate {data.video_provider} meeting link. Please check your {data.video_provider.upper()} API credentials in .env file or provide a manual link."
             )
+    else:
+        # Neither manual link nor video provider specified
+        raise HTTPException(
+            status_code=400,
+            detail="Meeting link is required. Either provide a manual link or select a video provider for auto-generation."
+        )
     
     if not meeting_link:
         raise HTTPException(
             status_code=400,
-            detail="Meeting link is required. Either provide a link or configure a video provider."
+            detail="Meeting link generation failed. Please try providing a manual link."
         )
     
     # Prepare display names
     recruiter_name = getattr(user, 'full_name', None) or getattr(user, 'name', None) or getattr(company, 'company_name', 'Recruiter')
     recruiter_email = user.email
-    candidate_name = getattr(candidate, 'name', None) or candidate_email.split('@')[0]
     company_name = getattr(company, 'company_name', 'Our Company')
     job_title = getattr(job_posting, 'job_title', 'the position')
     

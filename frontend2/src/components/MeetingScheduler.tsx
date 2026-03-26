@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { apiClient } from '../api/client';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PLATFORM_CONFIG = {
@@ -100,7 +99,7 @@ interface MeetingSchedulerProps {
   onClose: () => void;
 }
 
-export default function MeetingScheduler({ candidateName, candidateEmail, onClose }: MeetingSchedulerProps) {
+export default function MeetingScheduler({ candidateName, onClose }: MeetingSchedulerProps) {
   const [step, setStep] = useState(1);
   const [platform, setPlatform] = useState<keyof typeof PLATFORM_CONFIG | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -109,7 +108,6 @@ export default function MeetingScheduler({ candidateName, candidateEmail, onClos
   const [topic, setTopic] = useState(`Interview with ${candidateName}`);
   const [agenda, setAgenda] = useState("");
   const [success, setSuccess] = useState(false);
-  const [sending, setSending] = useState(false);
   const [meetings, setMeetings] = useState<Meeting[]>([
     {id:1,candidateName:"Alex Rivera",platform:"zoom",date:"Mar 12, 2026",time:"10:00 AM",duration:45},
     {id:2,candidateName:"Priya Patel",platform:"teams",date:"Mar 14, 2026",time:"2:30 PM",duration:30},
@@ -128,7 +126,7 @@ export default function MeetingScheduler({ candidateName, candidateEmail, onClos
   const goBack = () => { setAnimKey(k=>k+1); setStep(s=>s-1); };
 
   const handleSchedule = async () => {
-    if (!selectedDate || !selectedTime || !platform || sending) return;
+    if (!selectedDate || !selectedTime || !platform) return;
     
     const formattedDate = selectedDate.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
     const newMeeting = {
@@ -143,30 +141,10 @@ export default function MeetingScheduler({ candidateName, candidateEmail, onClos
     // Add to local state immediately for UI feedback
     setMeetings(prev=>[newMeeting,...prev]);
     
-    // Call API to send confirmation emails if email is provided
-    if (candidateEmail) {
-      setSending(true);
-      try {
-        await apiClient.scheduleMeeting({
-          candidate_email: candidateEmail,
-          candidate_name: candidateName,
-          platform,
-          date: formattedDate,
-          time: selectedTime,
-          duration,
-          topic,
-          agenda
-        });
-        console.log('✅ Meeting scheduled and confirmation emails sent');
-      } catch (error: any) {
-        console.error('❌ Failed to send confirmation emails:', error);
-        // Continue with success animation even if email fails
-      } finally {
-        setSending(false);
-      }
-    } else {
-      console.log('ℹ️ Meeting scheduled locally (no email provided)');
-    }
+    // Note: This component uses old meeting logic. Consider migrating to the new
+    // Meetings API (/meetings/create) for full integration with calendar and notifications.
+    // Old email-only scheduling is deprecated.
+    console.log('ℹ️ Meeting scheduled locally (email-only scheduling deprecated)');
     
     // Show success animation and reset
     setSuccess(true);
@@ -425,9 +403,9 @@ export default function MeetingScheduler({ candidateName, candidateEmail, onClos
                     </div>
                     <div style={{display:"flex",gap:9}}>
                       <button onClick={goBack} style={{flex:1,padding:13,borderRadius:12,border:"2px solid #e2e8f0",background:"white",color:"#64748b",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Back</button>
-                      <button onClick={handleSchedule} disabled={sending}
-                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:sending?"#94a3b8":cfg?.gradient,color:"white",fontWeight:700,fontSize:13,cursor:sending?"not-allowed":"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:sending?"none":`0 8px 20px ${cfg?.color}40`}}>
-                        {sending ? "Sending..." : <>{cfg?.icon} Send {cfg?.name} Invite</>}
+                      <button onClick={handleSchedule}
+                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:cfg?.gradient,color:"white",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:7,boxShadow:`0 8px 20px ${cfg?.color}40`}}>
+                        {cfg?.icon} Schedule {cfg?.name} Meeting
                       </button>
                     </div>
                   </div>

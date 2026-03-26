@@ -36,10 +36,30 @@ async def lifespan(app: FastAPI):
     logger.info("[STARTUP] TalentGraph V2 API starting...")
     init_db()
     logger.info("[STARTUP] Database initialized successfully")
+    
+    # Start background workers if enabled
+    workers_enabled = os.getenv("WORKERS_ENABLED", "true").lower() == "true"
+    if workers_enabled:
+        try:
+            from app.workers import start_workers
+            start_workers()
+            logger.info("[STARTUP] Background workers started successfully")
+        except Exception as e:
+            logger.warning(f"[STARTUP] Failed to start workers: {e}")
+    else:
+        logger.info("[STARTUP] Background workers disabled (WORKERS_ENABLED=false)")
+    
     yield
+    
     # Shutdown
     logger.info("[SHUTDOWN] TalentGraph V2 API shutting down...")
-    pass
+    if workers_enabled:
+        try:
+            from app.workers import stop_workers
+            stop_workers()
+            logger.info("[SHUTDOWN] Background workers stopped successfully")
+        except Exception as e:
+            logger.warning(f"[SHUTDOWN] Failed to stop workers: {e}")
 
 
 app = FastAPI(
@@ -95,9 +115,15 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, notifications, activity_feed, messages, meetings, calendar
+from app.routers import (
+    auth, candidates, company, job_postings, matches, recommendations, 
+    swipes, dashboard, applications, notifications, activity_feed, 
+    messages, meetings, calendar, analytics
+)
 
 logger.info("[STARTUP] Registering routers...")
+
+# Core routers
 app.include_router(auth.router)
 app.include_router(candidates.router)
 app.include_router(company.router)
@@ -112,6 +138,37 @@ app.include_router(activity_feed.router)
 app.include_router(messages.router)  # Direct messaging system
 app.include_router(meetings.router)  # Meeting scheduler with email notifications
 app.include_router(calendar.router)  # Calendar & video provider OAuth integration
+app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
+
+# Phase 3 & 4 routers (conditional based on feature flags)
+attachments_enabled = os.getenv("FEATURE_ATTACHMENTS_ENABLED", "false").lower() == "true"
+email_threading_enabled = os.getenv("FEATURE_EMAIL_THREADING_ENABLED", "false").lower() == "true"
+billing_enabled = os.getenv("FEATURE_BILLING_ENABLED", "false").lower() == "true"
+
+if attachments_enabled:
+    try:
+        from app.routers import attachments
+        app.include_router(attachments.router)
+        logger.info("[STARTUP] Attachments router registered (S3 enabled)")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Failed to load attachments router: {e}")
+
+if email_threading_enabled:
+    try:
+        from app.routers import email_webhooks
+        app.include_router(email_webhooks.router)
+        logger.info("[STARTUP] Email webhooks router registered")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Failed to load email_webhooks router: {e}")
+
+if billing_enabled:
+    try:
+        from app.routers import billing
+        app.include_router(billing.router)
+        logger.info("[STARTUP] Billing router registered (Stripe enabled)")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Failed to load billing router: {e}")
+
 logger.info("[STARTUP] All routers registered successfully")
 
 

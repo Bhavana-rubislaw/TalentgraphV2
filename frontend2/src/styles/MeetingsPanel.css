@@ -1,0 +1,338 @@
+/* Meetings Panel Styles */
+
+.meetings-panel {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.meetings-panel-header {
+  margin-bottom: 32px;
+}
+
+.meetings-panel-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.meetings-panel-subtitle {
+  font-size: 15px;
+  color: #64748b;
+  margin: 0;
+}
+
+.meetings-panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Error and Success Banners */
+.error-banner,
+.success-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.error-banner {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.error-banner svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  stroke: #dc2626;
+}
+
+.success-banner {
+  background-color: #f0fdf4;
+  border: 1px solid: #86efac;
+  color: #166534;
+}
+
+.success-banner svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  stroke: #16a34a;
+}
+
+/* Meeting Form Card */
+.meeting-form-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.meeting-form-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 24px 0;
+}
+
+/* Form Grid */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 8px;
+}
+
+.form-group label .required {
+  color: #dc2626;
+  margin-left: 2px;
+}
+
+.form-control {
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.form-control:hover {
+  border-color: #94a3b8;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control.error {
+  border-color: #dc2626;
+}
+
+.form-control.error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.field-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.char-count {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: right;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+/* Meeting Link Card */
+.meeting-link-card {
+  background: white;
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border: 2px solid #dbeafe;
+}
+
+.meeting-link-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.meeting-link-header svg {
+  width: 24px;
+  height: 24px;
+  stroke: #16a34a;
+}
+
+.meeting-link-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Meeting Summary */
+.meeting-summary {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-row {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0;
+}
+
+.summary-row:not(:last-child) {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.summary-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  min-width: 120px;
+}
+
+.summary-value {
+  font-size: 14px;
+  color: #1e293b;
+  flex: 1;
+}
+
+/* Meeting Link Display */
+.meeting-link-display {  margin-bottom: 20px;
+}
+
+.link-input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #1e293b;
+}
+
+/* Meeting Link Actions */
+.meeting-link-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-copy,
+.btn-open {
+  flex: 1;
+}
+
+.btn-copy {
+  background: #16a34a;
+  color: white;
+}
+
+.btn-copy:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+}
+
+.btn-open {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-open:hover {
+  background: #e2e8f0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .meetings-panel {
+    padding: 16px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions,
+  .meeting-link-actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}

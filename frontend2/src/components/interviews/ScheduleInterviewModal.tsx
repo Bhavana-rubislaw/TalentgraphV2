@@ -24,6 +24,7 @@ interface FormData {
   interviewDate: string;
   interviewTime: string;
   timezone: string;
+  videoProvider: 'zoom' | 'google_meet' | 'microsoft_teams' | 'manual';
   meetingLink: string;
   notes: string;
   subject: string;
@@ -79,6 +80,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         interviewDate: '',
         interviewTime: '10:00',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+        videoProvider: 'zoom',
         meetingLink: '',
         notes: '',
         subject: `Interview for ${jobTitle} at ${companyName}`
@@ -116,9 +118,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       newErrors.interviewTime = 'Interview time is required';
     }
     
-    // Validate meeting link (optional - will auto-generate if empty)
-    if (formData.meetingLink.trim() && !/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
-      newErrors.meetingLink = 'Meeting link must be a valid URL (starting with http:// or https://)';
+    // Validate meeting link (required if manual, must be valid URL format)
+    if (formData.videoProvider === 'manual') {
+      if (!formData.meetingLink.trim()) {
+        newErrors.meetingLink = 'Meeting link is required when using manual option';
+      } else if (!/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
+        newErrors.meetingLink = 'Meeting link must be a valid URL (starting with http:// or https://)';
+      }
     }
     
     setErrors(newErrors);
@@ -164,8 +170,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         subject: formData.subject.trim() || undefined
       };
       
-      // Add meeting_link only if provided
-      if (formData.meetingLink.trim()) {
+      // Add video provider preference if not manual
+      if (formData.videoProvider !== 'manual') {
+        payload.video_provider = formData.videoProvider;
+      }
+      
+      // Add meeting_link only if manual and provided
+      if (formData.videoProvider === 'manual' && formData.meetingLink.trim()) {
         payload.meeting_link = formData.meetingLink.trim();
       }
       
@@ -389,25 +400,95 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
               </div>
 
               <div className="schedule-interview-field">
-                <label htmlFor="meetingLink">
-                  Meeting Link <span className="schedule-interview-optional">(Optional - Auto-generated)</span>
+                <label>
+                  Video Meeting Provider <span className="schedule-interview-required">*</span>
                 </label>
-                <input
-                  id="meetingLink"
-                  type="url"
-                  value={formData.meetingLink}
-                  onChange={(e) => handleInputChange('meetingLink', e.target.value)}
-                  placeholder="Leave empty to auto-generate from your video provider settings"
-                  disabled={isSubmitting}
-                  className={errors.meetingLink ? 'schedule-interview-input-error' : ''}
-                />
-                {errors.meetingLink && (
-                  <span className="schedule-interview-error">{errors.meetingLink}</span>
-                )}
-                <span className="schedule-interview-hint">
-                  💡 Leave empty to automatically generate a meeting link from your configured video provider (Zoom, Teams, or Google Meet)
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'zoom' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="videoProvider"
+                      value="zoom"
+                      checked={formData.videoProvider === 'zoom'}
+                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🎥 Zoom</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Zoom meeting link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'google_meet' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="videoProvider"
+                      value="google_meet"
+                      checked={formData.videoProvider === 'google_meet'}
+                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>📹 Google Meet</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Google Meet link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'microsoft_teams' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="videoProvider"
+                      value="microsoft_teams"
+                      checked={formData.videoProvider === 'microsoft_teams'}
+                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>👥 Microsoft Teams</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Teams meeting link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'manual' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="videoProvider"
+                      value="manual"
+                      checked={formData.videoProvider === 'manual'}
+                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🔗 Manual Link</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Provide your own meeting link</div>
+                    </div>
+                  </label>
+                </div>
               </div>
+
+              {formData.videoProvider === 'manual' && (
+                <div className="schedule-interview-field">
+                  <label htmlFor="meetingLink">
+                    Meeting Link <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="meetingLink"
+                    type="url"
+                    value={formData.meetingLink}
+                    onChange={(e) => handleInputChange('meetingLink', e.target.value)}
+                    placeholder="https://zoom.us/j/1234567890 or https://meet.google.com/..."
+                    disabled={isSubmitting}
+                    className={errors.meetingLink ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.meetingLink && (
+                    <span className="schedule-interview-error">{errors.meetingLink}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Optional Details Section */}

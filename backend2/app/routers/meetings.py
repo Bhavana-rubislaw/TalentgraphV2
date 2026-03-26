@@ -102,7 +102,7 @@ def find_available_slots(
 @router.post("/create", response_model=MeetingRead)
 async def create_meeting(
     meeting_data: MeetingCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -117,7 +117,7 @@ async def create_meeting(
         raise HTTPException(status_code=400, detail="End time must be after start time")
     
     # Check for conflicts for all participants
-    all_participant_ids = meeting_data.participant_user_ids + [current_user.id]
+    all_participant_ids = meeting_data.participant_user_ids + [current_user["user_id"]]
     for user_id in all_participant_ids:
         has_conflict = check_availability_conflict(
             session, user_id, meeting_data.scheduled_start, meeting_data.scheduled_end
@@ -175,7 +175,7 @@ async def create_meeting(
         scheduled_end=meeting_data.scheduled_end,
         duration_minutes=meeting_data.duration_minutes,
         timezone=meeting_data.timezone,
-        organizer_user_id=current_user.id,
+        organizer_user_id=current_user["user_id"],
         job_posting_id=meeting_data.job_posting_id,
         match_id=meeting_data.match_id,
         application_id=meeting_data.application_id,
@@ -192,7 +192,7 @@ async def create_meeting(
     # Sync to calendar providers if configured
     calendar_accounts = session.exec(
         select(CalendarAccount).where(
-            CalendarAccount.user_id == current_user.id,
+            CalendarAccount.user_id == current_user["user_id"],
             CalendarAccount.sync_enabled == True
         )
     ).all()
@@ -209,7 +209,7 @@ async def create_meeting(
             participant_users = session.exec(
                 select(User).where(User.id.in_(all_participant_ids))
             ).all()
-            attendee_emails = [user.email for user in participant_users if user.id != current_user.id]
+            attendee_emails = [user.email for user in participant_users if user.id != current_user["user_id"]]
             
             event_result = provider.create_event(
                 title=meeting_data.title,
@@ -248,6 +248,10 @@ async def create_meeting(
     
     session.commit()
     
+    # Get current user for notification
+    current_user_obj = session.get(User, current_user["user_id"])
+    user_full_name = current_user_obj.full_name if current_user_obj else current_user.get("email", "Someone")
+    
     # Send notifications to all participants (except organizer)
     for user_id in meeting_data.participant_user_ids:
         push_notification(
@@ -255,7 +259,7 @@ async def create_meeting(
             target_user_id=user_id,
             notification_type="meeting_scheduled",
             title="New Meeting Scheduled",
-            message=f"{current_user.full_name} scheduled a meeting: {meeting_data.title}",
+            message=f"{user_full_name} scheduled a meeting: {meeting_data.title}",
             related_id=meeting.id,
             action_url=f"/meetings/{meeting.id}"
         )
@@ -269,7 +273,7 @@ async def create_meeting(
 async def list_meetings(
     status: Optional[MeetingStatus] = Query(None, description="Filter by status"),
     upcoming_only: bool = Query(False, description="Show only upcoming meetings"),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -280,8 +284,8 @@ async def list_meetings(
     # Query meetings where user is participant or organizer
     query = select(Meeting).join(MeetingParticipant).where(
         or_(
-            Meeting.organizer_user_id == current_user.id,
-            MeetingParticipant.user_id == current_user.id
+            Meeting.organizer_user_id == current_user["user_id"],
+            MeetingParticipant.user_id == current_user["user_id"]
         )
     )
     
@@ -300,7 +304,7 @@ async def list_meetings(
 @router.get("/{meeting_id}", response_model=MeetingRead)
 async def get_meeting(
     meeting_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get meeting details by ID"""
@@ -310,8 +314,8 @@ async def get_meeting(
         raise HTTPException(status_code=404, detail="Meeting not found")
     
     # Check if user has access (is participant or organizer)
-    is_participant = any(p.user_id == current_user.id for p in meeting.participants)
-    is_organizer = meeting.organizer_user_id == current_user.id
+    is_participant = any(p.user_id == current_user["user_id"] for p in meeting.participants)
+    is_organizer = meeting.organizer_user_id == current_user["user_id"]
     
     if not (is_participant or is_organizer):
         raise HTTPException(status_code=403, detail="Access denied")
@@ -323,7 +327,7 @@ async def get_meeting(
 async def update_meeting(
     meeting_id: int,
     update_data: MeetingUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -336,7 +340,7 @@ async def update_meeting(
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     
-    if meeting.organizer_user_id != current_user.id:
+    if meeting.organizer_user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Only organizer can update meeting")
     
     if meeting.status != MeetingStatus.SCHEDULED:
@@ -388,7 +392,7 @@ async def update_meeting(
 async def cancel_meeting(
     meeting_id: int,
     cancel_data: MeetingCancelRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -402,8 +406,8 @@ async def cancel_meeting(
         raise HTTPException(status_code=404, detail="Meeting not found")
     
     # Check if user is organizer or participant
-    is_participant = any(p.user_id == current_user.id for p in meeting.participants)
-    is_organizer = meeting.organizer_user_id == current_user.id
+    is_participant = any(p.user_id == current_user["user_id"] for p in meeting.participants)
+    is_organizer = meeting.organizer_user_id == current_user["user_id"]
     
     if not (is_participant or is_organizer):
         raise HTTPException(status_code=403, detail="Access denied")
@@ -414,7 +418,7 @@ async def cancel_meeting(
     # Cancel meeting
     meeting.status = MeetingStatus.CANCELLED
     meeting.cancelled_at = datetime.utcnow()
-    meeting.cancelled_by_user_id = current_user.id
+    meeting.cancelled_by_user_id = current_user["user_id"]
     meeting.cancellation_reason = cancel_data.cancellation_reason
     meeting.updated_at = datetime.utcnow()
     
@@ -426,7 +430,7 @@ async def cancel_meeting(
     if is_organizer:  # Only organizer can delete from their calendar
         calendar_accounts = session.exec(
             select(CalendarAccount).where(
-                CalendarAccount.user_id == current_user.id,
+                CalendarAccount.user_id == current_user["user_id"],
                 CalendarAccount.sync_enabled == True
             )
         ).all()
@@ -451,15 +455,19 @@ async def cancel_meeting(
             except CalendarProviderError as e:
                 print(f"Failed to delete from {cal_account.provider.value} calendar: {str(e)}")
     
+    # Get current user for notification
+    current_user_obj = session.get(User, current_user["user_id"])
+    user_full_name = current_user_obj.full_name if current_user_obj else current_user.get("email", "Someone")
+    
     # Notify all participants
     for participant in meeting.participants:
-        if participant.user_id != current_user.id:
+        if participant.user_id != current_user["user_id"]:
             push_notification(
                 session=session,
                 target_user_id=participant.user_id,
                 notification_type="meeting_cancelled",
                 title="Meeting Cancelled",
-                message=f"{current_user.full_name} cancelled meeting '{meeting.title}'",
+                message=f"{user_full_name} cancelled meeting '{meeting.title}'",
                 related_id=meeting.id,
                 action_url=f"/meetings/{meeting.id}"
             )
@@ -471,20 +479,20 @@ async def cancel_meeting(
 async def reschedule_meeting(
     meeting_id: int,
     reschedule_data: MeetingRescheduleRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     Reschedule a meeting to a new time
     - Only organizer can reschedule
-    - Checks for conflicts
+    - Checks for conflicts at new time
     """
     
     meeting = session.get(Meeting, meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     
-    if meeting.organizer_user_id != current_user.id:
+    if meeting.organizer_user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="Only organizer can reschedule")
     
     if meeting.status not in [MeetingStatus.SCHEDULED, MeetingStatus.CANCELLED]:
@@ -517,7 +525,7 @@ async def reschedule_meeting(
     # Update in synced calendars
     calendar_accounts = session.exec(
         select(CalendarAccount).where(
-            CalendarAccount.user_id == current_user.id,
+            CalendarAccount.user_id == current_user["user_id"],
             CalendarAccount.sync_enabled == True
         )
     ).all()
@@ -548,7 +556,7 @@ async def reschedule_meeting(
     
     # Notify participants
     for participant in meeting.participants:
-        if participant.user_id != current_user.id:
+        if participant.user_id != current_user["user_id"]:
             push_notification(
                 session=session,
                 target_user_id=participant.user_id,
@@ -567,7 +575,7 @@ async def reschedule_meeting(
 @router.post("/availability/propose", response_model=List[MeetingAvailabilitySlotRead])
 async def propose_availability_slots(
     slots_data: List[MeetingAvailabilitySlotCreate],
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -578,7 +586,7 @@ async def propose_availability_slots(
     created_slots = []
     for slot_data in slots_data:
         slot = MeetingAvailabilitySlot(
-            proposed_by_user_id=current_user.id,
+            proposed_by_user_id=current_user["user_id"],
             proposed_to_user_id=slot_data.proposed_to_user_id,
             slot_start=slot_data.slot_start,
             slot_end=slot_data.slot_end,
@@ -610,13 +618,13 @@ async def propose_availability_slots(
 @router.get("/availability/my-slots", response_model=List[MeetingAvailabilitySlotRead])
 async def get_my_availability_slots(
     include_selected: bool = Query(False, description="Include already selected slots"),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Get availability slots proposed to current user"""
     
     query = select(MeetingAvailabilitySlot).where(
-        MeetingAvailabilitySlot.proposed_to_user_id == current_user.id
+        MeetingAvailabilitySlot.proposed_to_user_id == current_user["user_id"]
     )
     
     if not include_selected:
@@ -631,7 +639,7 @@ async def get_my_availability_slots(
 @router.post("/availability/select", response_model=MeetingRead)
 async def select_availability_slot(
     selection: SlotSelectionRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -645,7 +653,7 @@ async def select_availability_slot(
     if not slot:
         raise HTTPException(status_code=404, detail="Slot not found")
     
-    if slot.proposed_to_user_id != current_user.id:
+    if slot.proposed_to_user_id != current_user["user_id"]:
         raise HTTPException(status_code=403, detail="This slot was not proposed to you")
     
     if slot.is_selected:
@@ -717,7 +725,7 @@ async def check_user_availability(
     user_id: int,
     start_time: datetime,
     end_time: datetime,
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Check if a user is available during a time slot"""
@@ -739,7 +747,7 @@ async def find_common_availability(
     duration_minutes: int = Query(60, description="Meeting duration"),
     start_range: datetime = Query(..., description="Start of search range"),
     end_range: datetime = Query(..., description="End of search range"),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """Find available time slots for multiple users"""

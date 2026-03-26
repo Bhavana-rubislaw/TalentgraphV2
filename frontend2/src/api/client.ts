@@ -460,6 +460,82 @@ export const apiClient = {
 
   deleteVideoProviderAccount: (accountId: number) =>
     api.delete(`/calendar/video-providers/${accountId}`),
+
+  // ── Attachments (Phase 3) ──────────────────────────────────────────────────
+  
+  // Get presigned URL for S3 upload
+  getAttachmentUploadUrl: (data: {
+    filename: string;
+    mime_type: string;
+    size_bytes: number;
+    checksum_sha256: string;
+  }) =>
+    api.post('/attachments/upload-url', data),
+
+  // Finalize attachment after S3 upload
+  finalizeMessageAttachment: (messageId: number, data: {
+    attachment_id: string;
+    storage_key: string;
+  }) =>
+    api.post(`/attachments/messages/${messageId}/attachments`, data),
+
+  // List attachments for a message
+  getMessageAttachments: (messageId: number) =>
+    api.get(`/attachments/messages/${messageId}/attachments`),
+
+  // Get presigned download URL
+  getAttachmentDownloadUrl: (attachmentId: string) =>
+    api.get(`/attachments/${attachmentId}/download-url`),
+
+  // Delete attachment
+  deleteAttachment: (attachmentId: string) =>
+    api.delete(`/attachments/${attachmentId}`),
+
+  // ── Billing & Subscriptions (Phase 4) ──────────────────────────────────────
+  
+  // Create Stripe checkout session
+  createCheckoutSession: (data: {
+    plan_code: 'starter' | 'professional' | 'enterprise';
+    billing_period: 'monthly' | 'annual';
+  }) =>
+    api.post('/billing/create-checkout-session', data),
+
+  // Get current subscription
+  getSubscription: () =>
+    api.get('/billing/subscription'),
+
+  // Create billing portal session
+  createPortalSession: () =>
+    api.post('/billing/portal-session'),
+
+  // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
+  
+  // Get overview metrics
+  getAnalyticsOverview: (rangeDays: number = 30) =>
+    api.get('/analytics/overview', { params: { range_days: rangeDays } }),
+
+  // Get funnel metrics
+  getAnalyticsFunnel: (rangeDays: number = 30, jobId?: number) =>
+    api.get('/analytics/funnel', { 
+      params: { 
+        range_days: rangeDays,
+        ...(jobId && { job_id: jobId })
+      } 
+    }),
+
+  // Get job-specific analytics
+  getJobAnalytics: (jobId: number, rangeDays: number = 90) =>
+    api.get(`/analytics/job/${jobId}`, { params: { range_days: rangeDays } }),
+
+  // Track analytics event
+  trackAnalyticsEvent: (data: {
+    event_type: 'view' | 'like' | 'apply' | 'interview_scheduled' | 'interview_completed' | 'offer_made' | 'hire';
+    job_posting_id?: number;
+    candidate_user_id?: number;
+    company_id?: number;
+    metadata?: Record<string, any>;
+  }) =>
+    api.post('/analytics/events', data),
 };
 
 export default api;
