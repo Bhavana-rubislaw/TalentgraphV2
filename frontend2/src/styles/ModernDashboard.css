@@ -1023,7 +1023,8 @@ body {
   border-radius: var(--radius-lg);
   padding: var(--spacing-3);
   margin-bottom: var(--spacing-3);
-  border: 1px solid var(--border-light);
+  border: 2px solid var(--border-light);
+  box-shadow: var(--shadow-purple-md);
 }
 
 .selector-header {
@@ -1170,14 +1171,15 @@ body {
 .candidate-card-modern {
   background: var(--bg-secondary);
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-light);
+  border: 2px solid var(--border-light);
   overflow: hidden;
   transition: all var(--transition-base);
   position: relative;
+  box-shadow: var(--shadow-purple-md);
 }
 
 .candidate-card-modern:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-purple-xl);
   transform: translateY(-2px);
   border-color: var(--primary-color);
 }

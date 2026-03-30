@@ -35,7 +35,7 @@
   content: '';
   width: 4px;
   height: 24px;
-  background: linear-gradient(135deg, #6A4F99 0%, #9474C4 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 2px;
 }
 
@@ -93,8 +93,8 @@
 .form-group textarea:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #7B5EA7;
-  box-shadow: 0 0 0 4px rgba(123, 94, 167, 0.12);
+  border-color: #764ba2;
+  box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.12);
   background: #ffffff;
 }
 
@@ -129,8 +129,8 @@
 }
 
 .form-group select:focus {
-  border-color: #7B5EA7;
-  box-shadow: 0 0 0 4px rgba(123, 94, 167, 0.12);
+  border-color: #764ba2;
+  box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.12);
 }
 
 /* Radio Buttons - Custom Styled */
@@ -189,12 +189,12 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6A4F99 0%, #9474C4 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transition: transform 0.2s ease;
 }
 
 .radio-option input[type="radio"]:checked + label::before {
-  border-color: #7B5EA7;
+  border-color: #764ba2;
   background: #f7fafc;
 }
 
@@ -203,12 +203,12 @@
 }
 
 .radio-option input[type="radio"]:checked + label {
-  color: #7B5EA7;
+  color: #764ba2;
   font-weight: 600;
 }
 
 .radio-option:hover label::before {
-  border-color: #7B5EA7;
+  border-color: #764ba2;
 }
 
 /* Radio Options Grid Layout */
@@ -242,10 +242,10 @@
 }
 
 .radio-options-grid .radio-option input[type="radio"]:checked + label {
-  border-color: #7B5EA7;
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.07) 0%, rgba(106, 79, 153, 0.04) 100%);
-  box-shadow: 0 4px 12px rgba(123, 94, 167, 0.18);
-  color: #7B5EA7;
+  border-color: #764ba2;
+  background: linear-gradient(135deg, rgba(118, 75, 162, 0.07) 0%, rgba(102, 126, 234, 0.04) 100%);
+  box-shadow: 0 4px 12px rgba(118, 75, 162, 0.18);
+  color: #764ba2;
   font-weight: 600;
 }
 
@@ -330,8 +330,8 @@
 }
 
 .checkbox-option input[type="checkbox"]:checked + label::before {
-  background: linear-gradient(135deg, #6A4F99 0%, #9474C4 100%);
-  border-color: #7B5EA7;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #764ba2;
 }
 
 .checkbox-option input[type="checkbox"]:checked + label::after {
@@ -339,12 +339,12 @@
 }
 
 .checkbox-option input[type="checkbox"]:checked + label {
-  color: #7B5EA7;
+  color: #764ba2;
   font-weight: 600;
 }
 
 .checkbox-option:hover label::before {
-  border-color: #7B5EA7;
+  border-color: #764ba2;
 }
 
 /* File Upload */
@@ -377,9 +377,9 @@
 }
 
 .file-upload-label:hover {
-  border-color: #7B5EA7;
+  border-color: #764ba2;
   background: #F0ECFA;
-  color: #7B5EA7;
+  color: #764ba2;
 }
 
 .file-upload-label svg {
