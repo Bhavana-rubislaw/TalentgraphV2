@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import PageContainer from '../components/PageContainer';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/Form.css';
+import '../styles/AuthLayout.css';
 
 const SignupPage: React.FC = () => {
   console.log('[COMPONENT MOUNT] SignupPage loaded');
@@ -183,245 +183,234 @@ const SignupPage: React.FC = () => {
   };
 
   return (
-    <PageContainer 
-      title={isSignIn ? 'Sign In' : 'Sign Up'} 
-      subtitle={isSignIn ? 
-        (formData.userType === 'candidate' ? 'Sign in as a candidate' : 'Sign in as a company') : 
-        (formData.userType === 'candidate' ? 'As a Candidate' : 'As a Company')
-      }
-    >
-      <div
-        style={{
-          maxWidth: '450px',
-          margin: '0 auto',
-          padding: '40px',
-          background: 'white',
-          borderRadius: '16px',
-          boxShadow: 'var(--shadow-lg)',
-        }}
-      >
-        {/* Back to Home Link */}
-        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--primary)',
-              fontSize: '14px',
-              cursor: 'pointer',
-              textDecoration: 'none',
-            }}
-          >
-            ← Back to Home
-          </button>
+    <div className="auth-layout">
+      {/* Left Branding Panel */}
+      <div className="auth-branding-panel">
+        <div className="auth-gradient-bg"></div>
+        <div className="auth-visual-elements">
+          <div className="auth-blur-shape auth-blur-1"></div>
+          <div className="auth-blur-shape auth-blur-2"></div>
+          <div className="auth-blur-shape auth-blur-3"></div>
         </div>
-        <form onSubmit={handleSubmit}>
-          {/* Company Role Selection for Company Signup/Signin */}
-          {formData.userType === 'company' && (
-            <>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', textTransform: 'uppercase', fontSize: '12px', letterSpacing: '0.5px' }}>
-                  Select Your Role
-                </label>
-                <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'flex-start', padding: '12px', border: formData.companyRole === 'admin' ? '2px solid var(--primary)' : '2px solid var(--border)', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: formData.companyRole === 'admin' ? 'rgba(102, 126, 234, 0.05)' : 'white' }}>
-                    <input
-                      type="radio"
-                      name="companyRole"
-                      value="admin"
-                      checked={formData.companyRole === 'admin'}
-                      onChange={handleChange}
-                      style={{ marginRight: '12px', marginTop: '2px' }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase', fontSize: '13px' }}>ADMIN</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Full access to all company features and job postings</div>
-                    </div>
-                  </label>
-                  
-                  <label style={{ display: 'flex', alignItems: 'flex-start', padding: '12px', border: formData.companyRole === 'hr' ? '2px solid var(--primary)' : '2px solid var(--border)', borderRadius: '8px', marginBottom: '8px', cursor: 'pointer', background: formData.companyRole === 'hr' ? 'rgba(102, 126, 234, 0.05)' : 'white' }}>
-                    <input
-                      type="radio"
-                      name="companyRole"
-                      value="hr"
-                      checked={formData.companyRole === 'hr'}
-                      onChange={handleChange}
-                      style={{ marginRight: '12px', marginTop: '2px' }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase', fontSize: '13px' }}>HR</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Access to all company job postings and candidate management</div>
-                    </div>
-                  </label>
-                  
-                  <label style={{ display: 'flex', alignItems: 'flex-start', padding: '12px', border: formData.companyRole === 'recruiter' ? '2px solid var(--primary)' : '2px solid var(--border)', borderRadius: '8px', cursor: 'pointer', background: formData.companyRole === 'recruiter' ? 'rgba(102, 126, 234, 0.05)' : 'white' }}>
-                    <input
-                      type="radio"
-                      name="companyRole"
-                      value="recruiter"
-                      checked={formData.companyRole === 'recruiter'}
-                      onChange={handleChange}
-                      style={{ marginRight: '12px', marginTop: '2px' }}
-                    />
-                    <div>
-                      <div style={{ fontWeight: '600', marginBottom: '4px', textTransform: 'uppercase', fontSize: '13px' }}>RECRUITER</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Post and manage your own job postings</div>
-                    </div>
-                  </label>
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                  This role determines which features you can access after signing in
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Full Name - Only for signup */}
-          {!isSignIn && (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Full Name
-              </label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="Your name"
-                required
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  border: '2px solid var(--border)',
-                  width: '100%',
-                }}
-              />
-            </div>
-          )}
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="your@email.com"
-              required
-              style={{
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '2px solid var(--border)',
-                width: '100%',
-              }}
-            />
+        <div className="auth-branding-content">
+          <div className="auth-brand-logo">
+            <h1 className="auth-app-name">TalentGraph</h1>
+            <div className="auth-app-version">V2</div>
           </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder={isSignIn ? "Your password" : "Min 8 chars, 1 uppercase, 1 digit, 1 special char"}
-              required
-              style={{
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '2px solid var(--border)',
-                width: '100%',
-              }}
-            />
-            {!isSignIn && (
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                Must be at least 8 characters with uppercase, digit, and special character
-              </div>
-            )}
+          <p className="auth-tagline">Smart Hiring. Smarter Matches.</p>
+          <p className="auth-description">
+            {formData.userType === 'candidate' 
+              ? 'Connect with top companies and discover opportunities that match your skills and aspirations.'
+              : 'Find exceptional talent faster with our AI-powered matching algorithm and comprehensive candidate insights.'
+            }
+          </p>
+          <div className="auth-features">
+            <div className="auth-feature-item">
+              <svg className="auth-feature-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>AI-Powered Matching</span>
+            </div>
+            <div className="auth-feature-item">
+              <svg className="auth-feature-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Real-time Analytics</span>
+            </div>
+            <div className="auth-feature-item">
+              <svg className="auth-feature-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              <span>Seamless Communication</span>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {!isSignIn && (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                required
-                style={{
-                  padding: '12px 16px',
-                  borderRadius: '8px',
-                  border: '2px solid var(--border)',
-                  width: '100%',
-                }}
-              />
-            </div>
-          )}
-
-          {error && (
-            <div
-              style={{
-                padding: '12px',
-                background: 'rgba(255, 71, 87, 0.1)',
-                color: 'var(--error)',
-                borderRadius: '8px',
-                marginBottom: '20px',
-                fontSize: '14px',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-primary"
-            style={{
-              width: '100%',
-              padding: '14px',
-              fontSize: '16px',
-              fontWeight: '700',
-            }}
-          >
-            {loading ? (isSignIn ? 'Signing in...' : 'Creating Account...') : (isSignIn ? 'Sign In' : 'Sign Up')}
-          </button>
-
-          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+      {/* Right Authentication Panel */}
+      <div className="auth-form-panel">
+        <div className="auth-form-container">
+          {/* Back to Home Link */}
+          <div className="auth-back-link">
             <button
               type="button"
-              onClick={() => {
-                const userTypeParam = formData.userType === 'candidate' ? '?type=candidate' : '?type=company';
-                navigate(isSignIn ? `/signup${userTypeParam}` : `/signin${userTypeParam}`);
-              }}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--primary)',
-                fontSize: '14px',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
+              onClick={() => navigate('/')}
+              className="auth-back-button"
             >
-              {isSignIn 
-                ? "Don't have an account? Sign Up Here" 
-                : 'Already have an account? Sign In Here'
-              }
+              <svg className="auth-back-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+              </svg>
+              Back to Home
             </button>
           </div>
-        </form>
+
+          <div className="auth-card">
+            {/* Header */}
+            <div className="auth-header">
+              <h2 className="auth-title">
+                {isSignIn ? 'Welcome Back' : 'Create Account'}
+              </h2>
+              <p className="auth-subtitle">
+                {isSignIn ? 
+                  `Sign in to your ${formData.userType} account` : 
+                  `Sign up as a ${formData.userType}`
+                }
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              {/* Company Role Selection for Company Signup/Signin */}
+              {formData.userType === 'company' && (
+                <div className="auth-form-group">
+                  <label className="auth-form-label">Select Your Role</label>
+                  <div className="auth-radio-group">
+                    <label className={`auth-radio-option ${formData.companyRole === 'admin' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name="companyRole"
+                        value="admin"
+                        checked={formData.companyRole === 'admin'}
+                        onChange={handleChange}
+                        className="auth-radio-input"
+                      />
+                      <div className="auth-radio-content">
+                        <div className="auth-radio-title">ADMIN</div>
+                        <div className="auth-radio-description">Full company access and management</div>
+                      </div>
+                    </label>
+                    
+                    <label className={`auth-radio-option ${formData.companyRole === 'hr' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name="companyRole"
+                        value="hr"
+                        checked={formData.companyRole === 'hr'}
+                        onChange={handleChange}
+                        className="auth-radio-input"
+                      />
+                      <div className="auth-radio-content">
+                        <div className="auth-radio-title">HR</div>
+                        <div className="auth-radio-description">Manage jobs and candidates</div>
+                      </div>
+                    </label>
+                    
+                    <label className={`auth-radio-option ${formData.companyRole === 'recruiter' ? 'active' : ''}`}>
+                      <input
+                        type="radio"
+                        name="companyRole"
+                        value="recruiter"
+                        checked={formData.companyRole === 'recruiter'}
+                        onChange={handleChange}
+                        className="auth-radio-input"
+                      />
+                      <div className="auth-radio-content">
+                        <div className="auth-radio-title">RECRUITER</div>
+                        <div className="auth-radio-description">Manage assigned postings</div>
+                      </div>
+                    </label>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', fontStyle: 'italic', marginTop: '8px' }}>
+                    This role determines which features you can access after signing in
+                  </p>
+                </div>
+              )}
+
+              {/* Full Name - Only for signup */}
+              {!isSignIn && (
+                <div className="auth-form-group">
+                  <label className="auth-form-label">Full Name</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="Your name"
+                    required
+                    className="auth-form-input"
+                  />
+                </div>
+              )}
+
+              <div className="auth-form-group">
+                <label className="auth-form-label">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="your@email.com"
+                  required
+                  className="auth-form-input"
+                />
+              </div>
+
+              <div className="auth-form-group">
+                <label className="auth-form-label">Password</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder={isSignIn ? "Your password" : "Min 8 chars, 1 uppercase, 1 digit, 1 special char"}
+                  required
+                  className="auth-form-input"
+                />
+                {!isSignIn && (
+                  <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                    Must be at least 8 characters with uppercase, digit, and special character
+                  </p>
+                )}
+              </div>
+
+              {!isSignIn && (
+                <div className="auth-form-group">
+                  <label className="auth-form-label">Confirm Password</label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    required
+                    className="auth-form-input"
+                  />
+                </div>
+              )}
+
+              {error && (
+                <div className="auth-error">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="auth-submit-button"
+              >
+                {loading ? (isSignIn ? 'Signing in...' : 'Creating Account...') : (isSignIn ? 'Sign In' : 'Sign Up')}
+              </button>
+
+              <div className="auth-toggle">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const userTypeParam = formData.userType === 'candidate' ? '?type=candidate' : '?type=company';
+                    navigate(isSignIn ? `/signup${userTypeParam}` : `/signin${userTypeParam}`);
+                  }}
+                  className="auth-toggle-button"
+                >
+                  {isSignIn 
+                    ? "Don't have an account? Sign Up Here" 
+                    : 'Already have an account? Sign In Here'
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-    </PageContainer>
+    </div>
   );
 };
 

@@ -385,9 +385,6 @@ a:hover {
   width: 20px;
   height: 20px;
 }
-  transform: none !important;
-  box-shadow: none !important;
-}
 
 /* Cards */
 .card {
