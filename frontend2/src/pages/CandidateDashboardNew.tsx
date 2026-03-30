@@ -3,6 +3,7 @@ import { apiClient, API_BASE } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/PremiumDashboard.css';
+import '../styles/PremiumDashboardV2.css';
 import '../styles/PremiumCards.css';
 import '../styles/PremiumModals.css';
 import '../styles/CandidateApplied.css';
@@ -202,6 +203,12 @@ const CandidateDashboard: React.FC = () => {
   const [selectedJobRole, setSelectedJobRole] = useState('');
   const [selectedJobWorkType, setSelectedJobWorkType] = useState('');
   const [jobLocationFilter, setJobLocationFilter] = useState('');
+
+  // ── Invites filter states ──────────────────────────────────
+  const [inviteSearchTerm, setInviteSearchTerm] = useState('');
+  const [selectedInviteRole, setSelectedInviteRole] = useState('');
+  const [selectedInviteWorkType, setSelectedInviteWorkType] = useState('');
+  const [inviteLocationFilter, setInviteLocationFilter] = useState('');
 
   // ── Candidate filter states ──────────────────────────────────
   const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
@@ -506,114 +513,30 @@ const CandidateDashboard: React.FC = () => {
     }
   };
 
-  const renderWelcomeCard = () => {
-    const userName = userProfile?.name || userProfile?.full_name || 'User';
-    const userInitial = userName.charAt(0).toUpperCase();
-    const newJobs = availableJobs.filter((job: any) => {
-      const jobDate = new Date(job.created_at);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return jobDate >= weekAgo;
-    }).length;
-
-    return (
-      <div className="welcome-card-modern candidate-welcome">
-        <div className="welcome-content-enhanced">
-          <div className="welcome-header">
-            <div className="welcome-avatar">
-              <div className="user-avatar">{userInitial}</div>
-            </div>
-            <div className="welcome-text">
-              <h1 className="welcome-title-modern">Welcome back, {userName}</h1>
-              <p className="welcome-subtitle-modern">Here's your job search activity overview</p>
-            </div>
-          </div>
-          
-          {/* Enhanced KPI Cards with Icons */}
-          <div className="kpi-grid-modern">
-            <div className="kpi-card-enhanced invites">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{invites.length}</div>
-                <div className="kpi-label">Recruiter Invites</div>
-              </div>
-              {invites.length > 0 && (
-                <div className="kpi-trend positive">+{invites.length} new</div>
-              )}
-            </div>
-            
-            <div className="kpi-card-enhanced matches">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{matches.length}</div>
-                <div className="kpi-label">Mutual Matches</div>
-              </div>
-              {matches.length > 0 && (
-                <div className="kpi-change">Ready to connect</div>
-              )}
-            </div>
-            
-            <div className="kpi-card-enhanced new-jobs">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{newJobs}</div>
-                <div className="kpi-label">New Jobs</div>
-              </div>
-              <div className="kpi-change">This week</div>
-            </div>
-            
-            <div className="kpi-card-enhanced applications">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10,9 9,9 8,9"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{appliedLiked.applied_jobs?.length || 0}</div>
-                <div className="kpi-label">Applications</div>
-              </div>
-              <div className="kpi-change">Submitted</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  
 
   const renderRecommendations = () => {
     if (jobProfiles.length === 0) {
       return (
-        <div className="empty-state-modern">
-          <div className="empty-icon-professional">
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/>
             </svg>
           </div>
-          <h3 className="empty-title">Create your job preferences</h3>
-          <p className="empty-subtitle">Define your role, location, and compensation preferences to receive personalized job recommendations.</p>
-          <div className="empty-actions">
-            <button onClick={() => navigate('/candidate/job-preferences')} className="btn btn-primary btn-lg">
+          <h3 className="text-lg font-semibold text-gray-800">Create your job preferences</h3>
+          <p className="mt-2 text-sm text-gray-500">Define your role, location, and compensation preferences to receive personalized job recommendations.</p>
+          <div className="mt-6 space-x-3">
+            <button 
+              onClick={() => navigate('/candidate/job-preferences')}
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
               Create Job Preferences
             </button>
-            <button onClick={() => setActiveTab('available')} className="btn btn-secondary">
+            <button 
+              onClick={() => setActiveTab('available')}
+              className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
               Browse Jobs
             </button>
           </div>
@@ -625,367 +548,375 @@ const CandidateDashboard: React.FC = () => {
       <>
         <div>
           {loading ? (
-          <div className="loading-state">
-            <div className="spinner"></div>
-            <p>Loading recommendations...</p>
-          </div>
-        ) : recommendations.length === 0 ? (
-          <div className="empty-state-modern">
-            <div className="empty-icon-professional">
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-              </svg>
+            <div className="loading-state">
+              <div className="spinner"></div>
+              <p>Loading recommendations...</p>
             </div>
-            <h3 className="empty-title">No recommendations yet</h3>
-            <p className="empty-subtitle">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
-          </div>
-        ) : (() => {
-          // Build unique filter options
-          const recRoleOptions: string[] = Array.from(
-            new Set(
-              recommendations
-                .map((r: any): string =>
+          ) : recommendations.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+              <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">No recommendations yet</h3>
+              <p className="mt-2 text-sm text-gray-500">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
+            </div>
+          ) : (
+            <>
+              {(() => {
+              // Build unique filter options
+              const recRoleOptions: string[] = Array.from(
+                new Set(
+                  recommendations
+                    .map((r: any): string =>
+                      (r.job_posting?.job_role as string | undefined) ||
+                      (r.job_posting?.job_title as string | undefined) ||
+                      ''
+                    )
+                    .filter((s: string) => s.length > 0)
+                )
+              ).sort();
+
+              const recWorktypeOptions: string[] = Array.from(
+                new Set(
+                  recommendations
+                    .map((r: any): string =>
+                      (r.job_posting?.worktype as string | undefined) ||
+                      (r.job_posting?.work_type as string | undefined) ||
+                      ''
+                    )
+                    .filter((s: string) => s.length > 0)
+                )
+              ).sort();
+
+              // Filter logic
+              const filteredRecs = recommendations.filter((r: any) => {
+                const role =
                   (r.job_posting?.job_role as string | undefined) ||
                   (r.job_posting?.job_title as string | undefined) ||
-                  ''
-                )
-                .filter((s: string) => s.length > 0)
-            )
-          ).sort();
-
-          const recWorktypeOptions: string[] = Array.from(
-            new Set(
-              recommendations
-                .map((r: any): string =>
+                  '';
+                if (candidateRecRoleFilter !== 'all' && role !== candidateRecRoleFilter) return false;
+                const worktype =
                   (r.job_posting?.worktype as string | undefined) ||
                   (r.job_posting?.work_type as string | undefined) ||
-                  ''
-                )
-                .filter((s: string) => s.length > 0)
-            )
-          ).sort();
+                  '';
+                if (candidateRecWorktypeFilter !== 'all' && worktype !== candidateRecWorktypeFilter) return false;
+                const matchScore = Number(r.match_percentage ?? 0);
+                if (matchScore < candidateRecMinMatch) return false;
+                return true;
+              });
 
-          // Filter logic
-          const filteredRecs = recommendations.filter((r: any) => {
-            const role =
-              (r.job_posting?.job_role as string | undefined) ||
-              (r.job_posting?.job_title as string | undefined) ||
-              '';
-            if (candidateRecRoleFilter !== 'all' && role !== candidateRecRoleFilter) return false;
-            const worktype =
-              (r.job_posting?.worktype as string | undefined) ||
-              (r.job_posting?.work_type as string | undefined) ||
-              '';
-            if (candidateRecWorktypeFilter !== 'all' && worktype !== candidateRecWorktypeFilter) return false;
-            const matchScore = Number(r.match_percentage ?? 0);
-            if (matchScore < candidateRecMinMatch) return false;
-            return true;
-          });
+              const hasActiveFilters =
+                candidateRecRoleFilter !== 'all' ||
+                candidateRecWorktypeFilter !== 'all' ||
+                candidateRecMinMatch > 0;
 
-          const hasActiveFilters =
-            candidateRecRoleFilter !== 'all' ||
-            candidateRecWorktypeFilter !== 'all' ||
-            candidateRecMinMatch > 0;
+              // Show ALL cards with their status badges (liked, applied, passed)
+              const visibleRecs = filteredRecs;
+              const safeIndex = Math.min(recCardIndex, visibleRecs.length > 0 ? visibleRecs.length - 1 : 0);
 
-          // Show ALL cards with their status badges (liked, applied, passed)
-          const visibleRecs = filteredRecs;
-          const safeIndex = Math.min(recCardIndex, visibleRecs.length > 0 ? visibleRecs.length - 1 : 0);
+              return (
+                <div>
+                  {/* ── Modern Filter Toolbar Card ── */}
+                  <div className="rec-filter-toolbar">
+                    <div className="rec-filter-toolbar__inner">
 
-          return (
-            <div>
-              {/* ── Modern Filter Toolbar Card ── */}
-              <div className="rec-filter-toolbar">
-                <div className="rec-filter-toolbar__inner">
-
-                  {/* Role dropdown */}
-                  {recRoleOptions.length > 0 && (
-                    <FilterPill
-                      id="cand-rec-role"
-                      ariaLabel="Filter by role"
-                      icon={
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-                          <rect x="2" y="7" width="16" height="11" rx="2"/>
-                          <path d="M7 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/>
-                          <line x1="2" y1="12" x2="18" y2="12"/>
-                        </svg>
-                      }
-                      options={[
-                        { value: 'all', label: 'All Roles' },
-                        ...recRoleOptions.map(r => ({ value: r, label: r })),
-                      ]}
-                      value={candidateRecRoleFilter}
-                      onChange={(v) => { setCandidateRecRoleFilter(v as string); setRecCardIndex(0); }}
-                    />
-                  )}
-
-                  {/* Work Type dropdown */}
-                  {recWorktypeOptions.length > 0 && (
-                    <FilterPill
-                      id="cand-rec-worktype"
-                      ariaLabel="Filter by work type"
-                      icon={
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-                          <path d="M10 2a5 5 0 015 5c0 4-5 11-5 11S5 11 5 7a5 5 0 015-5z"/>
-                          <circle cx="10" cy="7" r="1.5"/>
-                        </svg>
-                      }
-                      options={[
-                        { value: 'all', label: 'All Work Types' },
-                        ...recWorktypeOptions.map(wt => ({ value: wt, label: wt })),
-                      ]}
-                      value={candidateRecWorktypeFilter}
-                      onChange={(v) => { setCandidateRecWorktypeFilter(v as string); setRecCardIndex(0); }}
-                    />
-                  )}
-
-                  {/* Min Match dropdown */}
-                  <FilterPill
-                    id="cand-rec-match"
-                    ariaLabel="Minimum match percentage"
-                    icon={
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-                        <circle cx="10" cy="10" r="7"/>
-                        <circle cx="10" cy="10" r="3"/>
-                        <line x1="10" y1="3" x2="10" y2="1"/>
-                        <line x1="10" y1="19" x2="10" y2="17"/>
-                      </svg>
-                    }
-                    options={[
-                      { value: 0,  label: 'Min Match: Any' },
-                      { value: 50, label: '50%+' },
-                      { value: 60, label: '60%+' },
-                      { value: 70, label: '70%+' },
-                      { value: 80, label: '80%+' },
-                      { value: 90, label: '90%+' },
-                    ]}
-                    value={candidateRecMinMatch}
-                    onChange={(v) => { setCandidateRecMinMatch(v as number); setRecCardIndex(0); }}
-                  />
-
-                  {/* Divider */}
-                  {hasActiveFilters && <div className="rec-filter-divider" aria-hidden="true"/>}
-
-                  {/* Clear Filters */}
-                  {hasActiveFilters && (
-                    <button
-                      className="rec-filter-clear"
-                      onClick={() => {
-                        setCandidateRecRoleFilter('all');
-                        setCandidateRecWorktypeFilter('all');
-                        setCandidateRecMinMatch(0);
-                        setRecCardIndex(0);
-                      }}
-                    >
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <line x1="5" y1="5" x2="15" y2="15"/>
-                        <line x1="15" y1="5" x2="5" y2="15"/>
-                      </svg>
-                      Clear filters
-                    </button>
-                  )}
-
-                  {/* Result count — pushed to the right */}
-                  <span className="rec-filter-count" aria-live="polite">
-                    Showing <strong>{visibleRecs.length}</strong> of <strong>{recommendations.length}</strong> jobs
-                  </span>
-
-                </div>
-              </div>
-
-              {visibleRecs.length === 0 ? (
-                <div className="empty-state-modern">
-                  <h3 className="empty-title">No jobs match your filters</h3>
-                  <p className="empty-subtitle">Try adjusting or clearing the filters above.</p>
-                </div>
-              ) : (() => {
-                const rec = visibleRecs[safeIndex];
-                return (
-            <div className="carousel-container">
-              {/* Navigation Header */}
-              <div className="carousel-nav-header">
-                <button
-                  className="carousel-arrow-btn"
-                  onClick={() => setRecCardIndex(Math.max(safeIndex - 1, 0))}
-                  disabled={safeIndex === 0}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <div className="carousel-counter">
-                  <span className="carousel-current">{safeIndex + 1}</span>
-                  <span className="carousel-separator">of</span>
-                  <span className="carousel-total">{visibleRecs.length}</span>
-                  <span className="carousel-hint">jobs</span>
-                </div>
-                <button
-                  className="carousel-arrow-btn"
-                  onClick={() => setRecCardIndex(Math.min(safeIndex + 1, visibleRecs.length - 1))}
-                  disabled={safeIndex === visibleRecs.length - 1}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-              </div>
-
-              {/* Single Card */}
-              <div className="carousel-card-wrapper" key={`rec-${rec.job_posting.id}`}>
-                <div className="job-card-modern carousel-card" onClick={() => setViewRecommendationJob(rec)} style={{ cursor: 'pointer' }}>
-                  {/* Status Strip: shows if candidate has already liked or applied */}
-                  {(rec.already_applied || rec.already_swiped) && (
-                    <div className="rec-status-strip">
-                      {rec.already_applied && (
-                        <span className="rec-status-chip applied">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
-                          Applied
-                        </span>
-                      )}
-                      {rec.already_swiped && rec.swipe_action === 'like' && (
-                        <span className="rec-status-chip liked">
-                          <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                          Liked
-                        </span>
-                      )}
-                      {rec.already_swiped && rec.swipe_action === 'pass' && (
-                        <span className="rec-status-chip passed">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          Passed
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {/* Card Header */}
-                  <div className="job-header-modern">
-                    <div className="job-title-section">
-                      <h3 className="job-title-modern">{rec.job_posting.job_title}</h3>
-                      <div className="job-company">{rec.job_posting.company_name || 'Company'}</div>
-                    </div>
-                    <div className="match-badge-modern">
-                      <div className="match-percentage">{rec.match_percentage}%</div>
-                      <div className="match-label">Match</div>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="job-content-modern">
-                    <div className="job-info-section">
-                      <div className="info-group">
-                        <h4 className="info-group-title">Job Details</h4>
-                        <div className="info-items">
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                              <circle cx="12" cy="10" r="3"/>
+                      {/* Role dropdown */}
+                      {recRoleOptions.length > 0 && (
+                        <FilterPill
+                          id="cand-rec-role"
+                          ariaLabel="Filter by role"
+                          icon={
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                              <rect x="2" y="7" width="16" height="11" rx="2"/>
+                              <path d="M7 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/>
+                              <line x1="2" y1="12" x2="18" y2="12"/>
                             </svg>
-                            <span className="info-value">{rec.job_posting.location}</span>
-                          </div>
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                              <line x1="8" y1="21" x2="16" y2="21"/>
-                              <line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
-                            <span className="info-value">{rec.job_posting.worktype} • {rec.job_posting.employment_type}</span>
-                          </div>
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-                            </svg>
-                            <span className="info-value">{rec.job_posting.seniority_level} level</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                          }
+                          options={[
+                            { value: 'all', label: 'All Roles' },
+                            ...recRoleOptions.map(r => ({ value: r, label: r })),
+                          ]}
+                          value={candidateRecRoleFilter}
+                          onChange={(v) => { setCandidateRecRoleFilter(v as string); setRecCardIndex(0); }}
+                        />
+                      )}
 
-                    <div className="job-compensation-section">
-                      <div className="info-group">
-                        <h4 className="info-group-title">Compensation</h4>
-                        <div className="salary-range">
-                          <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="12" y1="1" x2="12" y2="23"/>
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      {/* Work Type dropdown */}
+                      {recWorktypeOptions.length > 0 && (
+                        <FilterPill
+                          id="cand-rec-worktype"
+                          ariaLabel="Filter by work type"
+                          icon={
+                            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                              <path d="M10 2a5 5 0 015 5c0 4-5 11-5 11S5 11 5 7a5 5 0 015-5z"/>
+                              <circle cx="10" cy="7" r="1.5"/>
+                            </svg>
+                          }
+                          options={[
+                            { value: 'all', label: 'All Work Types' },
+                            ...recWorktypeOptions.map(wt => ({ value: wt, label: wt })),
+                          ]}
+                          value={candidateRecWorktypeFilter}
+                          onChange={(v) => { setCandidateRecWorktypeFilter(v as string); setRecCardIndex(0); }}
+                        />
+                      )}
+
+                      {/* Min Match dropdown */}
+                      <FilterPill
+                        id="cand-rec-match"
+                        ariaLabel="Minimum match percentage"
+                        icon={
+                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                            <circle cx="10" cy="10" r="7"/>
+                            <circle cx="10" cy="10" r="3"/>
+                            <line x1="10" y1="3" x2="10" y2="1"/>
+                            <line x1="10" y1="19" x2="10" y2="17"/>
                           </svg>
-                          <div className="salary-info">
-                            <span className="salary-amount">{rec.job_posting.salary_currency?.toUpperCase()} {rec.job_posting.salary_min} - {rec.job_posting.salary_max}</span>
-                            <span className="salary-label">Annual salary</span>
-                          </div>
-                        </div>
-                      </div>
+                        }
+                        options={[
+                          { value: 0,  label: 'Min Match: Any' },
+                          { value: 50, label: '50%+' },
+                          { value: 60, label: '60%+' },
+                          { value: 70, label: '70%+' },
+                          { value: 80, label: '80%+' },
+                          { value: 90, label: '90%+' },
+                        ]}
+                        value={candidateRecMinMatch}
+                        onChange={(v) => { setCandidateRecMinMatch(v as number); setRecCardIndex(0); }}
+                      />
 
-                      {rec.is_match && (
-                        <div className="match-status">
-                          <div className="status-badge matched">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                            </svg>
-                            <span>Mutual Match!</span>
-                          </div>
-                        </div>
+                      {/* Divider */}
+                      {hasActiveFilters && <div className="rec-filter-divider" aria-hidden="true"/>}
+
+                      {/* Clear Filters */}
+                      {hasActiveFilters && (
+                        <button
+                          className="rec-filter-clear"
+                          onClick={() => {
+                            setCandidateRecRoleFilter('all');
+                            setCandidateRecWorktypeFilter('all');
+                            setCandidateRecMinMatch(0);
+                            setRecCardIndex(0);
+                          }}
+                        >
+                          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <line x1="5" y1="5" x2="15" y2="15"/>
+                            <line x1="15" y1="5" x2="5" y2="15"/>
+                          </svg>
+                          Clear filters
+                        </button>
                       )}
+
+                      {/* Result count — pushed to the right */}
+                      <span className="rec-filter-count" aria-live="polite">
+                        Showing <strong>{visibleRecs.length}</strong> of <strong>{recommendations.length}</strong> jobs
+                      </span>
+
                     </div>
                   </div>
 
-                  {/* Job Description */}
-                  <div className="job-description-modern">
-                    <h4 className="description-title">About this role</h4>
-                    <p className="description-text">{rec.job_posting.job_description}</p>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="job-actions-modern">
-                    <div className="action-buttons-grid">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'pass')) handleSwipePass(rec.job_posting.id); }}
-                        className={`action-btn ${rec.already_swiped && rec.swipe_action === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
-                        disabled={rec.already_swiped && rec.swipe_action === 'pass'}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"/>
-                          <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                        {rec.already_swiped && rec.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'like')) handleSwipeLike(rec.job_posting.id); }}
-                        className={`action-btn ${rec.already_swiped && rec.swipe_action === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
-                        disabled={rec.already_swiped && rec.swipe_action === 'like'}
-                      >
-                        <svg viewBox="0 0 24 24" fill={rec.already_swiped && rec.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                        {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (!rec.already_applied) handleApply(rec.job_posting.id); }}
-                        className={`action-btn ${rec.already_applied ? 'action-btn-done applied-done' : 'success'}`}
-                        disabled={rec.already_applied || applyingJobId === rec.job_posting.id}
-                      >
-                        {rec.already_applied ? (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                            <polyline points="22,6 12,13 2,6"/>
-                          </svg>
-                        )}
-                        {rec.already_applied ? 'Applied ✓' : (applyingJobId === rec.job_posting.id ? 'Applying...' : 'Apply Now')}
-                      </button>
+                  {visibleRecs.length === 0 ? (
+                    <div className="empty-state-modern">
+                      <h3 className="empty-title">No jobs match your filters</h3>
+                      <p className="empty-subtitle">Try adjusting or clearing the filters above.</p>
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      {(() => {
+                        const rec = visibleRecs[safeIndex];
+                        return (
+                          <div className="carousel-container">
+                            {/* Navigation Header */}
+                            <div className="carousel-nav-header">
+                              <button
+                                className="carousel-arrow-btn"
+                                onClick={() => setRecCardIndex(Math.max(safeIndex - 1, 0))}
+                                disabled={safeIndex === 0}
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                              </button>
+                              <div className="carousel-counter">
+                                <span className="carousel-current">{safeIndex + 1}</span>
+                                <span className="carousel-separator">of</span>
+                                <span className="carousel-total">{visibleRecs.length}</span>
+                                <span className="carousel-hint">jobs</span>
+                              </div>
+                              <button
+                                className="carousel-arrow-btn"
+                                onClick={() => setRecCardIndex(Math.min(safeIndex + 1, visibleRecs.length - 1))}
+                                disabled={safeIndex === visibleRecs.length - 1}
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                              </button>
+                            </div>
+
+                            {/* Single Card */}
+                            <div className="carousel-card-wrapper" key={`rec-${rec.job_posting.id}`}>
+                              <div className="job-card-modern carousel-card" onClick={() => setViewRecommendationJob(rec)} style={{ cursor: 'pointer' }}>
+                                {/* Status Strip: shows if candidate has already liked or applied */}
+                                {(rec.already_applied || rec.already_swiped) && (
+                                  <div className="rec-status-strip">
+                                    {rec.already_applied && (
+                                      <span className="rec-status-chip applied">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                                        Applied
+                                      </span>
+                                    )}
+                                    {rec.already_swiped && rec.swipe_action === 'like' && (
+                                      <span className="rec-status-chip liked">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                        Liked
+                                      </span>
+                                    )}
+                                    {rec.already_swiped && rec.swipe_action === 'pass' && (
+                                      <span className="rec-status-chip passed">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        Passed
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Card Header */}
+                                <div className="job-header-modern">
+                                  <div className="job-title-section">
+                                    <h3 className="job-title-modern">{rec.job_posting.job_title}</h3>
+                                    <div className="job-company">{rec.job_posting.company_name || 'Company'}</div>
+                                  </div>
+                                  <div className="match-badge-modern">
+                                    <div className="match-percentage">{rec.match_percentage}%</div>
+                                    <div className="match-label">Match</div>
+                                  </div>
+                                </div>
+
+                                {/* Card Content */}
+                                <div className="job-content-modern">
+                                  <div className="job-info-section">
+                                    <div className="info-group">
+                                      <h4 className="info-group-title">Job Details</h4>
+                                      <div className="info-items">
+                                        <div className="info-item">
+                                          <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                            <circle cx="12" cy="10" r="3"/>
+                                          </svg>
+                                          <span className="info-value">{rec.job_posting.location}</span>
+                                        </div>
+                                        <div className="info-item">
+                                          <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                            <line x1="8" y1="21" x2="16" y2="21"/>
+                                            <line x1="12" y1="17" x2="12" y2="21"/>
+                                          </svg>
+                                          <span className="info-value">{rec.job_posting.worktype} • {rec.job_posting.employment_type}</span>
+                                        </div>
+                                        <div className="info-item">
+                                          <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                          </svg>
+                                          <span className="info-value">{rec.job_posting.seniority_level} level</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="job-compensation-section">
+                                    <div className="info-group">
+                                      <h4 className="info-group-title">Compensation</h4>
+                                      <div className="salary-range">
+                                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <line x1="12" y1="1" x2="12" y2="23"/>
+                                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                        </svg>
+                                        <div className="salary-info">
+                                          <span className="salary-amount">{rec.job_posting.salary_currency?.toUpperCase()} {rec.job_posting.salary_min} - {rec.job_posting.salary_max}</span>
+                                          <span className="salary-label">Annual salary</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {rec.is_match && (
+                                      <div className="match-status">
+                                        <div className="status-badge matched">
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                          </svg>
+                                          <span>Mutual Match!</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Job Description */}
+                                <div className="job-description-modern">
+                                  <h4 className="description-title">About this role</h4>
+                                  <p className="description-text">{rec.job_posting.job_description}</p>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="job-actions-modern">
+                                  <div className="action-buttons-grid">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'pass')) handleSwipePass(rec.job_posting.id); }}
+                                      className={`action-btn ${rec.already_swiped && rec.swipe_action === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
+                                      disabled={rec.already_swiped && rec.swipe_action === 'pass'}
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"/>
+                                        <line x1="6" y1="6" x2="18" y2="18"/>
+                                      </svg>
+                                      {rec.already_swiped && rec.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'like')) handleSwipeLike(rec.job_posting.id); }}
+                                      className={`action-btn ${rec.already_swiped && rec.swipe_action === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
+                                      disabled={rec.already_swiped && rec.swipe_action === 'like'}
+                                    >
+                                      <svg viewBox="0 0 24 24" fill={rec.already_swiped && rec.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                      </svg>
+                                      {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); if (!rec.already_applied) handleApply(rec.job_posting.id); }}
+                                      className={`action-btn ${rec.already_applied ? 'action-btn-done applied-done' : 'success'}`}
+                                      disabled={rec.already_applied || applyingJobId === rec.job_posting.id}
+                                    >
+                                      {rec.already_applied ? (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                          <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
+                                      ) : (
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                          <polyline points="22,6 12,13 2,6"/>
+                                        </svg>
+                                      )}
+                                      {rec.already_applied ? 'Applied ✓' : (applyingJobId === rec.job_posting.id ? 'Applying...' : 'Apply Now')}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Keyboard hint */}
+                            <div className="carousel-keyboard-hint">
+                              Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to browse
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
                 </div>
-              </div>
-
-              {/* Keyboard hint */}
-              <div className="carousel-keyboard-hint">
-                Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to browse
-              </div>
-            </div>
-                );
-              })()}
-            </div>
-          );
-        })()}
+              );
+            })()}
+          </>
+        )}
         </div>
 
         {/* Recommendation Job Detail Drawer */}
@@ -1208,14 +1139,14 @@ const CandidateDashboard: React.FC = () => {
   const renderInvites = () => {
     if (invites.length === 0) {
       return (
-        <div className="empty-state-modern">
-          <div className="empty-icon-professional">
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
             </svg>
           </div>
-          <h3 className="empty-title">No invites yet</h3>
-          <p className="empty-subtitle">Recruiters will send you invitations when they identify you as a strong match for their opportunities.</p>
+          <h3 className="text-lg font-semibold text-gray-800">No invites yet</h3>
+          <p className="mt-2 text-sm text-gray-500">Recruiters will send you invitations when they identify you as a strong match for their opportunities.</p>
         </div>
       );
     }
@@ -1335,118 +1266,171 @@ const CandidateDashboard: React.FC = () => {
       );
     };
 
+    // Derive available invite roles dynamically
+    const availableInviteRoles = (() => {
+      const rolesSet = new Set<string>();
+      invites.forEach((invite: any) => {
+        if (invite.job_posting?.job_title) rolesSet.add(invite.job_posting.job_title);
+        if (invite.job_posting?.job_role) rolesSet.add(invite.job_posting.job_role);
+      });
+      return Array.from(rolesSet).sort();
+    })();
+
+    // Derive work types from invite data
+    const availableInviteWorkTypes = (() => {
+      const typesSet = new Set<string>();
+      invites.forEach((invite: any) => {
+        if (invite.job_posting?.worktype) typesSet.add(invite.job_posting.worktype);
+      });
+      return Array.from(typesSet).sort();
+    })();
+
+    // Apply filters to invites
+    const filteredInvites = invites.filter((invite: any) => {
+      const jp = invite.job_posting;
+      const company = invite.company;
+
+      // Search term
+      if (inviteSearchTerm) {
+        const term = inviteSearchTerm.toLowerCase();
+        const titleMatch = jp.job_title?.toLowerCase().includes(term);
+        const companyMatch = company.company_name?.toLowerCase().includes(term);
+        const descMatch = jp.job_description?.toLowerCase().includes(term);
+        const roleMatch = jp.job_role?.toLowerCase().includes(term);
+        if (!titleMatch && !companyMatch && !descMatch && !roleMatch) return false;
+      }
+
+      // Role filter
+      if (selectedInviteRole) {
+        const roleMatch = jp.job_title === selectedInviteRole || jp.job_role === selectedInviteRole;
+        if (!roleMatch) return false;
+      }
+
+      // Work type filter
+      if (selectedInviteWorkType && jp.worktype !== selectedInviteWorkType) return false;
+
+      // Location filter
+      if (inviteLocationFilter) {
+        const locMatch = jp.location?.toLowerCase().includes(inviteLocationFilter.toLowerCase());
+        if (!locMatch) return false;
+      }
+
+      return true;
+    });
+
+    // Count active filters
+    const activeFiltersCount = [inviteSearchTerm, selectedInviteRole, selectedInviteWorkType, inviteLocationFilter].filter(Boolean).length;
+
+    // Clear all filters handler
+    const clearAllInviteFilters = () => {
+      setInviteSearchTerm('');
+      setSelectedInviteRole('');
+      setSelectedInviteWorkType('');
+      setInviteLocationFilter('');
+    };
+
+    // Filter configuration for invites
+    const inviteFilterConfig: FilterConfig[] = [
+      {
+        type: 'search',
+        id: 'invite-search',
+        label: 'Search',
+        placeholder: 'Job title, company, or keywords...',
+        value: inviteSearchTerm,
+        onChange: setInviteSearchTerm
+      },
+      {
+        type: 'select',
+        id: 'invite-role',
+        label: 'Role',
+        value: selectedInviteRole,
+        onChange: setSelectedInviteRole,
+        options: availableInviteRoles.map(role => ({ value: role, label: role }))
+      },
+      {
+        type: 'select',
+        id: 'invite-worktype',
+        label: 'Work Type',
+        value: selectedInviteWorkType,
+        onChange: setSelectedInviteWorkType,
+        options: availableInviteWorkTypes.map(wt => ({ value: wt, label: wt }))
+      },
+      {
+        type: 'location',
+        id: 'invite-location',
+        label: 'Location',
+        placeholder: 'City or State',
+        value: inviteLocationFilter,
+        onChange: setInviteLocationFilter
+      }
+    ];
+
     return (
       <>
+        {/* Invites Section Header */}
+        <div className="section-header mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Recruiter Invites</h2>
+          <p className="text-sm text-gray-600 mt-1">Review personalized job invitations from recruiters</p>
+          {filteredInvites.length !== invites.length && (
+            <p className="text-sm text-gray-500 mt-2">
+              Showing {filteredInvites.length} of {invites.length} invites
+              {activeFiltersCount > 0 && (
+                <button 
+                  onClick={clearAllInviteFilters}
+                  className="ml-2 text-blue-600 hover:text-blue-700 underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </p>
+          )}
+        </div>
+
+        {/* Invites Grid */}
         <div className="jobs-grid-modern">
-          {invites.map((invite: any) => (
-            <div key={invite.invite_id} className="job-card-modern invite-card">
-              {/* Special Invite Header */}
-              <div className="job-header-modern invite-header">
-                <div className="invite-badge-header">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  <span>Recruiter Invitation</span>
-                </div>
-              </div>
+          {filteredInvites.map((invite: any) => {
+            const jp = invite.job_posting;
+            const company = invite.company;
+            const salary = jp.salary_min && jp.salary_max
+              ? `${(jp.salary_currency || 'USD').toUpperCase()} ${jp.salary_min.toLocaleString()} – ${jp.salary_max.toLocaleString()}`
+              : null;
 
-              <div className="job-header-modern">
-                <div className="job-title-section">
-                  <h3 className="job-title-modern">{invite.job_posting.job_title}</h3>
-                  <div className="job-company">{invite.company.company_name}</div>
-                </div>
-                <div className="invite-date">
-                  <small>Invited {new Date(invite.created_at).toLocaleDateString()}</small>
-                </div>
-              </div>
-
-              <div className="job-content-modern">
-                <div className="job-info-section">
-                  <div className="info-group">
-                    <h4 className="info-group-title">Job Details</h4>
-                    <div className="info-items">
-                      <div className="info-item">
-                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        <span className="info-value">{invite.job_posting.location}</span>
-                      </div>
-                      <div className="info-item">
-                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                          <line x1="8" y1="21" x2="16" y2="21"/>
-                          <line x1="12" y1="17" x2="12" y2="21"/>
-                        </svg>
-                        <span className="info-value">{invite.job_posting.worktype}</span>
-                      </div>
-                    </div>
+            return (
+              <div key={invite.invite_id} className="job-card-modern">
+                <div className="job-card-header">
+                  <div>
+                    <span className="badge badge-special mb-2">📧 Recruiter Invitation</span>
+                    <h3 className="job-title">{jp.job_title}</h3>
+                    <p className="company-name">{company.company_name}</p>
                   </div>
                 </div>
-
-                <div className="job-compensation-section">
-                  <div className="info-group">
-                    <h4 className="info-group-title">Compensation</h4>
-                    <div className="salary-range">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="12" y1="1" x2="12" y2="23"/>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                      </svg>
-                      <div className="salary-info">
-                        <span className="salary-amount">{(invite.job_posting.salary_currency || 'USD').toUpperCase()} {invite.job_posting.salary_min} - {invite.job_posting.salary_max}</span>
-                        <span className="salary-label">Annual salary</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="job-details mt-3">
+                  {jp.location && <span className="detail-item">📍 {jp.location}</span>}
+                  {jp.worktype && <span className="detail-item">💼 {jp.worktype}</span>}
+                  {salary && <span className="detail-item">💰 {salary}</span>}
                 </div>
-              </div>
-
-              <div className="job-actions-modern">
-                <div className="action-buttons-grid">
+                <div className="job-card-actions mt-4">
                   {invite.already_applied ? (
-                    <button className="action-btn success" disabled style={{ opacity: 0.7, cursor: 'default' }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M20 6L9 17l-5-5"/>
-                      </svg>
-                      Applied
-                    </button>
+                    <button className="btn btn-primary" disabled>✓ Applied</button>
                   ) : (
-                    <button
-                      onClick={() => handleApplyFromInvite(invite.job_posting.id, invite.job_profile_id)}
-                      className="action-btn success"
-                      disabled={applyingJobId === invite.job_posting.id}
+                    <button 
+                      className="btn btn-primary"
+                      onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
+                      disabled={applyingJobId === jp.id}
                     >
-                      {applyingJobId === invite.job_posting.id ? (
-                        <>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                            <circle cx="12" cy="12" r="10"/>
-                          </svg>
-                          Applying...
-                        </>
-                      ) : (
-                        <>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-                          </svg>
-                          Apply Now
-                        </>
-                      )}
+                      {applyingJobId === jp.id ? 'Applying...' : 'Apply Now'}
                     </button>
                   )}
-                  <button
+                  <button 
+                    className="btn btn-secondary"
                     onClick={() => setViewInviteJob(invite)}
-                    className="action-btn primary"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    View Job Posting
+                    View Details
                   </button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {renderInviteDrawer()}
       </>
@@ -1455,17 +1439,17 @@ const CandidateDashboard: React.FC = () => {
 
   const renderAvailableJobs = () => {
     // Derive available job roles dynamically from job data
-    const availableJobRoles = React.useMemo(() => {
+    const availableJobRoles = (() => {
       const rolesSet = new Set<string>();
       availableJobs.forEach((job: any) => {
         if (job.job_title) rolesSet.add(job.job_title);
         if (job.job_role) rolesSet.add(job.job_role);
       });
       return Array.from(rolesSet).sort();
-    }, [availableJobs]);
+    })();
 
     // Derive work types from job data
-    const availableWorkTypes = React.useMemo(() => {
+    const availableWorkTypes = (() => {
       const typesSet = new Set<string>();
       availableJobs.forEach((job: any) => {
         if (job.worktype) {
@@ -1476,10 +1460,10 @@ const CandidateDashboard: React.FC = () => {
         }
       });
       return Array.from(typesSet).sort();
-    }, [availableJobs]);
+    })();
 
     // Filter jobs based on all active filters
-    const filteredJobs = React.useMemo(() => {
+    const filteredJobs = (() => {
       return availableJobs.filter((job: any) => {
         // Search filter
         if (jobSearchTerm) {
@@ -1516,7 +1500,7 @@ const CandidateDashboard: React.FC = () => {
 
         return true;
       });
-    }, [availableJobs, jobSearchTerm, selectedJobRole, selectedJobWorkType, jobLocationFilter]);
+    })();
 
     const hasActiveFilters = jobSearchTerm || selectedJobRole || selectedJobWorkType || jobLocationFilter;
     const resultCount = filteredJobs.length;
@@ -1524,256 +1508,166 @@ const CandidateDashboard: React.FC = () => {
 
     if (availableJobs.length === 0) {
       return (
-        <div className="empty-state-modern">
-          <div className="empty-icon-professional">
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/>
             </svg>
           </div>
-          <h3 className="empty-title">No jobs available</h3>
-          <p className="empty-subtitle">New opportunities are posted regularly. Check back soon or create job preferences for personalized recommendations.</p>
+          <h3 className="text-lg font-semibold text-gray-800">No jobs available</h3>
+          <p className="mt-2 text-sm text-gray-500">New opportunities are posted regularly. Check back soon or create job preferences for personalized recommendations.</p>
         </div>
       );
     }
 
+    // Clear all job filters handler
+    const clearAllJobFilters = () => {
+      setJobSearchTerm('');
+      setSelectedJobRole('');
+      setSelectedJobWorkType('');
+      setJobLocationFilter('');
+    };
+
+    // Count active filters
+    const activeJobFiltersCount = [jobSearchTerm, selectedJobRole, selectedJobWorkType, jobLocationFilter].filter(Boolean).length;
+
+    // Job filter configuration
+    const jobFilterConfig: FilterConfig[] = [
+      {
+        type: 'search',
+        id: 'job-search',
+        label: 'Search',
+        placeholder: 'Job title, company, or keywords...',
+        value: jobSearchTerm,
+        onChange: setJobSearchTerm
+      },
+      {
+        type: 'select',
+        id: 'job-role',
+        label: 'Role',
+        value: selectedJobRole,
+        onChange: setSelectedJobRole,
+        options: availableJobRoles.map(role => ({ value: role, label: role }))
+      },
+      {
+        type: 'select',
+        id: 'job-worktype',
+        label: 'Work Type',
+        value: selectedJobWorkType,
+        onChange: setSelectedJobWorkType,
+        options: [
+          { value: 'remote', label: 'Remote' },
+          { value: 'hybrid', label: 'Hybrid' },
+          { value: 'onsite', label: 'Onsite' }
+        ]
+      },
+      {
+        type: 'location',
+        id: 'job-location',
+        label: 'Location',
+        placeholder: 'City or State',
+        value: jobLocationFilter,
+        onChange: setJobLocationFilter
+      }
+    ];
+
     return (
       <>
-        {/* Page Header Section */}
-        <div style={{ marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Available Jobs</h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Browse and filter open roles that match your interests</p>
-        </div>
-
-        {/* Enhanced Filter Toolbar */}
-        <div style={{ 
-          background: 'white', 
-          borderRadius: '12px', 
-          padding: '20px', 
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', 
-          marginBottom: '24px',
-          border: '1px solid var(--border-color, #e2e8f0)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Search Input */}
-            <div style={{ flex: '1 1 280px', minWidth: '280px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Search</label>
-              <div style={{ position: 'relative' }}>
-                <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-muted, #94a3b8)', pointerEvents: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8"/>
-                  <path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input
-                  type="text"
-                  className="job-select-modern"
-                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '40px', fontSize: '14px', borderRadius: '8px' }}
-                  placeholder="Job title, company, or keywords..."
-                  value={jobSearchTerm}
-                  onChange={(e) => setJobSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Role Dropdown */}
-            <div style={{ flex: '0 1 200px', minWidth: '180px' }}>
-              <label htmlFor="job-role-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</label>
-              <select
-                id="job-role-filter"
-                className="job-select-modern"
-                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
-                value={selectedJobRole}
-                onChange={(e) => setSelectedJobRole(e.target.value)}
-              >
-                <option value="">All Roles</option>
-                {availableJobRoles.map(role => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Work Type Dropdown */}
-            <div style={{ flex: '0 1 160px', minWidth: '140px' }}>
-              <label htmlFor="job-worktype-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</label>
-              <select
-                id="job-worktype-filter"
-                className="job-select-modern"
-                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
-                value={selectedJobWorkType}
-                onChange={(e) => setSelectedJobWorkType(e.target.value)}
-              >
-                <option value="">All Types</option>
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="onsite">Onsite</option>
-              </select>
-            </div>
-
-            {/* Location Input */}
-            <div style={{ flex: '0 1 180px', minWidth: '160px' }}>
-              <label htmlFor="job-location-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</label>
-              <input
-                type="text"
-                id="job-location-filter"
-                className="job-select-modern"
-                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px' }}
-                placeholder="City or State"
-                value={jobLocationFilter}
-                onChange={(e) => setJobLocationFilter(e.target.value)}
-              />
-            </div>
-
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
-              <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'flex-end' }}>
-                <button
-                  className="action-btn secondary"
-                  style={{ height: '40px', padding: '0 16px', fontSize: '13px', fontWeight: 500, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => { setJobSearchTerm(''); setSelectedJobRole(''); setSelectedJobWorkType(''); setJobLocationFilter(''); }}
+        {/* Available Jobs Section Header */}
+        <div className="section-header mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Available Jobs</h2>
+          <p className="text-sm text-gray-600 mt-1">Browse and filter open roles that match your interests</p>
+          {(hasActiveFilters || resultCount !== totalCount) && (
+            <p className="text-sm text-gray-500 mt-2">
+              Showing {resultCount} of {totalCount} jobs
+              {activeJobFiltersCount > 0 && (
+                <button 
+                  onClick={clearAllJobFilters}
+                  className="ml-2 text-blue-600 hover:text-blue-700 underline"
                 >
-                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                  Clear Filters
+                  Clear all filters
                 </button>
-              </div>
-            )}
-          </div>
-
-          {/* Results Count */}
-          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
-              {hasActiveFilters 
-                ? `Showing ${resultCount} of ${totalCount} jobs`
-                : `Showing ${totalCount} jobs`
-              }
-            </span>
-            {hasActiveFilters && (
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)' }}>
-                {[jobSearchTerm && 'search', selectedJobRole && 'role', selectedJobWorkType && 'work type', jobLocationFilter && 'location'].filter(Boolean).join(', ')} active
-              </span>
-            )}
-          </div>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Empty State for Filtered Results */}
         {filteredJobs.length === 0 && hasActiveFilters && (
-          <div className="empty-state-modern">
-            <div className="empty-icon-professional">
+          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
+            <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.35-4.35"/>
               </svg>
             </div>
-            <h3 className="empty-title">No jobs match your filters</h3>
-            <p className="empty-subtitle">Try adjusting your search criteria or clearing filters to see more results.</p>
-            <button
-              className="action-btn primary"
-              style={{ marginTop: '16px' }}
-              onClick={() => { setJobSearchTerm(''); setSelectedJobRole(''); setSelectedJobWorkType(''); setJobLocationFilter(''); }}
-            >
-              Clear All Filters
-            </button>
+            <h3 className="text-lg font-semibold text-gray-800">No jobs match your filters</h3>
+            <p className="mt-2 text-sm text-gray-500">Try adjusting your search criteria or clearing filters to see more results.</p>
+            <div className="mt-6">
+              <button 
+                onClick={clearAllJobFilters}
+                className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Clear All Filters
+              </button>
+            </div>
           </div>
         )}
 
         {/* Jobs Grid */}
         {filteredJobs.length > 0 && (
-      <div className="jobs-grid-modern">
-        {filteredJobs.map((job: any) => (
-          <div key={job.id} className="job-card-modern">
-            <div className="job-header-modern">
-              <div className="job-title-section">
-                <h3 className="job-title-modern">{job.job_title}</h3>
-                <div className="job-company">{job.company_name || 'Company'}</div>
-              </div>
-              {job.end_date && (
-                <div className="match-date">
-                  <small>Apply by {new Date(job.end_date).toLocaleDateString()}</small>
-                </div>
-              )}
-            </div>
+          <div className="jobs-grid-modern">
+            {filteredJobs.map((job: any) => {
+              const salary = job.salary_min && job.salary_max
+                ? `${job.salary_currency?.toUpperCase() || 'USD'} ${job.salary_min.toLocaleString()} – ${job.salary_max.toLocaleString()}`
+                : null;
 
-            <div className="job-content-modern">
-              <div className="job-info-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Job Details</h4>
-                  <div className="info-items">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                      <span className="info-value">{job.location}</span>
-                    </div>
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                        <line x1="8" y1="21" x2="16" y2="21"/>
-                        <line x1="12" y1="17" x2="12" y2="21"/>
-                      </svg>
-                      <span className="info-value">{job.worktype} • {job.employment_type}</span>
-                    </div>
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-                      </svg>
-                      <span className="info-value">{job.seniority_level} level</span>
+              return (
+                <div key={job.id} className="job-card-modern">
+                  <div className="job-card-header">
+                    <div>
+                      {job.end_date && (
+                        <span className="badge badge-info mb-2">
+                          Apply by {new Date(job.end_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      <h3 className="job-title">{job.job_title}</h3>
+                      <p className="company-name">{job.company_name || 'Company'}</p>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="job-compensation-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Compensation</h4>
-                  <div className="salary-range">
-                    <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="1" x2="12" y2="23"/>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                    <div className="salary-info">
-                      <span className="salary-amount">{job.salary_currency.toUpperCase()} {job.salary_min} - {job.salary_max}</span>
-                      <span className="salary-label">Annual salary</span>
-                    </div>
+                  {job.job_description && (
+                    <p className="job-description mt-2 text-sm text-gray-600 line-clamp-2">
+                      {job.job_description}
+                    </p>
+                  )}
+                  <div className="job-details mt-3">
+                    {job.location && <span className="detail-item">📍 {job.location}</span>}
+                    {job.worktype && <span className="detail-item">💼 {job.worktype}</span>}
+                    {job.employment_type && <span className="detail-item">👔 {job.employment_type}</span>}
+                    {job.seniority_level && <span className="detail-item">📊 {job.seniority_level}</span>}
+                    {salary && <span className="detail-item">💰 {salary}</span>}
+                  </div>
+                  <div className="job-card-actions mt-4">
+                    <button 
+                      className="btn btn-secondary"
+                      onClick={() => setViewAvailableJob(job)}
+                    >
+                      View Details
+                    </button>
+                    <button 
+                      className={`btn ${job.already_applied ? 'btn-success' : 'btn-primary'}`}
+                      onClick={() => {
+                        if (!job.already_applied) handleApply(job.id);
+                      }}
+                      disabled={job.already_applied || applyingJobId === job.id}
+                    >
+                      {job.already_applied ? 'Applied ✓' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
+                    </button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="job-description-modern">
-              <h4 className="description-title">About this role</h4>
-              <p className="description-text">{job.job_description}</p>
-            </div>
-
-            <div className="job-actions-modern">
-              <div className="action-buttons-grid">
-                <button
-                  onClick={() => setViewAvailableJob(job)}
-                  className="action-btn primary"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  View Job Posting
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleApply(job.id); }}
-                  className={`action-btn ${job.already_applied ? 'action-btn-done applied-done' : 'success'}`}
-                  disabled={job.already_applied || applyingJobId === job.id}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  {job.already_applied ? 'Applied ✓' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
-                </button>
-              </div>
-            </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
         )}
 
       {/* Available Job Detail Drawer */}
@@ -1940,8 +1834,8 @@ const CandidateDashboard: React.FC = () => {
         </div>
       )}
     </>
-    );
-  };
+  );
+};
 
   const renderAppliedLiked = () => {
     const { applied_jobs, liked_jobs } = appliedLiked;
@@ -2437,7 +2331,7 @@ const CandidateDashboard: React.FC = () => {
 
     return (
       <>
-      <div className="jobs-grid-modern">
+        <div className="jobs-grid-modern">
         {matches.map((match: any) => (
           <div key={match.match_id} className="job-card-modern match-card">
             {/* Special Match Header */}
@@ -2714,53 +2608,177 @@ const CandidateDashboard: React.FC = () => {
         </div>
       )}
     </>
+  );
+};
+
+  const renderWelcomeCard = () => {
+    const userName = userProfile?.name || userProfile?.full_name || 'User';
+    const userInitial = userName.charAt(0).toUpperCase();
+    const newJobs = availableJobs.filter((job: any) => {
+      const jobDate = new Date(job.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return jobDate >= weekAgo;
+    }).length;
+
+    return (
+      <div className="welcome-card-modern candidate-welcome">
+        <div className="welcome-content-enhanced">
+          <div className="welcome-header">
+            <div className="welcome-avatar">
+              <div className="user-avatar">{userInitial}</div>
+            </div>
+            <div className="welcome-text">
+              <h1 className="welcome-title-modern">Welcome back, {userName}</h1>
+              <p className="welcome-subtitle-modern">Here's your job search activity overview</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Enhanced KPI Cards with Icons */}
+        <div className="kpi-grid-modern">
+            <div className="kpi-card-enhanced invites">
+              <div className="kpi-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div className="kpi-content">
+                <div className="kpi-value">{invites.length}</div>
+                <div className="kpi-label">Recruiter Invites</div>
+              </div>
+              {invites.length > 0 && (
+                <div className="kpi-trend positive">+{invites.length} new</div>
+              )}
+            </div>
+            
+            <div className="kpi-card-enhanced matches">
+              <div className="kpi-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+              </div>
+              <div className="kpi-content">
+                <div className="kpi-value">{matches.length}</div>
+                <div className="kpi-label">Mutual Matches</div>
+              </div>
+              {matches.length > 0 && (
+                <div className="kpi-change">Ready to connect</div>
+              )}
+            </div>
+            
+            <div className="kpi-card-enhanced new-jobs">
+              <div className="kpi-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <div className="kpi-content">
+                <div className="kpi-value">{newJobs}</div>
+                <div className="kpi-label">New Jobs</div>
+              </div>
+              <div className="kpi-change">This week</div>
+            </div>
+            
+            <div className="kpi-card-enhanced applications">
+              <div className="kpi-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10,9 9,9 8,9"/>
+                </svg>
+              </div>
+              <div className="kpi-content">
+                <div className="kpi-value">{appliedLiked.applied_jobs?.length || 0}</div>
+                <div className="kpi-label">Applications</div>
+              </div>
+              <div className="kpi-change">Submitted</div>
+            </div>
+          </div>
+      </div>
     );
   };
 
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'recommendations':
+        return renderRecommendations();
+      case 'invites':
+        return renderInvites();
+      case 'available':
+        return renderAvailableJobs();
+      case 'applied':
+        return renderAppliedLiked();
+      case 'matches':
+        return renderMatches();
+      case 'messages':
+        return <ChatWindow />;
+      default:
+        return renderRecommendations();
+    }
+  };
+
+  // Derive userName and userInitial for top navbar
+  const userName = userProfile?.name || userProfile?.full_name || 'User';
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
-    <div className="modern-dashboard candidate-dashboard">
+    <div className="modern-dashboard">
       {/* Top Navigation Bar */}
-      <nav className="top-navbar">
+      <div className="top-navbar">
         <div className="navbar-left">
           <div className="app-logo">
             <span className="logo-text">TalentGraph</span>
           </div>
         </div>
+        
         <div className="navbar-center">
-          <h1 className="page-title">Candidate Dashboard</h1>
+          <h2 className="page-title">Candidate Dashboard</h2>
         </div>
+        
         <div className="navbar-right">
           <NotificationBellDrawer role="candidate" />
+          
           <div className="profile-dropdown">
             <button 
-              className="profile-avatar-btn" 
+              className="profile-avatar-btn"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
             >
-              <div className="avatar">{(userProfile?.name || userProfile?.full_name)?.charAt(0) || 'U'}</div>
-              <span className="profile-name">{userProfile?.name || userProfile?.full_name || 'User'}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" className="chevron">
-                <path d="M2 4l4 4 4-4"/>
-              </svg>
+              <div className="avatar">{userInitial}</div>
+              <span className="profile-name">{userName}</span>
+              <span className="chevron">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </span>
             </button>
+            
             {showProfileMenu && (
               <div className="profile-menu">
-                <button onClick={() => { navigate('/candidate/profile'); setShowProfileMenu(false); }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z"/>
+                <button onClick={() => { setShowProfileMenu(false); navigate('/candidate/profile'); }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
                   </svg>
                   My Profile
                 </button>
-                <button onClick={() => { navigate('/candidate/job-preferences'); setShowProfileMenu(false); }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <button onClick={() => { setShowProfileMenu(false); navigate('/candidate/job-preferences'); }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="3"/>
                     <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
                   </svg>
                   Job Preferences
                 </button>
                 <div className="menu-divider"></div>
-                <button onClick={() => { localStorage.clear(); navigate('/'); }} className="logout-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/>
+                <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/'); }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
                   </svg>
                   Logout
                 </button>
@@ -2768,96 +2786,180 @@ const CandidateDashboard: React.FC = () => {
             )}
           </div>
         </div>
-      </nav>
+      </div>
 
+      {/* Dashboard Layout */}
       <div className="dashboard-layout">
         {/* Left Sidebar Navigation */}
-        <aside className="sidebar">
+        <div className="sidebar">
+          <div style={{
+            padding: 'var(--space-4) var(--space-6)',
+            borderBottom: '1px solid var(--gray-200)',
+            marginBottom: 'var(--space-6)'
+          }}>
+            <h3 style={{
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--gray-700)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              margin: '0 0 var(--space-2) 0'
+            }}>
+              Dashboard
+            </h3>
+            <p style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--gray-500)',
+              margin: '0',
+              lineHeight: 'var(--leading-normal)'
+            }}>
+              Find your dream opportunity
+            </p>
+          </div>
+          
           <nav className="sidebar-nav">
-            <button
-              className={`nav-item ${activeTab === 'recommendations' ? 'active' : ''}`}
-              onClick={() => setActiveTab('recommendations')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-              <span className="nav-label">Recommendations</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'invites' ? 'active' : ''}`}
-              onClick={() => setActiveTab('invites')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-              <span className="nav-label">Recruiter Invites</span>
-              {invites.length > 0 && <span className="nav-badge">{invites.length}</span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'available' ? 'active' : ''}`}
-              onClick={() => setActiveTab('available')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/>
-              </svg>
-              <span className="nav-label">Available Jobs</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'applied' ? 'active' : ''}`}
-              onClick={() => setActiveTab('applied')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-              </svg>
-              <span className="nav-label">Applied/Liked</span>
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`}
-              onClick={() => setActiveTab('matches')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
-              </svg>
-              <span className="nav-label">Matches</span>
-              {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
-              onClick={() => setActiveTab('messages')}
-            >
-              <svg className="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              <span className="nav-label">Messages</span>
-            </button>
+            {/* Job Discovery Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Job Discovery
+              </div>
+              
+              <button 
+                className={`nav-item ${activeTab === 'recommendations' ? 'active' : ''}`}
+                onClick={() => setActiveTab('recommendations')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">AI Recommendations</span>
+                <span style={{
+                  fontSize: 'var(--text-xs)',
+                  background: 'linear-gradient(90deg, var(--accent-primary), #8b5cf6)',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 'var(--font-semibold)'
+                }}>
+                  AI
+                </span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'available' ? 'active' : ''}`}
+                onClick={() => setActiveTab('available')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Browse Jobs</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'invites' ? 'active' : ''}`}
+                onClick={() => setActiveTab('invites')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Recruiter Invites</span>
+                {invites.length > 0 && <span className="nav-badge">{invites.length}</span>}
+              </button>
+            </div>
+
+            {/* My Applications Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                My Applications
+              </div>
+              
+              <button 
+                className={`nav-item ${activeTab === 'applied' ? 'active' : ''}`}
+                onClick={() => setActiveTab('applied')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Applied/Liked</span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`}
+                onClick={() => setActiveTab('matches')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Matches</span>
+                {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
+              </button>
+            </div>
+
+            {/* Communication Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Communication
+              </div>
+              
+              <button
+                className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setActiveTab('messages')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Messages</span>
+              </button>
+            </div>
           </nav>
-        </aside>
+        </div>
 
         {/* Main Content Area */}
-        <main className="main-content">
+        <div className="main-content">
+          {/* Welcome Banner */}
           {renderWelcomeCard()}
-          
-          <div className="content-panel">
-            <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
-              {renderRecommendations()}
-            </div>
-            <div style={{ display: activeTab === 'invites' ? 'block' : 'none' }}>
-              {renderInvites()}
-            </div>
-            <div style={{ display: activeTab === 'available' ? 'block' : 'none' }}>
-              {renderAvailableJobs()}
-            </div>
-            <div style={{ display: activeTab === 'applied' ? 'block' : 'none' }}>
-              {renderAppliedLiked()}
-            </div>
-            <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
-              {renderMatches()}
-            </div>
-            <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
-              <ChatWindow />
-            </div>
+
+          {/* Tab Content */}
+          <div className="content-section">
+            {renderActiveTab()}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

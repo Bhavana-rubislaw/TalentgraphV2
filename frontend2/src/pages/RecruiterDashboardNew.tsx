@@ -3,16 +3,17 @@ import { apiClient, API_BASE } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/PremiumDashboard.css';
+import '../styles/PremiumDashboardV2.css';
 import '../styles/PremiumCards.css';
 import '../styles/PremiumModals.css';
 import '../styles/RecruiterApplications.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
-import MeetingsPanel from '../components/meetings/MeetingsPanel';
+
 import RecruiterSettingsPanel, { type RecruiterSettings } from '../components/settings/RecruiterSettingsPanel';
 
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings', 'settings'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'settings'] as const;
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -765,7 +766,7 @@ const RecruiterDashboard: React.FC = () => {
                     <line x1="6" y1="20" x2="6" y2="16"/>
                   </svg>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '28px', fontWeight: 700, color: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>Job Performance Dashboard</h3>
+                <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>Job Performance Dashboard</h3>
               </div>
               <p style={{ margin: 0, fontSize: '16px', color: 'rgba(255, 255, 255, 0.9)', paddingLeft: '44px' }}>Last 90 days · {jobAnalytics.job_title}</p>
             </div>
@@ -1467,163 +1468,297 @@ const RecruiterDashboard: React.FC = () => {
 
     return (
       <>
-      {/* Shortlist Filters */}
-      <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <label htmlFor="shortlist-role-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Role</label>
-          <select
-            id="shortlist-role-filter"
-            className="job-select-modern"
-            style={{ minWidth: '160px', padding: '6px 10px', fontSize: '13px' }}
-            value={shortlistRoleFilter}
-            onChange={(e) => setShortlistRoleFilter(e.target.value)}
-          >
-            <option value="all">All Roles</option>
-            {shortlistRoleOptions.map(role => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
+        {/* Page Header Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Shortlist</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Review and manage your shortlisted candidates</p>
         </div>
-        {shortlistRoleFilter !== 'all' && (
-          <button
-            className="action-btn secondary"
-            style={{ padding: '6px 12px', fontSize: '12px' }}
-            onClick={() => setShortlistRoleFilter('all')}
-          >
-            Clear filters
-          </button>
-        )}
-        <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginLeft: 'auto' }}>
-          Showing {filteredShortlist.length} of {shortlist.length}
-        </span>
-      </div>
 
-      <div className="candidates-grid-modern">
+        {/* Enhanced Filter Toolbar */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '12px', 
+          padding: '20px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', 
+          marginBottom: '24px',
+          border: '1px solid var(--border-color, #e2e8f0)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '0 1 200px', minWidth: '180px' }}>
+              <label htmlFor="shortlist-role-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</label>
+              <select
+                id="shortlist-role-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={shortlistRoleFilter}
+                onChange={(e) => setShortlistRoleFilter(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                {shortlistRoleOptions.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+            {shortlistRoleFilter !== 'all' && (
+              <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'flex-end' }}>
+                <button
+                  className="action-btn secondary"
+                  style={{ height: '40px', padding: '0 16px', fontSize: '13px', fontWeight: 500, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  onClick={() => setShortlistRoleFilter('all')}
+                >
+                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  Clear Filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Results Count */}
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
+              Showing {filteredShortlist.length} of {shortlist.length} shortlisted candidates
+            </span>
+            {shortlistRoleFilter !== 'all' && (
+              <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)' }}>
+                role filter active
+              </span>
+            )}
+          </div>
+        </div>
+
+      <div className="candidates-grid-modern" style={{ gap: '20px' }}>
         {filteredShortlist.map((item: any, index) => (
-          <div key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} className="candidate-card-modern shortlisted">
-            <div className="candidate-header-modern">
-              <div className="candidate-avatar-modern">
-                <div className="avatar-circle">
-                  {item.candidate.name.charAt(0).toUpperCase()}
-                </div>
-              </div>
-              <div className="candidate-title-section">
-                <h3 className="candidate-name-modern">{item.candidate.name}</h3>
-                <div className="candidate-location">{item.candidate.location_state || 'N/A'}</div>
-              </div>
-              <div className="action-status-badge shortlisted">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div 
+            key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} 
+            className="candidate-card-modern"
+            style={{
+              border: '1px solid var(--border-color, #e2e8f0)',
+              borderRadius: '12px',
+              padding: '20px',
+              background: 'white',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              transition: 'all 0.2s ease',
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            {/* Status Badge */}
+            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: 500,
+                background: '#dbeafe',
+                color: '#1e40af'
+              }}>
+                <svg style={{ width: '12px', height: '12px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
-                <span>Shortlisted</span>
-              </div>
+                Shortlisted
+              </span>
             </div>
 
-            <div className="candidate-content-modern">
-              <div className="candidate-info-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Contact Information</h4>
-                  <div className="info-items">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                      </svg>
-                      <span className="info-value">{item.candidate.email}</span>
-                    </div>
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                      </svg>
-                      <span className="info-value">{item.candidate.phone}</span>
-                    </div>
-                  </div>
-                </div>
+            {/* Card Header with Avatar and Basic Info */}
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-start' }}>
+              <div style={{ 
+                width: '56px', 
+                height: '56px', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '20px',
+                fontWeight: 600,
+                flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              }}>
+                {item.candidate.name.charAt(0).toUpperCase()}
               </div>
-
-              <div className="candidate-preferences-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Position Details</h4>
-                  <div className="info-items">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                        <line x1="8" y1="21" x2="16" y2="21"/>
-                        <line x1="12" y1="17" x2="12" y2="21"/>
+              <div style={{ flex: 1, minWidth: 0, paddingRight: '60px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary, #1e293b)', marginBottom: '4px', lineHeight: 1.3 }}>
+                  {item.candidate.name}
+                </h3>
+                {item.job_posting?.job_title && (
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary, #667eea)', marginBottom: '6px', lineHeight: 1.4 }}>
+                    {item.job_posting.job_title}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--text-muted, #94a3b8)' }}>
+                  {item.candidate.location_state && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
                       </svg>
-                      <span className="info-value">{item.job_posting?.job_title || 'Position'}</span>
-                    </div>
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      {item.candidate.location_state}
+                    </span>
+                  )}
+                  {item.job_profile?.years_of_experience && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                       </svg>
-                      <span className="info-value">{item.job_profile?.years_of_experience || 'N/A'} years experience</span>
-                    </div>
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                      <span className="info-value">Shortlisted: {new Date(item.shortlisted_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
+                      {item.job_profile.years_of_experience} years
+                    </span>
+                  )}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    {new Date(item.shortlisted_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="candidate-actions-modern">
-              <div className="action-buttons-grid">
-                <a
-                  href={`mailto:${item.candidate.email}`}
-                  className="action-btn primary"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* Contact Information */}
+            <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '8px' }}>Contact</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary, #64748b)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  Contact
-                </a>
-                <button
-                  className="action-btn secondary"
-                  onClick={() => setViewShortlistItem(item)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  View Details
-                </button>
-                <button
-                  className="action-btn success"
-                  onClick={() => handleAskToApply(item.candidate.id, item.job_profile?.id)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Ask to Apply
-                </button>
-                <button
-                  className="action-btn message"
-                  onClick={() => {
-                    if (item.candidate.user_id) {
-                      handleStartDirectMessage(item.candidate.user_id);
-                    } else {
-                      alert('Cannot message this candidate: User ID not available');
-                    }
-                  }}
-                  aria-label={`Message ${item.candidate.name}`}
-                  title="Start conversation with candidate"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  Message
-                </button>
+                  {item.candidate.email}
+                </div>
+                {item.candidate.phone && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    {item.candidate.phone}
+                  </div>
+                )}
               </div>
+            </div>
+
+            {/* Enhanced CTA Buttons */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                className="btn-primary"
+                style={{ 
+                  flex: 1, 
+                  minWidth: '140px',
+                  height: '40px',
+                  padding: '0 20px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
+                  color: 'white',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setViewShortlistItem(item);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(102, 126, 234, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                }}
+              >
+                View Details
+              </button>
+              <a
+                href={`mailto:${item.candidate.email}`}
+                className="action-btn secondary"
+                style={{ 
+                  padding: '0 16px',
+                  height: '40px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  textDecoration: 'none',
+                  justifyContent: 'center'
+                }}
+              >
+                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Contact
+              </a>
+              <button
+                className="action-btn success"
+                style={{ 
+                  padding: '0 16px',
+                  height: '40px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  justifyContent: 'center'
+                }}
+                onClick={() => handleAskToApply(item.candidate.id, item.job_profile?.id)}
+              >
+                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Ask to Apply
+              </button>
+              <button
+                className="action-btn message"
+                style={{ 
+                  padding: '0 16px',
+                  height: '40px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  justifyContent: 'center'
+                }}
+                onClick={() => {
+                  if (item.candidate.user_id) {
+                    handleStartDirectMessage(item.candidate.user_id);
+                  } else {
+                    alert('Cannot message this candidate: User ID not available');
+                  }
+                }}
+                aria-label={`Message ${item.candidate.name}`}
+                title="Start conversation with candidate"
+              >
+                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Message
+              </button>
             </div>
           </div>
         ))}
@@ -3573,142 +3708,238 @@ const RecruiterDashboard: React.FC = () => {
 
       {/* Dashboard Layout */}
       <div className="dashboard-layout">
-        {/* Sidebar */}
+        {/* Premium Sidebar with Professional Navigation */}
         <div className="sidebar">
+          <div style={{
+            padding: 'var(--space-4) var(--space-6)',
+            borderBottom: '1px solid var(--gray-200)',
+            marginBottom: 'var(--space-6)'
+          }}>
+            <h3 style={{
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-semibold)',
+              color: 'var(--gray-700)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              margin: '0 0 var(--space-2) 0'
+            }}>
+              Dashboard
+            </h3>
+            <p style={{
+              fontSize: 'var(--text-xs)',
+              color: 'var(--gray-500)',
+              margin: '0',
+              lineHeight: 'var(--leading-normal)'
+            }}>
+              Manage your recruitment pipeline
+            </p>
+          </div>
+          
           <nav className="sidebar-nav">
-            <button 
-              className={`nav-item ${activeTab === 'recommendations' ? 'active' : ''}`}
-              onClick={() => setActiveTab('recommendations')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </span>
-              <span className="nav-label">Recommendations</span>
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'shortlist' ? 'active' : ''}`}
-              onClick={() => setActiveTab('shortlist')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </span>
-              <span className="nav-label">Shortlist</span>
-              {shortlist.length > 0 && <span className="nav-badge">{shortlist.length}</span>}
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'applications' ? 'active' : ''}`}
-              onClick={() => setActiveTab('applications')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M9 11l3 3L22 4"/>
-                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
-              </span>
-              <span className="nav-label">Applications</span>
-              {applications.length > 0 && <span className="nav-badge">{applications.length}</span>}
-            </button>
-            
-            <button 
-              className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`}
-              onClick={() => setActiveTab('matches')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </span>
-              <span className="nav-label">Matches</span>
-              {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
-            </button>
+            {/* Main Workflow Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Candidate Pipeline
+              </div>
+              
+              <button 
+                className={`nav-item ${activeTab === 'recommendations' ? 'active' : ''}`}
+                onClick={() => setActiveTab('recommendations')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </span>
+                <span className="nav-label">AI Recommendations</span>
+                <span style={{
+                  fontSize: 'var(--text-xs)',
+                  background: 'linear-gradient(90deg, var(--accent-primary), #8b5cf6)',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 'var(--font-semibold)'
+                }}>
+                  AI
+                </span>
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'browse' ? 'active' : ''}`}
+                onClick={() => setActiveTab('browse')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Browse Candidates</span>
+                {browseTotal > 0 && <span className="nav-badge">{browseTotal}</span>}
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'shortlist' ? 'active' : ''}`}
+                onClick={() => setActiveTab('shortlist')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Shortlisted</span>
+                {shortlist.length > 0 && <span className="nav-badge">{shortlist.length}</span>}
+              </button>
+            </div>
 
-            <button 
-              className={`nav-item ${activeTab === 'browse' ? 'active' : ''}`}
-              onClick={() => setActiveTab('browse')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-              </span>
-              <span className="nav-label">Browse Candidates</span>
-              {browseTotal > 0 && <span className="nav-badge">{browseTotal}</span>}
-            </button>
+            {/* Applications & Matches Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Active Applications
+              </div>
+              
+              <button 
+                className={`nav-item ${activeTab === 'applications' ? 'active' : ''}`}
+                onClick={() => setActiveTab('applications')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Applications</span>
+                {applications.length > 0 && <span className="nav-badge">{applications.length}</span>}
+              </button>
+              
+              <button 
+                className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`}
+                onClick={() => setActiveTab('matches')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Mutual Matches</span>
+                {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
+              </button>
+            </div>
 
-            <button
-              className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
-              onClick={() => setActiveTab('messages')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-              </span>
-              <span className="nav-label">Messages</span>
-            </button>
+            {/* Communication Section */}
+            <div style={{ marginBottom: 'var(--space-6)' }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Communication
+              </div>
+              
+              <button
+                className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
+                onClick={() => setActiveTab('messages')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Messages</span>
+              </button>
+            </div>
 
-            <button 
-              className={`nav-item ${activeTab === 'meetings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('meetings')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </span>
-              <span className="nav-label">Meetings</span>
-            </button>
+            {/* Management Section */}
+            <div style={{
+              borderTop: '1px solid var(--gray-200)',
+              paddingTop: 'var(--space-6)',
+              marginTop: 'auto'
+            }}>
+              <div style={{
+                fontSize: 'var(--text-xs)',
+                fontWeight: 'var(--font-semibold)',
+                color: 'var(--gray-400)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                marginBottom: 'var(--space-3)',
+                paddingLeft: 'var(--space-6)'
+              }}>
+                Management
+              </div>
+              
+              <button 
+                type="button"
+                className="nav-item"
+                onClick={() => {
+                  console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
+                  navigate('/recruiter/job-postings');
+                }}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Create Job</span>
+                <span style={{
+                  fontSize: 'var(--text-xs)',
+                  background: 'var(--success)',
+                  color: 'white',
+                  padding: '2px 6px',
+                  borderRadius: 'var(--radius-sm)',
+                  fontWeight: 'var(--font-semibold)'
+                }}>
+                  +
+                </span>
+              </button>
 
-            <button 
-              type="button"
-              className="nav-item"
-              onClick={() => {
-                console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
-                navigate('/recruiter/job-postings');
-              }}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-              </span>
-              <span className="nav-label">Post Job</span>
-            </button>
-
-            <button 
-              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-            >
-              <span className="nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3"/>
-                  <path d="M12 1v6m0 6v6m5.657-13.657l-4.243 4.243m-2.828 2.828l-4.243 4.243m16.97 1.313l-6-1.313m-6 0l-6 1.313m13.657-10.97l-4.243 4.243m-2.828 2.828l-4.243 4.243"/>
-                </svg>
-              </span>
-              <span className="nav-label">Settings</span>
-            </button>
+              <button 
+                className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                onClick={() => setActiveTab('settings')}
+              >
+                <span className="nav-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v6m0 6v6m5.657-13.657l-4.243 4.243m-2.828 2.828l-4.243 4.243m16.97 1.313l-6-1.313m-6 0l-6 1.313m13.657-10.97l-4.243 4.243m-2.828 2.828l-4.243 4.243"/>
+                  </svg>
+                </span>
+                <span className="nav-label">Settings</span>
+              </button>
+            </div>
           </nav>
         </div>
 
         {/* Main Content */}
         <div className="main-content">
-          {/* Welcome Card - Enhanced with modern design */}
+          {/* Welcome Card - Simple Version */}
           <div className="welcome-card-modern">
             <div className="welcome-content-enhanced">
               <div className="welcome-header">
@@ -3805,13 +4036,6 @@ const RecruiterDashboard: React.FC = () => {
             </div>
             <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
               <ChatWindow />
-            </div>
-            <div style={{ display: activeTab === 'meetings' ? 'block' : 'none' }}>
-              <MeetingsPanel
-                defaultProvider={recruiterSettings.defaultMeetingProvider}
-                defaultDuration={recruiterSettings.defaultMeetingDuration}
-                defaultReminderMinutes={recruiterSettings.defaultReminderMinutes}
-              />
             </div>
             <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
               <RecruiterSettingsPanel
