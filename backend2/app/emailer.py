@@ -108,18 +108,18 @@ def send_email(
             logger.info(f"[EMAIL] Sending email to {recipients}")
             server.sendmail(from_email or MAIL_FROM, recipients, msg.as_string())
         
-        logger.info(f"[EMAIL] ✅ Sent to {to_email}" + (f" (CC: {', '.join(cc_emails)})" if cc_emails else "") + f": {subject}")
+        logger.info(f"[EMAIL] [OK] Sent to {to_email}" + (f" (CC: {', '.join(cc_emails)})" if cc_emails else "") + f": {subject}")
         return True
         
     except smtplib.SMTPAuthenticationError as e:
-        logger.error(f"[EMAIL] ❌ SMTP Authentication failed for {MAIL_USERNAME}: {str(e)}")
+        logger.error(f"[EMAIL] [ERROR] SMTP Authentication failed for {MAIL_USERNAME}: {str(e)}")
         logger.error(f"[EMAIL] Check that SMTP_PASSWORD is a valid Gmail App Password")
         raise
     except smtplib.SMTPException as e:
-        logger.error(f"[EMAIL] ❌ SMTP error sending to {to_email}: {str(e)}")
+        logger.error(f"[EMAIL] [ERROR] SMTP error sending to {to_email}: {str(e)}")
         raise
     except Exception as e:
-        logger.error(f"[EMAIL] ❌ Failed to send to {to_email}: {str(e)}")
+        logger.error(f"[EMAIL] [ERROR] Failed to send to {to_email}: {str(e)}")
         logger.error(f"[EMAIL] Exception type: {type(e).__name__}")
         import traceback
         logger.error(f"[EMAIL] Traceback: {traceback.format_exc()}")
@@ -285,7 +285,7 @@ def send_interview_schedule_email(
     """
     
     # Recruiter email template - confirmation/summary focused
-    recruiter_subject = f"✓ Interview Scheduled: {candidate_name} for {job_title}"
+    recruiter_subject = f"Interview Scheduled: {candidate_name} for {job_title}"
     recruiter_html_body = f"""
     <!DOCTYPE html>
     <html>

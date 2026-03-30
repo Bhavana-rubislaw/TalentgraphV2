@@ -126,7 +126,7 @@ def start_workers():
     
     scheduler.start()
     
-    logger.info("✓ Worker scheduler started successfully")
+    logger.info("[OK] Worker scheduler started successfully")
     
     # Log next execution times
     jobs = scheduler.get_jobs()
@@ -150,7 +150,7 @@ def stop_workers():
     scheduler.shutdown(wait=True)
     scheduler = None
     
-    logger.info("✓ Worker scheduler stopped")
+    logger.info("[OK] Worker scheduler stopped")
 
 
 def get_scheduler_status():

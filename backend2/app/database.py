@@ -37,7 +37,7 @@ def init_db():
     )
     
     SQLModel.metadata.create_all(engine)
-    print("✅ Database initialized successfully!")
+    print("[OK] Database initialized successfully!")
 
 
 def get_session():

@@ -207,12 +207,13 @@ export const apiClient = {
     api.delete(`/applications/${applicationId}`),
   
   scheduleInterview: (applicationId: number, payload: {
-    candidate_email: string;
-    interview_datetime: string;
+    date: string;
+    time: string;
     timezone: string;
-    meeting_link?: string;  // Optional - auto-generated if not provided
-    notes?: string;
-    subject?: string;
+    meeting_provider?: string;  // Optional - "zoom", "google_meet", or "microsoft_teams"
+    meeting_link?: string;  // Optional - for manual links
+    notes_for_candidate?: string;
+    email_subject?: string;
   }) =>
     api.post(`/applications/${applicationId}/schedule-interview`, payload),
   
@@ -460,53 +461,6 @@ export const apiClient = {
 
   deleteVideoProviderAccount: (accountId: number) =>
     api.delete(`/calendar/video-providers/${accountId}`),
-
-  // ── Attachments (Phase 3) ──────────────────────────────────────────────────
-  
-  // Get presigned URL for S3 upload
-  getAttachmentUploadUrl: (data: {
-    filename: string;
-    mime_type: string;
-    size_bytes: number;
-    checksum_sha256: string;
-  }) =>
-    api.post('/attachments/upload-url', data),
-
-  // Finalize attachment after S3 upload
-  finalizeMessageAttachment: (messageId: number, data: {
-    attachment_id: string;
-    storage_key: string;
-  }) =>
-    api.post(`/attachments/messages/${messageId}/attachments`, data),
-
-  // List attachments for a message
-  getMessageAttachments: (messageId: number) =>
-    api.get(`/attachments/messages/${messageId}/attachments`),
-
-  // Get presigned download URL
-  getAttachmentDownloadUrl: (attachmentId: string) =>
-    api.get(`/attachments/${attachmentId}/download-url`),
-
-  // Delete attachment
-  deleteAttachment: (attachmentId: string) =>
-    api.delete(`/attachments/${attachmentId}`),
-
-  // ── Billing & Subscriptions (Phase 4) ──────────────────────────────────────
-  
-  // Create Stripe checkout session
-  createCheckoutSession: (data: {
-    plan_code: 'starter' | 'professional' | 'enterprise';
-    billing_period: 'monthly' | 'annual';
-  }) =>
-    api.post('/billing/create-checkout-session', data),
-
-  // Get current subscription
-  getSubscription: () =>
-    api.get('/billing/subscription'),
-
-  // Create billing portal session
-  createPortalSession: () =>
-    api.post('/billing/portal-session'),
 
   // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
   

@@ -209,24 +209,55 @@ class ZoomProvider(VideoProviderBase):
         }
         
         try:
+            endpoint = f"{self.BASE_URL}/users/{user_id}/meetings"
+            logger.info(f"[ZOOM] Creating meeting - POST {endpoint}")
+            logger.info(f"[ZOOM] Request payload: {payload}")
+            # Mask authorization header for security
+            safe_headers = {k: (v[:20] + '...' if k == 'Authorization' else v) for k, v in headers.items()}
+            logger.info(f"[ZOOM] Request headers: {safe_headers}")
+            
             response = requests.post(
-                f"{self.BASE_URL}/users/{user_id}/meetings",
+                endpoint,
                 headers=headers,
                 json=payload,
                 timeout=10
             )
+            
+            logger.info(f"[ZOOM] Response status: {response.status_code}")
+            logger.info(f"[ZOOM] Response headers: {dict(response.headers)}")
+            
             response.raise_for_status()
             data = response.json()
             
+            logger.info(f"[ZOOM] Response body: {data}")
+            
+            join_url = data.get("join_url")
+            meeting_id = data.get("id")
+            
+            if not join_url:
+                logger.error(f"[ZOOM] No join_url in response! Available keys: {list(data.keys())}")
+                raise VideoProviderError(f"Zoom API did not return a join_url. Response keys: {list(data.keys())}")
+            
+            logger.info(f"[ZOOM] Meeting created successfully - ID: {meeting_id}, URL: {join_url}")
+            
             return {
-                "meeting_url": data.get("join_url"),
-                "meeting_id": str(data.get("id")),
+                "meeting_url": join_url,
+                "meeting_id": str(meeting_id) if meeting_id else None,
                 "host_url": data.get("start_url"),
                 "password": data.get("password"),
                 "provider_data": data
             }
         except requests.exceptions.RequestException as e:
-            raise VideoProviderError(f"Zoom API error: {str(e)}")
+            error_msg = f"Zoom API error: {str(e)}"
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    logger.error(f"[ZOOM] API error response: {error_detail}")
+                    error_msg = f"{error_msg} - {error_detail}"
+                except:
+                    logger.error(f"[ZOOM] API error response (text): {e.response.text}")
+                    error_msg = f"{error_msg} - {e.response.text}"
+            raise VideoProviderError(error_msg)
     
     def delete_meeting(self, meeting_id: str) -> bool:
         """Delete Zoom meeting"""

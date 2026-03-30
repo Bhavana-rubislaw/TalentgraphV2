@@ -205,6 +205,23 @@ class EmailService:
         
         logger.info(f"EmailService initialized with provider: {provider_type}")
     
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_content: str,
+        plain_content: str,
+        reply_to: Optional[str] = None
+    ) -> str:
+        """Generic email sending wrapper used by lifecycle services"""
+        return self.provider.send_email(
+            to_email=to_email,
+            subject=subject,
+            html_body=html_content,
+            text_body=plain_content,
+            reply_to=reply_to
+        )
+    
     def generate_reply_token(
         self,
         conversation_id: Optional[int] = None,
@@ -357,13 +374,16 @@ This is an automated message from TalentGraph.
         self,
         to_email: str,
         candidate_name: str,
+        job_title: str,
         meeting_time: datetime,
         meeting_link: str,
+        meeting_location: Optional[str] = None,
         hours_before: int = 24
     ) -> str:
         """Send interview reminder email"""
         
         time_str = meeting_time.strftime('%A, %B %d, %Y at %I:%M %p %Z')
+        location_str = meeting_location if meeting_location else "Virtual"
         
         html_body = f"""
         <!DOCTYPE html>
@@ -371,8 +391,9 @@ This is an automated message from TalentGraph.
         <body style="font-family: sans-serif; line-height: 1.6;">
             <h2>Interview Reminder</h2>
             <p>Hi {candidate_name},</p>
-            <p>This is a reminder that you have an interview scheduled in {hours_before} hours.</p>
+            <p>This is a reminder that you have an interview scheduled in {hours_before} hours for the <strong>{job_title}</strong> position.</p>
             <p><strong>Time:</strong> {time_str}</p>
+            <p><strong>Location:</strong> {location_str}</p>
             <p><strong>Meeting Link:</strong> <a href="{meeting_link}">{meeting_link}</a></p>
             <p>See you soon!</p>
         </body>
@@ -384,9 +405,10 @@ Interview Reminder
 
 Hi {candidate_name},
 
-This is a reminder that you have an interview scheduled in {hours_before} hours.
+This is a reminder that you have an interview scheduled in {hours_before} hours for the {job_title} position.
 
 Time: {time_str}
+Location: {location_str}
 Meeting Link: {meeting_link}
 
 See you soon!

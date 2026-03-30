@@ -559,6 +559,19 @@ def update_job_posting_status(
             route=f"/recruiter/job-postings",
             route_context={"job_id": job_id, "job_title": job_posting.job_title, "applicant_count": len(previous_applicants)}
         )
+        
+        # Notify previous applicants that job has reopened
+        try:
+            from app.services.lifecycle_service import LifecycleService
+            import logging
+            logger = logging.getLogger(__name__)
+            lifecycle = LifecycleService()
+            lifecycle.notify_reopened_jobs(session, job_id)
+            logger.info(f"[JOB REOPEN] Sent notifications for job {job_id}")
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"[JOB REOPEN] Failed to send notifications for job {job_id}: {e}")
     
     elif action == "repost":
         # Prevent actions on cancelled jobs

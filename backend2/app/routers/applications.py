@@ -449,13 +449,13 @@ def withdraw_application(
 
 class InterviewScheduleRequest(BaseModel):
     """Request payload for scheduling an interview"""
-    candidate_email: str
-    interview_datetime: str  # e.g., "March 20, 2026 at 10:30 AM"
+    date: str  # e.g., "March 27, 2026" or "2026-03-27"
+    time: str  # e.g., "10:00 AM" or "14:30"
     timezone: str  # e.g., "EST", "America/New_York"
-    video_provider: Optional[str] = None  # "zoom", "google_meet", or "microsoft_teams" - triggers auto-generation
+    meeting_provider: Optional[str] = None  # "zoom", "google_meet", or "microsoft_teams" - triggers auto-generation
     meeting_link: Optional[str] = None  # Optional - provide manual link OR leave empty to auto-generate
-    notes: Optional[str] = None
-    subject: Optional[str] = None
+    notes_for_candidate: Optional[str] = None
+    email_subject: Optional[str] = None
 
 
 @router.post("/{application_id}/schedule-interview", response_model=dict)
@@ -477,6 +477,17 @@ def schedule_interview(
     5. Logs the scheduling event for audit trail
     6. Returns detailed success/failure response
     """
+    
+    try:
+        logger.info(f"[INTERVIEW] === ENDPOINT CALLED === Application ID: {application_id}")
+        logger.info(f"[INTERVIEW] Received payload: date={data.date}, time={data.time}, timezone={data.timezone}, meeting_provider={data.meeting_provider}, meeting_link={data.meeting_link}")
+        logger.info(f"[INTERVIEW] Current user: {current_user.get('email')}")
+        
+    except Exception as e:
+        logger.error(f"[INTERVIEW] CRITICAL ERROR in endpoint: {e}")
+        import traceback
+        logger.error(f"[INTERVIEW] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
     # Get current user
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
@@ -509,30 +520,37 @@ def schedule_interview(
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
     
-    # Validate email
-    candidate_email = data.candidate_email.strip()
+    # Get candidate email and name
+    candidate_email = candidate.user.email if candidate.user else None
+    
+    # Validate candidate has email
     if not candidate_email or "@" not in candidate_email:
-        raise HTTPException(status_code=400, detail="Invalid candidate email address")
+        raise HTTPException(status_code=400, detail="Candidate email not found")
     
     # Prepare candidate name for emails and meeting topics
     candidate_name = getattr(candidate, 'name', None) or candidate_email.split('@')[0]
     
-    # Parse interview_datetime string to datetime object for Zoom API
-    # Frontend sends: "March 27, 2026 at 10:00 AM"
+    # Parse date and time strings to datetime object for Zoom API
+    # Frontend sends: date="March 27, 2026" or "2026-03-27", time="10:00 AM" or "14:30"
     # Zoom expects: datetime object
     interview_dt_obj = None
+    interview_datetime_str = f"{data.date} at {data.time}"  # For display and email
+    
     try:
         from dateutil import parser as date_parser
-        interview_dt_obj = date_parser.parse(data.interview_datetime)
+        # Combine date and time for parsing
+        datetime_str = f"{data.date} {data.time}"
+        interview_dt_obj = date_parser.parse(datetime_str)
         logger.info(f"[INTERVIEW] Parsed datetime: {interview_dt_obj}")
     except ImportError:
         # Fallback if python-dateutil not installed
         logger.warning("[INTERVIEW] python-dateutil not installed, using basic datetime parsing")
         try:
             # Try basic parsing for common formats
-            interview_dt_obj = datetime.strptime(data.interview_datetime, "%B %d, %Y at %I:%M %p")
-        except ValueError:
-            logger.error(f"[INTERVIEW] Failed to parse datetime: {data.interview_datetime}")
+            datetime_str = f"{data.date} {data.time}"
+            interview_dt_obj = date_parser.parse(datetime_str)
+        except:
+            logger.error(f"[INTERVIEW] Failed to parse datetime: {data.date} {data.time}")
             pass
     except Exception as e:
         logger.error(f"[INTERVIEW] Error parsing datetime: {e}")
@@ -548,9 +566,9 @@ def schedule_interview(
         if not (meeting_link.startswith("http://") or meeting_link.startswith("https://")):
             raise HTTPException(status_code=400, detail="Invalid meeting link - must be a valid URL")
         logger.info(f"[INTERVIEW] Using manual meeting link")
-    elif data.video_provider:
-        # Auto-generate meeting link from specified video provider
-        logger.info(f"[INTERVIEW] Auto-generating meeting link using {data.video_provider}")
+    elif data.meeting_provider:
+        # Auto-generate meeting link from specified meeting provider
+        logger.info(f"[INTERVIEW] Auto-generating meeting link using {data.meeting_provider}")
         
         # Map provider string to enum and get credentials from .env
         provider_map = {
@@ -559,13 +577,13 @@ def schedule_interview(
             "microsoft_teams": VideoProvider.MICROSOFT_TEAMS
         }
         
-        if data.video_provider not in provider_map:
+        if data.meeting_provider not in provider_map:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid video provider: {data.video_provider}. Must be 'zoom', 'google_meet', or 'microsoft_teams'"
+                detail=f"Invalid meeting provider: {data.meeting_provider}. Must be 'zoom', 'google_meet', or 'microsoft_teams'"
             )
         
-        provider_enum = provider_map[data.video_provider]
+        provider_enum = provider_map[data.meeting_provider]
         
         # Get credentials from .env based on provider
         api_key = None
@@ -587,7 +605,7 @@ def schedule_interview(
         if not api_key or not api_secret:
             raise HTTPException(
                 status_code=400,
-                detail=f"No credentials configured for {data.video_provider}. Please configure {provider_enum.value.upper()}_CLIENT_ID and {provider_enum.value.upper()}_CLIENT_SECRET in .env file or provide a manual meeting link."
+                detail=f"No credentials configured for {data.meeting_provider}. Please configure {provider_enum.value.upper()}_CLIENT_ID and {provider_enum.value.upper()}_CLIENT_SECRET in .env file or provide a manual meeting link."
             )
         
         # Zoom OAuth also requires account_id
@@ -597,7 +615,7 @@ def schedule_interview(
                 detail="Zoom OAuth requires ZOOM_ACCOUNT_ID to be configured in .env file. Please add it or provide a manual meeting link."
             )
         
-        logger.info(f"[INTERVIEW] Using {data.video_provider} credentials from .env")
+        logger.info(f"[INTERVIEW] Using {data.meeting_provider} credentials from .env")
         
         try:
             # Get video provider instance
@@ -611,7 +629,7 @@ def schedule_interview(
             
             # Generate meeting
             # Use parsed datetime object if available, otherwise pass string and let provider handle it
-            meeting_start_time = interview_dt_obj if interview_dt_obj else data.interview_datetime
+            meeting_start_time = interview_dt_obj if interview_dt_obj else interview_datetime_str
             
             meeting_details = provider.create_meeting(
                 title=f"{job_posting.job_title} Interview - {candidate_name}",
@@ -622,8 +640,18 @@ def schedule_interview(
                 timezone=data.timezone  # Pass as kwarg
             )
             
-            meeting_link = meeting_details.get("join_url") or meeting_details.get("joinUrl")
+            logger.info(f"[INTERVIEW] Meeting details returned: {meeting_details}")
+            
+            # Extract meeting URL - the provider returns "meeting_url" key
+            meeting_link = meeting_details.get("meeting_url")
             video_provider_used = provider_enum.value
+            
+            if not meeting_link:
+                logger.error(f"[INTERVIEW] No meeting_url in response! Keys: {list(meeting_details.keys())}")
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Failed to generate {data.meeting_provider} meeting link. The provider did not return a valid meeting URL. Please use a manual link instead."
+                )
             
             logger.info(f"[INTERVIEW] Auto-generated {video_provider_used} meeting link: {meeting_link}")
             
@@ -631,25 +659,27 @@ def schedule_interview(
             logger.error(f"[INTERVIEW] Video provider error: {e}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to generate {data.video_provider} meeting link: {str(e)}"
+                detail=f"Failed to generate {data.meeting_provider} meeting link: {str(e)}"
             )
         except Exception as e:
             logger.error(f"[INTERVIEW] Unexpected error generating meeting link: {e}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to generate {data.video_provider} meeting link. Please check your {data.video_provider.upper()} API credentials in .env file or provide a manual link."
+                detail=f"Failed to generate {data.meeting_provider} meeting link. Please check your {data.meeting_provider.upper()} API credentials in .env file or provide a manual link."
             )
     else:
-        # Neither manual link nor video provider specified
+        # Neither manual link nor meeting provider specified
         raise HTTPException(
             status_code=400,
-            detail="Meeting link is required. Either provide a manual link or select a video provider for auto-generation."
+            detail="Meeting link is required. Either provide a manual link or select a meeting provider for auto-generation."
         )
     
+    # Final validation of meeting link
     if not meeting_link:
+        logger.error(f"[INTERVIEW] Meeting link is None after all processing")
         raise HTTPException(
-            status_code=400,
-            detail="Meeting link generation failed. Please try providing a manual link."
+            status_code=502,
+            detail="Meeting link generation failed. Please try providing a manual link instead."
         )
     
     # Prepare display names
@@ -675,11 +705,11 @@ def schedule_interview(
             recruiter_email=recruiter_email,
             company_name=company_name,
             job_title=job_title,
-            interview_datetime=data.interview_datetime,
+            interview_datetime=interview_datetime_str,
             timezone=data.timezone,
             meeting_link=meeting_link,
-            notes=data.notes,
-            custom_subject=data.subject
+            notes=data.notes_for_candidate,
+            custom_subject=data.email_subject
         )
         
         logger.info(f"[INTERVIEW] Email sent successfully for application {application_id}")
@@ -706,14 +736,14 @@ def schedule_interview(
                 session,
                 user_id=candidate_user.id,
                 title=f"📅 Interview Scheduled: {job_title}",
-                message=f"Your interview with {company_name} has been scheduled for {data.interview_datetime} ({data.timezone})",
+                message=f"Your interview with {company_name} has been scheduled for {interview_datetime_str} ({data.timezone})",
                 event_type="interview_scheduled",
                 route="/candidate-dashboard",
                 route_context={
                     "tab": "applications",
                     "applicationId": application.id,
                     "meeting_link": meeting_link,
-                    "interview_datetime": data.interview_datetime,
+                    "interview_datetime": interview_datetime_str,
                     "timezone": data.timezone,
                     "entity_type": "application",
                     "entity_id": application.id
@@ -733,12 +763,12 @@ def schedule_interview(
             performed_by_user=user,
             before_value=None,
             after_value={
-                "interview_datetime": data.interview_datetime,
+                "interview_datetime": interview_datetime_str,
                 "timezone": data.timezone,
                 "meeting_link": meeting_link,
                 "candidate_email": candidate_email,
                 "recruiter_name": recruiter_name,
-                "notes": data.notes
+                "notes": data.notes_for_candidate
             },
             request_id=getattr(request.state, "request_id", None),
         )
@@ -792,7 +822,7 @@ def schedule_interview(
         "recruiter_email": recruiter_email,
         "from_email": os.getenv("SMTP_FROM_EMAIL", os.getenv("MAIL_FROM", "talentgraph.interviews@gmail.com")),
         "scheduled_by": recruiter_email,
-        "interview_datetime": data.interview_datetime,
+        "interview_datetime": interview_datetime_str,
         "timezone": data.timezone,
         "meeting_link": meeting_link,
         "video_provider": video_provider_used,  # "zoom", "microsoft_teams", "google_meet", or None if manual

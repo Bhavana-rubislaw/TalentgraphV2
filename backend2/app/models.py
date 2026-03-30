@@ -98,20 +98,7 @@ class VideoProvider(str, Enum):
     """Video conferencing provider types"""
     ZOOM = "zoom"
     MICROSOFT_TEAMS = "microsoft_teams"
-
-
-class AttachmentScanStatus(str, Enum):
-    """
-    Virus/malware scan status for attachments
-    - pending: Upload complete, scan in progress
-    - clean: Passed security scan, safe to download
-    - blocked: Failed scan, contains malware/virus
-    - error: Scan failed with error
-    """
-    PENDING = "pending"
-    CLEAN = "clean"
-    BLOCKED = "blocked"
-    ERROR = "error"
+    GOOGLE_MEET = "google_meet"
 
 
 class AnalyticsEventType(str, Enum):
@@ -119,6 +106,7 @@ class AnalyticsEventType(str, Enum):
     # Job events
     JOB_VIEWED = "job_viewed"
     JOB_LIKED = "job_liked"
+    JOB_EXPIRED = "job_expired"
     
     # Application events
     APPLICATION_SUBMITTED = "application_submitted"
@@ -779,41 +767,6 @@ class VideoProviderAccount(SQLModel, table=True):
     
     # Unique constraint: one account per user-provider combo
     __table_args__ = (UniqueConstraint("user_id", "provider", name="unique_video_provider_account"),)
-
-
-class MessageAttachment(SQLModel, table=True):
-    """
-    File attachments linked to messages
-    Uses S3 presigned URLs for secure upload/download
-    """
-    __tablename__ = "message_attachment"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    message_id: int = Field(foreign_key="message.id", index=True)
-    
-    # Storage information
-    storage_provider: str = Field(default="s3")  # "s3", "azure", etc.
-    storage_bucket: str
-    storage_key: str  # S3 key / file path
-    
-    # File metadata
-    original_filename: str
-    mime_type: str
-    size_bytes: int
-    checksum_sha256: Optional[str] = None
-    
-    # Security
-    scan_status: AttachmentScanStatus = Field(default=AttachmentScanStatus.PENDING)
-    scan_completed_at: Optional[datetime] = None
-    scan_result_details: Optional[str] = None  # JSON with scan details
-    
-    # Tracking
-    uploaded_by_user_id: int = Field(foreign_key="user.id")
-    download_count: int = Field(default=0)
-    
-    # Timestamps
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class EmailThreadLink(SQLModel, table=True):

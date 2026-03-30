@@ -54,12 +54,13 @@ class LifecycleService:
         logger.info(f"Checking for jobs expiring in {warning_days} days")
         
         cutoff_date = date.today() + timedelta(days=warning_days)
+        cutoff_date_str = cutoff_date.isoformat()  # Convert to 'YYYY-MM-DD' string
         
-        # Find jobs expiring soon
+        # Find jobs expiring soon (end_date is stored as VARCHAR)
         expiring_jobs = session.exec(
             select(JobPosting).where(
                 JobPosting.status == "open",
-                JobPosting.end_date == cutoff_date
+                JobPosting.end_date == cutoff_date_str
             )
         ).all()
         
@@ -71,27 +72,47 @@ class LifecycleService:
             if not company:
                 continue
             
-            recruiter = session.get(User, job.recruiter_id)
+            recruiter = session.get(User, company.user_id)
             if not recruiter:
                 continue
             
-            # Check if warning already sent today
-            # (could track in a separate warnings table, but for now just send)
+            # Determine recipients based on urgency
+            recipients = []
             
-            try:
-                # Send warning email
-                self.email_service.send_email(
-                    to_email=recruiter.email,
-                    subject=f"Job Posting Expiring Soon: {job.title}",
-                    html_content=self._generate_expiry_warning_html(job, warning_days),
-                    plain_content=f"Your job posting '{job.title}' will expire in {warning_days} days. Please extend or renew it."
-                )
+            if warning_days == 1:
+                # Urgent - send to Admin and HR
+                admin_hr_companies = session.exec(
+                    select(Company).where(
+                        Company.company_name == company.company_name,
+                        Company.employee_type.in_(["Admin", "HR"])
+                    )
+                ).all()
                 
-                warnings_sent += 1
-                logger.info(f"Sent expiry warning for job {job.id} to {recruiter.email}")
+                for company_user in admin_hr_companies:
+                    user = session.get(User, company_user.user_id)
+                    if user and user.email:
+                        recipients.append(user.email)
                 
-            except Exception as e:
-                logger.error(f"Failed to send expiry warning for job {job.id}: {e}")
+                logger.info(f"Job {job.id} expires in 1 day - notifying {len(recipients)} admin/HR staff")
+            else:
+                # Normal warning - send to recruiter who posted it
+                recipients = [recruiter.email]
+            
+            # Send warning emails
+            for recipient_email in recipients:
+                try:
+                    self.email_service.send_email(
+                        to_email=recipient_email,
+                        subject=f"{'URGENT: ' if warning_days == 1 else ''}Job Posting Expiring Soon: {job.job_title}",
+                        html_content=self._generate_expiry_warning_html(job, warning_days),
+                        plain_content=f"Your job posting '{job.job_title}' will expire in {warning_days} day{'s' if warning_days > 1 else ''}. Please extend or renew it."
+                    )
+                    
+                    warnings_sent += 1
+                    logger.info(f"Sent {warning_days}-day expiry warning for job {job.id} to {recipient_email}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to send expiry warning for job {job.id} to {recipient_email}: {e}")
         
         logger.info(f"Sent {warnings_sent} expiry warnings")
         return warnings_sent
@@ -110,12 +131,13 @@ class LifecycleService:
         logger.info("Checking for expired jobs to freeze")
         
         today = date.today()
+        today_str = today.isoformat()  # Convert to 'YYYY-MM-DD' string
         
-        # Find expired open jobs
+        # Find expired open jobs (end_date is stored as VARCHAR)
         expired_jobs = session.exec(
             select(JobPosting).where(
                 JobPosting.status == "open",
-                JobPosting.end_date < today
+                JobPosting.end_date < today_str
             )
         ).all()
         
@@ -136,17 +158,19 @@ class LifecycleService:
             )
             
             # Get recruiter for notification
-            recruiter = session.get(User, job.recruiter_id)
-            if recruiter:
-                try:
-                    self.email_service.send_email(
-                        to_email=recruiter.email,
-                        subject=f"Job Posting Expired: {job.title}",
-                        html_content=self._generate_expired_notification_html(job),
-                        plain_content=f"Your job posting '{job.title}' has expired and been closed. You can reopen it anytime."
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to send expired notification for job {job.id}: {e}")
+            company = session.get(Company, job.company_id)
+            if company:
+                recruiter = session.get(User, company.user_id)
+                if recruiter:
+                    try:
+                        self.email_service.send_email(
+                            to_email=recruiter.email,
+                            subject=f"Job Posting Expired: {job.job_title}",
+                            html_content=self._generate_expired_notification_html(job),
+                            plain_content=f"Your job posting '{job.job_title}' has expired and been closed. You can reopen it anytime."
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to send expired notification for job {job.id}: {e}")
             
             frozen_count += 1
             logger.info(f"Froze expired job {job.id}")
@@ -197,9 +221,9 @@ class LifecycleService:
             try:
                 self.email_service.send_email(
                     to_email=candidate.email,
-                    subject=f"Job Reopened: {job.title}",
-                    html_content=self._generate_reopened_notification_html(job, candidate),
-                    plain_content=f"Good news! The job '{job.title}' has been reopened. Your previous application is still active."
+                    subject=f"Job Reopened: {job.job_title}",
+                    html_content=self._generate_reopened_job_html(job, candidate),
+                    plain_content=f"Good news! The job '{job.job_title}' has been reopened. Your previous application is still active."
                 )
                 
                 # Track analytics event
@@ -269,7 +293,7 @@ class LifecycleService:
                 self.email_service.send_interview_reminder(
                     to_email=candidate.email,
                     candidate_name=f"{candidate.first_name} {candidate.last_name}",
-                    job_title=job.title,
+                    job_title=job.job_title,
                     meeting_time=meeting.scheduled_at,
                     meeting_location=meeting.location or "Virtual",
                     meeting_link=meeting.meeting_link
@@ -317,6 +341,13 @@ class LifecycleService:
     
     def _generate_expiry_warning_html(self, job: JobPosting, days: int) -> str:
         """Generate HTML for expiry warning email"""
+        
+        # Use urgent styling for 1-day warnings
+        is_urgent = days == 1
+        header_bg = "#f8d7da" if is_urgent else "#fff3cd"  # Red for urgent, yellow for normal
+        header_title = "URGENT: Job Posting Expires Tomorrow!" if is_urgent else "Job Posting Expiring Soon"
+        urgency_text = "<p style='color: #dc3545; font-weight: bold;'>⚠️ URGENT: This job expires TOMORROW. Immediate action required!</p>" if is_urgent else ""
+        
         return f"""
         <!DOCTYPE html>
         <html>
@@ -324,7 +355,7 @@ class LifecycleService:
             <style>
                 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
                        max-width: 600px; margin: 0 auto; padding: 20px; }}
-                .header {{ background: #fff3cd; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
+                .header {{ background: {header_bg}; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
                 .button {{ background: #007bff; color: white; padding: 12px 24px; 
                           text-decoration: none; border-radius: 5px; display: inline-block; 
                           margin-top: 20px; }}
@@ -332,12 +363,14 @@ class LifecycleService:
         </head>
         <body>
             <div class="header">
-                <h2>⏰ Job Posting Expiring Soon</h2>
+                <h2>⏰ {header_title}</h2>
             </div>
+            
+            {urgency_text}
             
             <p>Hi,</p>
             
-            <p>Your job posting <strong>{job.title}</strong> will expire in <strong>{days} days</strong>.</p>
+            <p>Your job posting <strong>{job.job_title}</strong> will expire in <strong>{days} day{'s' if days > 1 else ''}</strong>.</p>
             
             <p><strong>Expiry Date:</strong> {job.end_date}</p>
             
@@ -376,7 +409,7 @@ class LifecycleService:
             
             <p>Hi,</p>
             
-            <p>Your job posting <strong>{job.title}</strong> has expired and been automatically closed.</p>
+            <p>Your job posting <strong>{job.job_title}</strong> has expired and been automatically closed.</p>
             
             <p><strong>Expiry Date:</strong> {job.end_date}</p>
             
@@ -389,7 +422,7 @@ class LifecycleService:
         </html>
         """
     
-    def _generate_reopened_notification_html(self, job: JobPosting, candidate: Candidate) -> str:
+    def _generate_reopened_job_html(self, job: JobPosting, candidate: Candidate) -> str:
         """Generate HTML for reopened job notification to candidates"""
         return f"""
         <!DOCTYPE html>
@@ -411,7 +444,7 @@ class LifecycleService:
             
             <p>Hi {candidate.first_name},</p>
             
-            <p>Good news! The job posting <strong>{job.title}</strong> has been reopened.</p>
+            <p>Good news! The job posting <strong>{job.job_title}</strong> has been reopened.</p>
             
             <p>Your previous application is still active and under consideration. 
                No action is needed from you at this time.</p>
@@ -445,12 +478,15 @@ def run_daily_lifecycle_checks(session: Session):
     logger.info("=== Starting Daily Lifecycle Checks ===")
     
     # Check expiring jobs (3 days warning)
-    warnings = service.check_expiring_jobs(session, warning_days=3)
+    warnings_3day = service.check_expiring_jobs(session, warning_days=3)
+    
+    # Check expiring jobs (1 day warning - URGENT to Admin/HR)
+    warnings_1day = service.check_expiring_jobs(session, warning_days=1)
     
     # Auto-freeze expired jobs
     frozen = service.auto_freeze_expired_jobs(session)
     
-    logger.info(f"=== Daily Lifecycle Complete: {warnings} warnings, {frozen} frozen ===")
+    logger.info(f"=== Daily Lifecycle Complete: {warnings_3day} 3-day warnings, {warnings_1day} urgent 1-day warnings, {frozen} frozen ===")
 
 
 def run_hourly_reminders(session: Session):

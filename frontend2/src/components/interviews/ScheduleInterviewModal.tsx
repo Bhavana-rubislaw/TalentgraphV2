@@ -24,7 +24,7 @@ interface FormData {
   interviewDate: string;
   interviewTime: string;
   timezone: string;
-  videoProvider: 'zoom' | 'google_meet' | 'microsoft_teams' | 'manual';
+  meetingProvider: 'zoom' | 'google_meet' | 'microsoft_teams' | 'manual';
   meetingLink: string;
   notes: string;
   subject: string;
@@ -62,6 +62,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     interviewDate: '',
     interviewTime: '',
     timezone: 'America/New_York',
+    meetingProvider: 'zoom',
     meetingLink: '',
     notes: '',
     subject: ''
@@ -80,7 +81,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         interviewDate: '',
         interviewTime: '10:00',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
-        videoProvider: 'zoom',
+        meetingProvider: 'zoom',
         meetingLink: '',
         notes: '',
         subject: `Interview for ${jobTitle} at ${companyName}`
@@ -119,7 +120,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     }
     
     // Validate meeting link (required if manual, must be valid URL format)
-    if (formData.videoProvider === 'manual') {
+    if (formData.meetingProvider === 'manual') {
       if (!formData.meetingLink.trim()) {
         newErrors.meetingLink = 'Meeting link is required when using manual option';
       } else if (!/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
@@ -157,26 +158,24 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       const hour12 = hour % 12 || 12;
       const formattedTime = `${hour12}:${minutes} ${ampm}`;
       
-      const interviewDatetime = `${formattedDate} at ${formattedTime}`;
-      
       // Get timezone name
       const timezoneName = TIMEZONES.find(tz => tz.value === formData.timezone)?.label || formData.timezone;
       
       const payload: any = {
-        candidate_email: formData.candidateEmail.trim(),
-        interview_datetime: interviewDatetime,
+        date: formattedDate,
+        time: formattedTime,
         timezone: timezoneName,
-        notes: formData.notes.trim() || undefined,
-        subject: formData.subject.trim() || undefined
+        notes_for_candidate: formData.notes.trim() || undefined,
+        email_subject: formData.subject.trim() || undefined
       };
       
-      // Add video provider preference if not manual
-      if (formData.videoProvider !== 'manual') {
-        payload.video_provider = formData.videoProvider;
+      // Add meeting provider preference if not manual
+      if (formData.meetingProvider !== 'manual') {
+        payload.meeting_provider = formData.meetingProvider;
       }
       
       // Add meeting_link only if manual and provided
-      if (formData.videoProvider === 'manual' && formData.meetingLink.trim()) {
+      if (formData.meetingProvider === 'manual' && formData.meetingLink.trim()) {
         payload.meeting_link = formData.meetingLink.trim();
       }
       
@@ -404,13 +403,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                   Video Meeting Provider <span className="schedule-interview-required">*</span>
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'zoom' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
-                      name="videoProvider"
+                      name="meetingProvider"
                       value="zoom"
-                      checked={formData.videoProvider === 'zoom'}
-                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      checked={formData.meetingProvider === 'zoom'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
                       style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
                     />
@@ -420,13 +419,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'google_meet' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
-                      name="videoProvider"
+                      name="meetingProvider"
                       value="google_meet"
-                      checked={formData.videoProvider === 'google_meet'}
-                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      checked={formData.meetingProvider === 'google_meet'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
                       style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
                     />
@@ -436,13 +435,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'microsoft_teams' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
-                      name="videoProvider"
+                      name="meetingProvider"
                       value="microsoft_teams"
-                      checked={formData.videoProvider === 'microsoft_teams'}
-                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      checked={formData.meetingProvider === 'microsoft_teams'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
                       style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
                     />
@@ -452,13 +451,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.videoProvider === 'manual' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.videoProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
-                      name="videoProvider"
+                      name="meetingProvider"
                       value="manual"
-                      checked={formData.videoProvider === 'manual'}
-                      onChange={(e) => handleInputChange('videoProvider', e.target.value)}
+                      checked={formData.meetingProvider === 'manual'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
                       style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
                     />
@@ -470,7 +469,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                 </div>
               </div>
 
-              {formData.videoProvider === 'manual' && (
+              {formData.meetingProvider === 'manual' && (
                 <div className="schedule-interview-field">
                   <label htmlFor="meetingLink">
                     Meeting Link <span className="schedule-interview-required">*</span>

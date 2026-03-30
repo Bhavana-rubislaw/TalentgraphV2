@@ -49,6 +49,34 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("[STARTUP] Background workers disabled (WORKERS_ENABLED=false)")
     
+    # Run lifecycle checks immediately on startup
+    lifecycle_enabled = os.getenv("LIFECYCLE_CHECK_ON_STARTUP", "true").lower() == "true"
+    if lifecycle_enabled:
+        try:
+            from app.services.lifecycle_service import LifecycleService
+            from app.database import engine
+            from sqlmodel import Session
+            
+            logger.info("[STARTUP] Running lifecycle checks...")
+            with Session(engine) as session:
+                lifecycle = LifecycleService()
+                
+                # Check expiring jobs (3-day warnings to recruiters)
+                expiring_3day = lifecycle.check_expiring_jobs(session, warning_days=3)
+                logger.info(f"[STARTUP] Sent {expiring_3day} 3-day expiry warnings")
+                
+                # Check expiring jobs (1-day URGENT warnings to Admin/HR)
+                expiring_1day = lifecycle.check_expiring_jobs(session, warning_days=1)
+                logger.info(f"[STARTUP] Sent {expiring_1day} urgent 1-day warnings (Admin/HR)")
+                
+                # Auto-freeze expired jobs
+                frozen_count = lifecycle.auto_freeze_expired_jobs(session)
+                logger.info(f"[STARTUP] Auto-frozen jobs: {frozen_count} jobs closed")
+                
+            logger.info("[STARTUP] Lifecycle checks completed")
+        except Exception as e:
+            logger.error(f"[STARTUP] Lifecycle checks failed: {e}")
+    
     yield
     
     # Shutdown
@@ -87,8 +115,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 # Request-ID tracing — must be added AFTER CORSMiddleware
 app.add_middleware(RequestIdMiddleware)
@@ -139,35 +169,6 @@ app.include_router(messages.router)  # Direct messaging system
 app.include_router(meetings.router)  # Meeting scheduler with email notifications
 app.include_router(calendar.router)  # Calendar & video provider OAuth integration
 app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
-
-# Phase 3 & 4 routers (conditional based on feature flags)
-attachments_enabled = os.getenv("FEATURE_ATTACHMENTS_ENABLED", "false").lower() == "true"
-email_threading_enabled = os.getenv("FEATURE_EMAIL_THREADING_ENABLED", "false").lower() == "true"
-billing_enabled = os.getenv("FEATURE_BILLING_ENABLED", "false").lower() == "true"
-
-if attachments_enabled:
-    try:
-        from app.routers import attachments
-        app.include_router(attachments.router)
-        logger.info("[STARTUP] Attachments router registered (S3 enabled)")
-    except Exception as e:
-        logger.warning(f"[STARTUP] Failed to load attachments router: {e}")
-
-if email_threading_enabled:
-    try:
-        from app.routers import email_webhooks
-        app.include_router(email_webhooks.router)
-        logger.info("[STARTUP] Email webhooks router registered")
-    except Exception as e:
-        logger.warning(f"[STARTUP] Failed to load email_webhooks router: {e}")
-
-if billing_enabled:
-    try:
-        from app.routers import billing
-        app.include_router(billing.router)
-        logger.info("[STARTUP] Billing router registered (Stripe enabled)")
-    except Exception as e:
-        logger.warning(f"[STARTUP] Failed to load billing router: {e}")
 
 logger.info("[STARTUP] All routers registered successfully")
 
