@@ -27,7 +27,8 @@ from pydantic import BaseModel
 from app.database import get_session
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,
-    AnalyticsEventType, JobPosting, Company, User
+    AnalyticsEventType, JobPosting, Company, User, Application,
+    Swipe, Meeting, MeetingStatus, MeetingType
 )
 from app.security import get_current_user
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
@@ -330,25 +331,83 @@ async def get_job_analytics(
     # Calculate date range
     end_date = datetime.now(timezone.utc).date()
     start_date = end_date - timedelta(days=range_days)
+    start_datetime = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
     
-    # Get rollup data
-    rollups = session.exec(
-        select(AnalyticsRollupDaily).where(
-            AnalyticsRollupDaily.company_id == company_id,
-            AnalyticsRollupDaily.job_posting_id == job_id,
-            AnalyticsRollupDaily.rollup_date >= start_date,
-            AnalyticsRollupDaily.rollup_date <= end_date
+    # ═══════════════════════════════════════════════════════════════════
+    # QUERY REAL TABLES DIRECTLY (not rollup) for accurate real-time counts
+    # ═══════════════════════════════════════════════════════════════════
+    
+    # 1. COUNT VIEWS - from AnalyticsEvent table (JOB_VIEWED events)
+    view_events = session.exec(
+        select(AnalyticsEvent).where(
+            AnalyticsEvent.job_posting_id == job_id,
+            AnalyticsEvent.event_type == AnalyticsEventType.JOB_VIEWED,
+            AnalyticsEvent.event_time >= start_datetime
         )
     ).all()
+    views = len(view_events)
     
-    # Aggregate metrics
-    views = sum(r.jobs_viewed for r in rollups)
-    likes = sum(r.jobs_liked for r in rollups)
-    applications = sum(r.applications_submitted for r in rollups)
-    interviews_scheduled = sum(r.interviews_scheduled for r in rollups)
-    interviews_completed = sum(r.interviews_completed for r in rollups)
-    offers = sum(r.offers_made for r in rollups)
-    hires = sum(r.hires for r in rollups)
+    # 2. COUNT LIKES - from Swipe table (candidate likes on this job)
+    like_swipes = session.exec(
+        select(Swipe).where(
+            Swipe.job_posting_id == job_id,
+            Swipe.action == "like",
+            Swipe.action_by == "candidate",
+            Swipe.created_at >= start_datetime
+        )
+    ).all()
+    likes = len(like_swipes)
+    
+    # 3. COUNT APPLICATIONS - from Application table
+    applications_list = session.exec(
+        select(Application).where(
+            Application.job_posting_id == job_id,
+            Application.applied_at >= start_datetime
+        )
+    ).all()
+    applications = len(applications_list)
+    
+    # 4. COUNT INTERVIEWS - from Meeting table (scheduled interviews for this job)
+    try:
+        # Get all meetings for this job, then filter by type
+        all_meetings = session.exec(
+            select(Meeting).where(
+                Meeting.job_posting_id == job_id,
+                Meeting.scheduled_start >= start_datetime
+            )
+        ).all()
+        # Filter for interview type meetings
+        interview_meetings = [m for m in all_meetings if m.meeting_type == "interview"]
+        interviews_scheduled = len(interview_meetings)
+        
+        # Count completed interviews (not cancelled)
+        interviews_completed = len([
+            m for m in interview_meetings 
+            if m.status not in ["cancelled", MeetingStatus.CANCELLED]
+        ])
+    except Exception as e:
+        logger.warning(f"Could not fetch interview meetings: {e}")
+        interviews_scheduled = 0
+        interviews_completed = 0
+    
+    # 5. COUNT OFFERS - applications that reached offer stage
+    # Assuming status contains "selected" or similar indicates offer made
+    offers = len([
+        app for app in applications_list 
+        if app.status and 'selected' in app.status.lower()
+    ])
+    
+    # 6. COUNT HIRES - would need a "hired" status or separate table
+    # For now, we'll check if there's a "hired" status in applications
+    hires = len([
+        app for app in applications_list 
+        if app.status and 'hired' in app.status.lower()
+    ])
+    
+    # Log real-time metrics for debugging
+    logger.info(f"[REAL-TIME METRICS] Job {job_id} ({job.job_title}): "
+                f"Views={views}, Likes={likes}, Applications={applications}, "
+                f"Interviews={interviews_scheduled}, Offers={offers}, Hires={hires}")
     
     # Calculate conversion rates
     like_rate = (likes / views * 100) if views > 0 else 0
@@ -463,3 +522,5 @@ async def track_event(
     logger.info(f"Tracked event {event_type_enum.value} for company {company_id}")
     
     return {"status": "tracked", "event_id": event.id}
+
+
