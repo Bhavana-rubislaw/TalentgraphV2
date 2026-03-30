@@ -544,7 +544,7 @@ async def schedule_meeting(...):
         candidate_name=candidate.full_name,
         recruiter_name=recruiter.full_name,
         company_name=company.name,
-        job_title=job.title,
+        job_title=job.job_title,
         meeting_id=meeting.id,
         meeting_time=meeting.scheduled_at,
         meeting_link=meeting.meeting_link,

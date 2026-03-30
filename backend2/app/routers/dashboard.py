@@ -301,6 +301,12 @@ def get_available_jobs(
     session: Session = Depends(get_session)
 ):
     """Get all available active jobs"""
+    # Get current user as candidate
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    candidate = None
+    if user and user.role == UserRole.CANDIDATE:
+        candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+    
     # Get all active and reposted job postings
     jobs = session.exec(
         select(JobPosting).where(
@@ -311,6 +317,20 @@ def get_available_jobs(
     result = []
     for job in jobs:
         company = session.get(Company, job.company_id)
+        
+        # Check if candidate has already applied
+        already_applied = False
+        if candidate:
+            existing_app = session.exec(
+                select(Application).where(
+                    and_(
+                        Application.candidate_id == candidate.id,
+                        Application.job_posting_id == job.id
+                    )
+                )
+            ).first()
+            already_applied = existing_app is not None
+        
         result.append({
             "id": job.id,
             "job_title": job.job_title,
@@ -325,7 +345,8 @@ def get_available_jobs(
             "product_vendor": job.product_vendor,
             "product_type": job.product_type,
             "job_role": job.job_role,
-            "created_at": job.created_at.isoformat()
+            "created_at": job.created_at.isoformat(),
+            "already_applied": already_applied
         })
     
     return result
@@ -1422,3 +1443,5 @@ def get_candidate_detail(
             "expiry_date": c.expiry_date
         } for c in certifications]
     }
+
+

@@ -362,31 +362,66 @@ const CandidateDashboard: React.FC = () => {
 
   const handleApply = async (jobPostingId: number) => {
     if (!selectedProfileId) return;
+    
+    // ✅ Guard: Don't call API if already applied
+    const alreadyAppliedInRecs = recommendations.find(r => r.job_posting.id === jobPostingId)?.already_applied;
+    const alreadyAppliedInAvailable = availableJobs.find(j => j.id === jobPostingId)?.already_applied;
+    
+    if (alreadyAppliedInRecs || alreadyAppliedInAvailable) {
+      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
+      return;
+    }
+    
     console.log('[APPLICATION] Applying to job:', jobPostingId, 'with profile:', selectedProfileId);
     setApplyingJobId(jobPostingId);
-    // Optimistic update — show Applied immediately, same as Like/Pass
-    setRecommendations(prev => prev.map(r =>
-      r.job_posting.id === jobPostingId
-        ? { ...r, already_applied: true }
-        : r
-    ));
+    
     try {
       await apiClient.applyToJob(jobPostingId, selectedProfileId);
       console.log('[API SUCCESS] Application submitted');
+      
+      // Update recommendations state to show Applied
+      setRecommendations(prev => prev.map(r =>
+        r.job_posting.id === jobPostingId
+          ? { ...r, already_applied: true }
+          : r
+      ));
+      
+      // Update available jobs state to add already_applied flag
+      setAvailableJobs(prev => prev.map(job =>
+        job.id === jobPostingId
+          ? { ...job, already_applied: true }
+          : job
+      ));
+      
+      // Refresh applied/liked list to show in that tab
       fetchAppliedLiked();
-      fetchAvailableJobs();
+      
     } catch (error: any) {
       const msg = error?.response?.data?.detail;
-      // If already applied (400), keep the Applied state; otherwise rollback
+      console.log('[APPLICATION ERROR]', error?.response?.status, msg);
+      
+      // If already applied (400), show as Applied
       if (error?.response?.status === 400 && typeof msg === 'string' && msg.toLowerCase().includes('already applied')) {
-        // Already applied — keep the optimistic applied state, no alert needed
-      } else {
-        // Real error — rollback
+        console.log('[APPLICATION] Already applied - updating UI to show Applied state');
+        
+        // Update local state to show Applied
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
-            ? { ...r, already_applied: false }
+            ? { ...r, already_applied: true }
             : r
         ));
+        setAvailableJobs(prev => prev.map(job =>
+          job.id === jobPostingId
+            ? { ...job, already_applied: true }
+            : job
+        ));
+        
+        // Refresh applied/liked list
+        fetchAppliedLiked();
+        
+        // DO NOT fetch recommendations/available jobs again - keep local state
+      } else {
+        // Real error - show alert
         alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
       }
     } finally {
@@ -395,35 +430,68 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const handleApplyFromMatch = async (jobPostingId: number, jobProfileId: number) => {
+    // ✅ Guard: Check if already applied (matches have already_applied field)
+    const match = matches.find(m => m.job_posting.id === jobPostingId);
+    if (match?.already_applied) {
+      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
+      return;
+    }
+    
     console.log('[APPLICATION] Applying from match - Job:', jobPostingId, 'Profile:', jobProfileId);
     setApplyingJobId(jobPostingId);
     try {
       const response = await apiClient.applyToJob(jobPostingId, jobProfileId);
       console.log('[API SUCCESS] Application submitted from match', response.data);
       alert('Application submitted successfully!');
-      fetchMatches();
       fetchAppliedLiked();
+      // Refresh matches to update button state
+      setTimeout(() => {
+        fetchMatches();
+      }, 500);
     } catch (error: any) {
       console.error('[APPLICATION ERROR]', error);
-      alert('Network error. Please try again.');
+      const msg = error?.response?.data?.detail;
+      if (error?.response?.status === 400 && typeof msg === 'string' && msg.toLowerCase().includes('already applied')) {
+        alert('You have already applied to this job.');
+        setTimeout(() => {
+          fetchMatches();
+        }, 500);
+      } else {
+        alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
+      }
     } finally {
       setApplyingJobId(null);
     }
   };
 
   const handleApplyFromInvite = async (jobPostingId: number, jobProfileId: number) => {
+    // ✅ Guard: Check if already applied (invites have already_applied field)
+    const invite = invites.find(inv => inv.job_posting.id === jobPostingId);
+    if (invite?.already_applied) {
+      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
+      return;
+    }
+    
     console.log('[APPLICATION] Applying from invite - Job:', jobPostingId, 'Profile:', jobProfileId);
     setApplyingJobId(jobPostingId);
     try {
       await apiClient.applyToJob(jobPostingId, jobProfileId);
       console.log('[API SUCCESS] Application submitted from invite');
       alert('Application submitted successfully!');
-      fetchInvites();
       fetchAppliedLiked();
+      // Refresh invites to update button state
+      setTimeout(() => {
+        fetchInvites();
+      }, 500);
     } catch (error: any) {
       console.error('[APPLICATION ERROR]', error);
       const detail = error?.response?.data?.detail;
-      if (typeof detail === 'string') {
+      if (error?.response?.status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already applied')) {
+        alert('You have already applied to this job.');
+        setTimeout(() => {
+          fetchInvites();
+        }, 500);
+      } else if (typeof detail === 'string') {
         alert(detail);
       } else if (Array.isArray(detail)) {
         alert(detail.map((d: any) => d.msg).join(', '));
@@ -1688,14 +1756,15 @@ const CandidateDashboard: React.FC = () => {
                   View Job Posting
                 </button>
                 <button
-                  onClick={() => handleApply(job.id)}
-                  className="action-btn success"
+                  onClick={(e) => { e.stopPropagation(); handleApply(job.id); }}
+                  className={`action-btn ${job.already_applied ? 'action-btn-done applied-done' : 'success'}`}
+                  disabled={job.already_applied || applyingJobId === job.id}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  Apply Now
+                  {job.already_applied ? 'Applied ✓' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
                 </button>
               </div>
             </div>
@@ -1846,15 +1915,21 @@ const CandidateDashboard: React.FC = () => {
 
             <div className="cal-drawer-footer">
               <button
-                className="cal-btn cal-btn-primary"
-                onClick={() => { handleApply(viewAvailableJob.id); setViewAvailableJob(null); }}
-                disabled={!selectedProfileId}
+                className={`cal-btn ${viewAvailableJob.already_applied ? 'cal-btn-secondary' : 'cal-btn-primary'}`}
+                onClick={() => { 
+                  if (!viewAvailableJob.already_applied) {
+                    handleApply(viewAvailableJob.id); 
+                    setViewAvailableJob(null); 
+                  }
+                }}
+                disabled={!selectedProfileId || viewAvailableJob.already_applied}
+                style={viewAvailableJob.already_applied ? { opacity: 0.8, cursor: 'not-allowed' } : {}}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
-                Apply Now
+                {viewAvailableJob.already_applied ? 'Applied ✓' : 'Apply Now'}
               </button>
               <button className="cal-btn cal-btn-secondary" onClick={() => setViewAvailableJob(null)}>Close</button>
             </div>

@@ -71,6 +71,8 @@ const RecruiterDashboard: React.FC = () => {
   const [viewRecommendationProfile, setViewRecommendationProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [recCardIndex, setRecCardIndex] = useState(0);
+  const [jobAnalytics, setJobAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // ── Browse Candidates state ─────────────────────────────────────
   const [browseCandidates, setBrowseCandidates] = useState<any[]>([]);
@@ -228,6 +230,7 @@ const RecruiterDashboard: React.FC = () => {
   useEffect(() => {
     if (selectedJobId) {
       fetchRecommendations();
+      fetchJobAnalytics();
       setRecCardIndex(0);
     }
   }, [selectedJobId]);
@@ -361,6 +364,22 @@ const RecruiterDashboard: React.FC = () => {
       console.error('[API ERROR] Failed to fetch recommendations:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchJobAnalytics = async () => {
+    if (!selectedJobId) return;
+    console.log('[API CALL] Fetching job analytics for job:', selectedJobId);
+    setAnalyticsLoading(true);
+    try {
+      const response = await apiClient.getJobAnalytics(selectedJobId, 90);
+      console.log('[API SUCCESS] Job analytics fetched:', response.data);
+      setJobAnalytics(response.data);
+    } catch (error) {
+      console.error('[API ERROR] Failed to fetch job analytics:', error);
+      setJobAnalytics(null);
+    } finally {
+      setAnalyticsLoading(false);
     }
   };
 
@@ -720,6 +739,123 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           );
         })()}
+
+        {/* Job Performance Dashboard */}
+        {jobAnalytics && (
+          <div className="job-performance-dashboard" style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: '12px',
+            padding: '24px',
+            marginBottom: '24px',
+            color: 'white',
+            boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 700 }}>📊 Job Performance Dashboard</h3>
+                <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>Last 90 days · {jobAnalytics.job_title}</p>
+              </div>
+              <div style={{ fontSize: '12px', opacity: 0.8 }}>Real-time metrics</div>
+            </div>
+
+            {/* Top Metrics Row */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>👁️ Views</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.views}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>👍 Likes</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.likes}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{jobAnalytics.like_rate.toFixed(1)}% of views</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>📨 Applications</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.applications}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{jobAnalytics.application_rate.toFixed(1)}% of views</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>🎤 Interviews</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.interviews_scheduled}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{jobAnalytics.interview_rate.toFixed(1)}% of apps</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>✓ Offers</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.offers_made}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{jobAnalytics.offer_rate.toFixed(1)}% of interviews</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: '8px', padding: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', opacity: 0.9 }}>🎉 Hires</div>
+                <div style={{ fontSize: '28px', fontWeight: 700 }}>{jobAnalytics.hires}</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', opacity: 0.8 }}>{jobAnalytics.hire_rate.toFixed(1)}% of offers</div>
+              </div>
+            </div>
+
+            {/* Conversion Funnel */}
+            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🔄 Conversion Funnel</div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '80px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700 }}>{jobAnalytics.views}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>Views</div>
+                </div>
+                <div style={{ fontSize: '18px', opacity: 0.6 }}>→</div>
+                <div style={{ flex: 1, minWidth: '80px', textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700 }}>{jobAnalytics.applications}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>Applied</div>
+                  <div style={{ fontSize: '9px', marginTop: '2px', opacity: 0.7 }}>{jobAnalytics.application_rate.toFixed(1)}%</div>
+                </div>
+                <div style={{ fontSize: '18px', opacity: 0.6 }}>→</div>
+                <div style={{ flex: 1, minWidth: '80px', textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700 }}>{jobAnalytics.interviews_scheduled}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>Interviewed</div>
+                  <div style={{ fontSize: '9px', marginTop: '2px', opacity: 0.7 }}>{jobAnalytics.interview_rate.toFixed(1)}%</div>
+                </div>
+                <div style={{ fontSize: '18px', opacity: 0.6 }}>→</div>
+                <div style={{ flex: 1, minWidth: '80px', textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700 }}>{jobAnalytics.offers_made}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>Offered</div>
+                  <div style={{ fontSize: '9px', marginTop: '2px', opacity: 0.7 }}>{jobAnalytics.offer_rate.toFixed(1)}%</div>
+                </div>
+                <div style={{ fontSize: '18px', opacity: 0.6 }}>→</div>
+                <div style={{ flex: 1, minWidth: '80px', textAlign: 'center', background: 'rgba(76, 175, 80, 0.3)', borderRadius: '6px', padding: '8px' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 700 }}>{jobAnalytics.hires}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>Hired</div>
+                  <div style={{ fontSize: '9px', marginTop: '2px', opacity: 0.7 }}>{jobAnalytics.hire_rate.toFixed(1)}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Time Tracking */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+              {jobAnalytics.avg_time_to_application_hours && (
+                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '14px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', opacity: 0.9 }}>⏱️ Time to Application</div>
+                  <div style={{ fontSize: '22px', fontWeight: 700 }}>
+                    {jobAnalytics.avg_time_to_application_hours < 24 
+                      ? `${jobAnalytics.avg_time_to_application_hours.toFixed(1)} hrs`
+                      : `${(jobAnalytics.avg_time_to_application_hours / 24).toFixed(1)} days`
+                    }
+                  </div>
+                  <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.7 }}>Average response time</div>
+                </div>
+              )}
+              {jobAnalytics.avg_time_to_hire_days && (
+                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '14px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', opacity: 0.9 }}>📅 Time to Hire</div>
+                  <div style={{ fontSize: '22px', fontWeight: 700 }}>{jobAnalytics.avg_time_to_hire_days.toFixed(1)} days</div>
+                  <div style={{ fontSize: '10px', marginTop: '4px', opacity: 0.7 }}>From application to hire</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {analyticsLoading && (
+          <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+            <div style={{ fontSize: '14px' }}>Loading performance metrics...</div>
+          </div>
+        )}
 
         {/* Enhanced Analytics Panel */}
         <div className="analytics-panel-modern">

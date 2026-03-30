@@ -27,7 +27,7 @@ from pydantic import BaseModel
 from app.database import get_session
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,
-    AnalyticsEventType, JobPosting, Company
+    AnalyticsEventType, JobPosting, Company, User
 )
 from app.security import get_current_user
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
@@ -122,9 +122,16 @@ async def get_overview_metrics(
     Aggregates from AnalyticsRollupDaily table
     """
     
-    company_id = current_user.get("company_id")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="No company associated with user")
+    # Get company from user
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    company_id = company.id
     
     # Calculate date range
     end_date = datetime.now(timezone.utc).date()
@@ -140,9 +147,9 @@ async def get_overview_metrics(
     ).all()
     
     # Aggregate metrics
-    total_views = sum(r.views for r in rollups)
-    total_likes = sum(r.likes for r in rollups)
-    total_applications = sum(r.applications for r in rollups)
+    total_views = sum(r.jobs_viewed for r in rollups)
+    total_likes = sum(r.jobs_liked for r in rollups)
+    total_applications = sum(r.applications_submitted for r in rollups)
     total_interviews = sum(r.interviews_scheduled for r in rollups)
     total_offers = sum(r.offers_made for r in rollups)
     total_hires = sum(r.hires for r in rollups)
@@ -205,9 +212,16 @@ async def get_funnel_metrics(
     Premium feature: requires analytics_advanced_enabled entitlement
     """
     
-    company_id = current_user.get("company_id")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="No company associated with user")
+    # Get company from user
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    company_id = company.id
     
     # Calculate date range
     end_date = datetime.now(timezone.utc).date()
@@ -231,9 +245,9 @@ async def get_funnel_metrics(
     rollups = session.exec(query).all()
     
     # Aggregate by stage
-    total_views = sum(r.views for r in rollups)
-    total_likes = sum(r.likes for r in rollups)
-    total_applications = sum(r.applications for r in rollups)
+    total_views = sum(r.jobs_viewed for r in rollups)
+    total_likes = sum(r.jobs_liked for r in rollups)
+    total_applications = sum(r.applications_submitted for r in rollups)
     total_interviews = sum(r.interviews_scheduled for r in rollups)
     total_offers = sum(r.offers_made for r in rollups)
     total_hires = sum(r.hires for r in rollups)
@@ -297,9 +311,16 @@ async def get_job_analytics(
     - Top traffic sources
     """
     
-    company_id = current_user.get("company_id")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="No company associated with user")
+    # Get company from user
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    company_id = company.id
     
     # Get job
     job = session.get(JobPosting, job_id)
@@ -321,9 +342,9 @@ async def get_job_analytics(
     ).all()
     
     # Aggregate metrics
-    views = sum(r.views for r in rollups)
-    likes = sum(r.likes for r in rollups)
-    applications = sum(r.applications for r in rollups)
+    views = sum(r.jobs_viewed for r in rollups)
+    likes = sum(r.jobs_liked for r in rollups)
+    applications = sum(r.applications_submitted for r in rollups)
     interviews_scheduled = sum(r.interviews_scheduled for r in rollups)
     interviews_completed = sum(r.interviews_completed for r in rollups)
     offers = sum(r.offers_made for r in rollups)
@@ -366,7 +387,7 @@ async def get_job_analytics(
     
     return JobAnalytics(
         job_id=job_id,
-        job_title=job.title,
+        job_title=job.job_title,
         views=views,
         likes=likes,
         applications=applications,
@@ -402,9 +423,16 @@ async def track_event(
     but this allows manual tracking for custom events or backfill
     """
     
-    company_id = current_user.get("company_id")
-    if not company_id:
-        raise HTTPException(status_code=400, detail="No company associated with user")
+    # Get company from user
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    company_id = company.id
     
     # Validate event type
     try:
