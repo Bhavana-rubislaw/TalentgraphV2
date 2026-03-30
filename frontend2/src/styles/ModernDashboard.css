@@ -407,6 +407,27 @@ body {
   padding: var(--spacing-4);
 }
 
+/* ====== PURPLE SECTION WRAPPER ====== */
+.purple-section-wrapper {
+  background: linear-gradient(
+    135deg,
+    rgba(123, 94, 167, 0.08),
+    rgba(156, 122, 230, 0.08)
+  );
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(123, 94, 167, 0.06);
+  border: 2px solid rgba(123, 94, 167, 0.2);
+}
+
+.purple-section-wrapper .jobs-grid-modern,
+.purple-section-wrapper .job-card-modern {
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
 /* ====== WELCOME CARD ====== */
 .welcome-card {
   background: linear-gradient(135deg, #6A4F99 0%, #7B5EA7 40%, #9B7ED8 100%);
@@ -965,10 +986,12 @@ body {
   transition: all var(--transition-base);
 }
 
-.kpi-card-enhanced.active-jobs { --accent-color: #5B8DEF; }
-.kpi-card-enhanced.shortlisted { --accent-color: #7B5EA7; }
-.kpi-card-enhanced.applications { --accent-color: #2ECC71; }
-.kpi-card-enhanced.matches { --accent-color: #F0A830; }
+.kpi-card-enhanced.active-jobs { --accent-color: #3B82F6; }
+.kpi-card-enhanced.shortlisted { --accent-color: #8B5CF6; }
+.kpi-card-enhanced.applications { --accent-color: #10B981; }
+.kpi-card-enhanced.matches { --accent-color: #F59E0B; }
+.kpi-card-enhanced.invites { --accent-color: #8B5CF6; }
+.kpi-card-enhanced.new-jobs { --accent-color: #3B82F6; }
 
 .kpi-icon {
   width: 48px;
@@ -1690,10 +1713,10 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #7B5EA7; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #F0A830; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #5B8DEF; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #2ECC71; }
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #8B5CF6; }
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #F59E0B; }
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #3B82F6; }
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #10B981; }
 
 .job-selector-modern.candidate-selector {
   background: var(--bg-secondary);

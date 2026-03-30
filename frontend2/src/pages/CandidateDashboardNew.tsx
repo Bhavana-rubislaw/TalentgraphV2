@@ -620,6 +620,7 @@ const CandidateDashboard: React.FC = () => {
               return (
                 <div>
                   {/* ── Modern Filter Toolbar Card ── */}
+                  <div className="purple-section-wrapper">
                   <div className="rec-filter-toolbar">
                     <div className="rec-filter-toolbar__inner">
 
@@ -717,6 +718,7 @@ const CandidateDashboard: React.FC = () => {
 
                     </div>
                   </div>
+                  </div>
 
                   {visibleRecs.length === 0 ? (
                     <div className="empty-state-modern">
@@ -728,6 +730,7 @@ const CandidateDashboard: React.FC = () => {
                       {(() => {
                         const rec = visibleRecs[safeIndex];
                         return (
+                          <div className="purple-section-wrapper">
                           <div className="carousel-container">
                             {/* Navigation Header */}
                             <div className="carousel-nav-header">
@@ -907,6 +910,7 @@ const CandidateDashboard: React.FC = () => {
                             <div className="carousel-keyboard-hint">
                               Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to browse
                             </div>
+                          </div>
                           </div>
                         );
                       })()}
