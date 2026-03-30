@@ -3908,7 +3908,7 @@ const RecruiterDashboard: React.FC = () => {
                     <line x1="8" y1="12" x2="16" y2="12"/>
                   </svg>
                 </span>
-                <span className="nav-label">Create Job</span>
+                <span className="nav-label">Job Posting Builder</span>
                 <span style={{
                   fontSize: 'var(--text-xs)',
                   background: 'var(--success)',

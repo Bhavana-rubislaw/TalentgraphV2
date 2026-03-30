@@ -1397,36 +1397,212 @@ const CandidateDashboard: React.FC = () => {
 
             return (
               <div key={invite.invite_id} className="job-card-modern">
-                <div className="job-card-header">
-                  <div>
-                    <span className="badge badge-special mb-2">📧 Recruiter Invitation</span>
-                    <h3 className="job-title">{jp.job_title}</h3>
-                    <p className="company-name">{company.company_name}</p>
-                  </div>
+                {/* Professional Invitation Badge */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'white',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '16px'
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                  Recruiter Invitation
                 </div>
-                <div className="job-details mt-3">
-                  {jp.location && <span className="detail-item">📍 {jp.location}</span>}
-                  {jp.worktype && <span className="detail-item">💼 {jp.worktype}</span>}
-                  {salary && <span className="detail-item">💰 {salary}</span>}
+
+                {/* Job Header */}
+                <div className="job-card-header" style={{ marginBottom: '12px' }}>
+                  <h3 style={{
+                    fontSize: '17px',
+                    fontWeight: '600',
+                    color: '#1a202c',
+                    marginBottom: '6px',
+                    lineHeight: '1.4'
+                  }}>
+                    {jp.job_title}
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#64748b',
+                    fontWeight: '500',
+                    margin: 0
+                  }}>
+                    {company.company_name}
+                  </p>
                 </div>
-                <div className="job-card-actions mt-4">
-                  {invite.already_applied ? (
-                    <button className="btn btn-primary" disabled>✓ Applied</button>
-                  ) : (
-                    <button 
-                      className="btn btn-primary"
-                      onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
-                      disabled={applyingJobId === jp.id}
-                    >
-                      {applyingJobId === jp.id ? 'Applying...' : 'Apply Now'}
-                    </button>
+
+                {/* Professional Job Details */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: '12px',
+                  padding: '16px 0',
+                  borderTop: '1px solid #e2e8f0',
+                  borderBottom: '1px solid #e2e8f0',
+                  marginBottom: '16px'
+                }}>
+                  {jp.location && (
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                      </svg>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</div>
+                        <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{jp.location}</div>
+                      </div>
+                    </div>
                   )}
+                  {jp.worktype && (
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                        <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
+                      </svg>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</div>
+                        <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{jp.worktype}</div>
+                      </div>
+                    </div>
+                  )}
+                  {salary && (
+                    <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                      </svg>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Salary</div>
+                        <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{salary}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '10px' }}>
                   <button 
-                    className="btn btn-secondary"
                     onClick={() => setViewInviteJob(invite)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      border: '1.5px solid #e2e8f0',
+                      background: 'white',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: '#475569',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                      e.currentTarget.style.background = '#f8fafc';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.background = 'white';
+                    }}
                   >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
                     View Details
                   </button>
+                  {invite.already_applied ? (
+                    <button 
+                      disabled
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        border: 'none',
+                        background: '#10b981',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'white',
+                        cursor: 'not-allowed',
+                        opacity: 0.7,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Applied
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
+                      disabled={applyingJobId === jp.id}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        border: 'none',
+                        background: applyingJobId === jp.id ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: 'white',
+                        cursor: applyingJobId === jp.id ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (applyingJobId !== jp.id) {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      {applyingJobId === jp.id ? (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                            <line x1="12" y1="2" x2="12" y2="6"/>
+                            <line x1="12" y1="18" x2="12" y2="22"/>
+                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                            <line x1="2" y1="12" x2="6" y2="12"/>
+                            <line x1="18" y1="12" x2="22" y2="12"/>
+                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                          </svg>
+                          Applying...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                          </svg>
+                          Apply Now
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -1627,7 +1803,16 @@ const CandidateDashboard: React.FC = () => {
                   <div className="job-card-header">
                     <div>
                       {job.end_date && (
-                        <span className="badge badge-info mb-2">
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '4px 12px',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          color: 'white',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          marginBottom: '8px'
+                        }}>
                           Apply by {new Date(job.end_date).toLocaleDateString()}
                         </span>
                       )}
@@ -1640,28 +1825,131 @@ const CandidateDashboard: React.FC = () => {
                       {job.job_description}
                     </p>
                   )}
-                  <div className="job-details mt-3">
-                    {job.location && <span className="detail-item">📍 {job.location}</span>}
-                    {job.worktype && <span className="detail-item">💼 {job.worktype}</span>}
-                    {job.employment_type && <span className="detail-item">👔 {job.employment_type}</span>}
-                    {job.seniority_level && <span className="detail-item">📊 {job.seniority_level}</span>}
-                    {salary && <span className="detail-item">💰 {salary}</span>}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '12px',
+                    marginTop: '16px',
+                    padding: '12px',
+                    background: '#f8fafc',
+                    borderRadius: '8px'
+                  }}>
+                    {job.location && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                          <circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</div>
+                          <div>{job.location}</div>
+                        </div>
+                      </div>
+                    )}
+                    {job.worktype && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="2" y="7" width="20" height="14" rx="2"/>
+                          <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+                        </svg>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</div>
+                          <div>{job.worktype}</div>
+                        </div>
+                      </div>
+                    )}
+                    {job.employment_type && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Employment</div>
+                          <div>{job.employment_type}</div>
+                        </div>
+                      </div>
+                    )}
+                    {job.seniority_level && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 20V10"/>
+                          <path d="M12 20V4"/>
+                          <path d="M6 20v-6"/>
+                        </svg>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Seniority</div>
+                          <div>{job.seniority_level}</div>
+                        </div>
+                      </div>
+                    )}
+                    {salary && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <div>
+                          <div style={{ fontWeight: '600', fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Salary</div>
+                          <div>{salary}</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="job-card-actions mt-4">
                     <button 
-                      className="btn btn-secondary"
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        background: 'white',
+                        color: '#475569',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f8fafc';
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                      }}
                       onClick={() => setViewAvailableJob(job)}
                     >
                       View Details
                     </button>
                     <button 
-                      className={`btn ${job.already_applied ? 'btn-success' : 'btn-primary'}`}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: job.already_applied ? '#10b981' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: job.already_applied ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s',
+                        opacity: job.already_applied || applyingJobId === job.id ? 0.7 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!job.already_applied && applyingJobId !== job.id) {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
                       onClick={() => {
                         if (!job.already_applied) handleApply(job.id);
                       }}
                       disabled={job.already_applied || applyingJobId === job.id}
                     >
-                      {job.already_applied ? 'Applied ✓' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
+                      {job.already_applied ? 'Applied' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
                     </button>
                   </div>
                 </div>
@@ -2334,65 +2622,121 @@ const CandidateDashboard: React.FC = () => {
         <div className="jobs-grid-modern">
         {matches.map((match: any) => (
           <div key={match.match_id} className="job-card-modern match-card">
-            {/* Special Match Header */}
-            <div className="job-header-modern match-header">
-              <div className="match-badge-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {/* Professional Match Badge */}
+            <div style={{
+              padding: '12px 16px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '8px 8px 0 0',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '600'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                <span>Mutual Match - {match.match_percentage}%</span>
+                <span>Mutual Match</span>
+                <span style={{
+                  marginLeft: 'auto',
+                  padding: '2px 8px',
+                  background: 'rgba(255,255,255,0.2)',
+                  borderRadius: '4px',
+                  fontSize: '12px'
+                }}>{match.match_percentage}%</span>
               </div>
             </div>
 
-            <div className="job-header-modern">
+            <div className="job-header-modern" style={{ padding: '0 16px' }}>
               <div className="job-title-section">
                 <h3 className="job-title-modern">{match.job_posting.job_title}</h3>
                 <div className="job-company">{match.company.company_name}</div>
               </div>
               <div className="match-date">
-                <small>Matched {new Date(match.matched_at).toLocaleDateString()}</small>
+                <small style={{ color: '#64748b' }}>Matched {new Date(match.matched_at).toLocaleDateString()}</small>
               </div>
             </div>
 
-            <div className="job-content-modern">
-              <div className="job-info-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Position Details</h4>
-                  <div className="info-items">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                      <span className="info-value">{match.job_posting.location}</span>
-                    </div>
-                  </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '16px',
+              margin: '16px',
+              padding: '16px',
+              background: '#f8fafc',
+              borderRadius: '8px'
+            }}>
+              <div>
+                <h4 style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '8px'
+                }}>Position Details</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span>{match.job_posting.location}</span>
                 </div>
               </div>
 
-              <div className="job-compensation-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Contact Information</h4>
-                  <div className="contact-info">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                      </svg>
-                      <span className="info-value">{match.company.email}</span>
-                    </div>
-                  </div>
+              <div>
+                <h4 style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  marginBottom: '8px'
+                }}>Contact Information</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  <span>{match.company.email}</span>
                 </div>
               </div>
             </div>
 
-            <div className="job-actions-modern">
-              <div className="action-buttons-grid">
+            <div className="job-actions-modern" style={{ padding: '0 16px 16px' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => setViewMatchJob(match)}
-                  className="action-btn light"
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: 'white',
+                    color: '#475569',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f8fafc';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
                     <path d="M14 2v6h6"/>
                     <path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
@@ -2400,8 +2744,26 @@ const CandidateDashboard: React.FC = () => {
                   View Job Posting
                 </button>
                 {match.already_applied ? (
-                  <button className="action-btn success" disabled style={{ opacity: 0.7, cursor: 'default' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <button
+                    disabled
+                    style={{
+                      flex: 1,
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: '#10b981',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'not-allowed',
+                      opacity: 0.7,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M20 6L9 17l-5-5"/>
                     </svg>
                     Applied
@@ -2409,19 +2771,45 @@ const CandidateDashboard: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => handleApplyFromMatch(match.job_posting.id, match.job_profile_id)}
-                    className="action-btn success"
                     disabled={applyingJobId === match.job_posting.id}
+                    style={{
+                      flex: 1,
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: applyingJobId === match.job_posting.id ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      opacity: applyingJobId === match.job_posting.id ? 0.7 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (applyingJobId !== match.job_posting.id) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   >
                     {applyingJobId === match.job_posting.id ? (
                       <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
                           <circle cx="12" cy="12" r="10"/>
                         </svg>
                         Applying...
                       </>
                     ) : (
                       <>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                           <polyline points="22,6 12,13 2,6"/>
                         </svg>

@@ -314,17 +314,6 @@
   overflow: hidden;
 }
 
-.match-card::before {
-  content: '✓';
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  font-size: 120px;
-  color: var(--success-500);
-  opacity: 0.08;
-  font-weight: var(--font-bold);
-}
-
 .match-card:hover {
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25), var(--shadow-purple-md);
   transform: translateY(-3px);
