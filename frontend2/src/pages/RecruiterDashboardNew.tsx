@@ -629,6 +629,7 @@ const RecruiterDashboard: React.FC = () => {
       <>
         <div>
         {/* Enhanced Job Posting Selector with Lifecycle Controls */}
+        <div className="purple-section-wrapper">
         <div className="job-selector-modern">
           <div className="selector-header">
             <h3 className="selector-title">Select Job Posting</h3>
@@ -747,7 +748,7 @@ const RecruiterDashboard: React.FC = () => {
         {/* Job Performance Dashboard */}
         {jobAnalytics && (
           <div className="job-performance-panel" style={{
-            background: 'linear-gradient(135deg, #6A4F99 0%, #7B5EA7 40%, #9B7ED8 100%)',
+            background: 'linear-gradient(135deg, #523C76 0%, #604983 40%, #7963AD 100%)',
             borderRadius: 'var(--radius-2xl)',
             padding: 'var(--space-5)',
             marginBottom: 'var(--space-6)',
@@ -971,6 +972,7 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         )}
 
+        <div className="purple-section-wrapper">
         {recommendations.recommendations.length === 0 ? (
           <div className="empty-state-modern">
             <div className="empty-icon-professional">
@@ -1420,6 +1422,8 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         );
       })()}
+      </div>
+      </div>
       </>
     );
   };

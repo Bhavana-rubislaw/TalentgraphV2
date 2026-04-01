@@ -411,15 +411,15 @@ body {
 .purple-section-wrapper {
   background: linear-gradient(
     135deg,
-    rgba(123, 94, 167, 0.08),
-    rgba(156, 122, 230, 0.08)
+    rgba(123, 94, 167, 0.14),
+    rgba(156, 122, 230, 0.14)
   );
   border-radius: 20px;
   padding: 24px;
   margin-bottom: 24px;
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 12px rgba(123, 94, 167, 0.06);
-  border: 2px solid rgba(123, 94, 167, 0.2);
+  border: 2px solid rgba(123, 94, 167, 0.25);
 }
 
 .purple-section-wrapper .jobs-grid-modern,
@@ -1042,7 +1042,7 @@ body {
 
 /* ====== JOB SELECTOR MODERN ====== */
 .job-selector-modern {
-  background: var(--bg-secondary);
+  background: #f5f6f7;
   border-radius: var(--radius-lg);
   padding: var(--spacing-3);
   margin-bottom: var(--spacing-3);
@@ -1067,7 +1067,7 @@ body {
 .selector-count {
   font-size: 14px;
   color: var(--text-secondary);
-  background: var(--bg-tertiary);
+  background: #E5E5ED;
   padding: 4px 12px;
   border-radius: var(--radius-sm);
 }
@@ -1077,7 +1077,7 @@ body {
   padding: 14px 16px;
   border: 2px solid var(--border-light);
   border-radius: var(--radius-md);
-  background: var(--bg-secondary);
+  background: #EDEDF5;
   color: var(--text-primary);
   font-size: 16px;
   font-weight: 500;
@@ -4029,7 +4029,7 @@ body {
    ============================================ */
 
 .rec-filter-toolbar {
-  background: #ffffff;
+  background: #f5f6f7;
   border: 1px solid var(--border-light, #E2E4EC);
   border-radius: var(--radius-lg, 12px);
   box-shadow: 0 2px 8px rgba(123, 94, 167, 0.07), 0 1px 3px rgba(0,0,0,0.04);
@@ -4052,7 +4052,7 @@ body {
   gap: 8px;
   padding: 0 16px 0 13px;
   height: 42px;
-  background: var(--bg-primary, #F5F6FB);
+  background: var(--bg-primary, #EDEDF5);
   border: 1.5px solid var(--border-light, #E2E4EC);
   border-radius: 999px;
   cursor: pointer;
