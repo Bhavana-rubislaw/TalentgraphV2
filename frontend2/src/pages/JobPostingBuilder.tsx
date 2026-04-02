@@ -461,6 +461,46 @@ const JobPostingBuilder: React.FC = () => {
     setErrors({});
   };
 
+  const handleDuplicatePosting = (posting: JobPosting) => {
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+
+    const certs = posting.certifications_required
+      ? (() => { try { return JSON.parse(posting.certifications_required); } catch { return []; } })()
+      : [];
+    const newForm: JobPostingFormData = {
+      job_title: `${posting.job_title} (Copy)`,
+      product_vendor: posting.product_vendor,
+      product_type: posting.product_type,
+      job_role: posting.job_role,
+      seniority_level: posting.seniority_level,
+      worktype: posting.worktype,
+      location: posting.location,
+      employment_type: posting.employment_type,
+      start_date: posting.start_date,
+      end_date: posting.end_date || '',
+      salary_min: posting.salary_min?.toString() || '',
+      salary_max: posting.salary_max?.toString() || '',
+      salary_currency: posting.salary_currency,
+      pay_type: posting.pay_type || 'annually',
+      job_description: posting.job_description,
+      job_category: posting.job_category || '',
+      travel_requirements: posting.travel_requirements || 'None',
+      visa_info: posting.visa_info || '',
+      education_qualifications: posting.education_qualifications || '',
+      certifications_required: certs,
+      skills: (posting.posting_skills || []).map(s => ({
+        skill_name: s.skill_name,
+        skill_category: s.skill_category as 'technical' | 'soft',
+        rating: s.rating,
+      })),
+    };
+    setFormData(newForm);
+    setEditingId(null); // Critical: null = creates new on submit
+    setIsDirty(true);
+    setErrors({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleNewPosting = () => {
     if (isDirty) {
       if (!window.confirm('You have unsaved changes. Discard and start new?')) return;
@@ -754,7 +794,37 @@ const JobPostingBuilder: React.FC = () => {
                       borderTop: '1px solid #e5e7eb',
                       display: 'flex',
                       gap: '6px',
+                      flexWrap: 'wrap',
                     }}>
+                      {/* Duplicate button - always available */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDuplicatePosting(p);
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          border: '1px solid #3b82f6',
+                          backgroundColor: '#eff6ff',
+                          color: '#3b82f6',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          minWidth: 'fit-content',
+                        }}
+                        title="Duplicate this posting"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                        Duplicate
+                      </button>
+
                       {normalizedStatus === 'cancelled' ? (
                         <div style={{
                           padding: '6px 8px',
@@ -905,6 +975,21 @@ const JobPostingBuilder: React.FC = () => {
             {/* ======= FORM PANEL ======= */}
             <div className={`jpb-form-panel ${showPreview ? 'hidden-mobile' : ''}`}>
               <form ref={formRef} onSubmit={e => { e.preventDefault(); handleSave(); }}>
+
+                {/* Duplicate Mode Banner */}
+                {isDirty && !editingId && formData.job_title.includes('(Copy)') && (
+                  <div style={{
+                    background: '#fffbeb',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                    color: '#92400e'
+                  }}>
+                    📋 You're creating a <strong>duplicate</strong> — this will save as a new job posting.
+                  </div>
+                )}
 
                 {/* SECTION: Metadata */}
                 <div className="jpb-form-section">
