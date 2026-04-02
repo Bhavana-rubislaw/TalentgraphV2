@@ -142,6 +142,86 @@ class SendGridEmailProvider(EmailProvider):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# SMTP PROVIDER (Gmail, etc.)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SMTPEmailProvider(EmailProvider):
+    """SMTP email provider implementation for Gmail, Office365, etc."""
+    
+    def __init__(self):
+        self.smtp_host = os.getenv('SMTP_HOST', 'smtp.gmail.com')
+        self.smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        self.smtp_username = os.getenv('SMTP_USERNAME')
+        self.smtp_password = os.getenv('SMTP_PASSWORD')
+        self.from_email = os.getenv('SMTP_FROM_EMAIL', self.smtp_username)
+        self.from_name = os.getenv('SMTP_FROM_NAME', 'TalentGraph')
+        self.use_tls = os.getenv('SMTP_USE_TLS', 'true').lower() == 'true'
+        
+        if not self.smtp_username or not self.smtp_password:
+            raise ValueError("SMTP_USERNAME and SMTP_PASSWORD environment variables must be set")
+        
+        logger.info(f"SMTPEmailProvider initialized (host: {self.smtp_host}, port: {self.smtp_port})")
+    
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        html_body: str,
+        text_body: str,
+        reply_to: Optional[str] = None,
+        custom_headers: Optional[Dict[str, str]] = None
+    ) -> str:
+        """Send email via SMTP"""
+        try:
+            import smtplib
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+            from email.utils import formataddr, make_msgid
+            
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = formataddr((self.from_name, self.from_email))
+            msg['To'] = to_email
+            msg['Message-ID'] = make_msgid()
+            
+            if reply_to:
+                msg['Reply-To'] = reply_to
+            
+            # Add custom headers
+            if custom_headers:
+                for key, value in custom_headers.items():
+                    msg[key] = value
+            
+            # Attach text and HTML parts
+            part_text = MIMEText(text_body, 'plain', 'utf-8')
+            part_html = MIMEText(html_body, 'html', 'utf-8')
+            
+            msg.attach(part_text)
+            msg.attach(part_html)
+            
+            # Send email
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as server:
+                if self.use_tls:
+                    server.starttls()
+                server.login(self.smtp_username, self.smtp_password)
+                server.send_message(msg)
+            
+            message_id = msg['Message-ID']
+            logger.info(f"Sent email via SMTP to {to_email}, message_id: {message_id}")
+            return message_id
+            
+        except Exception as e:
+            logger.error(f"Error sending email via SMTP: {e}", exc_info=True)
+            raise
+    
+    def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
+        """SMTP doesn't support webhooks"""
+        logger.warning("SMTP provider does not support webhook verification")
+        return False
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # POSTMARK PROVIDER (STUB)
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -195,6 +275,8 @@ class EmailService:
         
         if provider_type == 'sendgrid':
             self.provider = SendGridEmailProvider()
+        elif provider_type == 'smtp':
+            self.provider = SMTPEmailProvider()
         elif provider_type == 'postmark':
             self.provider = PostmarkEmailProvider()
         else:

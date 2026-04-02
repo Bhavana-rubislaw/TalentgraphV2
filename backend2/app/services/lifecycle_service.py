@@ -20,7 +20,7 @@ from sqlmodel import Session, select
 
 from app.models import (
     JobPosting, Application, Meeting, Candidate,
-    User, Company, MeetingStatus
+    User, Company, MeetingStatus, JobPostingStatus
 )
 from app.services.email_service import EmailService
 from app.services.analytics_service import AnalyticsService, AnalyticsEventType
@@ -59,7 +59,7 @@ class LifecycleService:
         # Find jobs expiring soon (end_date is stored as VARCHAR)
         expiring_jobs = session.exec(
             select(JobPosting).where(
-                JobPosting.status == "open",
+                JobPosting.status == JobPostingStatus.ACTIVE,
                 JobPosting.end_date == cutoff_date_str
             )
         ).all()
@@ -80,7 +80,7 @@ class LifecycleService:
             recipients = []
             
             if warning_days == 1:
-                # Urgent - send to Admin and HR
+                # Urgent - send to Admin and HR (fallback to recruiter if none)
                 admin_hr_companies = session.exec(
                     select(Company).where(
                         Company.company_name == company.company_name,
@@ -93,7 +93,12 @@ class LifecycleService:
                     if user and user.email:
                         recipients.append(user.email)
                 
-                logger.info(f"Job {job.id} expires in 1 day - notifying {len(recipients)} admin/HR staff")
+                # If no Admin/HR users, send to recruiter as fallback
+                if not recipients and recruiter.email:
+                    recipients = [recruiter.email]
+                    logger.info(f"Job {job.id} expires in 1 day - no Admin/HR found, notifying recruiter {recruiter.email}")
+                else:
+                    logger.info(f"Job {job.id} expires in 1 day - notifying {len(recipients)} admin/HR staff")
             else:
                 # Normal warning - send to recruiter who posted it
                 recipients = [recruiter.email]
@@ -133,10 +138,10 @@ class LifecycleService:
         today = date.today()
         today_str = today.isoformat()  # Convert to 'YYYY-MM-DD' string
         
-        # Find expired open jobs (end_date is stored as VARCHAR)
+        # Find expired active jobs (end_date is stored as VARCHAR)
         expired_jobs = session.exec(
             select(JobPosting).where(
-                JobPosting.status == "open",
+                JobPosting.status == JobPostingStatus.ACTIVE,
                 JobPosting.end_date < today_str
             )
         ).all()
@@ -145,7 +150,7 @@ class LifecycleService:
         
         for job in expired_jobs:
             # Freeze job
-            job.status = "closed"
+            job.status = JobPostingStatus.FROZEN
             session.add(job)
             
             # Track analytics event
@@ -199,8 +204,8 @@ class LifecycleService:
             logger.warning(f"Job {job_id} not found")
             return 0
         
-        if job.status != "open":
-            logger.warning(f"Job {job_id} is not open")
+        if job.status != JobPostingStatus.ACTIVE:
+            logger.warning(f"Job {job_id} is not active")
             return 0
         
         # Get previous applications (not hired, not rejected)
@@ -356,9 +361,8 @@ class LifecycleService:
                 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
                        max-width: 600px; margin: 0 auto; padding: 20px; }}
                 .header {{ background: {header_bg}; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
-                .button {{ background: #007bff; color: white; padding: 12px 24px; 
-                          text-decoration: none; border-radius: 5px; display: inline-block; 
-                          margin-top: 20px; }}
+                .info-box {{ background: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; 
+                            margin: 20px 0; border-radius: 3px; }}
             </style>
         </head>
         <body>
@@ -372,16 +376,13 @@ class LifecycleService:
             
             <p>Your job posting <strong>{job.job_title}</strong> will expire in <strong>{days} day{'s' if days > 1 else ''}</strong>.</p>
             
-            <p><strong>Expiry Date:</strong> {job.end_date}</p>
+            <div class="info-box">
+                <p style="margin: 0;"><strong>Job Title:</strong> {job.job_title}</p>
+                <p style="margin: 10px 0 0 0;"><strong>Expiry Date:</strong> {job.end_date}</p>
+            </div>
             
-            <p>To continue receiving applications, please extend or renew your job posting.</p>
-            
-            <a href="{os.getenv('FRONTEND_URL', 'https://talentgraph.com')}/jobs/{job.id}/edit" class="button">
-                Extend Job Posting
-            </a>
-            
-            <p style="margin-top: 30px; color: #666; font-size: 14px;">
-                If you don't take action, the job will be automatically closed on {job.end_date}.
+            <p style="color: #666; font-size: 14px;">
+                If no action is taken, this job posting will be automatically closed on {job.end_date}.
             </p>
         </body>
         </html>
@@ -397,9 +398,8 @@ class LifecycleService:
                 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
                        max-width: 600px; margin: 0 auto; padding: 20px; }}
                 .header {{ background: #f8d7da; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
-                .button {{ background: #28a745; color: white; padding: 12px 24px; 
-                          text-decoration: none; border-radius: 5px; display: inline-block; 
-                          margin-top: 20px; }}
+                .info-box {{ background: #f8f9fa; padding: 15px; border-left: 4px solid #dc3545; 
+                            margin: 20px 0; border-radius: 3px; }}
             </style>
         </head>
         <body>
@@ -411,13 +411,14 @@ class LifecycleService:
             
             <p>Your job posting <strong>{job.job_title}</strong> has expired and been automatically closed.</p>
             
-            <p><strong>Expiry Date:</strong> {job.end_date}</p>
+            <div class="info-box">
+                <p style="margin: 0;"><strong>Job Title:</strong> {job.job_title}</p>
+                <p style="margin: 10px 0 0 0;"><strong>Expiry Date:</strong> {job.end_date}</p>
+            </div>
             
-            <p>You can reopen this job anytime to continue receiving applications.</p>
-            
-            <a href="{os.getenv('FRONTEND_URL', 'https://talentgraph.com')}/jobs/{job.id}" class="button">
-                Reopen Job
-            </a>
+            <p style="color: #666; font-size: 14px;">
+                This job posting is no longer accepting applications.
+            </p>
         </body>
         </html>
         """

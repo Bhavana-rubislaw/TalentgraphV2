@@ -28,7 +28,7 @@ from app.database import get_session
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,
     AnalyticsEventType, JobPosting, Company, User, Application,
-    Swipe, Meeting, MeetingStatus, MeetingType
+    Swipe, Meeting, MeetingStatus, MeetingType, JobPostingStatus
 )
 from app.security import get_current_user
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
@@ -165,7 +165,7 @@ async def get_overview_metrics(
     active_jobs_count = session.exec(
         select(func.count(JobPosting.id)).where(
             JobPosting.company_id == company_id,
-            JobPosting.status == "open"
+            JobPosting.status == JobPostingStatus.ACTIVE
         )
     ).first() or 0
     
