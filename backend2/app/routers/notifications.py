@@ -19,6 +19,8 @@ from app.database import get_session
 from app.models import Notification, User
 from app.security import get_current_user
 from app.services.audit import log_activity_event, snap_notification
+from app.services.notification_service import NotificationService
+from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
@@ -80,9 +82,8 @@ def list_notifications(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    """List notifications for current user with optional filters."""
+    user = UserService.get_user_from_token(session, current_user, required=True)
 
     query = select(Notification).where(Notification.user_id == user.id)
     if unread_only:
@@ -102,18 +103,12 @@ def unread_count(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    count = len(
-        session.exec(
-            select(Notification).where(
-                Notification.user_id == user.id,
-                Notification.is_read == False,
-            )
-        ).all()
-    )
+    """
+    Get unread notification count for current user.
+    Optimized to use SQL COUNT instead of loading all records.
+    """
+    email = UserService.get_email_from_token(current_user)
+    count = NotificationService.get_unread_count(session, email)
     return {"count": count}
 
 
@@ -123,9 +118,8 @@ def mark_all_read(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    """Mark all notifications as read for current user."""
+    user = UserService.get_user_from_token(session, current_user, required=True)
 
     unread = session.exec(
         select(Notification).where(
@@ -133,8 +127,11 @@ def mark_all_read(
             Notification.is_read == False,
         )
     ).all()
+    
+    read_time = datetime.utcnow()
     for n in unread:
         n.is_read = True
+        n.read_at = read_time
         session.add(n)
 
     # One bulk_read audit event summarising all reads
@@ -160,9 +157,8 @@ def mark_read(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    """Mark a single notification as read."""
+    user = UserService.get_user_from_token(session, current_user, required=True)
 
     notif = session.get(Notification, notification_id)
     if not notif or notif.user_id != user.id:
@@ -170,6 +166,7 @@ def mark_read(
 
     before_snap = snap_notification(notif)
     notif.is_read = True
+    notif.read_at = datetime.utcnow()
     session.add(notif)
 
     log_activity_event(
@@ -195,9 +192,8 @@ def delete_notification(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    """Delete a single notification."""
+    user = UserService.get_user_from_token(session, current_user, required=True)
 
     notif = session.get(Notification, notification_id)
     if not notif or notif.user_id != user.id:

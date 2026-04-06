@@ -453,6 +453,7 @@ class Notification(SQLModel, table=True):
     message: str
     event_type: str  # match, invite, application, status_update, shortlisted
     is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)  # Timestamp when notification was marked as read
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # JSON payload: {"route": "...", "route_context": {...}}
     payload: Optional[str] = Field(default=None)

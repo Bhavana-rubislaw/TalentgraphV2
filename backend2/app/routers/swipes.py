@@ -12,6 +12,8 @@ from app.models import Swipe, Candidate, Company, JobPosting, JobProfile, User, 
 from app.security import get_current_user
 from app.routers.notifications import push_notification
 from app.services.audit import log_activity_event, snap_swipe
+from app.services.notification_service import NotificationService
+from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/swipes", tags=["Swipes"])
@@ -289,13 +291,9 @@ def recruiter_like(
 ):
     """Recruiter likes a candidate"""
     logger.info(f"[RECRUITER LIKE] candidate_id={data.candidate_id}, job_profile_id={data.job_profile_id}, job_posting_id={data.job_posting_id}")
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    user = UserService.get_user_from_token(session, current_user, required=True)
     
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=403, detail="Recruiters only")
+    company = UserService.get_company_profile(session, user, required=True)
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
@@ -309,6 +307,17 @@ def recruiter_like(
     job_posting = session.get(JobPosting, data.job_posting_id)
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
+    
+    # Duplicate protection: Check if already liked
+    existing_like = session.exec(
+        select(Swipe)
+        .where(Swipe.candidate_id == data.candidate_id)
+        .where(Swipe.job_posting_id == data.job_posting_id)
+        .where(Swipe.action == "like")
+        .where(Swipe.action_by == "recruiter")
+    ).first()
+    if existing_like:
+        return {"message": "Already liked this candidate", "action": "like"}
     
     # Create swipe
     swipe = Swipe(
@@ -384,13 +393,9 @@ def recruiter_pass(
 ):
     """Recruiter passes on a candidate"""
     logger.info(f"[RECRUITER PASS] candidate_id={data.candidate_id}, job_profile_id={data.job_profile_id}, job_posting_id={data.job_posting_id}")
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    user = UserService.get_user_from_token(session, current_user, required=True)
     
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=403, detail="Recruiters only")
+    company = UserService.get_company_profile(session, user, required=True)
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
