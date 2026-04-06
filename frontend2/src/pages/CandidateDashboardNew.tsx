@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import { apiClient, API_BASE } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
@@ -30,15 +31,29 @@ const FilterPill: React.FC<FilterPillProps> = ({ id, icon, options, value, onCha
   const containerRef = React.useRef<HTMLDivElement>(null);
   const menuRef = React.useRef<HTMLUListElement>(null);
   const [focusedIdx, setFocusedIdx] = React.useState(0);
+  const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0, width: 0 });
 
   const selectedOption = options.find(o => o.value === value) ?? options[0];
   const isActive = value !== options[0]?.value;
+
+  // Calculate menu position when opening
+  React.useEffect(() => {
+    if (open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 7,
+        left: rect.left,
+        width: Math.max(rect.width, 190)
+      });
+    }
+  }, [open]);
 
   // Close on outside click
   React.useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node) &&
+          menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -78,62 +93,78 @@ const FilterPill: React.FC<FilterPillProps> = ({ id, icon, options, value, onCha
     else if (e.key === 'Tab') { setOpen(false); }
   };
 
-  return (
-    <div
-      ref={containerRef}
-      id={id}
-      className={[
-        'rec-filter-pill',
-        isActive ? 'rec-filter-pill--active' : '',
-        open    ? 'rec-filter-pill--open'   : '',
-      ].filter(Boolean).join(' ')}
-      role="combobox"
-      aria-haspopup="listbox"
-      aria-expanded={open}
-      aria-label={ariaLabel}
-      tabIndex={0}
-      onClick={() => setOpen(o => !o)}
-      onKeyDown={handleKeyDown}
-    >
-      <span className="rec-filter-pill__icon-wrap" aria-hidden="true">{icon}</span>
-      <span className="rec-filter-pill__label">{selectedOption?.label}</span>
-      <svg
-        className={`rec-filter-pill__chevron${open ? ' rec-filter-pill__chevron--open' : ''}`}
-        viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
+  // Render dropdown menu
+  const renderMenu = () => {
+    if (!open) return null;
+    
+    return ReactDOM.createPortal(
+      <ul
+        ref={menuRef}
+        className="rec-filter-menu"
+        role="listbox"
+        aria-label={ariaLabel}
+        style={{
+          position: 'fixed',
+          top: `${menuPosition.top}px`,
+          left: `${menuPosition.left}px`,
+          minWidth: `${menuPosition.width}px`,
+        }}
       >
-        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
-      </svg>
-      {open && (
-        <ul
-          ref={menuRef}
-          className="rec-filter-menu"
-          role="listbox"
-          aria-label={ariaLabel}
+        {options.map((opt, i) => (
+          <li
+            key={String(opt.value)}
+            className={[
+              'rec-filter-menu__option',
+              opt.value === value ? 'rec-filter-menu__option--selected'  : '',
+              i === focusedIdx    ? 'rec-filter-menu__option--focused'   : '',
+            ].filter(Boolean).join(' ')}
+            role="option"
+            aria-selected={opt.value === value}
+            onMouseEnter={() => setFocusedIdx(i)}
+            onMouseDown={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
+          >
+            <span className="rec-filter-menu__option-text">{opt.label}</span>
+            {opt.value === value && (
+              <svg className="rec-filter-menu__checkmark" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+              </svg>
+            )}
+          </li>
+        ))}
+      </ul>,
+      document.body
+    );
+  };
+
+  return (
+    <>
+      <div
+        ref={containerRef}
+        id={id}
+        className={[
+          'rec-filter-pill',
+          isActive ? 'rec-filter-pill--active' : '',
+          open    ? 'rec-filter-pill--open'   : '',
+        ].filter(Boolean).join(' ')}
+        role="combobox"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        tabIndex={0}
+        onClick={() => setOpen(o => !o)}
+        onKeyDown={handleKeyDown}
+      >
+        <span className="rec-filter-pill__icon-wrap" aria-hidden="true">{icon}</span>
+        <span className="rec-filter-pill__label">{selectedOption?.label}</span>
+        <svg
+          className={`rec-filter-pill__chevron${open ? ' rec-filter-pill__chevron--open' : ''}`}
+          viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
         >
-          {options.map((opt, i) => (
-            <li
-              key={String(opt.value)}
-              className={[
-                'rec-filter-menu__option',
-                opt.value === value ? 'rec-filter-menu__option--selected'  : '',
-                i === focusedIdx    ? 'rec-filter-menu__option--focused'   : '',
-              ].filter(Boolean).join(' ')}
-              role="option"
-              aria-selected={opt.value === value}
-              onMouseEnter={() => setFocusedIdx(i)}
-              onMouseDown={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
-            >
-              <span className="rec-filter-menu__option-text">{opt.label}</span>
-              {opt.value === value && (
-                <svg className="rec-filter-menu__checkmark" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                </svg>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+        </svg>
+      </div>
+      {renderMenu()}
+    </>
   );
 };
 

@@ -537,20 +537,21 @@ body {
   border-color: var(--gray-300);
 }
 
+/* Vibrant gradient backgrounds for KPI card accents */
 .kpi-card-enhanced.active-jobs::before {
-  background: linear-gradient(90deg, #7B5EA7, #9B7ED8);
+  background: linear-gradient(90deg, #4F46E5, #6366F1);
 }
 
 .kpi-card-enhanced.shortlisted::before {
-  background: linear-gradient(90deg, var(--success), #10b981);
+  background: linear-gradient(90deg, #7C3AED, #A78BFA);
 }
 
 .kpi-card-enhanced.applications::before {
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #059669, #10B981);
 }
 
 .kpi-card-enhanced.matches::before {
-  background: linear-gradient(90deg, #f59e0b, #d97706);
+  background: linear-gradient(90deg, #EA580C, #F97316);
 }
 
 .kpi-card-enhanced:hover::before {

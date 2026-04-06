@@ -11,9 +11,7 @@ import NotificationBellDrawer from '../components/notifications/NotificationBell
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
 
-import RecruiterSettingsPanel, { type RecruiterSettings } from '../components/settings/RecruiterSettingsPanel';
-
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'settings'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages'] as const;
 
 const RecruiterDashboard: React.FC = () => {
   console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
@@ -155,28 +153,6 @@ const RecruiterDashboard: React.FC = () => {
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'admin');
 
-  // ── Recruiter Settings state ─────────────────────────────────────
-  const [recruiterSettings, setRecruiterSettings] = useState<RecruiterSettings>(() => {
-    const savedSettings = localStorage.getItem('recruiterMeetingSettings');
-    if (savedSettings) {
-      try {
-        return JSON.parse(savedSettings);
-      } catch (error) {
-        console.error('Failed to parse saved settings:', error);
-      }
-    }
-    return {
-      defaultMeetingProvider: 'jitsi',
-      defaultMeetingDuration: 60,
-      defaultReminderMinutes: 15,
-      defaultTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    };
-  });
-
-  const handleSettingsSaved = useCallback((settings: RecruiterSettings) => {
-    setRecruiterSettings(settings);
-    console.log('[SETTINGS] Recruiter settings updated:', settings);
-  }, []);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const userName = userFullName || userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
   const userInitial = userName.charAt(0).toUpperCase();
@@ -1472,6 +1448,7 @@ const RecruiterDashboard: React.FC = () => {
 
     return (
       <>
+        <div className="purple-section-wrapper">
         {/* Page Header Section */}
         <div style={{ marginBottom: '24px' }}>
           <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Shortlist</h2>
@@ -1533,7 +1510,7 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         </div>
 
-      <div className="candidates-grid-modern" style={{ gap: '20px' }}>
+        <div className="candidates-grid-modern" style={{ gap: '20px' }}>
         {filteredShortlist.map((item: any, index) => (
           <div 
             key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} 
@@ -1541,7 +1518,7 @@ const RecruiterDashboard: React.FC = () => {
             style={{
               border: '1px solid var(--border-color, #e2e8f0)',
               borderRadius: '12px',
-              padding: '20px',
+              padding: '24px',
               background: 'white',
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
               transition: 'all 0.2s ease',
@@ -1558,19 +1535,19 @@ const RecruiterDashboard: React.FC = () => {
             }}
           >
             {/* Status Badge */}
-            <div style={{ position: 'absolute', top: '16px', right: '16px' }}>
+            <div style={{ position: 'absolute', top: '18px', right: '18px' }}>
               <span style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '4px 10px',
+                gap: '5px',
+                padding: '5px 12px',
                 borderRadius: '6px',
                 fontSize: '12px',
                 fontWeight: 500,
                 background: '#dbeafe',
                 color: '#1e40af'
               }}>
-                <svg style={{ width: '12px', height: '12px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg style={{ width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                 </svg>
                 Shortlisted
@@ -1578,17 +1555,17 @@ const RecruiterDashboard: React.FC = () => {
             </div>
 
             {/* Card Header with Avatar and Basic Info */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'flex-start' }}>
               <div style={{ 
-                width: '56px', 
-                height: '56px', 
+                width: '64px', 
+                height: '64px', 
                 borderRadius: '50%', 
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                fontSize: '20px',
+                fontSize: '24px',
                 fontWeight: 600,
                 flexShrink: 0,
                 boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
@@ -1596,18 +1573,18 @@ const RecruiterDashboard: React.FC = () => {
                 {item.candidate.name.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, minWidth: 0, paddingRight: '60px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary, #1e293b)', marginBottom: '4px', lineHeight: 1.3 }}>
+                <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary, #1e293b)', marginBottom: '6px', lineHeight: 1.3 }}>
                   {item.candidate.name}
                 </h3>
                 {item.job_posting?.job_title && (
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary, #667eea)', marginBottom: '6px', lineHeight: 1.4 }}>
+                  <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--primary, #667eea)', marginBottom: '8px', lineHeight: 1.4 }}>
                     {item.job_posting.job_title}
                   </div>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--text-muted, #94a3b8)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '14px', color: 'var(--text-muted, #94a3b8)' }}>
                   {item.candidate.location_state && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                         <circle cx="12" cy="10" r="3"/>
                       </svg>
@@ -1616,7 +1593,7 @@ const RecruiterDashboard: React.FC = () => {
                   )}
                   {item.job_profile?.years_of_experience && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                       </svg>
@@ -1624,7 +1601,7 @@ const RecruiterDashboard: React.FC = () => {
                     </span>
                   )}
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                       <line x1="16" y1="2" x2="16" y2="6"/>
                       <line x1="8" y1="2" x2="8" y2="6"/>
@@ -1637,11 +1614,11 @@ const RecruiterDashboard: React.FC = () => {
             </div>
 
             {/* Contact Information */}
-            <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '8px' }}>Contact</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px', color: 'var(--text-secondary, #64748b)' }}>
+            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '10px' }}>Contact</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', color: 'var(--text-secondary, #64748b)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
@@ -1649,7 +1626,7 @@ const RecruiterDashboard: React.FC = () => {
                 </div>
                 {item.candidate.phone && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
                     </svg>
                     {item.candidate.phone}
@@ -1665,7 +1642,7 @@ const RecruiterDashboard: React.FC = () => {
                 style={{ 
                   flex: 1, 
                   minWidth: '140px',
-                  height: '40px',
+                  height: '42px',
                   padding: '0 20px',
                   fontSize: '14px',
                   fontWeight: 600,
@@ -1697,7 +1674,7 @@ const RecruiterDashboard: React.FC = () => {
                 className="action-btn secondary"
                 style={{ 
                   padding: '0 16px',
-                  height: '40px',
+                  height: '42px',
                   fontSize: '14px',
                   fontWeight: 500,
                   borderRadius: '8px',
@@ -1718,7 +1695,7 @@ const RecruiterDashboard: React.FC = () => {
                 className="action-btn success"
                 style={{ 
                   padding: '0 16px',
-                  height: '40px',
+                  height: '42px',
                   fontSize: '14px',
                   fontWeight: 500,
                   borderRadius: '8px',
@@ -1739,7 +1716,7 @@ const RecruiterDashboard: React.FC = () => {
                 className="action-btn message"
                 style={{ 
                   padding: '0 16px',
-                  height: '40px',
+                  height: '42px',
                   fontSize: '14px',
                   fontWeight: 500,
                   borderRadius: '8px',
@@ -1971,6 +1948,7 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         );
       })()}
+      </div>
     </>
     );
   };
@@ -2163,6 +2141,7 @@ const RecruiterDashboard: React.FC = () => {
     };
 
     return (
+      <div className="purple-section-wrapper">
       <div className="ra-wrapper">
         {/* ─── Toolbar: Search + Filters + Sort ─── */}
         <div className="ra-toolbar">
@@ -2810,6 +2789,7 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      </div>
     );
   };
 
@@ -2834,6 +2814,7 @@ const RecruiterDashboard: React.FC = () => {
 
     return (
       <>
+      <div className="purple-section-wrapper">
       <div className="jobs-grid-modern">
         {matches.map((match: any, index) => (
           <div key={`match-${match.match_id}-${index}`} className="job-card-modern match-card">
@@ -3167,6 +3148,7 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           );
         })()}
+      </div>
       </>
     );
   };
@@ -3212,6 +3194,7 @@ const RecruiterDashboard: React.FC = () => {
 
     return (
       <>
+        <div className="purple-section-wrapper">
         {/* Page Header Section */}
         <div style={{ marginBottom: '24px' }}>
           <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Browse Candidates</h2>
@@ -3644,6 +3627,7 @@ const RecruiterDashboard: React.FC = () => {
             </button>
           </div>
         )}
+      </div>
       </>
     );
   };
@@ -3690,10 +3674,11 @@ const RecruiterDashboard: React.FC = () => {
                 </button>
                 <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/job-postings'); }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
                   </svg>
-                  Settings
+                  Job Postings
                 </button>
                 <div className="menu-divider"></div>
                 <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/'); }}>
@@ -3924,19 +3909,6 @@ const RecruiterDashboard: React.FC = () => {
                   +
                 </span>
               </button>
-
-              <button 
-                className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-                onClick={() => setActiveTab('settings')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M12 1v6m0 6v6m5.657-13.657l-4.243 4.243m-2.828 2.828l-4.243 4.243m16.97 1.313l-6-1.313m-6 0l-6 1.313m13.657-10.97l-4.243 4.243m-2.828 2.828l-4.243 4.243"/>
-                  </svg>
-                </span>
-                <span className="nav-label">Settings</span>
-              </button>
             </div>
           </nav>
         </div>
@@ -4040,12 +4012,6 @@ const RecruiterDashboard: React.FC = () => {
             </div>
             <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
               <ChatWindow />
-            </div>
-            <div style={{ display: activeTab === 'settings' ? 'block' : 'none' }}>
-              <RecruiterSettingsPanel
-                onSettingsSaved={handleSettingsSaved}
-                initialSettings={recruiterSettings}
-              />
             </div>
           </div>
         </div>

@@ -409,6 +409,8 @@ body {
 
 /* ====== PURPLE SECTION WRAPPER ====== */
 .purple-section-wrapper {
+  position: relative;
+  z-index: 1;
   background: linear-gradient(
     135deg,
     rgba(123, 94, 167, 0.14),
@@ -986,28 +988,32 @@ body {
   transition: all var(--transition-base);
 }
 
-.kpi-card-enhanced.active-jobs { --accent-color: #3B82F6; }
-.kpi-card-enhanced.shortlisted { --accent-color: #8B5CF6; }
-.kpi-card-enhanced.applications { --accent-color: #10B981; }
-.kpi-card-enhanced.matches { --accent-color: #F59E0B; }
-.kpi-card-enhanced.invites { --accent-color: #8B5CF6; }
-.kpi-card-enhanced.new-jobs { --accent-color: #3B82F6; }
+/* Vibrant color palette for KPI cards */
+.kpi-card-enhanced.active-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
+.kpi-card-enhanced.shortlisted { --accent-color: #7C3AED; } /* Vibrant Purple */
+.kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
+.kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
+.kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
+.kpi-card-enhanced.new-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
 
 .kpi-icon {
-  width: 48px;
-  height: 48px;
+  width: 48px !important;
+  height: 48px !important;
   border-radius: var(--radius-md);
-  display: flex;
+  display: flex !important;
   align-items: center;
   justify-content: center;
-  background: var(--accent-color);
-  color: white;
+  background: var(--accent-color) !important;
+  color: white !important;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .kpi-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 24px !important;
+  height: 24px !important;
+  stroke: white !important;
+  fill: none !important;
 }
 
 .kpi-content {
@@ -1713,10 +1719,35 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #8B5CF6; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #F59E0B; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #3B82F6; }
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #10B981; }
+/* Candidate Dashboard KPI Colors */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
+
+/* Ensure KPI icons are visible in welcome card */
+.welcome-card-modern.candidate-welcome .kpi-icon {
+  background: var(--accent-color) !important;
+  display: flex !important;
+  color: white !important;
+}
+
+.welcome-card-modern.candidate-welcome .kpi-icon svg {
+  stroke: white !important;
+  fill: none !important;
+}
+
+/* Recruiter Dashboard Welcome Card - similar styling */
+.welcome-card-modern .kpi-icon {
+  background: var(--accent-color) !important;
+  display: flex !important;
+  color: white !important;
+}
+
+.welcome-card-modern .kpi-icon svg {
+  stroke: white !important;
+  fill: none !important;
+}
 
 .job-selector-modern.candidate-selector {
   background: var(--bg-secondary);
@@ -4047,6 +4078,7 @@ body {
 /* -- Individual filter pill -- */
 .rec-filter-pill {
   position: relative;
+  z-index: 100;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -4138,10 +4170,8 @@ body {
 
 /* ── Custom dropdown menu ── */
 .rec-filter-menu {
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 0;
-  z-index: 1200;
+  position: fixed;
+  z-index: 9999;
   min-width: 190px;
   max-height: 300px;
   overflow-y: auto;
