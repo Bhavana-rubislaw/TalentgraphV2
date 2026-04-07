@@ -224,16 +224,22 @@ const CandidateDashboard: React.FC = () => {
   const [jobListTab, setJobListTab] = useState<'liked' | 'applied'>('liked');
   const [drawerJob, setDrawerJob] = useState<any | null>(null);
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
+  const [withdrawingJobId, setWithdrawingJobId] = useState<number | null>(null);
   const [viewInviteJob, setViewInviteJob] = useState<any | null>(null);
   const [viewAvailableJob, setViewAvailableJob] = useState<any | null>(null);
   const [viewMatchJob, setViewMatchJob] = useState<any | null>(null);
   const [viewRecommendationJob, setViewRecommendationJob] = useState<any | null>(null);
+
+  // ── Profile Selection Modal for Applications ──────────────────────
+  const [showProfileSelectionModal, setShowProfileSelectionModal] = useState(false);
+  const [pendingApplicationJobId, setPendingApplicationJobId] = useState<number | null>(null);
 
   // ── Available Jobs filter states ──────────────────────────────────
   const [jobSearchTerm, setJobSearchTerm] = useState('');
   const [selectedJobRole, setSelectedJobRole] = useState('');
   const [selectedJobWorkType, setSelectedJobWorkType] = useState('');
   const [jobLocationFilter, setJobLocationFilter] = useState('');
+  const [jobApplicationStatusFilter, setJobApplicationStatusFilter] = useState('');
 
   // ── Invites filter states ──────────────────────────────────
   const [inviteSearchTerm, setInviteSearchTerm] = useState('');
@@ -365,59 +371,199 @@ const CandidateDashboard: React.FC = () => {
 
   const handleSwipeLike = async (jobPostingId: number) => {
     if (!selectedProfileId) return;
-    console.log('[SWIPE ACTION] Like - Job:', jobPostingId, 'Profile:', selectedProfileId);
-    try {
-      await apiClient.swipeLike(selectedProfileId, jobPostingId);
-      console.log('[API SUCCESS] Swipe like recorded');
-      // Optimistically update so card stays visible with "Liked" status
-      setRecommendations(prev => prev.map(r =>
-        r.job_posting.id === jobPostingId
-          ? { ...r, already_swiped: true, swipe_action: 'like' }
-          : r
-      ));
-      fetchMatches();
-      fetchAppliedLiked();
-    } catch (error) {
-      console.error('[API ERROR] Failed to like job:', error);
-      alert('Failed to like job');
+    
+    // Check if already liked - if so, undo instead
+    const alreadyLiked = recommendations.find(r => r.job_posting.id === jobPostingId && r.already_swiped && r.swipe_action === 'like');
+    
+    if (alreadyLiked) {
+      // Undo the like
+      console.log('[SWIPE ACTION] Undo Like - Job:', jobPostingId);
+      try {
+        await apiClient.undoSwipe(jobPostingId);
+        console.log('[API SUCCESS] Undo swipe recorded');
+        // Update state to remove swipe
+        setRecommendations(prev => prev.map(r =>
+          r.job_posting.id === jobPostingId
+            ? { ...r, already_swiped: false, swipe_action: null }
+            : r
+        ));
+        fetchMatches();
+        fetchAppliedLiked();
+      } catch (error) {
+        console.error('[API ERROR] Failed to undo like:', error);
+        alert('Failed to undo like');
+      }
+    } else {
+      // Like the job
+      console.log('[SWIPE ACTION] Like - Job:', jobPostingId, 'Profile:', selectedProfileId);
+      try {
+        await apiClient.swipeLike(selectedProfileId, jobPostingId);
+        console.log('[API SUCCESS] Swipe like recorded');
+        // Optimistically update so card stays visible with "Liked" status
+        setRecommendations(prev => prev.map(r =>
+          r.job_posting.id === jobPostingId
+            ? { ...r, already_swiped: true, swipe_action: 'like' }
+            : r
+        ));
+        fetchMatches();
+        fetchAppliedLiked();
+      } catch (error) {
+        console.error('[API ERROR] Failed to like job:', error);
+        alert('Failed to like job');
+      }
     }
   };
 
   const handleSwipePass = async (jobPostingId: number) => {
     if (!selectedProfileId) return;
-    console.log('[SWIPE ACTION] Pass - Job:', jobPostingId, 'Profile:', selectedProfileId);
-    try {
-      await apiClient.swipePass(selectedProfileId, jobPostingId);
-      console.log('[API SUCCESS] Swipe pass recorded');
-      // Optimistically mark as passed — card stays visible with Passed badge
-      setRecommendations(prev => prev.map(r =>
-        r.job_posting.id === jobPostingId
-          ? { ...r, already_swiped: true, swipe_action: 'pass' }
-          : r
-      ));
-    } catch (error) {
-      console.error('[API ERROR] Failed to pass on job:', error);
-      alert('Failed to pass on job');
+    
+    // Check if already passed - if so, undo instead
+    const alreadyPassed = recommendations.find(r => r.job_posting.id === jobPostingId && r.already_swiped && r.swipe_action === 'pass');
+    
+    if (alreadyPassed) {
+      // Undo the pass
+      console.log('[SWIPE ACTION] Undo Pass - Job:', jobPostingId);
+      try {
+        await apiClient.undoSwipe(jobPostingId);
+        console.log('[API SUCCESS] Undo swipe recorded');
+        // Update state to remove swipe
+        setRecommendations(prev => prev.map(r =>
+          r.job_posting.id === jobPostingId
+            ? { ...r, already_swiped: false, swipe_action: null }
+            : r
+        ));
+      } catch (error) {
+        console.error('[API ERROR] Failed to undo pass:', error);
+        alert('Failed to undo pass');
+      }
+    } else {
+      // Pass on the job
+      console.log('[SWIPE ACTION] Pass - Job:', jobPostingId, 'Profile:', selectedProfileId);
+      try {
+        await apiClient.swipePass(selectedProfileId, jobPostingId);
+        console.log('[API SUCCESS] Swipe pass recorded');
+        // Optimistically mark as passed — card stays visible with Passed badge
+        setRecommendations(prev => prev.map(r =>
+          r.job_posting.id === jobPostingId
+            ? { ...r, already_swiped: true, swipe_action: 'pass' }
+            : r
+        ));
+      } catch (error) {
+        console.error('[API ERROR] Failed to pass on job:', error);
+        alert('Failed to pass on job');
+      }
     }
   };
 
   const handleApply = async (jobPostingId: number) => {
-    if (!selectedProfileId) return;
+    // Check if already applied - if so, withdraw instead
+    const appliedJob = appliedLiked.applied_jobs?.find((job: any) => job.job_id === jobPostingId);
     
-    // ✅ Guard: Don't call API if already applied
+    if (appliedJob?.application_id) {
+      // Withdraw the application
+      await handleWithdrawApplication(appliedJob.application_id, jobPostingId);
+    } else {
+      // Show profile selection modal to apply
+      setPendingApplicationJobId(jobPostingId);
+      setShowProfileSelectionModal(true);
+    }
+  };
+
+  const handleApplyFromMatch = async (jobPostingId: number, _jobProfileId: number) => {
+    // Check if already applied - if so, withdraw instead
+    const appliedJob = appliedLiked.applied_jobs?.find((job: any) => job.job_id === jobPostingId);
+    
+    if (appliedJob?.application_id) {
+      // Withdraw the application
+      await handleWithdrawApplication(appliedJob.application_id, jobPostingId);
+    } else {
+      // For matches, show profile selection modal
+      setPendingApplicationJobId(jobPostingId);
+      setShowProfileSelectionModal(true);
+    }
+  };
+
+  const handleApplyFromInvite = async (jobPostingId: number, _jobProfileId: number) => {
+    // Check if already applied - if so, withdraw instead
+    const appliedJob = appliedLiked.applied_jobs?.find((job: any) => job.job_id === jobPostingId);
+    
+    if (appliedJob?.application_id) {
+      // Withdraw the application
+      await handleWithdrawApplication(appliedJob.application_id, jobPostingId);
+    } else {
+      // For invites, show profile selection modal
+      setPendingApplicationJobId(jobPostingId);
+      setShowProfileSelectionModal(true);
+    }
+  };
+
+  // Withdraw application
+  const handleWithdrawApplication = async (applicationId: number, jobPostingId: number) => {
+    console.log('[APPLICATION] Withdrawing application:', applicationId, 'for job:', jobPostingId);
+    setWithdrawingJobId(jobPostingId);
+    
+    try {
+      await apiClient.withdrawApplication(applicationId);
+      console.log('[API SUCCESS] Application withdrawn');
+      
+      // Update recommendations state to show as not applied
+      setRecommendations(prev => prev.map(r =>
+        r.job_posting.id === jobPostingId
+          ? { ...r, already_applied: false }
+          : r
+      ));
+      
+      // Update available jobs state
+      setAvailableJobs(prev => prev.map(job =>
+        job.id === jobPostingId
+          ? { ...job, already_applied: false }
+          : job
+      ));
+      
+      // Update matches state
+      setMatches(prev => prev.map(m =>
+        m.job_posting.id === jobPostingId
+          ? { ...m, already_applied: false }
+          : m
+      ));
+
+      // Update invites state
+      setInvites(prev => prev.map(inv =>
+        inv.job_posting.id === jobPostingId
+          ? { ...inv, already_applied: false }
+          : inv
+      ));
+      
+      // Refresh applied/liked list to remove from applied tab
+      fetchAppliedLiked();
+      
+    } catch (error: any) {
+      const msg = error?.response?.data?.detail;
+      console.error('[APPLICATION WITHDRAW ERROR]', error?.response?.status, msg);
+      alert(typeof msg === 'string' ? msg : 'Failed to withdraw application. Please try again.');
+    } finally {
+      setWithdrawingJobId(null);
+    }
+  };
+
+  // Actual application submission after profile is selected from modal
+  const submitApplicationWithProfile = async (jobPostingId: number, selectedJobProfileId: number) => {
+    // Check if already applied (should not happen as UI should prevent it, but be safe)
     const alreadyAppliedInRecs = recommendations.find(r => r.job_posting.id === jobPostingId)?.already_applied;
     const alreadyAppliedInAvailable = availableJobs.find(j => j.id === jobPostingId)?.already_applied;
+    const alreadyAppliedInMatches = matches.find(m => m.job_posting.id === jobPostingId)?.already_applied;
+    const alreadyAppliedInInvites = invites.find(inv => inv.job_posting.id === jobPostingId)?.already_applied;
     
-    if (alreadyAppliedInRecs || alreadyAppliedInAvailable) {
+    if (alreadyAppliedInRecs || alreadyAppliedInAvailable || alreadyAppliedInMatches || alreadyAppliedInInvites) {
       console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
       return;
     }
     
-    console.log('[APPLICATION] Applying to job:', jobPostingId, 'with profile:', selectedProfileId);
+    console.log('[APPLICATION] Applying to job:', jobPostingId, 'with profile:', selectedJobProfileId);
     setApplyingJobId(jobPostingId);
     
     try {
-      await apiClient.applyToJob(jobPostingId, selectedProfileId);
+      await apiClient.applyToJob(jobPostingId, selectedJobProfileId);
       console.log('[API SUCCESS] Application submitted');
       
       // Update recommendations state to show Applied
@@ -432,6 +578,20 @@ const CandidateDashboard: React.FC = () => {
         job.id === jobPostingId
           ? { ...job, already_applied: true }
           : job
+      ));
+      
+      // Update matches state
+      setMatches(prev => prev.map(m =>
+        m.job_posting.id === jobPostingId
+          ? { ...m, already_applied: true }
+          : m
+      ));
+
+      // Update invites state
+      setInvites(prev => prev.map(inv =>
+        inv.job_posting.id === jobPostingId
+          ? { ...inv, already_applied: true }
+          : inv
       ));
       
       // Refresh applied/liked list to show in that tab
@@ -456,88 +616,22 @@ const CandidateDashboard: React.FC = () => {
             ? { ...job, already_applied: true }
             : job
         ));
+        setMatches(prev => prev.map(m =>
+          m.job_posting.id === jobPostingId
+            ? { ...m, already_applied: true }
+            : m
+        ));
+        setInvites(prev => prev.map(inv =>
+          inv.job_posting.id === jobPostingId
+            ? { ...inv, already_applied: true }
+            : inv
+        ));
         
         // Refresh applied/liked list
         fetchAppliedLiked();
-        
-        // DO NOT fetch recommendations/available jobs again - keep local state
       } else {
         // Real error - show alert
         alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
-      }
-    } finally {
-      setApplyingJobId(null);
-    }
-  };
-
-  const handleApplyFromMatch = async (jobPostingId: number, jobProfileId: number) => {
-    // ✅ Guard: Check if already applied (matches have already_applied field)
-    const match = matches.find(m => m.job_posting.id === jobPostingId);
-    if (match?.already_applied) {
-      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
-      return;
-    }
-    
-    console.log('[APPLICATION] Applying from match - Job:', jobPostingId, 'Profile:', jobProfileId);
-    setApplyingJobId(jobPostingId);
-    try {
-      const response = await apiClient.applyToJob(jobPostingId, jobProfileId);
-      console.log('[API SUCCESS] Application submitted from match', response.data);
-      alert('Application submitted successfully!');
-      fetchAppliedLiked();
-      // Refresh matches to update button state
-      setTimeout(() => {
-        fetchMatches();
-      }, 500);
-    } catch (error: any) {
-      console.error('[APPLICATION ERROR]', error);
-      const msg = error?.response?.data?.detail;
-      if (error?.response?.status === 400 && typeof msg === 'string' && msg.toLowerCase().includes('already applied')) {
-        alert('You have already applied to this job.');
-        setTimeout(() => {
-          fetchMatches();
-        }, 500);
-      } else {
-        alert(typeof msg === 'string' ? msg : 'Failed to apply. Please try again.');
-      }
-    } finally {
-      setApplyingJobId(null);
-    }
-  };
-
-  const handleApplyFromInvite = async (jobPostingId: number, jobProfileId: number) => {
-    // ✅ Guard: Check if already applied (invites have already_applied field)
-    const invite = invites.find(inv => inv.job_posting.id === jobPostingId);
-    if (invite?.already_applied) {
-      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
-      return;
-    }
-    
-    console.log('[APPLICATION] Applying from invite - Job:', jobPostingId, 'Profile:', jobProfileId);
-    setApplyingJobId(jobPostingId);
-    try {
-      await apiClient.applyToJob(jobPostingId, jobProfileId);
-      console.log('[API SUCCESS] Application submitted from invite');
-      alert('Application submitted successfully!');
-      fetchAppliedLiked();
-      // Refresh invites to update button state
-      setTimeout(() => {
-        fetchInvites();
-      }, 500);
-    } catch (error: any) {
-      console.error('[APPLICATION ERROR]', error);
-      const detail = error?.response?.data?.detail;
-      if (error?.response?.status === 400 && typeof detail === 'string' && detail.toLowerCase().includes('already applied')) {
-        alert('You have already applied to this job.');
-        setTimeout(() => {
-          fetchInvites();
-        }, 500);
-      } else if (typeof detail === 'string') {
-        alert(detail);
-      } else if (Array.isArray(detail)) {
-        alert(detail.map((d: any) => d.msg).join(', '));
-      } else {
-        alert('Failed to apply. Please try again.');
       }
     } finally {
       setApplyingJobId(null);
@@ -895,9 +989,8 @@ const CandidateDashboard: React.FC = () => {
                                 <div className="job-actions-modern">
                                   <div className="action-buttons-grid">
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'pass')) handleSwipePass(rec.job_posting.id); }}
+                                      onClick={(e) => { e.stopPropagation(); handleSwipePass(rec.job_posting.id); }}
                                       className={`action-btn ${rec.already_swiped && rec.swipe_action === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
-                                      disabled={rec.already_swiped && rec.swipe_action === 'pass'}
                                     >
                                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <line x1="18" y1="6" x2="6" y2="18"/>
@@ -906,9 +999,8 @@ const CandidateDashboard: React.FC = () => {
                                       {rec.already_swiped && rec.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); if (!(rec.already_swiped && rec.swipe_action === 'like')) handleSwipeLike(rec.job_posting.id); }}
+                                      onClick={(e) => { e.stopPropagation(); handleSwipeLike(rec.job_posting.id); }}
                                       className={`action-btn ${rec.already_swiped && rec.swipe_action === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
-                                      disabled={rec.already_swiped && rec.swipe_action === 'like'}
                                     >
                                       <svg viewBox="0 0 24 24" fill={rec.already_swiped && rec.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -916,9 +1008,9 @@ const CandidateDashboard: React.FC = () => {
                                       {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); if (!rec.already_applied) handleApply(rec.job_posting.id); }}
+                                      onClick={(e) => { e.stopPropagation(); handleApply(rec.job_posting.id); }}
                                       className={`action-btn ${rec.already_applied ? 'action-btn-done applied-done' : 'success'}`}
-                                      disabled={rec.already_applied || applyingJobId === rec.job_posting.id}
+                                      disabled={applyingJobId === rec.job_posting.id || withdrawingJobId === rec.job_posting.id}
                                     >
                                       {rec.already_applied ? (
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -930,7 +1022,12 @@ const CandidateDashboard: React.FC = () => {
                                           <polyline points="22,6 12,13 2,6"/>
                                         </svg>
                                       )}
-                                      {rec.already_applied ? 'Applied ✓' : (applyingJobId === rec.job_posting.id ? 'Applying...' : 'Apply Now')}
+                                      {withdrawingJobId === rec.job_posting.id 
+                                        ? 'Withdrawing...' 
+                                        : rec.already_applied 
+                                          ? 'Applied ✓' 
+                                          : (applyingJobId === rec.job_posting.id ? 'Applying...' : 'Apply Now')
+                                      }
                                     </button>
                                   </div>
                                 </div>
@@ -1109,13 +1206,10 @@ const CandidateDashboard: React.FC = () => {
                 <button
                   className={`cal-btn ${viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass' ? 'cal-btn-done-pass' : 'cal-btn-secondary'}`}
                   onClick={() => {
-                    if (!(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass')) {
-                      handleSwipePass(viewRecommendationJob.job_posting.id);
-                    }
+                    handleSwipePass(viewRecommendationJob.job_posting.id);
                     setViewRecommendationJob(null);
                   }}
                   style={{ flex: 1 }}
-                  disabled={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass'}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                     <line x1="18" y1="6" x2="6" y2="18"/>
@@ -1126,13 +1220,10 @@ const CandidateDashboard: React.FC = () => {
                 <button
                   className="cal-btn cal-btn-primary"
                   onClick={() => {
-                    if (!(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like')) {
-                      handleSwipeLike(viewRecommendationJob.job_posting.id);
-                    }
+                    handleSwipeLike(viewRecommendationJob.job_posting.id);
                     setViewRecommendationJob(null);
                   }}
                   style={{ flex: 1, ...(viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? { opacity: 0.8 } : {}) }}
-                  disabled={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like'}
                 >
                   <svg viewBox="0 0 24 24" fill={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -1142,13 +1233,11 @@ const CandidateDashboard: React.FC = () => {
                 <button
                   className="cal-btn cal-btn-primary"
                   onClick={() => {
-                    if (!viewRecommendationJob.already_applied) {
-                      handleApply(viewRecommendationJob.job_posting.id);
-                    }
+                    handleApply(viewRecommendationJob.job_posting.id);
                     setViewRecommendationJob(null);
                   }}
-                  style={{ flex: 1, background: 'linear-gradient(135deg, #27AE60, #2ECC71)', ...(viewRecommendationJob.already_applied ? { opacity: 0.8 } : {}) }}
-                  disabled={!selectedProfileId || viewRecommendationJob.already_applied}
+                  style={{ flex: 1, background: 'linear-gradient(135deg, #27AE60, #2ECC71)' }}
+                  disabled={applyingJobId === viewRecommendationJob.job_posting.id || withdrawingJobId === viewRecommendationJob.job_posting.id}
                 >
                   {viewRecommendationJob.already_applied ? (
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 16, height: 16 }}>
@@ -1160,7 +1249,12 @@ const CandidateDashboard: React.FC = () => {
                       <polyline points="22,6 12,13 2,6"/>
                     </svg>
                   )}
-                  {viewRecommendationJob.already_applied ? 'Applied ✓' : 'Apply Now'}
+                  {withdrawingJobId === viewRecommendationJob.job_posting.id 
+                    ? 'Withdrawing...' 
+                    : viewRecommendationJob.already_applied 
+                      ? 'Applied ✓' 
+                      : (applyingJobId === viewRecommendationJob.job_posting.id ? 'Applying...' : 'Apply Now')
+                  }
                 </button>
               </div>
             </div>
@@ -1280,20 +1374,24 @@ const CandidateDashboard: React.FC = () => {
 
             {/* Footer */}
             <div className="cal-drawer-footer">
-              {!isApplied ? (
-                <button
-                  className={`cal-btn cal-btn-primary${isApplying ? ' loading' : ''}`}
-                  onClick={() => handleApplyFromInvite(jp.id, viewInviteJob.job_profile_id)}
-                  disabled={isApplying}
-                >
-                  {isApplying ? 'Applying…' : 'Apply Now'}
-                </button>
-              ) : (
-                <button className="cal-btn cal-btn-primary" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
-                  Already Applied
-                </button>
-              )}
+              <button
+                className={`cal-btn cal-btn-primary${isApplying || withdrawingJobId === jp.id ? ' loading' : ''}`}
+                onClick={() => handleApplyFromInvite(jp.id, viewInviteJob.job_profile_id)}
+                disabled={isApplying || withdrawingJobId === jp.id}
+              >
+                {isApplying ? (
+                  'Applying…'
+                ) : withdrawingJobId === jp.id ? (
+                  'Withdrawing…'
+                ) : isApplied ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
+                    Already Applied
+                  </>
+                ) : (
+                  'Apply Now'
+                )}
+              </button>
               <button className="cal-btn cal-btn-secondary" onClick={() => setViewInviteJob(null)}>Close</button>
             </div>
           </div>
@@ -1378,24 +1476,41 @@ const CandidateDashboard: React.FC = () => {
             return (
               <div key={invite.invite_id} className="job-card-modern">
                 {/* Professional Invitation Badge */}
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'white',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginBottom: '16px'
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  Recruiter Invitation
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    color: 'white',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Recruiter Invitation
+                  </div>
+                  {invite.invite_count > 1 && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '4px 10px',
+                      background: '#fef3c7',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      color: '#92400e',
+                      letterSpacing: '0.3px'
+                    }}>
+                      🔔 Reminded {invite.invite_count} times
+                    </div>
+                  )}
                 </div>
 
                 {/* Job Header */}
@@ -1502,87 +1617,82 @@ const CandidateDashboard: React.FC = () => {
                     </svg>
                     View Details
                   </button>
-                  {invite.already_applied ? (
-                    <button 
-                      disabled
-                      style={{
-                        flex: 1,
-                        padding: '10px 16px',
-                        border: 'none',
-                        background: '#10b981',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: 'white',
-                        cursor: 'not-allowed',
-                        opacity: 0.7,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Applied
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
-                      disabled={applyingJobId === jp.id}
-                      style={{
-                        flex: 1,
-                        padding: '10px 16px',
-                        border: 'none',
-                        background: applyingJobId === jp.id ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        color: 'white',
-                        cursor: applyingJobId === jp.id ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (applyingJobId !== jp.id) {
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                      }}
-                    >
-                      {applyingJobId === jp.id ? (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                            <line x1="12" y1="2" x2="12" y2="6"/>
-                            <line x1="12" y1="18" x2="12" y2="22"/>
-                            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-                            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                            <line x1="2" y1="12" x2="6" y2="12"/>
-                            <line x1="18" y1="12" x2="22" y2="12"/>
-                            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-                            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                          </svg>
-                          Applying...
-                        </>
-                      ) : (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                            <polyline points="22,6 12,13 2,6"/>
-                          </svg>
-                          Apply Now
-                        </>
-                      )}
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
+                    disabled={applyingJobId === jp.id || withdrawingJobId === jp.id}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      border: 'none',
+                      background: invite.already_applied ? '#10b981' : ((applyingJobId === jp.id || withdrawingJobId === jp.id) ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'),
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      color: 'white',
+                      cursor: (applyingJobId === jp.id || withdrawingJobId === jp.id) ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      opacity: ((applyingJobId === jp.id || withdrawingJobId === jp.id) && !invite.already_applied) ? 1 : (invite.already_applied ? 1 : 1)
+                    }}
+                    onMouseEnter={(e) => {
+                      if (applyingJobId !== jp.id && withdrawingJobId !== jp.id) {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    {applyingJobId === jp.id ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                          <line x1="12" y1="2" x2="12" y2="6"/>
+                          <line x1="12" y1="18" x2="12" y2="22"/>
+                          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                          <line x1="2" y1="12" x2="6" y2="12"/>
+                          <line x1="18" y1="12" x2="22" y2="12"/>
+                          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        </svg>
+                        Applying...
+                      </>
+                    ) : withdrawingJobId === jp.id ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                          <line x1="12" y1="2" x2="12" y2="6"/>
+                          <line x1="12" y1="18" x2="12" y2="22"/>
+                          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                          <line x1="2" y1="12" x2="6" y2="12"/>
+                          <line x1="18" y1="12" x2="22" y2="12"/>
+                          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        </svg>
+                        Withdrawing...
+                      </>
+                    ) : invite.already_applied ? (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Applied ✓
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                          <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        Apply Now
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
             );
@@ -1640,11 +1750,17 @@ const CandidateDashboard: React.FC = () => {
           if (!matchesLocation) return false;
         }
 
+        // Application status filter
+        if (jobApplicationStatusFilter) {
+          if (jobApplicationStatusFilter === 'applied' && !job.already_applied) return false;
+          if (jobApplicationStatusFilter === 'not-applied' && job.already_applied) return false;
+        }
+
         return true;
       });
     })();
 
-    const hasActiveFilters = jobSearchTerm || selectedJobRole || selectedJobWorkType || jobLocationFilter;
+    const hasActiveFilters = jobSearchTerm || selectedJobRole || selectedJobWorkType || jobLocationFilter || jobApplicationStatusFilter;
     const resultCount = filteredJobs.length;
     const totalCount = availableJobs.length;
 
@@ -1668,6 +1784,7 @@ const CandidateDashboard: React.FC = () => {
       setSelectedJobRole('');
       setSelectedJobWorkType('');
       setJobLocationFilter('');
+      setJobApplicationStatusFilter('');
     };
 
     return (
@@ -1753,6 +1870,22 @@ const CandidateDashboard: React.FC = () => {
                 value={jobLocationFilter}
                 onChange={(e) => setJobLocationFilter(e.target.value)}
               />
+            </div>
+
+            {/* Application Status Dropdown */}
+            <div style={{ flex: '0 1 160px', minWidth: '140px' }}>
+              <label htmlFor="job-application-status-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</label>
+              <select
+                id="job-application-status-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={jobApplicationStatusFilter}
+                onChange={(e) => setJobApplicationStatusFilter(e.target.value)}
+              >
+                <option value="">All Jobs</option>
+                <option value="applied">Applied</option>
+                <option value="not-applied">Not Applied</option>
+              </select>
             </div>
 
             {/* Clear Filters Button */}
@@ -1943,12 +2076,12 @@ const CandidateDashboard: React.FC = () => {
                         color: 'white',
                         fontSize: '14px',
                         fontWeight: '600',
-                        cursor: job.already_applied ? 'not-allowed' : 'pointer',
+                        cursor: 'pointer',
                         transition: 'all 0.2s',
-                        opacity: job.already_applied || applyingJobId === job.id ? 0.7 : 1
+                        opacity: applyingJobId === job.id || withdrawingJobId === job.id ? 0.7 : 1
                       }}
                       onMouseEnter={(e) => {
-                        if (!job.already_applied && applyingJobId !== job.id) {
+                        if (applyingJobId !== job.id && withdrawingJobId !== job.id) {
                           e.currentTarget.style.transform = 'translateY(-2px)';
                           e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
                         }
@@ -1957,12 +2090,39 @@ const CandidateDashboard: React.FC = () => {
                         e.currentTarget.style.transform = 'translateY(0)';
                         e.currentTarget.style.boxShadow = 'none';
                       }}
-                      onClick={() => {
-                        if (!job.already_applied) handleApply(job.id);
-                      }}
-                      disabled={job.already_applied || applyingJobId === job.id}
+                      onClick={() => handleApply(job.id)}
+                      disabled={applyingJobId === job.id || withdrawingJobId === job.id}
                     >
-                      {job.already_applied ? 'Applied' : (applyingJobId === job.id ? 'Applying...' : 'Apply Now')}
+                      {applyingJobId === job.id ? (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                            <circle cx="12" cy="12" r="10"/>
+                          </svg>
+                          Applying...
+                        </>
+                      ) : withdrawingJobId === job.id ? (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                            <circle cx="12" cy="12" r="10"/>
+                          </svg>
+                          Withdrawing...
+                        </>
+                      ) : job.already_applied ? (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M20 6L9 17l-5-5"/>
+                          </svg>
+                          Applied ✓
+                        </>
+                      ) : (
+                        <>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                          </svg>
+                          Apply Now
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -2115,19 +2275,41 @@ const CandidateDashboard: React.FC = () => {
               <button
                 className={`cal-btn ${viewAvailableJob.already_applied ? 'cal-btn-secondary' : 'cal-btn-primary'}`}
                 onClick={() => { 
-                  if (!viewAvailableJob.already_applied) {
-                    handleApply(viewAvailableJob.id); 
-                    setViewAvailableJob(null); 
-                  }
+                  handleApply(viewAvailableJob.id); 
+                  setViewAvailableJob(null); 
                 }}
-                disabled={!selectedProfileId || viewAvailableJob.already_applied}
-                style={viewAvailableJob.already_applied ? { opacity: 0.8, cursor: 'not-allowed' } : {}}
+                disabled={applyingJobId === viewAvailableJob.id || withdrawingJobId === viewAvailableJob.id}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                {viewAvailableJob.already_applied ? 'Applied ✓' : 'Apply Now'}
+                {applyingJobId === viewAvailableJob.id ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }} className="spin-icon">
+                      <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    Applying...
+                  </>
+                ) : withdrawingJobId === viewAvailableJob.id ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }} className="spin-icon">
+                      <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    Withdrawing...
+                  </>
+                ) : viewAvailableJob.already_applied ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Applied ✓
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Apply Now
+                  </>
+                )}
               </button>
               <button className="cal-btn cal-btn-secondary" onClick={() => setViewAvailableJob(null)}>Close</button>
             </div>
@@ -2290,30 +2472,33 @@ const CandidateDashboard: React.FC = () => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
               View Details
             </button>
-            {!isApplied ? (
-              <button
-                className={`cal-btn cal-btn-primary${isApplying ? ' loading' : ''}`}
-                onClick={() => handleApply(job.job_id)}
-                disabled={!selectedProfileId || isApplying}
-              >
-                {isApplying ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
-                    Applying…
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                    Apply Now
-                  </>
-                )}
-              </button>
-            ) : (
-              <button className="cal-btn cal-btn-primary" disabled>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
-                Applied
-              </button>
-            )}
+            <button
+              className={`cal-btn cal-btn-primary${isApplying || withdrawingJobId === job.job_id ? ' loading' : ''}`}
+              onClick={() => handleApply(job.job_id)}
+              disabled={isApplying || withdrawingJobId === job.job_id}
+            >
+              {isApplying ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                  Applying…
+                </>
+              ) : withdrawingJobId === job.job_id ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: 'spin 1s linear infinite' }}><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+                  Withdrawing…
+                </>
+              ) : isApplied ? (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
+                  Applied ✓
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                  Apply Now
+                </>
+              )}
+            </button>
           </div>
         </div>
       );
@@ -2471,20 +2656,24 @@ const CandidateDashboard: React.FC = () => {
 
             {/* Footer */}
             <div className="cal-drawer-footer">
-              {!isApplied ? (
-                <button
-                  className={`cal-btn cal-btn-primary${isApplying ? ' loading' : ''}`}
-                  onClick={() => handleApply(job.job_id)}
-                  disabled={!selectedProfileId || isApplying}
-                >
-                  {isApplying ? 'Applying…' : 'Apply Now'}
-                </button>
-              ) : (
-                <button className="cal-btn cal-btn-primary" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
-                  Already Applied
-                </button>
-              )}
+              <button
+                className={`cal-btn cal-btn-primary${isApplying || withdrawingJobId === job.job_id ? ' loading' : ''}`}
+                onClick={() => handleApply(job.job_id)}
+                disabled={isApplying || withdrawingJobId === job.job_id}
+              >
+                {isApplying ? (
+                  'Applying…'
+                ) : withdrawingJobId === job.job_id ? (
+                  'Withdrawing…'
+                ) : isApplied ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
+                    Already Applied
+                  </>
+                ) : (
+                  'Apply Now'
+                )}
+              </button>
               <button className="cal-btn cal-btn-secondary" onClick={() => setDrawerJob(null)}>Close</button>
             </div>
           </div>
@@ -2756,81 +2945,68 @@ const CandidateDashboard: React.FC = () => {
                   </svg>
                   View Job Posting
                 </button>
-                {match.already_applied ? (
-                  <button
-                    disabled
-                    style={{
-                      flex: 1,
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: '#10b981',
-                      color: 'white',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'not-allowed',
-                      opacity: 0.7,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5"/>
-                    </svg>
-                    Applied
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleApplyFromMatch(match.job_posting.id, match.job_profile_id)}
-                    disabled={applyingJobId === match.job_posting.id}
-                    style={{
-                      flex: 1,
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      color: 'white',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: applyingJobId === match.job_posting.id ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      opacity: applyingJobId === match.job_posting.id ? 0.7 : 1
-                    }}
-                    onMouseEnter={(e) => {
-                      if (applyingJobId !== match.job_posting.id) {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                  >
-                    {applyingJobId === match.job_posting.id ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                          <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        Applying...
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                          <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                        Apply Now
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={() => handleApplyFromMatch(match.job_posting.id, match.job_profile_id)}
+                  disabled={applyingJobId === match.job_posting.id || withdrawingJobId === match.job_posting.id}
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: match.already_applied ? '#10b981' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: (applyingJobId === match.job_posting.id || withdrawingJobId === match.job_posting.id) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: (applyingJobId === match.job_posting.id || withdrawingJobId === match.job_posting.id) ? 0.7 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (applyingJobId !== match.job_posting.id && withdrawingJobId !== match.job_posting.id) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {applyingJobId === match.job_posting.id ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                        <circle cx="12" cy="12" r="10"/>
+                      </svg>
+                      Applying...
+                    </>
+                  ) : withdrawingJobId === match.job_posting.id ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
+                        <circle cx="12" cy="12" r="10"/>
+                      </svg>
+                      Withdrawing...
+                    </>
+                  ) : match.already_applied ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                      Applied ✓
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                      Apply Now
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -2984,26 +3160,32 @@ const CandidateDashboard: React.FC = () => {
             </div>
 
             <div className="cal-drawer-footer">
-              {!viewMatchJob.already_applied ? (
-                <button
-                  className="cal-btn cal-btn-primary"
-                  onClick={() => { handleApplyFromMatch(viewMatchJob.job_posting.id, viewMatchJob.job_profile_id); setViewMatchJob(null); }}
-                  disabled={applyingJobId === viewMatchJob.job_posting.id}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Apply Now
-                </button>
-              ) : (
-                <button className="cal-btn cal-btn-primary" disabled style={{ opacity: 0.7, cursor: 'default' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
-                    <path d="M20 6L9 17l-5-5"/>
-                  </svg>
-                  Already Applied
-                </button>
-              )}
+              <button
+                className="cal-btn cal-btn-primary"
+                onClick={() => { handleApplyFromMatch(viewMatchJob.job_posting.id, viewMatchJob.job_profile_id); setViewMatchJob(null); }}
+                disabled={applyingJobId === viewMatchJob.job_posting.id || withdrawingJobId === viewMatchJob.job_posting.id}
+              >
+                {applyingJobId === viewMatchJob.job_posting.id ? (
+                  'Applying…'
+                ) : withdrawingJobId === viewMatchJob.job_posting.id ? (
+                  'Withdrawing…'
+                ) : viewMatchJob.already_applied ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Already Applied
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    Apply Now
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -3362,6 +3544,207 @@ const CandidateDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Selection Modal for Applications */}
+      {showProfileSelectionModal && pendingApplicationJobId && (
+        <div className="cal-drawer-overlay" onClick={() => { setShowProfileSelectionModal(false); setPendingApplicationJobId(null); }}>
+          <div 
+            className="cal-drawer" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '600px', width: '90%' }}
+          >
+            <div className="cal-drawer-header">
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#1a1a1a' }}>
+                Select Job Profile
+              </h2>
+              <button 
+                onClick={() => { setShowProfileSelectionModal(false); setPendingApplicationJobId(null); }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '0',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '6px',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="cal-drawer-content" style={{ padding: '24px' }}>
+              <p style={{ 
+                fontSize: '14px', 
+                color: '#64748b', 
+                marginBottom: '24px',
+                lineHeight: '1.6'
+              }}>
+                Choose which job profile you want to use for this application. The recruiter will see only the selected profile's details.
+              </p>
+
+              {jobProfiles.length === 0 ? (
+                <div style={{ 
+                  textAlign: 'center', 
+                  padding: '40px 20px',
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px dashed #cbd5e1'
+                }}>
+                  <svg 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2"
+                    style={{ width: '48px', height: '48px', margin: '0 auto 16px', color: '#94a3b8' }}
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>
+                    No Job Profiles Found
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+                    You need to create at least one job profile before applying to jobs.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowProfileSelectionModal(false);
+                      setPendingApplicationJobId(null);
+                      navigate('/candidate/job-preferences');
+                    }}
+                    style={{
+                      padding: '10px 20px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Create Job Profile
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {jobProfiles.map((profile: any) => (
+                    <div
+                      key={profile.id}
+                      onClick={() => {
+                        submitApplicationWithProfile(pendingApplicationJobId, profile.id);
+                        setShowProfileSelectionModal(false);
+                        setPendingApplicationJobId(null);
+                      }}
+                      style={{
+                        padding: '16px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        background: 'white'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#7c3aed';
+                        e.currentTarget.style.background = '#faf5ff';
+                        e.currentTarget.style.transform = 'translateX(4px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                        e.currentTarget.style.background = 'white';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ 
+                            fontSize: '16px', 
+                            fontWeight: 600, 
+                            color: '#1a1a1a',
+                            marginBottom: '8px'
+                          }}>
+                            {profile.profile_name}
+                          </h3>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                            {profile.job_role && (
+                              <span style={{
+                                fontSize: '12px',
+                                padding: '4px 10px',
+                                background: '#f1f5f9',
+                                color: '#475569',
+                                borderRadius: '6px',
+                                fontWeight: 500
+                              }}>
+                                {profile.job_role}
+                              </span>
+                            )}
+                            {profile.years_of_experience && (
+                              <span style={{
+                                fontSize: '12px',
+                                padding: '4px 10px',
+                                background: '#f1f5f9',
+                                color: '#475569',
+                                borderRadius: '6px',
+                                fontWeight: 500
+                              }}>
+                                {profile.years_of_experience} yrs exp
+                              </span>
+                            )}
+                            {profile.worktype && (
+                              <span style={{
+                                fontSize: '12px',
+                                padding: '4px 10px',
+                                background: '#f1f5f9',
+                                color: '#475569',
+                                borderRadius: '6px',
+                                fontWeight: 500
+                              }}>
+                                {profile.worktype}
+                              </span>
+                            )}
+                          </div>
+                          {profile.profile_summary && (
+                            <p style={{
+                              fontSize: '13px',
+                              color: '#64748b',
+                              lineHeight: '1.5',
+                              margin: 0,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden'
+                            }}>
+                              {profile.profile_summary}
+                            </p>
+                          )}
+                        </div>
+                        <svg 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2"
+                          style={{ width: '20px', height: '20px', color: '#7c3aed', flexShrink: 0, marginLeft: '12px' }}
+                        >
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

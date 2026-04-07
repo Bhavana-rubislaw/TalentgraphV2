@@ -848,7 +848,7 @@ class AnalyticsEvent(SQLModel, table=True):
     event_time: datetime = Field(index=True)
     
     # Related entities
-    job_posting_id: Optional[int] = Field(default=None, foreign_key="job_posting.id", index=True)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
     candidate_id: Optional[int] = Field(default=None, foreign_key="candidate.id")
     application_id: Optional[int] = Field(default=None, foreign_key="application.id")
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
@@ -872,7 +872,7 @@ class AnalyticsRollupDaily(SQLModel, table=True):
     rollup_date: date = Field(sa_column=Column(Date, index=True))
     
     # Job posting specific (optional)
-    job_posting_id: Optional[int] = Field(default=None, foreign_key="job_posting.id", index=True)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
     
     # Event counts
     jobs_viewed: int = Field(default=0)

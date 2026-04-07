@@ -22,6 +22,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
+def merge_social_links(job_profile: JobProfile, candidate: Candidate) -> dict:
+    """
+    Merge social links with precedence: profile fields first, candidate fields as fallback.
+    
+    Returns a dict with: linkedin_url, github_url, portfolio_url, other_social_url
+    """
+    return {
+        "linkedin_url": job_profile.linkedin_url or candidate.linkedin_url,
+        "github_url": job_profile.github_url or candidate.github_url,
+        "portfolio_url": job_profile.portfolio_url or candidate.portfolio_url,
+        # Twitter/website from profile only (no candidate equivalent for "other")
+        "other_social_url": job_profile.twitter_url or job_profile.website_url or None,
+    }
+
+
 def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, session: Session) -> dict:
     """Calculate match score from candidate perspective"""
     score = 0
@@ -237,8 +252,19 @@ def get_recruiter_invites(
     )
     invites = session.exec(invites_query).all()
     
-    result = []
+    # Deduplicate: keep only the latest invite per (company, job_posting)
+    # Count total invites per combo for the badge
+    seen = {}
+    invite_counts = {}
     for invite in invites:
+        key = (invite.company_id, invite.job_posting_id)
+        invite_counts[key] = invite_counts.get(key, 0) + 1
+        if key not in seen or invite.created_at > seen[key].created_at:
+            seen[key] = invite
+    unique_invites = list(seen.values())
+    
+    result = []
+    for invite in unique_invites:
         job_posting = session.get(JobPosting, invite.job_posting_id)
         company = session.get(Company, invite.company_id)
         
@@ -292,6 +318,7 @@ def get_recruiter_invites(
                 "company_name": company.company_name,
                 "employee_type": company.employee_type
             },
+            "invite_count": invite_counts.get((invite.company_id, invite.job_posting_id), 1),
             "created_at": invite.created_at.isoformat()
         })
     
@@ -730,8 +757,17 @@ def get_recruiter_shortlist(
     
     shortlisted = session.exec(query).all()
     
-    result = []
+    # Deduplicate: keep only the latest swipe per (candidate, job_profile, job_posting)
+    # This prevents duplicate cards when the same candidate is invited multiple times
+    seen = {}
     for swipe in shortlisted:
+        key = (swipe.candidate_id, swipe.job_profile_id, swipe.job_posting_id)
+        if key not in seen or swipe.created_at > seen[key].created_at:
+            seen[key] = swipe
+    unique_shortlisted = list(seen.values())
+    
+    result = []
+    for swipe in unique_shortlisted:
         candidate = session.get(Candidate, swipe.candidate_id)
         job_profile = session.get(JobProfile, swipe.job_profile_id)
         job_posting = session.get(JobPosting, swipe.job_posting_id)
@@ -781,6 +817,24 @@ def get_recruiter_shortlist(
                     "expiry_date": ct.expiry_date
                 })
 
+        # Merge social links with precedence: profile → candidate fallback
+        social_links = merge_social_links(job_profile, candidate)
+
+        # Count ask_to_apply invites for this candidate
+        invite_swipes = session.exec(
+            select(Swipe).where(
+                and_(
+                    Swipe.candidate_id == swipe.candidate_id,
+                    Swipe.job_profile_id == swipe.job_profile_id,
+                    Swipe.action == "ask_to_apply",
+                    Swipe.action_by == "recruiter",
+                    Swipe.company_id.in_(company_ids)
+                )
+            )
+        ).all()
+        invite_count = len(invite_swipes)
+        already_invited = invite_count > 0
+
         result.append({
             "candidate": {
                 "id": candidate.id,
@@ -790,9 +844,6 @@ def get_recruiter_shortlist(
                 "phone": candidate.phone,
                 "location_state": candidate.location_state,
                 "location_county": candidate.location_county,
-                "linkedin_url": candidate.linkedin_url,
-                "github_url": candidate.github_url,
-                "portfolio_url": candidate.portfolio_url,
                 "profile_summary": candidate.profile_summary,
                 "resumes": resumes_list,
                 "certifications": certs_list
@@ -821,11 +872,10 @@ def get_recruiter_shortlist(
                 "relocation_willingness": job_profile.relocation_willingness,
                 "pay_type": job_profile.pay_type,
                 "negotiability": job_profile.negotiability,
-                "linkedin_url": job_profile.linkedin_url,
-                "github_url": job_profile.github_url,
-                "portfolio_url": job_profile.portfolio_url,
-                "twitter_url": job_profile.twitter_url,
-                "website_url": job_profile.website_url,
+                "linkedin_url": social_links["linkedin_url"],
+                "github_url": social_links["github_url"],
+                "portfolio_url": social_links["portfolio_url"],
+                "other_social_url": social_links["other_social_url"],
                 "skills": skills_list,
                 "location_preferences": location_prefs
             },
@@ -836,7 +886,9 @@ def get_recruiter_shortlist(
                 "seniority_level": job_posting.seniority_level
             },
             "action": swipe.action,
-            "shortlisted_at": swipe.created_at.isoformat()
+            "shortlisted_at": swipe.created_at.isoformat(),
+            "already_invited": already_invited,
+            "invite_count": invite_count
         })
     
     return result
@@ -848,7 +900,12 @@ def get_recruiter_applications(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get all applications to recruiter's job postings"""
+    """
+    Get all applications to recruiter's job postings.
+    
+    Returns application snapshot: only the selected job_profile (no sibling profiles),
+    with certifications resolved from job_profile.certification_ids.
+    """
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found. Please log in again.")
@@ -893,9 +950,7 @@ def get_recruiter_applications(
         ).all()
         skills_list = [{"skill_name": s.skill_name, "skill_category": s.skill_category, "proficiency_level": s.proficiency_level} for s in skills]
         
-        # Gather resumes for the candidate
-        # Priority: primary_resume_id and attached_resume_ids from job_profile
-        # Fallback: all resumes of candidate
+        # Gather resumes: primary_resume_id + attached_resume_ids from job_profile
         resumes_list = []
         resume_ids_to_fetch = set()
         
@@ -910,91 +965,75 @@ def get_recruiter_applications(
             except (json.JSONDecodeError, TypeError):
                 pass
         
-        # If no specific resumes are selected, fetch all resumes
-        if not resume_ids_to_fetch:
-            all_resumes = session.exec(
-                select(Resume).where(Resume.candidate_id == candidate.id)
-            ).all()
-            for resume in all_resumes:
+        # Fetch selected resumes only (no fallback to all resumes)
+        for resume_id in resume_ids_to_fetch:
+            resume = session.get(Resume, resume_id)
+            if resume and resume.candidate_id == candidate.id:
                 resumes_list.append({
                     "id": resume.id,
                     "filename": resume.filename,
                     "uploaded_at": resume.uploaded_at.isoformat()
                 })
-        else:
-            # Fetch only selected resumes
-            for resume_id in resume_ids_to_fetch:
-                resume = session.get(Resume, resume_id)
-                if resume and resume.candidate_id == candidate.id:
-                    resumes_list.append({
-                        "id": resume.id,
-                        "filename": resume.filename,
-                        "uploaded_at": resume.uploaded_at.isoformat()
-                    })
         
-        # Gather certifications for the candidate
-        # Priority: certification_ids from job_profile
-        # Fallback: all certifications of candidate that have files
+        # Gather certifications: ONLY from job_profile.certification_ids (snapshot behavior)
         certifications_list = []
-        certification_ids_to_fetch = set()
-        
         if job_profile.certification_ids:
             try:
                 cert_ids = json.loads(job_profile.certification_ids)
                 if isinstance(cert_ids, list):
-                    certification_ids_to_fetch.update(cert_ids)
+                    for cert_id in cert_ids:
+                        cert = session.get(Certification, cert_id)
+                        if cert and cert.candidate_id == candidate.id:
+                            certifications_list.append({
+                                "id": cert.id,
+                                "name": cert.name,
+                                "issuer": cert.issuer,
+                                "filename": cert.filename,
+                                "issued_date": cert.issued_date,
+                                "expiry_date": cert.expiry_date,
+                                "created_at": cert.created_at.isoformat() if cert.created_at else None
+                            })
             except (json.JSONDecodeError, TypeError):
                 pass
         
-        # If no specific certifications are selected, fetch all certifications with files
-        if not certification_ids_to_fetch:
-            all_certifications = session.exec(
-                select(Certification).where(Certification.candidate_id == candidate.id)
-            ).all()
-            for cert in all_certifications:
-                if cert.filename and cert.storage_path:  # Only include certs with files
-                    certifications_list.append({
-                        "id": cert.id,
-                        "name": cert.name,
-                        "issuer": cert.issuer,
-                        "filename": cert.filename,
-                        "issued_date": cert.issued_date,
-                        "expiry_date": cert.expiry_date,
-                        "created_at": cert.created_at.isoformat()
-                    })
-        else:
-            # Fetch only selected certifications
-            for cert_id in certification_ids_to_fetch:
-                cert = session.get(Certification, cert_id)
-                if cert and cert.candidate_id == candidate.id and cert.filename and cert.storage_path:
-                    certifications_list.append({
-                        "id": cert.id,
-                        "name": cert.name,
-                        "issuer": cert.issuer,
-                        "filename": cert.filename,
-                        "issued_date": cert.issued_date,
-                        "expiry_date": cert.expiry_date,
-                        "created_at": cert.created_at.isoformat()
-                    })
+        # Merge social links with precedence: profile → candidate fallback
+        social_links = merge_social_links(job_profile, candidate)
         
         result.append({
             "application_id": app.id,
+            "status": app.status,
+            "applied_at": app.applied_at.isoformat(),
+            "recruiter_notes": app.recruiter_notes,
+            "notes_updated_at": app.notes_updated_at.isoformat() if app.notes_updated_at else None,
             "candidate": {
                 "id": candidate.id,
                 "user_id": candidate.user_id,
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,
-                "location_state": candidate.location_state,
-                "location_county": candidate.location_county,
-                "linkedin_url": candidate.linkedin_url,
-                "github_url": candidate.github_url,
-                "resumes": resumes_list,
-                "certifications": certifications_list
+                "location": f"{candidate.location_county}, {candidate.location_state}" if candidate.location_county else candidate.location_state,
+            },
+            "job_posting": {
+                "id": job_posting.id,
+                "title": job_posting.job_title,
+                "location": job_posting.location,
             },
             "job_profile": {
                 "id": job_profile.id,
                 "profile_name": job_profile.profile_name,
+                "desired_role": job_profile.job_role,
+                "desired_salary": f"{job_profile.salary_currency.upper() if job_profile.salary_currency else '$'} {int(job_profile.salary_min):,} - {int(job_profile.salary_max):,}" if job_profile.salary_min is not None else None,
+                "desired_location": job_profile.worktype.value if job_profile.worktype else None,
+                "work_preference": job_profile.worktype.value if job_profile.worktype else None,
+                "linkedin_url": social_links["linkedin_url"],
+                "github_url": social_links["github_url"],
+                "portfolio_url": social_links["portfolio_url"],
+                "other_social_url": social_links["other_social_url"],
+                "skills": skills_list,
+                "experience": job_profile.years_of_experience,
+                "education": job_profile.highest_education,
+                "certifications": certifications_list,
+                # Additional fields for backward compatibility with existing UI
                 "years_of_experience": job_profile.years_of_experience,
                 "worktype": job_profile.worktype,
                 "employment_type": job_profile.employment_type,
@@ -1006,23 +1045,8 @@ def get_recruiter_applications(
                 "highest_education": job_profile.highest_education,
                 "notice_period": job_profile.notice_period,
                 "profile_summary": job_profile.profile_summary,
-                "linkedin_url": job_profile.linkedin_url,
-                "github_url": job_profile.github_url,
-                "portfolio_url": job_profile.portfolio_url,
-                "twitter_url": job_profile.twitter_url,
-                "website_url": job_profile.website_url,
-                "skills": skills_list
-            },
-            "job_posting": {
-                "id": job_posting.id,
-                "job_title": job_posting.job_title,
-                "location": job_posting.location,
-                "seniority_level": job_posting.seniority_level
-            },
-            "status": app.status,
-            "applied_at": app.applied_at.isoformat(),
-            "recruiter_notes": app.recruiter_notes,
-            "notes_updated_at": app.notes_updated_at.isoformat() if app.notes_updated_at else None
+                "resumes": resumes_list,
+            }
         })
     
     return result
@@ -1247,6 +1271,9 @@ def get_recruiter_matches(
                     "expiry_date": c.expiry_date
                 })
 
+        # Merge social links with precedence: profile → candidate fallback
+        social_links = merge_social_links(job_profile, candidate)
+
         result.append({
             "match_id": match.id,
             "candidate": {
@@ -1257,9 +1284,6 @@ def get_recruiter_matches(
                 "phone": candidate.phone,
                 "location_state": candidate.location_state,
                 "location_county": candidate.location_county,
-                "linkedin_url": candidate.linkedin_url,
-                "github_url": candidate.github_url,
-                "portfolio_url": candidate.portfolio_url,
                 "profile_summary": candidate.profile_summary,
                 "resumes": resumes_list,
                 "certifications": certs_list
@@ -1288,11 +1312,10 @@ def get_recruiter_matches(
                 "relocation_willingness": job_profile.relocation_willingness,
                 "pay_type": job_profile.pay_type,
                 "negotiability": job_profile.negotiability,
-                "linkedin_url": job_profile.linkedin_url,
-                "github_url": job_profile.github_url,
-                "portfolio_url": job_profile.portfolio_url,
-                "twitter_url": job_profile.twitter_url,
-                "website_url": job_profile.website_url,
+                "linkedin_url": social_links["linkedin_url"],
+                "github_url": social_links["github_url"],
+                "portfolio_url": social_links["portfolio_url"],
+                "other_social_url": social_links["other_social_url"],
                 "skills": skills_list,
                 "location_preferences": location_prefs
             },
@@ -1488,8 +1511,8 @@ def browse_all_candidates(
             ).first()
             already_liked = like_swipe is not None
             
-            # Check for ask_to_apply actions
-            invite_swipe = session.exec(
+            # Check for ask_to_apply actions and count them
+            invite_swipes = session.exec(
                 select(Swipe).where(
                     and_(
                         Swipe.candidate_id == candidate.id,
@@ -1499,8 +1522,9 @@ def browse_all_candidates(
                         Swipe.company_id.in_(company_ids)
                     )
                 )
-            ).first()
-            already_invited = invite_swipe is not None
+            ).all()
+            already_invited = len(invite_swipes) > 0
+            invite_count = len(invite_swipes)
         
         # Format job profiles for response
         formatted_profiles = []
@@ -1535,7 +1559,8 @@ def browse_all_candidates(
             "profile_summary": candidate.profile_summary or "No summary available",
             "job_profiles": formatted_profiles,
             "already_liked": already_liked,
-            "already_invited": already_invited
+            "already_invited": already_invited,
+            "invite_count": invite_count if primary_profile else 0
         }
         
         # Apply work_type filter if specified

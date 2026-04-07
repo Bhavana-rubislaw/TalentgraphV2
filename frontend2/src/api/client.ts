@@ -183,6 +183,9 @@ export const apiClient = {
   swipeAskToApply: (jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/ask-to-apply', { job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
   
+  undoSwipe: (jobPostingId: number) =>
+    api.delete(`/swipes/undo/${jobPostingId}`),
+  
   // Recruiter Swipes
   recruiterLike: (candidateId: number, jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/recruiter/like', { candidate_id: candidateId, job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
@@ -192,6 +195,9 @@ export const apiClient = {
   
   recruiterAskToApply: (candidateId: number, jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/recruiter/ask-to-apply', { candidate_id: candidateId, job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
+  
+  recruiterUndoSwipe: (candidateId: number, jobPostingId: number) =>
+    api.delete(`/swipes/recruiter/undo/${candidateId}/${jobPostingId}`),
   
   checkInviteStatus: (candidateId: number, jobPostingId: number) =>
     api.get(`/swipes/check-invite-status/${candidateId}/${jobPostingId}`),

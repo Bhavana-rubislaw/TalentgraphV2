@@ -107,7 +107,12 @@ def apply_to_job(
             detail="This job is not currently accepting applications."
         )
     
-    # Enforce: only one application per candidate per job posting
+    # TODO: PRODUCT DECISION REQUIRED - Duplicate application behavior
+    # Current: One application per (candidate_id, job_posting_id) - same candidate cannot apply twice to the same posting
+    # Alternative: Allow one application per (candidate_id, job_posting_id, job_profile_id) - same candidate can apply with different profiles
+    # Confirm intended product rule before changing this logic.
+    
+    # Enforce: only one application per candidate per job posting (regardless of profile)
     existing = session.exec(
         select(Application)
         .where(Application.candidate_id == candidate.id)

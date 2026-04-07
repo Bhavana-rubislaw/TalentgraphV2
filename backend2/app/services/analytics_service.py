@@ -20,6 +20,7 @@ Event Types (20 total):
 - SEARCH_PERFORMED, PROFILE_VIEWED, PAYMENT_COMPLETED
 """
 
+import json
 import logging
 from datetime import datetime, timezone, timedelta, date
 from typing import Dict, Any, Optional, List
@@ -79,7 +80,7 @@ class AnalyticsService:
             candidate_id=candidate_id,
             application_id=application_id,
             user_id=user_id,
-            metadata_json=metadata or {},
+            metadata_json=json.dumps(metadata) if metadata else None,
             correlation_id=correlation_id
         )
         

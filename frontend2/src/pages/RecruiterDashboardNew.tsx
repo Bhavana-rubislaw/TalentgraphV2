@@ -429,18 +429,41 @@ const RecruiterDashboard: React.FC = () => {
       // Proceed with invite/reminder
       const response = await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
       const isReminder = response.data.is_reminder;
+      const newInviteCount = (invite_count || 0) + 1;
       
       console.log('[API SUCCESS]', isReminder ? 'Reminder sent' : 'Invitation sent');
       
-      // Optimistic update — card stays with Invited badge
-      setRecommendations((prev: any) => ({
-        ...prev,
-        recommendations: prev.recommendations.map((r: any) =>
-          r.candidate.id === candidateId && r.job_profile.id === jobProfileId
-            ? { ...r, already_actioned: true, action_taken: 'ask_to_apply' }
-            : r
+      // Optimistic update — recommendation cards
+      setRecommendations((prev: any) => {
+        if (!prev || !prev.recommendations) return prev;
+        return {
+          ...prev,
+          recommendations: prev.recommendations.map((r: any) =>
+            r.candidate.id === candidateId && r.job_profile.id === jobProfileId
+              ? { ...r, already_actioned: true, action_taken: 'ask_to_apply' }
+              : r
+          )
+        };
+      });
+      
+      // Optimistic update — browse candidates
+      setBrowseCandidates((prev) =>
+        prev.map((c) =>
+          c.candidate_id === candidateId
+            ? { ...c, already_invited: true, invite_count: newInviteCount }
+            : c
         )
-      }));
+      );
+      
+      // Optimistic update — shortlist cards (update invite count & already_invited)
+      setShortlist((prev) =>
+        prev.map((item: any) =>
+          item.candidate.id === candidateId && item.job_profile?.id === jobProfileId
+            ? { ...item, already_invited: true, invite_count: newInviteCount }
+            : item
+        )
+      );
+      
       fetchShortlist();
     } catch (error) {
       console.error('[API ERROR] Failed to send invitation:', error);
@@ -1208,7 +1231,7 @@ const RecruiterDashboard: React.FC = () => {
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                           <polyline points="22,6 12,13 2,6"/>
                         </svg>
-                        {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
+                        {rec.action_taken === 'ask_to_apply' ? '✓ Asked to Apply' : 'Ask to Apply'}
                       </button>
                       <button
                         onClick={(e) => { 
@@ -1401,7 +1424,7 @@ const RecruiterDashboard: React.FC = () => {
                       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                       <polyline points="22,6 12,13 2,6"/>
                     </svg>
-                    {rec.action_taken === 'ask_to_apply' ? 'Invited ✓' : 'Ask to Apply'}
+                    {rec.action_taken === 'ask_to_apply' ? '✓ Asked to Apply' : 'Ask to Apply'}
                   </button>
                   <button
                     className="vp-btn vp-btn-message"
@@ -1557,7 +1580,26 @@ const RecruiterDashboard: React.FC = () => {
             }}
           >
             {/* Status Badge */}
-            <div style={{ position: 'absolute', top: '18px', right: '18px' }}>
+            <div style={{ position: 'absolute', top: '18px', right: '18px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {item.invite_count > 0 && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  background: '#dcfce7',
+                  color: '#166534'
+                }}>
+                  <svg style={{ width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  Invited ({item.invite_count})
+                </span>
+              )}
               <span style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -1658,7 +1700,8 @@ const RecruiterDashboard: React.FC = () => {
             </div>
 
             {/* Enhanced CTA Buttons */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
               <button
                 className="btn-primary"
                 style={{ 
@@ -1691,30 +1734,8 @@ const RecruiterDashboard: React.FC = () => {
               >
                 View Details
               </button>
-              <a
-                href={`mailto:${item.candidate.email}`}
-                className="action-btn secondary"
-                style={{ 
-                  padding: '0 16px',
-                  height: '42px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  textDecoration: 'none',
-                  justifyContent: 'center'
-                }}
-              >
-                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                Contact
-              </a>
               <button
-                className="action-btn success"
+                className={`action-btn ${item.already_invited ? 'success' : 'success'}`}
                 style={{ 
                   padding: '0 16px',
                   height: '42px',
@@ -1724,16 +1745,21 @@ const RecruiterDashboard: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  opacity: item.already_invited ? 0.7 : 1,
+                  background: item.already_invited ? '#10b981' : undefined,
+                  color: item.already_invited ? 'white' : undefined
                 }}
                 onClick={() => handleAskToApply(item.candidate.id, item.job_profile?.id)}
+                title={item.already_invited ? `Already invited ${item.invite_count || ''} time${item.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
               >
                 <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
-                Ask to Apply
+                {item.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
               </button>
+              </div>
               <button
                 className="action-btn message"
                 style={{ 
@@ -2343,10 +2369,15 @@ const RecruiterDashboard: React.FC = () => {
                       <div className="ra-card-avatar">{app.candidate.name.charAt(0)}</div>
                       <div className="ra-card-info">
                         <div className="ra-card-name">{app.candidate.name}</div>
-                        <div className="ra-card-role">{app.job_profile.profile_name || app.job_posting.job_title}</div>
+                        <div className="ra-card-role">Applied for {app.job_posting.title}</div>
                       </div>
                     </div>
                     <div className="ra-card-meta">
+                      {app.job_profile.profile_name && (
+                        <span className="ra-card-profile-name" style={{ fontSize: '11px', color: '#94a3b8' }}>
+                          {app.job_profile.profile_name}
+                        </span>
+                      )}
                       <span className={`ra-status-chip ${app.status}`}>{app.status}</span>
                       <span className="ra-card-posting">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
@@ -2589,21 +2620,21 @@ const RecruiterDashboard: React.FC = () => {
                   )}
 
                   {/* Social Links */}
-                  {(selectedApp.job_profile.linkedin_url || selectedApp.job_profile.github_url || selectedApp.job_profile.portfolio_url || selectedApp.job_profile.twitter_url || selectedApp.job_profile.website_url || selectedApp.candidate.linkedin_url || selectedApp.candidate.github_url) && (
+                  {(selectedApp.job_profile.linkedin_url || selectedApp.job_profile.github_url || selectedApp.job_profile.portfolio_url || selectedApp.job_profile.other_social_url) && (
                     <div className="ra-detail-section">
                       <div className="ra-section-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                         Social &amp; Web Links
                       </div>
                       <div className="ra-socials-row">
-                        {(selectedApp.job_profile.linkedin_url || selectedApp.candidate.linkedin_url) && (
-                          <a href={selectedApp.job_profile.linkedin_url || selectedApp.candidate.linkedin_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
+                        {selectedApp.job_profile.linkedin_url && (
+                          <a href={selectedApp.job_profile.linkedin_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                             LinkedIn
                           </a>
                         )}
-                        {(selectedApp.job_profile.github_url || selectedApp.candidate.github_url) && (
-                          <a href={selectedApp.job_profile.github_url || selectedApp.candidate.github_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
+                        {selectedApp.job_profile.github_url && (
+                          <a href={selectedApp.job_profile.github_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
                             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                             GitHub
                           </a>
@@ -2614,16 +2645,10 @@ const RecruiterDashboard: React.FC = () => {
                             Portfolio
                           </a>
                         )}
-                        {selectedApp.job_profile.twitter_url && (
-                          <a href={selectedApp.job_profile.twitter_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                            X / Twitter
-                          </a>
-                        )}
-                        {selectedApp.job_profile.website_url && (
-                          <a href={selectedApp.job_profile.website_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
+                        {selectedApp.job_profile.other_social_url && (
+                          <a href={selectedApp.job_profile.other_social_url} target="_blank" rel="noopener noreferrer" className="ra-social-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                            Website
+                            Website / Social
                           </a>
                         )}
                       </div>
@@ -2631,14 +2656,14 @@ const RecruiterDashboard: React.FC = () => {
                   )}
 
                   {/* Submitted Resumes */}
-                  {selectedApp.candidate.resumes && selectedApp.candidate.resumes.length > 0 && (
+                  {selectedApp.job_profile.resumes && selectedApp.job_profile.resumes.length > 0 && (
                     <div className="ra-detail-section">
                       <div className="ra-section-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
                         Submitted Resumes
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {selectedApp.candidate.resumes.map((resume: any) => (
+                        {selectedApp.job_profile.resumes.map((resume: any) => (
                           <div 
                             key={resume.id}
                             style={{
@@ -2736,20 +2761,20 @@ const RecruiterDashboard: React.FC = () => {
                         marginTop: '8px',
                         fontStyle: 'italic'
                       }}>
-                        {selectedApp.candidate.resumes.length === 1 ? '1 resume' : `${selectedApp.candidate.resumes.length} resumes`} submitted for this application
+                        {selectedApp.job_profile.resumes.length === 1 ? '1 resume' : `${selectedApp.job_profile.resumes.length} resumes`} submitted for this application
                       </div>
                     </div>
                   )}
 
                   {/* Submitted Certifications */}
-                  {selectedApp.candidate.certifications && selectedApp.candidate.certifications.length > 0 && (
+                  {selectedApp.job_profile.certifications && selectedApp.job_profile.certifications.length > 0 && (
                     <div className="ra-detail-section">
                       <div className="ra-section-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                         Submitted Certifications
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {selectedApp.candidate.certifications.map((cert: any) => (
+                        {selectedApp.job_profile.certifications.map((cert: any) => (
                           <div 
                             key={cert.id}
                             style={{
@@ -3871,9 +3896,9 @@ const RecruiterDashboard: React.FC = () => {
                       }
                     }}
                     disabled={candidate.already_invited}
-                    title={candidate.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
+                    title={candidate.already_invited ? `Already invited this candidate ${candidate.invite_count || ''} time${candidate.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
                   >
-                    {candidate.already_invited ? '✓ Invited' : 'Ask to Apply'}
+                    {candidate.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
                   </button>
                 </div>
               </div>
@@ -4528,12 +4553,13 @@ const RecruiterDashboard: React.FC = () => {
                   onClick={() => {
                     if (!viewCandidateProfile.already_invited && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
                       handleAskToApply(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
-                      setViewCandidateProfile({ ...viewCandidateProfile, already_invited: true });
+                      setViewCandidateProfile({ ...viewCandidateProfile, already_invited: true, invite_count: 1 });
                     }
                   }}
                   disabled={viewCandidateProfile.already_invited}
+                  title={viewCandidateProfile.already_invited ? `Already invited ${viewCandidateProfile.invite_count || ''} time${viewCandidateProfile.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
                 >
-                  {viewCandidateProfile.already_invited ? 'Invited' : 'Ask to Apply'}
+                  {viewCandidateProfile.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
                 </button>
               </div>
             </div>

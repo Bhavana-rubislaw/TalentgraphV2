@@ -203,6 +203,58 @@ def swipe_pass(
     return {"message": "Passed on job posting", "action": "pass"}
 
 
+@router.delete("/undo/{job_posting_id}")
+def undo_swipe(
+    job_posting_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Candidate undoes a swipe (like or pass) on a job posting"""
+    logger.info(f"[UNDO SWIPE] job_posting_id={job_posting_id}")
+    
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+    
+    # Find existing swipe
+    existing_swipe = session.exec(
+        select(Swipe)
+        .where(Swipe.candidate_id == candidate.id)
+        .where(Swipe.job_posting_id == job_posting_id)
+        .where(Swipe.action_by == "candidate")
+    ).first()
+    
+    if not existing_swipe:
+        raise HTTPException(status_code=404, detail="No swipe found to undo")
+    
+    swipe_action = existing_swipe.action
+    
+    # Delete the swipe
+    session.delete(existing_swipe)
+    
+    # If it was a like, update or remove the match
+    if swipe_action == "like":
+        existing_match = session.exec(
+            select(Match)
+            .where(Match.candidate_id == candidate.id)
+            .where(Match.job_posting_id == job_posting_id)
+        ).first()
+        
+        if existing_match:
+            existing_match.candidate_liked = False
+            # If neither side liked anymore, delete the match
+            if not existing_match.company_liked:
+                session.delete(existing_match)
+    
+    session.commit()
+    
+    return {"message": f"Undone {swipe_action} action", "action": "undo"}
+
+
 @router.get("/check-invite-status/{candidate_id}/{job_posting_id}")
 def check_invite_status(
     candidate_id: int,
@@ -617,3 +669,60 @@ def recruiter_ask_to_apply(
         "invite_count": previous_invite_count + 1,
         "last_invite_date": last_invite_date.isoformat() if last_invite_date else None
     }
+
+
+@router.delete("/recruiter/undo/{candidate_id}/{job_posting_id}")
+def recruiter_undo_swipe(
+    candidate_id: int,
+    job_posting_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Recruiter undoes a swipe (like, pass, or invite) on a candidate"""
+    logger.info(f"[RECRUITER UNDO SWIPE] candidate_id={candidate_id}, job_posting_id={job_posting_id}")
+    
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    company = UserService.get_company_profile(session, user, required=True)
+    
+    # Get all company IDs with the same company name
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    
+    # Find existing swipe
+    existing_swipe = session.exec(
+        select(Swipe)
+        .where(Swipe.candidate_id == candidate_id)
+        .where(Swipe.job_posting_id == job_posting_id)
+        .where(Swipe.action_by == "recruiter")
+        .where(Swipe.company_id.in_(company_ids))
+    ).first()
+    
+    if not existing_swipe:
+        raise HTTPException(status_code=404, detail="No swipe found to undo")
+    
+    swipe_action = existing_swipe.action
+    
+    # Delete the swipe
+    session.delete(existing_swipe)
+    
+    # If it was a like, update or remove the match
+    if swipe_action == "like":
+        existing_match = session.exec(
+            select(Match)
+            .where(Match.candidate_id == candidate_id)
+            .where(Match.job_posting_id == job_posting_id)
+        ).first()
+        
+        if existing_match:
+            existing_match.company_liked = False
+            # If neither side liked anymore, delete the match
+            if not existing_match.candidate_liked:
+                session.delete(existing_match)
+    
+    session.commit()
+    
+    return {"message": f"Undone {swipe_action} action", "action": "undo"}
