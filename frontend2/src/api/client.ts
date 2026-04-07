@@ -253,6 +253,16 @@ export const apiClient = {
   getRecruiterApplications: (jobPostingId?: number) =>
     api.get('/dashboard/recruiter/applications' + (jobPostingId ? `?job_posting_id=${jobPostingId}` : '')),
   
+  downloadRecruiterApplicationResume: (applicationId: number, resumeId: number) =>
+    api.get(`/dashboard/recruiter/applications/${applicationId}/resumes/${resumeId}/download`, {
+      responseType: 'blob'
+    }),
+  
+  downloadRecruiterApplicationCertification: (applicationId: number, certificationId: number) =>
+    api.get(`/dashboard/recruiter/applications/${applicationId}/certifications/${certificationId}/download`, {
+      responseType: 'blob'
+    }),
+  
   getRecruiterMatches: () =>
     api.get('/dashboard/recruiter/matches'),
   

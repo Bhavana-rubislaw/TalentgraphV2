@@ -540,6 +540,58 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
+  // Download resume for an application
+  const handleDownloadResume = async (applicationId: number, resumeId: number, filename: string) => {
+    try {
+      console.log('[RESUME DOWNLOAD] Starting download:', { applicationId, resumeId, filename });
+      const response = await apiClient.downloadRecruiterApplicationResume(applicationId, resumeId);
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('[RESUME DOWNLOAD] Success');
+      alert('Resume download started');
+    } catch (error: any) {
+      console.error('[RESUME DOWNLOAD] Failed:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to download resume';
+      alert(errorMsg);
+    }
+  };
+
+  // Download certification for an application
+  const handleDownloadCertification = async (applicationId: number, certificationId: number, filename: string) => {
+    try {
+      console.log('[CERTIFICATION DOWNLOAD] Starting download:', { applicationId, certificationId, filename });
+      const response = await apiClient.downloadRecruiterApplicationCertification(applicationId, certificationId);
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('[CERTIFICATION DOWNLOAD] Success');
+      alert('Certification download started');
+    } catch (error: any) {
+      console.error('[CERTIFICATION DOWNLOAD] Failed:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to download certification';
+      alert(errorMsg);
+    }
+  };
+
   const renderRecommendations = () => {
     if (jobPostings.length === 0) {
       return (
@@ -2574,6 +2626,262 @@ const RecruiterDashboard: React.FC = () => {
                             Website
                           </a>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submitted Resumes */}
+                  {selectedApp.candidate.resumes && selectedApp.candidate.resumes.length > 0 && (
+                    <div className="ra-detail-section">
+                      <div className="ra-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                        Submitted Resumes
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {selectedApp.candidate.resumes.map((resume: any) => (
+                          <div 
+                            key={resume.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '12px 14px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                              <svg 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2"
+                                style={{ width: '18px', height: '18px', color: '#7c3aed', flexShrink: 0 }}
+                              >
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                              </svg>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ 
+                                  fontSize: '13px', 
+                                  fontWeight: 500, 
+                                  color: '#334155',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {resume.filename}
+                                </div>
+                                {resume.uploaded_at && (
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                                    Uploaded {new Date(resume.uploaded_at).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric'
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDownloadResume(selectedApp.application_id, resume.id, resume.filename)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                color: '#7c3aed',
+                                backgroundColor: 'white',
+                                border: '1px solid #7c3aed',
+                                borderRadius: '5px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                flexShrink: 0
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#7c3aed';
+                                e.currentTarget.style.color = 'white';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = 'white';
+                                e.currentTarget.style.color = '#7c3aed';
+                              }}
+                            >
+                              <svg 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2"
+                                style={{ width: '14px', height: '14px' }}
+                              >
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                              Download
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ 
+                        fontSize: '11px', 
+                        color: '#64748b', 
+                        marginTop: '8px',
+                        fontStyle: 'italic'
+                      }}>
+                        {selectedApp.candidate.resumes.length === 1 ? '1 resume' : `${selectedApp.candidate.resumes.length} resumes`} submitted for this application
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Submitted Certifications */}
+                  {selectedApp.candidate.certifications && selectedApp.candidate.certifications.length > 0 && (
+                    <div className="ra-detail-section">
+                      <div className="ra-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Submitted Certifications
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {selectedApp.candidate.certifications.map((cert: any) => (
+                          <div 
+                            key={cert.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '12px 14px',
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                              <svg 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2"
+                                style={{ width: '18px', height: '18px', color: '#10b981', flexShrink: 0 }}
+                              >
+                                <circle cx="12" cy="8" r="7"/>
+                                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                              </svg>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ 
+                                  fontSize: '13px', 
+                                  fontWeight: 500, 
+                                  color: '#334155',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {cert.name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                                  {cert.issuer && <span>{cert.issuer}</span>}
+                                  {cert.issuer && cert.issued_date && <span> • </span>}
+                                  {cert.issued_date && (
+                                    <span>Issued {new Date(cert.issued_date).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}</span>
+                                  )}
+                                  {cert.expiry_date && (
+                                    <span> • Expires {new Date(cert.expiry_date).toLocaleDateString('en-US', {
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}</span>
+                                  )}
+                                </div>
+                                {cert.filename && (
+                                  <div style={{ 
+                                    fontSize: '11px', 
+                                    color: '#64748b', 
+                                    marginTop: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}>
+                                    <svg 
+                                      viewBox="0 0 24 24" 
+                                      fill="none" 
+                                      stroke="currentColor" 
+                                      strokeWidth="2"
+                                      style={{ width: '12px', height: '12px' }}
+                                    >
+                                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                      <polyline points="13 2 13 9 20 9"/>
+                                    </svg>
+                                    <span style={{ 
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}>{cert.filename}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            {cert.filename && (
+                              <button
+                                onClick={() => handleDownloadCertification(selectedApp.application_id, cert.id, cert.filename)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 12px',
+                                  fontSize: '12px',
+                                  fontWeight: 500,
+                                  color: '#10b981',
+                                  backgroundColor: 'white',
+                                  border: '1px solid #10b981',
+                                  borderRadius: '5px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#10b981';
+                                  e.currentTarget.style.color = 'white';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'white';
+                                  e.currentTarget.style.color = '#10b981';
+                                }}
+                              >
+                                <svg 
+                                  viewBox="0 0 24 24" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="2"
+                                  style={{ width: '14px', height: '14px' }}
+                                >
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                  <polyline points="7 10 12 15 17 10"/>
+                                  <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Download
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ 
+                        fontSize: '11px', 
+                        color: '#64748b', 
+                        marginTop: '8px',
+                        fontStyle: 'italic'
+                      }}>
+                        {selectedApp.candidate.certifications.length === 1 
+                          ? '1 certification' 
+                          : `${selectedApp.candidate.certifications.length} certifications`} submitted for this application
                       </div>
                     </div>
                   )}

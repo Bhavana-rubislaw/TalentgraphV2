@@ -5,13 +5,16 @@ Recommendations, matches, applications, invites, shortlists
 
 import logging
 import json
+import os
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi.responses import FileResponse
 from sqlmodel import Session, select, or_, and_
 from typing import List, Dict, Any
 from app.database import get_session
 from app.models import (
     User, Candidate, Company, JobPosting, JobProfile, 
-    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus
+    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus, Resume, Certification
 )
 from app.security import get_current_user
 
@@ -890,6 +893,90 @@ def get_recruiter_applications(
         ).all()
         skills_list = [{"skill_name": s.skill_name, "skill_category": s.skill_category, "proficiency_level": s.proficiency_level} for s in skills]
         
+        # Gather resumes for the candidate
+        # Priority: primary_resume_id and attached_resume_ids from job_profile
+        # Fallback: all resumes of candidate
+        resumes_list = []
+        resume_ids_to_fetch = set()
+        
+        if job_profile.primary_resume_id:
+            resume_ids_to_fetch.add(job_profile.primary_resume_id)
+        
+        if job_profile.attached_resume_ids:
+            try:
+                attached_ids = json.loads(job_profile.attached_resume_ids)
+                if isinstance(attached_ids, list):
+                    resume_ids_to_fetch.update(attached_ids)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        
+        # If no specific resumes are selected, fetch all resumes
+        if not resume_ids_to_fetch:
+            all_resumes = session.exec(
+                select(Resume).where(Resume.candidate_id == candidate.id)
+            ).all()
+            for resume in all_resumes:
+                resumes_list.append({
+                    "id": resume.id,
+                    "filename": resume.filename,
+                    "uploaded_at": resume.uploaded_at.isoformat()
+                })
+        else:
+            # Fetch only selected resumes
+            for resume_id in resume_ids_to_fetch:
+                resume = session.get(Resume, resume_id)
+                if resume and resume.candidate_id == candidate.id:
+                    resumes_list.append({
+                        "id": resume.id,
+                        "filename": resume.filename,
+                        "uploaded_at": resume.uploaded_at.isoformat()
+                    })
+        
+        # Gather certifications for the candidate
+        # Priority: certification_ids from job_profile
+        # Fallback: all certifications of candidate that have files
+        certifications_list = []
+        certification_ids_to_fetch = set()
+        
+        if job_profile.certification_ids:
+            try:
+                cert_ids = json.loads(job_profile.certification_ids)
+                if isinstance(cert_ids, list):
+                    certification_ids_to_fetch.update(cert_ids)
+            except (json.JSONDecodeError, TypeError):
+                pass
+        
+        # If no specific certifications are selected, fetch all certifications with files
+        if not certification_ids_to_fetch:
+            all_certifications = session.exec(
+                select(Certification).where(Certification.candidate_id == candidate.id)
+            ).all()
+            for cert in all_certifications:
+                if cert.filename and cert.storage_path:  # Only include certs with files
+                    certifications_list.append({
+                        "id": cert.id,
+                        "name": cert.name,
+                        "issuer": cert.issuer,
+                        "filename": cert.filename,
+                        "issued_date": cert.issued_date,
+                        "expiry_date": cert.expiry_date,
+                        "created_at": cert.created_at.isoformat()
+                    })
+        else:
+            # Fetch only selected certifications
+            for cert_id in certification_ids_to_fetch:
+                cert = session.get(Certification, cert_id)
+                if cert and cert.candidate_id == candidate.id and cert.filename and cert.storage_path:
+                    certifications_list.append({
+                        "id": cert.id,
+                        "name": cert.name,
+                        "issuer": cert.issuer,
+                        "filename": cert.filename,
+                        "issued_date": cert.issued_date,
+                        "expiry_date": cert.expiry_date,
+                        "created_at": cert.created_at.isoformat()
+                    })
+        
         result.append({
             "application_id": app.id,
             "candidate": {
@@ -901,7 +988,9 @@ def get_recruiter_applications(
                 "location_state": candidate.location_state,
                 "location_county": candidate.location_county,
                 "linkedin_url": candidate.linkedin_url,
-                "github_url": candidate.github_url
+                "github_url": candidate.github_url,
+                "resumes": resumes_list,
+                "certifications": certifications_list
             },
             "job_profile": {
                 "id": job_profile.id,
@@ -937,6 +1026,142 @@ def get_recruiter_applications(
         })
     
     return result
+
+
+@router.get("/recruiter/applications/{application_id}/resumes/{resume_id}/download")
+def download_application_resume(
+    application_id: int,
+    resume_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Securely download resume file for a specific application
+    
+    Security checks:
+    1. User must be a recruiter
+    2. Recruiter must belong to the company that owns the job posting
+    3. Application and resume must exist and be linked
+    4. File must exist at storage path
+    """
+    # 1. User Role Check
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Access denied. Recruiters only.")
+    
+    # 2. Company Ownership Check
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+    
+    # Get all company IDs with the same company name (for multi-user companies)
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    
+    # 3. Application Validation
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Verify the job posting belongs to the recruiter's company
+    job_posting = session.get(JobPosting, application.job_posting_id)
+    if not job_posting or job_posting.company_id not in company_ids:
+        raise HTTPException(status_code=403, detail="Access denied. You can only download resumes for your company's job postings.")
+    
+    # Verify resume belongs to the candidate who applied
+    resume = session.get(Resume, resume_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    
+    if resume.candidate_id != application.candidate_id:
+        raise HTTPException(status_code=403, detail="Resume does not belong to this applicant")
+    
+    # 4. File Existence Check
+    file_path = Path(resume.storage_path)
+    if not file_path.exists() or not file_path.is_file():
+        logger.error(f"Resume file not found at path: {resume.storage_path}")
+        raise HTTPException(status_code=404, detail="Resume file not found on server")
+    
+    # Return the file
+    logger.info(f"Recruiter {user.email} downloading resume {resume_id} for application {application_id}")
+    return FileResponse(
+        path=str(file_path),
+        filename=resume.filename,
+        media_type="application/octet-stream"
+    )
+
+
+@router.get("/recruiter/applications/{application_id}/certifications/{certification_id}/download")
+def download_application_certification(
+    application_id: int,
+    certification_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Securely download certification file for a specific application
+    
+    Security checks:
+    1. User must be a recruiter
+    2. Recruiter must belong to the company that owns the job posting
+    3. Application and certification must exist and be linked
+    4. File must exist at storage path
+    """
+    # 1. User Role Check
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Access denied. Recruiters only.")
+    
+    # 2. Company Ownership Check
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+    
+    # Get all company IDs with the same company name (for multi-user companies)
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    
+    # 3. Application Validation
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    # Verify the job posting belongs to the recruiter's company
+    job_posting = session.get(JobPosting, application.job_posting_id)
+    if not job_posting or job_posting.company_id not in company_ids:
+        raise HTTPException(status_code=403, detail="Access denied. You can only download certifications for your company's job postings.")
+    
+    # Verify certification belongs to the candidate who applied
+    certification = session.get(Certification, certification_id)
+    if not certification:
+        raise HTTPException(status_code=404, detail="Certification not found")
+    
+    if certification.candidate_id != application.candidate_id:
+        raise HTTPException(status_code=403, detail="Certification does not belong to this applicant")
+    
+    # Check if certification has a file
+    if not certification.filename or not certification.storage_path:
+        raise HTTPException(status_code=404, detail="This certification does not have an attached file")
+    
+    # 4. File Existence Check
+    file_path = Path(certification.storage_path)
+    if not file_path.exists() or not file_path.is_file():
+        logger.error(f"Certification file not found at path: {certification.storage_path}")
+        raise HTTPException(status_code=404, detail="Certification file not found on server")
+    
+    # Return the file
+    logger.info(f"Recruiter {user.email} downloading certification {certification_id} for application {application_id}")
+    return FileResponse(
+        path=str(file_path),
+        filename=certification.filename,
+        media_type="application/octet-stream"
+    )
 
 
 @router.get("/recruiter/matches", response_model=List[Dict[str, Any]])
