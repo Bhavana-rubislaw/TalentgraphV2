@@ -1784,23 +1784,113 @@ const CandidateDashboard: React.FC = () => {
 
     return (
       <>
-        {/* Available Jobs Section Header */}
-        <div className="section-header mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Available Jobs</h2>
-          <p className="text-sm text-gray-600 mt-1">Browse and filter open roles that match your interests</p>
-          {(hasActiveFilters || resultCount !== totalCount) && (
-            <p className="text-sm text-gray-500 mt-2">
-              Showing {resultCount} of {totalCount} jobs
-              {activeJobFiltersCount > 0 && (
-                <button 
+        {/* Page Header Section */}
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Browse Jobs</h2>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Browse and filter open roles that match your interests</p>
+        </div>
+
+        {/* Enhanced Filter Toolbar */}
+        <div style={{ 
+          background: 'white', 
+          borderRadius: '12px', 
+          padding: '20px', 
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', 
+          marginBottom: '24px',
+          border: '1px solid var(--border-color, #e2e8f0)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Search Input */}
+            <div style={{ flex: '1 1 280px', minWidth: '280px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Search</label>
+              <div style={{ position: 'relative' }}>
+                <svg style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'var(--text-muted, #94a3b8)', pointerEvents: 'none' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  className="job-select-modern"
+                  style={{ width: '100%', paddingLeft: '38px', paddingRight: '12px', height: '40px', fontSize: '14px', borderRadius: '8px' }}
+                  placeholder="Job title, keywords..."
+                  value={jobSearchTerm}
+                  onChange={(e) => setJobSearchTerm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Job Role Dropdown */}
+            <div style={{ flex: '0 1 200px', minWidth: '180px' }}>
+              <label htmlFor="job-role-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Role</label>
+              <select
+                id="job-role-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={selectedJobRole}
+                onChange={(e) => setSelectedJobRole(e.target.value)}
+              >
+                <option value="">All Roles</option>
+                {availableJobRoles.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Work Type Dropdown */}
+            <div style={{ flex: '0 1 160px', minWidth: '140px' }}>
+              <label htmlFor="job-worktype-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</label>
+              <select
+                id="job-worktype-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
+                value={selectedJobWorkType}
+                onChange={(e) => setSelectedJobWorkType(e.target.value)}
+              >
+                <option value="">All Types</option>
+                <option value="Remote">Remote</option>
+                <option value="Onsite">Onsite</option>
+                <option value="Hybrid">Hybrid</option>
+              </select>
+            </div>
+
+            {/* Location Input */}
+            <div style={{ flex: '0 1 180px', minWidth: '160px' }}>
+              <label htmlFor="job-location-filter" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</label>
+              <input
+                type="text"
+                id="job-location-filter"
+                className="job-select-modern"
+                style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px' }}
+                placeholder="City or State"
+                value={jobLocationFilter}
+                onChange={(e) => setJobLocationFilter(e.target.value)}
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            {hasActiveFilters && (
+              <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'flex-end' }}>
+                <button
+                  className="action-btn secondary"
+                  style={{ height: '40px', padding: '0 16px', fontSize: '13px', fontWeight: 500, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
                   onClick={clearAllJobFilters}
-                  className="ml-2 text-blue-600 hover:text-blue-700 underline"
                 >
-                  Clear all filters
+                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  Clear Filters
                 </button>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Results Count */}
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color, #e2e8f0)' }}>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>
+              Showing {resultCount} of {totalCount} jobs
             </p>
-          )}
+          </div>
         </div>
 
         {/* Empty State for Filtered Results */}

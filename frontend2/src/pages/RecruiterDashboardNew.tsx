@@ -459,9 +459,31 @@ const RecruiterDashboard: React.FC = () => {
   const handleAskToApply = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;
     console.log('[RECRUITER ACTION] Ask to Apply - Candidate:', candidateId, 'Job Profile:', jobProfileId, 'Job Posting:', selectedJobId);
+    
     try {
-      await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
-      console.log('[API SUCCESS] Invitation sent to candidate');
+      // First, check if already invited
+      const statusCheck = await apiClient.checkInviteStatus(candidateId, selectedJobId);
+      const { already_invited, invite_count, last_invite_date } = statusCheck.data;
+      
+      // If already invited, show confirmation dialog
+      if (already_invited && invite_count > 0) {
+        const lastDate = new Date(last_invite_date).toLocaleDateString();
+        const confirmMessage = `You already invited this candidate ${invite_count} time${invite_count > 1 ? 's' : ''} (last on ${lastDate}).\n\nSend a reminder invite?`;
+        
+        const confirmed = window.confirm(confirmMessage);
+        if (!confirmed) {
+          console.log('[USER CANCELLED] Reminder invite cancelled by user');
+          return;
+        }
+        console.log('[USER CONFIRMED] Sending reminder invite');
+      }
+      
+      // Proceed with invite/reminder
+      const response = await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
+      const isReminder = response.data.is_reminder;
+      
+      console.log('[API SUCCESS]', isReminder ? 'Reminder sent' : 'Invitation sent');
+      
       // Optimistic update — card stays with Invited badge
       setRecommendations((prev: any) => ({
         ...prev,

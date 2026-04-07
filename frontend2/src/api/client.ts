@@ -193,6 +193,9 @@ export const apiClient = {
   recruiterAskToApply: (candidateId: number, jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/recruiter/ask-to-apply', { candidate_id: candidateId, job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
   
+  checkInviteStatus: (candidateId: number, jobPostingId: number) =>
+    api.get(`/swipes/check-invite-status/${candidateId}/${jobPostingId}`),
+  
   // Applications
   applyToJob: (jobPostingId: number, jobProfileId: number) =>
     api.post('/applications/apply', { job_posting_id: jobPostingId, job_profile_id: jobProfileId }),

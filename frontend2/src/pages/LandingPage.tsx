@@ -39,23 +39,23 @@ const LandingPage: React.FC = () => {
             <button 
               className="btn-cta btn-candidate"
               onClick={() => { 
-                console.log('[NAVIGATION] Candidate Signup'); 
-                navigate('/signup?type=candidate'); 
+                console.log('[NAVIGATION] Candidate SignIn'); 
+                navigate('/signin?type=candidate'); 
               }}
             >
-              Sign Up as Candidate
+              Sign In as Candidate
             </button>
 
             <a 
-              href="/signin?type=candidate" 
+              href="/signup?type=candidate" 
               className="signin-link"
               onClick={(e) => {
                 e.preventDefault();
-                console.log('[NAVIGATION] Candidate SignIn');
-                navigate('/signin?type=candidate');
+                console.log('[NAVIGATION] Candidate Signup');
+                navigate('/signup?type=candidate');
               }}
             >
-              Already have an account? <span>Sign in</span>
+              Don't have an account? <span>Sign Up</span>
             </a>
           </div>
 
@@ -77,23 +77,23 @@ const LandingPage: React.FC = () => {
             <button 
               className="btn-cta btn-company"
               onClick={() => { 
-                console.log('[NAVIGATION] Company Signup'); 
-                navigate('/signup?type=company'); 
+                console.log('[NAVIGATION] Company SignIn'); 
+                navigate('/signin?type=company'); 
               }}
             >
-              Sign Up as Company
+              Sign In as Company
             </button>
 
             <a 
-              href="/signin?type=company" 
+              href="/signup?type=company" 
               className="signin-link"
               onClick={(e) => {
                 e.preventDefault();
-                console.log('[NAVIGATION] Company SignIn');
-                navigate('/signin?type=company');
+                console.log('[NAVIGATION] Company Signup');
+                navigate('/signup?type=company');
               }}
             >
-              Already have an account? <span>Sign in</span>
+              Don't have an account? <span>Sign Up</span>
             </a>
           </div>
         </div>

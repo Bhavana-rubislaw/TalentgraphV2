@@ -35,6 +35,7 @@ from app.schemas import (
     ConversationListItemResponse,
 )
 from app.security import get_current_user
+from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +215,29 @@ def start_conversation(
     
     logger.info(f"Created conversation {conversation.id} between recruiter {user.id} and candidate {data.candidate_user_id}")
     
+    # Notify candidate that recruiter started a conversation
+    try:
+        recruiter_name = user.full_name or user.email
+        NotificationService.create_notification(
+            session=session,
+            user_email=candidate_user.email,
+            event_type="conversation_started",
+            data={
+                "title": "New conversation",
+                "message": f"{recruiter_name} started a conversation with you",
+                "route": f"/candidate-dashboard?tab=messages&conversation={conversation.id}",
+                "route_context": {
+                    "conversation_id": conversation.id,
+                    "recruiter_user_id": user.id,
+                    "recruiter_name": recruiter_name
+                }
+            },
+            commit=True
+        )
+        logger.info(f"Notification sent to candidate {data.candidate_user_id} for new conversation {conversation.id}")
+    except Exception as e:
+        logger.warning(f"Failed to send conversation start notification: {e}")
+    
     return {
         "message": "Conversation started",
         "conversation": ConversationResponse(
@@ -366,6 +390,42 @@ def send_message(
     session.refresh(message)
     
     logger.info(f"Message {message.id} sent in conversation {conversation_id} by user {user.id}")
+    
+    # Send notification to receiver
+    try:
+        receiver = session.get(User, receiver_id)
+        if receiver:
+            # Determine routing based on receiver role
+            if receiver.role == UserRole.CANDIDATE:
+                route = f"/candidate-dashboard?tab=messages&conversation={conversation_id}"
+            else:
+                route = f"/recruiter-dashboard?tab=messages&conversation={conversation_id}"
+            
+            # Create preview (first 80 chars of message)
+            message_preview = data.content.strip()[:80]
+            if len(data.content.strip()) > 80:
+                message_preview += "..."
+            
+            NotificationService.create_notification(
+                session=session,
+                user_email=receiver.email,
+                event_type="new_message_received",
+                data={
+                    "title": f"New message from {user.full_name or user.email}",
+                    "message": message_preview,
+                    "route": route,
+                    "route_context": {
+                        "conversation_id": conversation_id,
+                        "sender_user_id": user.id,
+                        "sender_name": user.full_name or user.email
+                    }
+                },
+                commit=True
+            )
+            logger.info(f"Notification sent to user {receiver_id} for message {message.id}")
+    except Exception as e:
+        logger.warning(f"Failed to send notification for message {message.id}: {e}")
+        # Don't fail the request if notification fails
     
     return _serialize_message(message, session)
 
