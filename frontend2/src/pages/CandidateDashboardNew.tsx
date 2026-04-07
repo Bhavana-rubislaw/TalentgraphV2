@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { apiClient, API_BASE } from '../api/client';
+import { apiClient } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/PremiumDashboard.css';
@@ -1301,25 +1301,6 @@ const CandidateDashboard: React.FC = () => {
       );
     };
 
-    // Derive available invite roles dynamically
-    const availableInviteRoles = (() => {
-      const rolesSet = new Set<string>();
-      invites.forEach((invite: any) => {
-        if (invite.job_posting?.job_title) rolesSet.add(invite.job_posting.job_title);
-        if (invite.job_posting?.job_role) rolesSet.add(invite.job_posting.job_role);
-      });
-      return Array.from(rolesSet).sort();
-    })();
-
-    // Derive work types from invite data
-    const availableInviteWorkTypes = (() => {
-      const typesSet = new Set<string>();
-      invites.forEach((invite: any) => {
-        if (invite.job_posting?.worktype) typesSet.add(invite.job_posting.worktype);
-      });
-      return Array.from(typesSet).sort();
-    })();
-
     // Apply filters to invites
     const filteredInvites = invites.filter((invite: any) => {
       const jp = invite.job_posting;
@@ -1363,42 +1344,6 @@ const CandidateDashboard: React.FC = () => {
       setSelectedInviteWorkType('');
       setInviteLocationFilter('');
     };
-
-    // Filter configuration for invites
-    const inviteFilterConfig: FilterConfig[] = [
-      {
-        type: 'search',
-        id: 'invite-search',
-        label: 'Search',
-        placeholder: 'Job title, company, or keywords...',
-        value: inviteSearchTerm,
-        onChange: setInviteSearchTerm
-      },
-      {
-        type: 'select',
-        id: 'invite-role',
-        label: 'Role',
-        value: selectedInviteRole,
-        onChange: setSelectedInviteRole,
-        options: availableInviteRoles.map(role => ({ value: role, label: role }))
-      },
-      {
-        type: 'select',
-        id: 'invite-worktype',
-        label: 'Work Type',
-        value: selectedInviteWorkType,
-        onChange: setSelectedInviteWorkType,
-        options: availableInviteWorkTypes.map(wt => ({ value: wt, label: wt }))
-      },
-      {
-        type: 'location',
-        id: 'invite-location',
-        label: 'Location',
-        placeholder: 'City or State',
-        value: inviteLocationFilter,
-        onChange: setInviteLocationFilter
-      }
-    ];
 
     return (
       <>
@@ -1659,20 +1604,6 @@ const CandidateDashboard: React.FC = () => {
       return Array.from(rolesSet).sort();
     })();
 
-    // Derive work types from job data
-    const availableWorkTypes = (() => {
-      const typesSet = new Set<string>();
-      availableJobs.forEach((job: any) => {
-        if (job.worktype) {
-          const normalized = job.worktype.toLowerCase();
-          if (normalized === 'remote') typesSet.add('Remote');
-          else if (normalized === 'hybrid') typesSet.add('Hybrid');
-          else if (normalized === 'onsite' || normalized === 'on-site') typesSet.add('Onsite');
-        }
-      });
-      return Array.from(typesSet).sort();
-    })();
-
     // Filter jobs based on all active filters
     const filteredJobs = (() => {
       return availableJobs.filter((job: any) => {
@@ -1738,49 +1669,6 @@ const CandidateDashboard: React.FC = () => {
       setSelectedJobWorkType('');
       setJobLocationFilter('');
     };
-
-    // Count active filters
-    const activeJobFiltersCount = [jobSearchTerm, selectedJobRole, selectedJobWorkType, jobLocationFilter].filter(Boolean).length;
-
-    // Job filter configuration
-    const jobFilterConfig: FilterConfig[] = [
-      {
-        type: 'search',
-        id: 'job-search',
-        label: 'Search',
-        placeholder: 'Job title, company, or keywords...',
-        value: jobSearchTerm,
-        onChange: setJobSearchTerm
-      },
-      {
-        type: 'select',
-        id: 'job-role',
-        label: 'Role',
-        value: selectedJobRole,
-        onChange: setSelectedJobRole,
-        options: availableJobRoles.map(role => ({ value: role, label: role }))
-      },
-      {
-        type: 'select',
-        id: 'job-worktype',
-        label: 'Work Type',
-        value: selectedJobWorkType,
-        onChange: setSelectedJobWorkType,
-        options: [
-          { value: 'remote', label: 'Remote' },
-          { value: 'hybrid', label: 'Hybrid' },
-          { value: 'onsite', label: 'Onsite' }
-        ]
-      },
-      {
-        type: 'location',
-        id: 'job-location',
-        label: 'Location',
-        placeholder: 'City or State',
-        value: jobLocationFilter,
-        onChange: setJobLocationFilter
-      }
-    ];
 
     return (
       <>

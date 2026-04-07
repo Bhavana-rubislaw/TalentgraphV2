@@ -278,59 +278,7 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  // ── Job Lifecycle Management ─────────────────────────────────
-  const getJobStatusBadge = (status: string) => {
-    const normalizedStatus = (status || '').toLowerCase();
-    const badges = {
-      active: { label: 'Active', color: '#10b981', bgColor: '#d1fae5' },
-      frozen: { label: 'Frozen', color: '#6b7280', bgColor: '#f3f4f6' },
-      reposted: { label: 'Reposted', color: '#8b5cf6', bgColor: '#ede9fe' },
-    };
-    const badge = badges[normalizedStatus as keyof typeof badges] || badges.active;
-    return (
-      <span
-        style={{
-          padding: '2px 8px',
-          borderRadius: '4px',
-          fontSize: '11px',
-          fontWeight: 600,
-          color: badge.color,
-          backgroundColor: badge.bgColor,
-          marginLeft: '8px',
-        }}
-      >
-        {badge.label}
-      </span>
-    );
-  };
-
-  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate' | 'repost') => {
-    try {
-      console.log(`[LIFECYCLE] ${action} job ${jobId}`);
-      const response = await apiClient.updateJobPostingStatus(jobId, action);
-      console.log('[LIFECYCLE SUCCESS]', response.data);
-      
-      // Show success message
-      alert(`Job ${action}d successfully!`);
-      
-      // Refresh job listings
-      await fetchJobPostings();
-      
-      // If we just froze the current job, select a different active one
-      if (action === 'freeze' && selectedJobId === jobId) {
-        const activeJobs = allJobPostings.filter(j => {
-          const status = (j.status || '').toLowerCase();
-          return status === 'active' || status === 'reposted';
-        });
-        if (activeJobs.length > 0) {
-          setSelectedJobId(activeJobs[0].id);
-        }
-      }
-    } catch (error: any) {
-      console.error('[LIFECYCLE ERROR]', error);
-      alert(error.response?.data?.detail || `Failed to ${action} job`);
-    }
-  };
+  // ── Fetch Data Functions ─────────────────────────────────────
 
   const fetchRecommendations = async () => {
     if (!selectedJobId) return;

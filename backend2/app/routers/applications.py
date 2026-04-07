@@ -478,16 +478,9 @@ def schedule_interview(
     6. Returns detailed success/failure response
     """
     
-    try:
-        logger.info(f"[INTERVIEW] === ENDPOINT CALLED === Application ID: {application_id}")
-        logger.info(f"[INTERVIEW] Received payload: date={data.date}, time={data.time}, timezone={data.timezone}, meeting_provider={data.meeting_provider}, meeting_link={data.meeting_link}")
-        logger.info(f"[INTERVIEW] Current user: {current_user.get('email')}")
-        
-    except Exception as e:
-        logger.error(f"[INTERVIEW] CRITICAL ERROR in endpoint: {e}")
-        import traceback
-        logger.error(f"[INTERVIEW] Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    logger.info(f"[INTERVIEW] === ENDPOINT CALLED === Application ID: {application_id}")
+    logger.info(f"[INTERVIEW] Received payload: date={data.date}, time={data.time}, timezone={data.timezone}, meeting_provider={data.meeting_provider}, meeting_link={data.meeting_link}")
+    logger.info(f"[INTERVIEW] Current user: {current_user.get('email')}")
     
     # Get current user
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
@@ -596,24 +589,37 @@ def schedule_interview(
             api_secret = os.getenv("ZOOM_API_SECRET") or os.getenv("ZOOM_CLIENT_SECRET")
             account_id = os.getenv("ZOOM_ACCOUNT_ID")  # Required for OAuth 2.0
         elif provider_enum == VideoProvider.GOOGLE_MEET:
-            api_key = os.getenv("GOOGLE_CLIENT_ID")
-            api_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+            api_key = os.getenv("GOOGLE_CLIENT_ID") or os.getenv("GOOGLE_MEET_CLIENT_ID")
+            api_secret = os.getenv("GOOGLE_CLIENT_SECRET") or os.getenv("GOOGLE_MEET_CLIENT_SECRET")
+            access_token = os.getenv("GOOGLE_MEET_ACCESS_TOKEN")
         elif provider_enum == VideoProvider.MICROSOFT_TEAMS:
             api_key = os.getenv("MICROSOFT_CLIENT_ID")
             api_secret = os.getenv("MICROSOFT_CLIENT_SECRET")
         
-        if not api_key or not api_secret:
-            raise HTTPException(
-                status_code=400,
-                detail=f"No credentials configured for {data.meeting_provider}. Please configure {provider_enum.value.upper()}_CLIENT_ID and {provider_enum.value.upper()}_CLIENT_SECRET in .env file or provide a manual meeting link."
-            )
-        
-        # Zoom OAuth also requires account_id
-        if provider_enum == VideoProvider.ZOOM and not account_id:
-            raise HTTPException(
-                status_code=400,
-                detail="Zoom OAuth requires ZOOM_ACCOUNT_ID to be configured in .env file. Please add it or provide a manual meeting link."
-            )
+        # Validate credentials based on provider
+        if provider_enum == VideoProvider.ZOOM:
+            if not api_key or not api_secret:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Zoom requires ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET in .env file. Please configure them or provide a manual meeting link."
+                )
+            if not account_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Zoom OAuth requires ZOOM_ACCOUNT_ID to be configured in .env file. Please add it or provide a manual meeting link."
+                )
+        elif provider_enum == VideoProvider.GOOGLE_MEET:
+            if not access_token:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Google Meet requires GOOGLE_MEET_ACCESS_TOKEN in .env file. Please configure it or provide a manual meeting link. See Google OAuth 2.0 documentation for obtaining an access token."
+                )
+        elif provider_enum == VideoProvider.MICROSOFT_TEAMS:
+            if not api_key or not api_secret:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Microsoft Teams requires MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in .env file. Please configure them or provide a manual meeting link."
+                )
         
         logger.info(f"[INTERVIEW] Using {data.meeting_provider} credentials from .env")
         
