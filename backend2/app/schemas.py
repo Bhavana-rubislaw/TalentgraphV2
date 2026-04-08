@@ -444,6 +444,10 @@ class MeetingRead(MeetingBase):
     cancelled_at: Optional[datetime] = None
     cancelled_by_user_id: Optional[int] = None
     cancellation_reason: Optional[str] = None
+    reschedule_requested_at: Optional[datetime] = None
+    reschedule_requested_by_user_id: Optional[int] = None
+    reschedule_request_reason: Optional[str] = None
+    reschedule_request_preferred_times: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     participants: List[MeetingParticipantRead] = []
@@ -458,6 +462,36 @@ class MeetingRescheduleRequest(BaseModel):
     scheduled_end: datetime
     timezone: Optional[str] = "UTC"
     reason: Optional[str] = None
+
+
+# Candidate reschedule request (candidate requests, doesn't directly reschedule)
+class CandidateRescheduleRequest(BaseModel):
+    reason: str
+    preferred_times: Optional[List[str]] = None  # ISO format datetime strings
+    note: Optional[str] = None
+
+
+# Recruiter response to reschedule request
+class RecruiterRescheduleResponse(BaseModel):
+    approved: bool  # True = approve and reschedule, False = reject
+    scheduled_start: Optional[datetime] = None  # Required if approved
+    scheduled_end: Optional[datetime] = None  # Required if approved
+    timezone: Optional[str] = "UTC"
+    response_note: Optional[str] = None
+
+
+# Meeting Timeline Event Schemas
+class MeetingTimelineEventRead(BaseModel):
+    id: int
+    meeting_id: int
+    actor_user_id: int
+    actor_role: Optional[str] = None
+    event_type: str
+    message: str
+    metadata_json: Optional[str] = None
+    previous_scheduled_start: Optional[datetime] = None
+    previous_scheduled_end: Optional[datetime] = None
+    created_at: datetime
 
 
 # Meeting Availability Slot Schemas

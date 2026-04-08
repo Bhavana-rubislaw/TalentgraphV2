@@ -158,13 +158,13 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       const hour12 = hour % 12 || 12;
       const formattedTime = `${hour12}:${minutes} ${ampm}`;
       
-      // Get timezone name
+      // Get timezone name for display, but send IANA value to backend
       const timezoneName = TIMEZONES.find(tz => tz.value === formData.timezone)?.label || formData.timezone;
       
       const payload: any = {
         date: formattedDate,
         time: formattedTime,
-        timezone: timezoneName,
+        timezone: formData.timezone,
         notes_for_candidate: formData.notes.trim() || undefined,
         email_subject: formData.subject.trim() || undefined
       };

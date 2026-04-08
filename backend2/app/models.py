@@ -7,6 +7,7 @@ from typing import Optional, List
 from datetime import datetime, date
 from sqlalchemy import UniqueConstraint
 from sqlmodel import SQLModel, Field, Relationship, Column, Date
+from sqlalchemy import Enum as SQLEnum
 from enum import Enum
 
 
@@ -65,11 +66,15 @@ class MeetingStatus(str, Enum):
     Meeting lifecycle status
     - scheduled: Meeting confirmed and scheduled
     - cancelled: Meeting cancelled by either party
+    - reschedule_requested: Candidate requested reschedule
+    - rescheduled: Meeting was rescheduled by recruiter
     - completed: Meeting took place
     - no_show: Meeting time passed without attendance
     """
     SCHEDULED = "scheduled"
     CANCELLED = "cancelled"
+    RESCHEDULE_REQUESTED = "reschedule_requested"
+    RESCHEDULED = "rescheduled"
     COMPLETED = "completed"
     NO_SHOW = "no_show"
 
@@ -591,8 +596,14 @@ class Meeting(SQLModel, table=True):
     # Core meeting details
     title: str = Field(index=True)
     description: Optional[str] = None
-    meeting_type: MeetingType = Field(default=MeetingType.INTERVIEW)
-    status: MeetingStatus = Field(default=MeetingStatus.SCHEDULED, index=True)
+    meeting_type: MeetingType = Field(
+        default=MeetingType.INTERVIEW,
+        sa_column=Column(SQLEnum(MeetingType, values_callable=lambda obj: [e.value for e in obj]))
+    )
+    status: MeetingStatus = Field(
+        default=MeetingStatus.SCHEDULED,
+        sa_column=Column(SQLEnum(MeetingStatus, values_callable=lambda obj: [e.value for e in obj]), index=True)
+    )
     
     # Time & duration
     scheduled_start: datetime = Field(index=True)  # UTC timestamp
@@ -619,6 +630,12 @@ class Meeting(SQLModel, table=True):
     cancelled_at: Optional[datetime] = None
     cancelled_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     cancellation_reason: Optional[str] = None
+    
+    # Reschedule request tracking (candidate requests, recruiter approves/rejects)
+    reschedule_requested_at: Optional[datetime] = None
+    reschedule_requested_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    reschedule_request_reason: Optional[str] = None
+    reschedule_request_preferred_times: Optional[str] = None  # JSON array of preferred times
     
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -660,6 +677,59 @@ class MeetingParticipant(SQLModel, table=True):
     
     # Unique constraint: one record per meeting-user pair
     __table_args__ = (UniqueConstraint("meeting_id", "user_id", name="unique_meeting_participant"),)
+
+
+class MeetingTimelineEvent(SQLModel, table=True):
+    """
+    Timeline/audit log of meeting actions for in-app history display
+    Every meeting action creates an entry for full traceability
+    """
+    __tablename__ = "meeting_timeline_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    
+    # Who performed the action
+    actor_user_id: int = Field(foreign_key="user.id", index=True)
+    actor_role: Optional[str] = None  # "recruiter", "candidate" for display
+    
+    # Event details
+    event_type: str = Field(index=True)  # interview_scheduled, recruiter_cancelled, candidate_cancelled, etc.
+    message: str  # Human-readable description for timeline display
+    
+    # Optional metadata (JSON)
+    metadata_json: Optional[str] = None  # Store reason, notes, old/new times, etc.
+    
+    # Previous meeting state (for rescheduling history)
+    previous_scheduled_start: Optional[datetime] = None
+    previous_scheduled_end: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
+class MeetingActionToken(SQLModel, table=True):
+    """
+    Secure tokens for email-based meeting actions (confirm, cancel, reschedule)
+    Allows candidates/recruiters to take actions via tokenized email links
+    """
+    __tablename__ = "meeting_action_token"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)  # Who the token is for
+    
+    # Token details
+    token: str = Field(unique=True, index=True)  # Secure random token
+    action_type: str = Field(index=True)  # "confirm", "cancel", "reschedule"
+    
+    # Token lifecycle
+    expires_at: datetime = Field(index=True)
+    is_used: bool = Field(default=False, index=True)
+    used_at: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class MeetingAvailabilitySlot(SQLModel, table=True):

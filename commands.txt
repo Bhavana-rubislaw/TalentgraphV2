@@ -321,7 +321,8 @@ npm run dev -- --port 3003
 **Expected Output**
 - Vite prints local URL (example): `http://localhost:3003`
 
-**Test**
+**Test**cd C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2
+python get_google_token.py
 - Open browser: `http://localhost:3003`
 
 ---

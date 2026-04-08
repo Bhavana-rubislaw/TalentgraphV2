@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 from typing import List, Optional
 from app.database import get_session
-from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus, VideoProviderAccount, VideoProvider
+from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus, VideoProviderAccount, VideoProvider, Meeting, MeetingParticipant, MeetingStatus
 from app.schemas import ApplicationRead
 from app.security import get_current_user
 from app.routers.notifications import push_notification
@@ -809,6 +809,72 @@ def schedule_interview(
                 after_value={"status": "scheduled"},
                 request_id=getattr(request.state, "request_id", None),
             )
+            
+            # ============ CREATE MEETING RECORD ============
+            # Create Meeting record so it appears in the Meetings page
+            try:
+                # Parse interview datetime for meeting record
+                scheduled_start = None
+                scheduled_end = None
+                if interview_dt_obj:
+                    scheduled_start = interview_dt_obj
+                    # Default 60 minute duration
+                    from datetime import timedelta
+                    scheduled_end = interview_dt_obj + timedelta(minutes=60)
+                
+                # Get candidate user
+                candidate_user = session.exec(
+                    select(User).where(User.id == candidate.user_id)
+                ).first()
+                
+                # Create meeting record
+                meeting = Meeting(
+                    title=f"Interview: {candidate_name} - {job_posting.job_title}",
+                    description=data.notes_for_candidate or f"Interview with {candidate_name} for {job_posting.job_title}",
+                    scheduled_start=scheduled_start or datetime.utcnow(),
+                    scheduled_end=scheduled_end or datetime.utcnow(),
+                    duration_minutes=60,
+                    timezone=data.timezone or "UTC",
+                    location=meeting_link,
+                    video_meeting_url=meeting_link,
+                    status=MeetingStatus.SCHEDULED,
+                    organizer_user_id=user.id,
+                    application_id=application.id,
+                    video_provider=video_provider_used
+                )
+                session.add(meeting)
+                session.flush()
+                
+                logger.info(f"[INTERVIEW] Created Meeting record ID: {meeting.id}")
+                
+                # Create MeetingParticipant records
+                # 1. Recruiter (organizer)
+                recruiter_participant = MeetingParticipant(
+                    meeting_id=meeting.id,
+                    user_id=user.id,
+                    is_required=True,
+                    has_confirmed=True  # Organizer is confirmed
+                )
+                session.add(recruiter_participant)
+                
+                # 2. Candidate (attendee)
+                if candidate_user:
+                    candidate_participant = MeetingParticipant(
+                        meeting_id=meeting.id,
+                        user_id=candidate_user.id,
+                        is_required=True,
+                        has_confirmed=False  # Candidate needs to confirm
+                    )
+                    session.add(candidate_participant)
+                    logger.info(f"[INTERVIEW] Created MeetingParticipant records for recruiter and candidate")
+                
+                session.flush()
+                
+            except Exception as e:
+                logger.error(f"[INTERVIEW] Failed to create Meeting record: {e}")
+                # Don't fail the whole request if meeting creation fails
+                pass
+            
         except Exception as e:
             logger.error(f"[INTERVIEW] Failed to update application status: {e}")
     

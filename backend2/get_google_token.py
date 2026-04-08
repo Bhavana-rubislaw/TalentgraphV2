@@ -40,18 +40,18 @@ def get_google_oauth_token():
     print("✅ Found Google credentials in .env")
     print(f"Client ID: {client_id[:20]}...")
     print("\n📋 IMPORTANT: Add this redirect URI to Google Cloud Console:")
-    print("   http://localhost:8080")
+    print("   http://localhost:8080/")
     print("\n   Go to: https://console.cloud.google.com/apis/credentials")
     print("   Edit your OAuth 2.0 Client ID")
-    print("   Add 'http://localhost:8080' to 'Authorized redirect URIs'")
+    print("   Add 'http://localhost:8080/' to 'Authorized redirect URIs'")
     print("   Click Save\n")
     
     input("Press Enter after you've added the redirect URI to continue...")
     
     print("\n🔐 Starting OAuth flow...\n")
     
-    # Create client config - use localhost:8080 for simplicity
-    redirect_uri = "http://localhost:8080"
+    # Create client config - use localhost:8080/ (trailing slash required by run_local_server)
+    redirect_uri = "http://localhost:8080/"
     
     client_config = {
         "installed": {
