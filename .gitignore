@@ -353,6 +353,10 @@ $RECYCLE.BIN/
 secrets.json
 config/secrets.json
 
+# OAuth Tokens
+google_token.pickle
+token.pickle
+
 # SSH Keys
 *.pem
 *.key
