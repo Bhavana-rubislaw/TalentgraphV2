@@ -399,6 +399,11 @@
   color: var(--ra-success);
 }
 
+.ra-status-chip.scheduled {
+  background: #EEF2FF;
+  color: #4338CA;
+}
+
 .ra-status-chip.offered {
   background: #F0FDF4;
   color: #16A34A;

@@ -642,6 +642,16 @@ def get_recruiter_recommendations(
     for profile in matching_profiles:
         candidate = session.get(Candidate, profile.candidate_id)
         
+        if not candidate or not profile or not job_posting:
+            logger.warning(
+                "Skipping orphaned shortlist swipe id=%s (candidate=%s, profile=%s, posting=%s)",
+                profile.id,
+                bool(candidate),
+                bool(profile),
+                bool(job_posting),
+            )
+            continue
+        
         # Check existing swipe
         existing_swipe = session.exec(
             select(Swipe).where(
@@ -771,6 +781,16 @@ def get_recruiter_shortlist(
         candidate = session.get(Candidate, swipe.candidate_id)
         job_profile = session.get(JobProfile, swipe.job_profile_id)
         job_posting = session.get(JobPosting, swipe.job_posting_id)
+
+        if not candidate or not job_profile or not job_posting:
+            logger.warning(
+                "Skipping orphaned shortlist swipe id=%s (candidate=%s, profile=%s, posting=%s)",
+                swipe.id,
+                bool(candidate),
+                bool(job_profile),
+                bool(job_posting),
+            )
+            continue
 
         # Skills
         skills_list = []
@@ -942,6 +962,16 @@ def get_recruiter_applications(
         candidate = session.get(Candidate, app.candidate_id)
         job_profile = session.get(JobProfile, app.job_profile_id)
         job_posting = session.get(JobPosting, app.job_posting_id)
+        
+        if not candidate or not job_profile or not job_posting:
+            logger.warning(
+                "Skipping orphaned application id=%s (candidate=%s, profile=%s, posting=%s)",
+                app.id,
+                bool(candidate),
+                bool(job_profile),
+                bool(job_posting),
+            )
+            continue
         
         # Gather skills for the profile
         from app.models import Skill

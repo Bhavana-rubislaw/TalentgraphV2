@@ -98,28 +98,36 @@ app = FastAPI(
 )
 
 # CORS Configuration
-origins = [
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
+default_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "http://localhost:3002",
     "http://127.0.0.1:3002",
     "http://localhost:3003",
     "http://127.0.0.1:3003",
-    "http://localhost:5173",  # Vite default port
-    "http://127.0.0.1:5173",
 ]
+
+# # Optional env override: FRONTEND_ORIGINS="http://localhost:3002,https://app.example.com"
+frontend_origins_env = os.getenv("FRONTEND_ORIGINS", "").strip()
+origins = [
+    origin.strip() for origin in frontend_origins_env.split(",") if origin.strip()
+] or default_origins
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    # Keep Local-dev flexible across localhost ports/protocols
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With"],
     expose_headers=["*"],
     max_age=3600,
 )
+
+logger.info(f"[STARTUP] CORS origins configured: %s", origins)
 # Request-ID tracing — must be added AFTER CORSMiddleware
 app.add_middleware(RequestIdMiddleware)
 

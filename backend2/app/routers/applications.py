@@ -217,9 +217,18 @@ def update_application_status(
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
     
-    # Verify the job posting belongs to this company
+    # Verify the job posting belongs to this company namespace
+    # (multiple recruiter users can share the same company_name)
     job_posting = session.get(JobPosting, application.job_posting_id)
-    if not job_posting or job_posting.company_id != company.id:
+    if not job_posting:
+        raise HTTPException(status_code=404, detail="Job posting not found")
+    
+    # Get all company IDs that share this company_name (namespace)
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    
+    if job_posting.company_id not in company_ids:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     # Validate status transition
