@@ -41,7 +41,7 @@ def check_meetings():
         ).all()
         print(f"🎯 MeetingParticipant records for bhavana: {len(participants)}")
         for p in participants:
-            print(f"  - Meeting ID: {p.meeting_id}, Status: {p.status}, Role: {p.role}")
+            print(f"  - Meeting ID: {p.meeting_id}, Required: {p.is_required}, Confirmed: {p.has_confirmed}, Attended: {p.attended}")
         print()
         
         # Check all meeting participants
@@ -49,38 +49,23 @@ def check_meetings():
         print(f"📊 Total MeetingParticipant records: {len(all_participants)}")
         print()
         
-        # Check applications for bhavana with scheduled interviews
-        applications = session.exec(
-            select(Application)
-            .where(Application.candidate_id == user.id)
-            .where(Application.interview_scheduled == True)
+        # Check meetings for applications
+        all_meetings_with_apps = session.exec(
+            select(Meeting).where(Meeting.application_id.isnot(None))
         ).all()
-        print(f"📅 Applications with interview_scheduled=True: {len(applications)}")
-        for app in applications:
-            print(f"  - App ID: {app.id}, Job: {app.job_id}, Status: {app.status}")
-            print(f"    Interview Time: {app.interview_datetime}")
-            print(f"    Meeting Link: {app.meeting_link}")
-        print()
-        
-        # Check if there are meetings for these applications
-        if applications:
-            app_ids = [app.id for app in applications]
-            meetings_for_apps = session.exec(
-                select(Meeting).where(Meeting.application_id.in_(app_ids))
+        print(f"🔗 Meetings linked to applications: {len(all_meetings_with_apps)}")
+        for m in all_meetings_with_apps:
+            print(f"  - Meeting ID: {m.id}, App ID: {m.application_id}, Title: {m.title}")
+            print(f"    Status: {m.status}, Start: {m.scheduled_start}")
+            
+            # Check participants for this meeting
+            meeting_participants = session.exec(
+                select(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id)
             ).all()
-            print(f"🔗 Meetings linked to these applications: {len(meetings_for_apps)}")
-            for m in meetings_for_apps:
-                print(f"  - Meeting ID: {m.id}, App ID: {m.application_id}, Title: {m.title}")
-                print(f"    Status: {m.status}, Start: {m.scheduled_start}")
-                
-                # Check participants for this meeting
-                meeting_participants = session.exec(
-                    select(MeetingParticipant).where(MeetingParticipant.meeting_id == m.id)
-                ).all()
-                print(f"    Participants: {len(meeting_participants)}")
-                for mp in meeting_participants:
-                    participant_user = session.get(User, mp.user_id)
-                    print(f"      - User: {participant_user.email} (Role: {mp.role}, Status: {mp.status})")
+            print(f"    Participants: {len(meeting_participants)}")
+            for mp in meeting_participants:
+                participant_user = session.get(User, mp.user_id)
+                print(f"      - User: {participant_user.email} (ID: {participant_user.id}, Required: {mp.is_required}, Confirmed: {mp.has_confirmed})")
 
 if __name__ == "__main__":
     check_meetings()

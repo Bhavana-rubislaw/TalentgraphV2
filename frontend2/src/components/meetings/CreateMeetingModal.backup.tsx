@@ -1,42 +1,25 @@
 /**
- * Create Meeting Modal - Updated with Searchable Participant Selection
- * Direct meeting scheduling with participant name/email search
+ * Create Meeting Modal
+ * Direct meeting scheduling with participant selection
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { apiClient } from '../../api/client';
-import { MeetingType } from '../../types/meeting';
+import { MeetingType, CreateMeetingRequest } from '../../types/meeting';
 
 interface CreateMeetingModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  defaultParticipant?: {
-    id: number;
-    name: string;
-    email: string;
-  };
+  defaultParticipantId?: number;
   jobPostingId?: number;
   matchId?: number;
   applicationId?: number;
 }
 
-interface UserSearchResult {
-  id: number;
-  full_name: string;
-  email: string;
-  role: string;
-}
-
-interface SelectedParticipant {
-  id: number;
-  name: string;
-  email: string;
-}
-
 export function CreateMeetingModal({
   onClose,
   onSuccess,
-  defaultParticipant,
+  defaultParticipantId,
   jobPostingId,
   matchId,
   applicationId,
@@ -49,113 +32,37 @@ export function CreateMeetingModal({
     startTime: '',
     endTime: '',
     durationMinutes: 60,
+    participantIds: defaultParticipantId ? [defaultParticipantId.toString()] : [''],
     location: '',
     videoMeetingUrl: '',
     videoProvider: '',
   });
 
-  const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
-  const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Load default participant if provided
-  useEffect(() => {
-    if (defaultParticipant) {
-      setSelectedParticipants([defaultParticipant]);
-    }
-  }, [defaultParticipant]);
-
-  // Handle click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Search users as user types
-  useEffect(() => {
-    const searchUsers = async () => {
-      if (searchQuery.trim().length < 2) {
-        setSearchResults([]);
-        setShowDropdown(false);
-        return;
-      }
-
-      setSearchLoading(true);
-      setShowDropdown(true); // Show dropdown while searching
-      
-      try {
-        const token = localStorage.getItem('access_token');
-        console.log('Searching for users:', searchQuery);
-        
-        const response = await fetch(
-          `http://localhost:8000/auth/users/search?q=${encodeURIComponent(searchQuery)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        
-        console.log('Search response status:', response.status);
-        
-        if (response.ok) {
-          const users = await response.json();
-          console.log('Search results:', users);
-          setSearchResults(users);
-        } else {
-          const errorData = await response.text();
-          console.error('Search failed:', response.status, errorData);
-          setSearchResults([]);
-        }
-      } catch (err) {
-        console.error('Failed to search users:', err);
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-
-    const debounce = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounce);
-  }, [searchQuery]);
 
   const handleChange = (field: string, value: any) => {
     setFormData({ ...formData, [field]: value });
   };
 
-  const addParticipant = (user: UserSearchResult) => {
-    // Check if already added
-    if (selectedParticipants.some(p => p.id === user.id)) {
-      return;
-    }
-
-    setSelectedParticipants([
-      ...selectedParticipants,
-      { id: user.id, name: user.full_name, email: user.email }
-    ]);
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowDropdown(false);
+  const addParticipant = () => {
+    setFormData({
+      ...formData,
+      participantIds: [...formData.participantIds, ''],
+    });
   };
 
-  const removeParticipant = (userId: number) => {
-    setSelectedParticipants(selectedParticipants.filter(p => p.id !== userId));
+  const updateParticipant = (index: number, value: string) => {
+    const newIds = [...formData.participantIds];
+    newIds[index] = value;
+    setFormData({ ...formData, participantIds: newIds });
+  };
+
+  const removeParticipant = (index: number) => {
+    setFormData({
+      ...formData,
+      participantIds: formData.participantIds.filter((_, i) => i !== index),
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -168,7 +75,11 @@ export function CreateMeetingModal({
       return;
     }
 
-    if (selectedParticipants.length === 0) {
+    const validParticipantIds = formData.participantIds
+      .filter(id => id.trim() !== '')
+      .map(id => parseInt(id));
+
+    if (validParticipantIds.length === 0) {
       setError('Please add at least one participant');
       return;
     }
@@ -179,7 +90,7 @@ export function CreateMeetingModal({
       const startDateTime = new Date(`${formData.date}T${formData.startTime}`);
       const endDateTime = new Date(`${formData.date}T${formData.endTime}`);
 
-      const meetingData = {
+      const meetingData: CreateMeetingRequest = {
         title: formData.title,
         description: formData.description || undefined,
         meeting_type: formData.meetingType,
@@ -187,12 +98,7 @@ export function CreateMeetingModal({
         scheduled_end: endDateTime.toISOString(),
         duration_minutes: formData.durationMinutes,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        // Use new participants format instead of participant_user_ids
-        participants: selectedParticipants.map(p => ({
-          name: p.name,
-          email: p.email,
-          is_required: true
-        })),
+        participant_user_ids: validParticipantIds,
         job_posting_id: jobPostingId,
         match_id: matchId,
         application_id: applicationId,
@@ -339,7 +245,7 @@ export function CreateMeetingModal({
             </label>
             <select
               value={formData.meetingType}
-              onChange={(e) => handleChange('meetingType', e.target.value as MeetingType)}
+              onChange={(e) => handleChange('meetingType', e.target.value)}
               required
               style={{
                 width: '100%',
@@ -435,8 +341,8 @@ export function CreateMeetingModal({
             </div>
           </div>
 
-          {/* Participants - Searchable Dropdown */}
-          <div style={{ marginBottom: '20px', position: 'relative' }}>
+          {/* Participants */}
+          <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
               fontSize: '14px',
@@ -444,138 +350,62 @@ export function CreateMeetingModal({
               color: '#1e293b',
               marginBottom: '8px',
             }}>
-              Participants *
+              Participants (User IDs) *
             </label>
 
-            {/* Search Input */}
-            <div style={{ position: 'relative' }}>
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => {
-                  if (searchQuery.length >= 2) {
-                    setShowDropdown(true);
-                  }
-                }}
-                placeholder="Search by name or email..."
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  paddingRight: '40px',
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  fontSize: '14px',
-                }}
-              />
-              {searchLoading && (
-                <div style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  fontSize: '12px',
-                  color: '#64748b',
-                }}>
-                  🔍
-                </div>
-              )}
-            </div>
-
-            {/* Search Results Dropdown */}
-            {showDropdown && (
-              <div
-                ref={dropdownRef}
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: '4px',
-                  background: 'white',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                  zIndex: 10,
-                }}
-              >
-                {searchResults.length > 0 ? (
-                  searchResults.map((user) => (
-                    <div
-                      key={user.id}
-                      onClick={() => addParticipant(user)}
-                      style={{
-                        padding: '12px',
-                        cursor: 'pointer',
-                        borderBottom: '1px solid #f1f5f9',
-                        transition: 'background 0.2s',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                    >
-                      <div style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>
-                        {user.full_name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        {user.email}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div style={{ padding: '12px', fontSize: '14px', color: '#64748b', textAlign: 'center' }}>
-                    {searchQuery.length < 2 ? 'Type at least 2 characters to search' : 'No users found'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Selected Participants */}
-            {selectedParticipants.length > 0 && (
-              <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {selectedParticipants.map((participant) => (
-                  <div
-                    key={participant.id}
+            {formData.participantIds.map((id, index) => (
+              <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="number"
+                  value={id}
+                  onChange={(e) => updateParticipant(index, e.target.value)}
+                  placeholder="Enter user ID"
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px',
+                  }}
+                />
+                {formData.participantIds.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeParticipant(index)}
                     style={{
-                      padding: '10px 12px',
-                      background: '#f0fdf4',
-                      border: '1px solid #bbf7d0',
+                      padding: '12px',
                       borderRadius: '8px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      border: 'none',
+                      background: '#fee2e2',
+                      color: '#991b1b',
+                      cursor: 'pointer',
+                      fontWeight: 600,
                     }}
                   >
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '14px', color: '#15803d' }}>
-                        {participant.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#4ade80' }}>
-                        {participant.email}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeParticipant(participant.id)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: '#fee2e2',
-                        color: '#991b1b',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        fontSize: '12px',
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+                    Remove
+                  </button>
+                )}
               </div>
-            )}
+            ))}
+
+            <button
+              type="button"
+              onClick={addParticipant}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '8px',
+                border: '2px dashed #cbd5e1',
+                background: 'white',
+                color: '#6d28d9',
+                fontWeight: 600,
+                fontSize: '14px',
+                cursor: 'pointer',
+                marginTop: '8px',
+              }}
+            >
+              + Add Participant
+            </button>
           </div>
 
           {/* Location */}
@@ -677,6 +507,7 @@ export function CreateMeetingModal({
                 fontWeight: 700,
                 fontSize: '14px',
                 cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: !loading ? '0 4px 12px rgba(109, 40, 217, 0.3)' : 'none',
               }}
             >
               {loading ? 'Creating...' : 'Create Meeting'}

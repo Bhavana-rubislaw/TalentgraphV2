@@ -428,3 +428,38 @@ def get_current_user_info(current_user: dict = Depends(get_current_user), sessio
         result["company_name"] = company.company_name if company else ""
 
     return result
+
+
+@router.get("/users/search", response_model=list)
+def search_users(
+    q: str,
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Search users by name or email for participant selection
+    Returns: List of {id, full_name, email, role}
+    """
+    search_term = f"%{q.lower()}%"
+    
+    # Search by email or full_name (case-insensitive)
+    from sqlalchemy import or_, func
+    users = session.exec(
+        select(User).where(
+            or_(
+                func.lower(User.email).like(search_term),
+                func.lower(User.full_name).like(search_term)
+            )
+        ).limit(limit)
+    ).all()
+    
+    return [
+        {
+            "id": user.id,
+            "full_name": user.full_name,
+            "email": user.email,
+            "role": user.role
+        }
+        for user in users
+    ]

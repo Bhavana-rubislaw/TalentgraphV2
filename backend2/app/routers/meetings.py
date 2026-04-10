@@ -7,8 +7,9 @@ Enhanced with comprehensive cancellation, rescheduling, and tokenized email acti
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from sqlalchemy import select, and_, or_
-from sqlmodel import Session
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select
 import json
 
 from app.database import get_session
@@ -113,6 +114,7 @@ async def create_meeting(
 ):
     """
     Create a new meeting with participants
+    - Accepts participants by user_id (legacy) OR by name and email (new)
     - Checks for scheduling conflicts
     - Creates meeting and participant records
     - Sends notifications to all participants
@@ -122,8 +124,43 @@ async def create_meeting(
     if meeting_data.scheduled_end <= meeting_data.scheduled_start:
         raise HTTPException(status_code=400, detail="End time must be after start time")
     
+    # Resolve participants to user IDs
+    participant_user_ids = []
+    
+    if meeting_data.participants:
+        # New method: Look up users by email, handle missing users
+        for participant_spec in meeting_data.participants:
+            user = session.exec(
+                select(User).where(User.email == participant_spec.email)
+            ).first()
+            
+            if not user:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"User with email '{participant_spec.email}' not found. Please ensure the user exists in the system."
+                )
+            
+            # Verify name matches (case-insensitive)
+            if user.full_name.lower() != participant_spec.name.lower():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Name mismatch for email '{participant_spec.email}': expected '{participant_spec.name}' but found '{user.full_name}'"
+                )
+            
+            participant_user_ids.append(user.id)
+    
+    elif meeting_data.participant_user_ids:
+        # Legacy method: Use provided user IDs
+        participant_user_ids = meeting_data.participant_user_ids
+    
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Either participant_user_ids or participants must be provided"
+        )
+    
     # Check for conflicts for all participants
-    all_participant_ids = meeting_data.participant_user_ids + [current_user["user_id"]]
+    all_participant_ids = participant_user_ids + [current_user["user_id"]]
     for user_id in all_participant_ids:
         has_conflict = check_availability_conflict(
             session, user_id, meeting_data.scheduled_start, meeting_data.scheduled_end
@@ -278,7 +315,7 @@ async def create_meeting(
         )
     
     # Send notifications to all participants (except organizer)
-    for user_id in meeting_data.participant_user_ids:
+    for user_id in participant_user_ids:
         push_notification(
             session=session,
             user_id=user_id,
@@ -290,7 +327,7 @@ async def create_meeting(
     
     # Send email notifications with action tokens
     email_service = MeetingEmailService()
-    for user_id in meeting_data.participant_user_ids:
+    for user_id in participant_user_ids:
         recipient = session.get(User, user_id)
         if recipient:
             # Generate action tokens for the participant
@@ -314,9 +351,14 @@ async def create_meeting(
                 reschedule_token=reschedule_token
             )
     
-    # Refresh to get participants
-    session.refresh(meeting)
-    return meeting
+    # Refresh meeting with participants and user data
+    meeting = session.exec(
+        select(Meeting)
+        .where(Meeting.id == meeting.id)
+        .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+    ).first()
+    
+    return MeetingRead.from_orm_with_participants(meeting)
 
 
 @router.get("/list", response_model=List[MeetingRead])
@@ -335,13 +377,9 @@ async def list_meetings(
     user_id = current_user["user_id"]
     
     # Get meeting IDs where user is a participant
-    # Extract row[0] from single-column query to get plain integers (not Row objects)
-    participant_meeting_ids = [
-        row[0]
-        for row in session.exec(
-            select(MeetingParticipant.meeting_id).where(MeetingParticipant.user_id == user_id)
-        ).all()
-    ]
+    participant_meeting_ids = session.exec(
+        select(MeetingParticipant.meeting_id).where(MeetingParticipant.user_id == user_id)
+    ).all()
     
     # Build query for meetings where user is organizer OR participant
     if participant_meeting_ids:
@@ -361,13 +399,35 @@ async def list_meetings(
     if upcoming_only:
         query = query.where(Meeting.scheduled_start >= datetime.utcnow())
     
+    # Eagerly load participants and their user data
+    query = query.options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+    
     # Order by scheduled_start descending
     query = query.order_by(Meeting.scheduled_start.desc())
     
     # Execute query and get Meeting objects
     meetings = session.exec(query).all()
     
-    return meetings
+    # Debug: Check serialization
+    print(f"\n=== GET /meetings/list DEBUG ===")
+    print(f"Found {len(meetings)} meetings for user {user_id}")
+    if meetings:
+        first_meeting = meetings[0]
+        print(f"First meeting: {first_meeting.id} has {len(first_meeting.participants)} participants")
+        for p in first_meeting.participants:
+            print(f"  Participant {p.id}: user_id={p.user_id}, user={p.user}, full_name={p.user.full_name if p.user else 'NO USER'}")
+    
+    result = [MeetingRead.from_orm_with_participants(m) for m in meetings]
+    
+    # Debug serialized result
+    if result:
+        first_result_dict = result[0].model_dump()
+        print(f"\nSerialized first meeting participants:")
+        for p in first_result_dict.get('participants', []):
+            print(f"  Participant {p.get('id')}: name={p.get('participant_name')}, email={p.get('participant_email')}")
+    print("=" * 50 + "\n")
+    
+    return result
 
 
 @router.get("/{meeting_id}", response_model=MeetingRead)
@@ -378,7 +438,13 @@ async def get_meeting(
 ):
     """Get meeting details by ID"""
     
-    meeting = session.get(Meeting, meeting_id)
+    # Eagerly load participants and their user data
+    meeting = session.exec(
+        select(Meeting)
+        .where(Meeting.id == meeting_id)
+        .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+    ).first()
+    
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     
@@ -389,7 +455,24 @@ async def get_meeting(
     if not (is_participant or is_organizer):
         raise HTTPException(status_code=403, detail="Access denied")
     
-    return meeting
+    # Debug: log what we're about to serialize
+    print(f"\n=== GET /meetings/{meeting_id} DEBUG ===")
+    print(f"Meeting has {len(meeting.participants)} participants")
+    for p in meeting.participants:
+        print(f"  Participant {p.id}: user_id={p.user_id}, user={p.user}, user.full_name={p.user.full_name if p.user else 'NO USER'}")
+    
+    result = MeetingRead.from_orm_with_participants(meeting)
+    
+    # Debug: log the serialized result
+    import json
+    result_dict = result.model_dump()
+    print(f"\n=== Serialized Result ===")
+    print(f"Participants in result: {len(result_dict.get('participants', []))}")
+    for p in result_dict.get('participants', []):
+        print(f"  Participant {p.get('id')}: participant_name={p.get('participant_name')}, participant_email={p.get('participant_email')}")
+    print("=" * 50 + "\n")
+    
+    return result
 
 
 @router.patch("/{meeting_id}", response_model=MeetingRead)
@@ -400,61 +483,196 @@ async def update_meeting(
     session: Session = Depends(get_session)
 ):
     """
-    Update meeting details
+    Update meeting details including participants
     - Only organizer can update
     - Checks for conflicts if time changes
+    - Can add/remove participants
+    - Notifies all participants of changes
     """
     
-    meeting = session.get(Meeting, meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    print(f"\n{'='*60}")
+    print(f"PATCH /meetings/{meeting_id} - START")
+    print(f"User: {current_user['email']} (ID: {current_user['user_id']})")
+    print(f"Update data: {update_data.model_dump()}")
+    print(f"{'='*60}\n")
     
-    if meeting.organizer_user_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Only organizer can update meeting")
-    
-    if meeting.status != MeetingStatus.SCHEDULED:
-        raise HTTPException(status_code=400, detail="Can only update scheduled meetings")
-    
-    # Check for conflicts if time is changing
-    new_start = update_data.scheduled_start or meeting.scheduled_start
-    new_end = update_data.scheduled_end or meeting.scheduled_end
-    
-    if new_start != meeting.scheduled_start or new_end != meeting.scheduled_end:
-        # Check conflicts for all participants
-        for participant in meeting.participants:
-            has_conflict = check_availability_conflict(
-                session, participant.user_id, new_start, new_end, exclude_meeting_id=meeting.id
-            )
-            if has_conflict:
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"User {participant.user_id} has a scheduling conflict"
+    try:
+        meeting = session.get(Meeting, meeting_id)
+        if not meeting:
+            raise HTTPException(status_code=404, detail="Meeting not found")
+        
+        if meeting.organizer_user_id != current_user["user_id"]:
+            raise HTTPException(status_code=403, detail="Only organizer can update meeting")
+        
+        if meeting.status != MeetingStatus.SCHEDULED:
+            raise HTTPException(status_code=400, detail="Can only update scheduled meetings")
+        
+        # Check for conflicts if time is changing
+        new_start = update_data.scheduled_start or meeting.scheduled_start
+        new_end = update_data.scheduled_end or meeting.scheduled_end
+        
+        if new_start != meeting.scheduled_start or new_end != meeting.scheduled_end:
+            # Check conflicts for all participants
+            for participant in meeting.participants:
+                has_conflict = check_availability_conflict(
+                    session, participant.user_id, new_start, new_end, exclude_meeting_id=meeting.id
                 )
+                if has_conflict:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"User {participant.user_id} has a scheduling conflict"
+                    )
+        
+        # Handle participant updates if provided
+        if update_data.participants is not None:
+            # Resolve new participants to user IDs
+            new_participant_ids = []
+            for participant_spec in update_data.participants:
+                user = session.exec(
+                    select(User).where(User.email == participant_spec.email)
+                ).first()
+                
+                if not user:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"User with email '{participant_spec.email}' not found"
+                    )
+                
+                # Verify name matches
+                if user.full_name.lower() != participant_spec.name.lower():
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Name mismatch for email '{participant_spec.email}': expected '{participant_spec.name}' but found '{user.full_name}'"
+                    )
+                
+                new_participant_ids.append(user.id)
+            
+            # Differential update: only add/remove what changed
+            existing_participant_ids = {p.user_id for p in meeting.participants}
+            new_participant_ids_set = set(new_participant_ids)
+            
+            # Remove participants that are no longer in the list
+            participants_to_remove = existing_participant_ids - new_participant_ids_set
+            if participants_to_remove:
+                for participant in meeting.participants:
+                    if participant.user_id in participants_to_remove:
+                        session.delete(participant)
+            
+            # Add new participants that weren't in the original list
+            participants_to_add = new_participant_ids_set - existing_participant_ids
+            if participants_to_add:
+                for user_id in participants_to_add:
+                    new_participant = MeetingParticipant(
+                        meeting_id=meeting.id,
+                        user_id=user_id,
+                        is_required=True,
+                        has_confirmed=(user_id == meeting.organizer_user_id)  # Organizer auto-confirmed
+                    )
+                    session.add(new_participant)
+            
+            # Participants that exist in both lists are kept with their existing data
+            # (preserves confirmation status, timestamps, etc.)
+            
+            print(f"DEBUG: participants_to_add = {participants_to_add}")
+            print(f"DEBUG: participants_to_remove = {participants_to_remove}")
+            
+            # Send email notifications for participant changes
+            email_service = MeetingEmailService()
+            current_user_obj = session.get(User, current_user["user_id"])
+            
+            # Email newly added participants
+            if participants_to_add:
+                print(f"Sending emails to {len(participants_to_add)} newly added participants")
+                for user_id in participants_to_add:
+                    recipient = session.get(User, user_id)
+                    if recipient and user_id != current_user["user_id"]:
+                        print(f"  Sending invitation email to {recipient.email}")
+                        # Generate action tokens for new participant
+                        confirm_token = MeetingService.generate_action_token(
+                            session, meeting.id, user_id, "confirm"
+                        )
+                        cancel_token = MeetingService.generate_action_token(
+                            session, meeting.id, user_id, "cancel"
+                        )
+                        reschedule_token = MeetingService.generate_action_token(
+                            session, meeting.id, user_id, "reschedule"
+                        )
+                        
+                        email_service.send_interview_scheduled_email(
+                            session=session,
+                            meeting=meeting,
+                            recipient_user=recipient,
+                            organizer_user=current_user_obj,
+                            confirm_token=confirm_token,
+                            cancel_token=cancel_token,
+                            reschedule_token=reschedule_token
+                        )
+                        print(f"  ✓ Email sent to {recipient.email}")
+            
+            # Notify removed participants via email
+            if participants_to_remove:
+                print(f"Sending removal emails to {len(participants_to_remove)} removed participants")
+                for user_id in participants_to_remove:
+                    recipient = session.get(User, user_id)
+                    if recipient and user_id != current_user["user_id"]:
+                        print(f"  Sending removal email to {recipient.email}")
+                        # Use cancellation email template for removed participants
+                        email_service.send_interview_cancelled_email(
+                            session=session,
+                            meeting=meeting,
+                            recipient_user=recipient,
+                            cancelled_by_user=current_user_obj,
+                            cancellation_reason=f"You have been removed from this meeting by {current_user_obj.full_name}."
+                        )
+                        print(f"  ✓ Removal email sent to {recipient.email}")
+        
+        # Update other fields - Use model_dump instead of dict for Pydantic v2
+        update_dict = update_data.model_dump(exclude_unset=True, exclude={'participants'})
+        for key, value in update_dict.items():
+            setattr(meeting, key, value)
+        
+        meeting.updated_at = datetime.utcnow()
+        session.add(meeting)
+        session.commit()
+        
+        # Refresh meeting with participants and user data
+        session.refresh(meeting)
+        meeting = session.exec(
+            select(Meeting)
+            .where(Meeting.id == meeting.id)
+            .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+        ).first()
+        
+        # Notify all participants (including new ones)
+        for participant in meeting.participants:
+            if participant.user_id != current_user["user_id"]:
+                push_notification(
+                    session=session,
+                    user_id=participant.user_id,
+                    title="Meeting Updated",
+                    message=f"Meeting '{meeting.title}' has been updated",
+                    event_type="meeting_updated",
+                    route=f"/meetings/{meeting.id}"
+                )
+        
+        return MeetingRead.from_orm_with_participants(meeting)
     
-    # Update fields
-    update_dict = update_data.dict(exclude_unset=True)
-    for key, value in update_dict.items():
-        setattr(meeting, key, value)
-    
-    meeting.updated_at = datetime.utcnow()
-    session.add(meeting)
-    session.commit()
-    session.refresh(meeting)
-    
-    # Notify participants
-    for participant in meeting.participants:
-        if participant.user_id != current_user["user_id"]:
-            push_notification(
-                session=session,
-                target_user_id=participant.user_id,
-                notification_type="meeting_updated",
-                title="Meeting Updated",
-                message=f"Meeting '{meeting.title}' has been updated",
-                related_id=meeting.id,
-                action_url=f"/meetings/{meeting.id}"
-            )
-    
-    return meeting
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        print(f"\n{'!'*60}")
+        print(f"!!! ERROR in PATCH /meetings/{meeting_id} !!!")
+        print(f"{'!'*60}")
+        traceback.print_exc()
+        print(f"\nError type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print(f"{'!'*60}\n")
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update meeting: {str(e)}"
+        )
 
 
 @router.post("/{meeting_id}/cancel", response_model=MeetingRead)
@@ -467,6 +685,7 @@ async def cancel_meeting(
     """
     Cancel a meeting with comprehensive workflow:
     - Organizer or participant can cancel
+    - Verifies canceller identity by name and email if provided
     - Creates timeline event
     - Syncs application status
     - Sends notifications and emails
@@ -476,6 +695,27 @@ async def cancel_meeting(
     meeting = session.get(Meeting, meeting_id)
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
+    
+    # Get current user details
+    current_user_obj = session.get(User, current_user["user_id"])
+    if not current_user_obj:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify canceller identity if name and email are provided
+    if cancel_data.canceller_name or cancel_data.canceller_email:
+        if cancel_data.canceller_email:
+            if current_user_obj.email.lower() != cancel_data.canceller_email.lower():
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Canceller email '{cancel_data.canceller_email}' does not match authenticated user '{current_user_obj.email}'"
+                )
+        
+        if cancel_data.canceller_name:
+            if current_user_obj.full_name.lower() != cancel_data.canceller_name.lower():
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Canceller name '{cancel_data.canceller_name}' does not match authenticated user '{current_user_obj.full_name}'"
+                )
     
     # Check if user is organizer or participant
     is_participant = any(p.user_id == current_user["user_id"] for p in meeting.participants)
@@ -487,8 +727,6 @@ async def cancel_meeting(
     if meeting.status == MeetingStatus.CANCELLED:
         raise HTTPException(status_code=400, detail="Meeting already cancelled")
     
-    # Get current user details
-    current_user_obj = session.get(User, current_user["user_id"])
     user_full_name = current_user_obj.full_name if current_user_obj else current_user.get("email", "Someone")
     user_role = current_user_obj.role if current_user_obj else "user"
     

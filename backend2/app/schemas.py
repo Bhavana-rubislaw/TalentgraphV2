@@ -3,8 +3,8 @@ API Schemas for request/response validation
 Pydantic models mirroring database structure
 """
 
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from typing import Optional, List, Any
+from pydantic import BaseModel, EmailStr, computed_field
 from datetime import datetime
 from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
 
@@ -401,6 +401,44 @@ class MeetingParticipantRead(MeetingParticipantBase):
     reminder_sent_1h: bool
     created_at: datetime
     updated_at: datetime
+    # Include participant details for easy display
+    participant_name: Optional[str] = None
+    participant_email: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+    
+    @classmethod
+    def from_orm_with_user(cls, participant):
+        """Create from ORM object and populate user details"""
+        data = {
+            'id': participant.id,
+            'meeting_id': participant.meeting_id,
+            'user_id': participant.user_id,
+            'is_required': participant.is_required,
+            'has_confirmed': participant.has_confirmed,
+            'confirmed_at': participant.confirmed_at,
+            'attended': participant.attended,
+            'reminder_sent_24h': participant.reminder_sent_24h,
+            'reminder_sent_1h': participant.reminder_sent_1h,
+            'created_at': participant.created_at,
+            'updated_at': participant.updated_at,
+        }
+        
+        # Add participant details from user relationship if available
+        if hasattr(participant, 'user') and participant.user:
+            data['participant_name'] = participant.user.full_name
+            data['participant_email'] = participant.user.email
+        
+        return cls(**data)
+
+
+# New schema for participant specification by name and email
+class MeetingParticipantSpec(BaseModel):
+    """Participant specified by name and email (alternative to user_id)"""
+    name: str
+    email: str
+    is_required: bool = True
 
 
 # Meeting Core Schemas
@@ -421,7 +459,17 @@ class MeetingBase(BaseModel):
 
 
 class MeetingCreate(MeetingBase):
-    participant_user_ids: List[int]  # List of user IDs to invite
+    # Support both methods: user IDs (old) or name+email (new)
+    participant_user_ids: Optional[List[int]] = None  # Legacy support
+    participants: Optional[List[MeetingParticipantSpec]] = None  # New method
+    
+    class Config:
+        # At least one must be provided
+        @staticmethod
+        def validate_participants(cls, values):
+            if not values.get('participant_user_ids') and not values.get('participants'):
+                raise ValueError("Either participant_user_ids or participants must be provided")
+            return values
 
 
 class MeetingUpdate(BaseModel):
@@ -433,6 +481,7 @@ class MeetingUpdate(BaseModel):
     timezone: Optional[str] = None
     location: Optional[str] = None
     video_meeting_url: Optional[str] = None
+    participants: Optional[List[MeetingParticipantSpec]] = None  # Allow updating participants
 
 
 class MeetingRead(MeetingBase):
@@ -451,10 +500,59 @@ class MeetingRead(MeetingBase):
     created_at: datetime
     updated_at: datetime
     participants: List[MeetingParticipantRead] = []
+    
+    class Config:
+        from_attributes = True
+    
+    @classmethod
+    def from_orm_with_participants(cls, meeting):
+        """Create from ORM object and populate participant user details"""
+        # Convert participants manually
+        participants = [
+            MeetingParticipantRead.from_orm_with_user(p)
+            for p in meeting.participants
+        ]
+        
+        # Create the meeting data
+        data = {
+            'id': meeting.id,
+            'title': meeting.title,
+            'description': meeting.description,
+            'meeting_type': meeting.meeting_type,
+            'status': meeting.status,
+            'scheduled_start': meeting.scheduled_start,
+            'scheduled_end': meeting.scheduled_end,
+            'duration_minutes': meeting.duration_minutes,
+            'timezone': meeting.timezone,
+            'organizer_user_id': meeting.organizer_user_id,
+            'job_posting_id': meeting.job_posting_id,
+            'match_id': meeting.match_id,
+            'application_id': meeting.application_id,
+            'location': meeting.location,
+            'video_meeting_url': meeting.video_meeting_url,
+            'video_provider': meeting.video_provider,
+            'google_calendar_event_id': meeting.google_calendar_event_id,
+            'microsoft_calendar_event_id': meeting.microsoft_calendar_event_id,
+            'cancelled_at': meeting.cancelled_at,
+            'cancelled_by_user_id': meeting.cancelled_by_user_id,
+            'cancellation_reason': meeting.cancellation_reason,
+            'reschedule_requested_at': meeting.reschedule_requested_at,
+            'reschedule_requested_by_user_id': meeting.reschedule_requested_by_user_id,
+            'reschedule_request_reason': meeting.reschedule_request_reason,
+            'reschedule_request_preferred_times': meeting.reschedule_request_preferred_times,
+            'created_at': meeting.created_at,
+            'updated_at': meeting.updated_at,
+            'participants': participants,
+        }
+        
+        return cls(**data)
 
 
 class MeetingCancelRequest(BaseModel):
     cancellation_reason: str
+    # Optional: specify canceller by name and email (alternative to using auth token)
+    canceller_name: Optional[str] = None
+    canceller_email: Optional[str] = None
 
 
 class MeetingRescheduleRequest(BaseModel):

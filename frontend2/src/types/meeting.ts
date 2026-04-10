@@ -19,6 +19,9 @@ export interface MeetingParticipant {
   reminder_sent_1h: boolean;
   created_at: string;
   updated_at: string;
+  // New fields for display
+  participant_name?: string;
+  participant_email?: string;
 }
 
 export interface Meeting {
@@ -65,6 +68,12 @@ export interface MeetingAvailabilitySlot {
   expired_at?: string;
 }
 
+export interface ParticipantSpec {
+  name: string;
+  email: string;
+  is_required?: boolean;
+}
+
 export interface CreateMeetingRequest {
   title: string;
   description?: string;
@@ -73,7 +82,8 @@ export interface CreateMeetingRequest {
   scheduled_end: string;
   duration_minutes: number;
   timezone?: string;
-  participant_user_ids: number[];
+  // Only use participants with name and email (no more user IDs)
+  participants: ParticipantSpec[];
   job_posting_id?: number;
   match_id?: number;
   application_id?: number;
@@ -91,6 +101,7 @@ export interface UpdateMeetingRequest {
   timezone?: string;
   location?: string;
   video_meeting_url?: string;
+  participants?: ParticipantSpec[];  // Allow updating participants
 }
 
 export interface ProposeAvailabilitySlotRequest {

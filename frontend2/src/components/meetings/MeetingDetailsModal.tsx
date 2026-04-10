@@ -1,11 +1,12 @@
 /**
  * Meeting Details Modal
  * View, update, cancel, or reschedule existing meetings
+ * Includes participant management with search
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
-import { Meeting } from '../../types/meeting';
+import { Meeting, MeetingParticipant } from '../../types/meeting';
 
 interface MeetingDetailsModalProps {
   meeting: Meeting;
@@ -13,17 +14,67 @@ interface MeetingDetailsModalProps {
   onUpdate: () => void;
 }
 
+interface UserSearchResult {
+  id: number;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
 export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetailsModalProps) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [showEditParticipants, setShowEditParticipants] = useState(false);
+  
   const [cancellationReason, setCancellationReason] = useState('');
   const [rescheduleData, setRescheduleData] = useState({
     date: '',
     startTime: '',
     endTime: '',
   });
+  
+  // Participant management state
+  const [editedParticipants, setEditedParticipants] = useState<Array<{name: string; email: string}>>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Initialize edited participants from meeting data
+  useEffect(() => {
+    const participants = meeting.participants
+      .filter(p => p.participant_name && p.participant_email)
+      .map(p => ({
+        name: p.participant_name!,
+        email: p.participant_email!,
+      }));
+    setEditedParticipants(participants);
+  }, [meeting]);
+
+  // Search for users
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      try {
+        setSearching(true);
+        const response = await apiClient.searchUsers(searchQuery);
+        setSearchResults(response.data);
+      } catch (err) {
+        console.error('User search failed:', err);
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    const timer = setTimeout(searchUsers, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -35,6 +86,43 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
       hour: 'numeric',
       minute: '2-digit',
     });
+  };
+
+  const addParticipant = (user: UserSearchResult) => {
+    // Check if already added
+    if (editedParticipants.some(p => p.email === user.email)) {
+      setError('Participant already added');
+      return;
+    }
+
+    setEditedParticipants([...editedParticipants, { name: user.full_name, email: user.email }]);
+    setSearchQuery('');
+    setSearchResults([]);
+    setError('');
+  };
+
+  const removeParticipant = (email: string) => {
+    setEditedParticipants(editedParticipants.filter(p => p.email !== email));
+  };
+
+  const handleUpdateParticipants = async () => {
+    if (editedParticipants.length === 0) {
+      setError('Meeting must have at least one participant');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await apiClient.updateMeeting(meeting.id, {
+        participants: editedParticipants.map(p => ({ name: p.name, email: p.email, is_required: true }))
+      });
+      setShowEditParticipants(false);
+      onUpdate();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update participants');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -344,6 +432,208 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
     );
   }
 
+  // Edit Participants Modal
+  if (showEditParticipants) {
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1001,
+        padding: '20px',
+      }}>
+        <div style={{
+          background: 'white',
+          borderRadius: '16px',
+          maxWidth: '600px',
+          width: '100%',
+          maxHeight: '80vh',
+          overflow: 'auto',
+          padding: '24px',
+          boxShadow: '0 24px 48px rgba(0,0,0,0.2)',
+        }}>
+          <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>
+            Manage Participants
+          </h3>
+          <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>
+            Add or remove participants. All participants will be notified of changes.
+          </p>
+
+          {/* Search for users to add */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
+              Add Participant
+            </label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name or email..."
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                fontSize: '14px',
+              }}
+            />
+            {searching && (
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
+                Searching...
+              </div>
+            )}
+            {searchResults.length > 0 && (
+              <div style={{
+                marginTop: '8px',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                maxHeight: '200px',
+                overflow: 'auto',
+              }}>
+                {searchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    onClick={() => addParticipant(user)}
+                    style={{
+                      padding: '12px',
+                      borderBottom: '1px solid #f1f5f9',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>
+                      {user.full_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      {user.email}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Current participants */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>
+              Current Participants ({editedParticipants.length})
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {editedParticipants.map((participant, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: '12px',
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                      {participant.name}
+                      {meeting.participants.find(p => p.participant_email === participant.email)?.user_id === meeting.organizer_user_id && (
+                        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6d28d9' }}>(Organizer)</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      {participant.email}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeParticipant(participant.email)}
+                    disabled={editedParticipants.length === 1}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #e2e8f0',
+                      background: 'white',
+                      color: editedParticipants.length === 1 ? '#cbd5e1' : '#ef4444',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: editedParticipants.length === 1 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '12px',
+              borderRadius: '8px',
+              background: '#fee2e2',
+              color: '#991b1b',
+              fontSize: '14px',
+              marginBottom: '16px',
+            }}>
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => {
+                setShowEditParticipants(false);
+                setError('');
+                // Reset to original participants
+                const participants = meeting.participants
+                  .filter(p => p.participant_name && p.participant_email)
+                  .map(p => ({
+                    name: p.participant_name!,
+                    email: p.participant_email!,
+                  }));
+                setEditedParticipants(participants);
+              }}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                background: 'white',
+                color: '#64748b',
+                fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateParticipants}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: '12px',
+                borderRadius: '8px',
+                border: 'none',
+                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                color: 'white',
+                fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? 'Updating...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       position: 'fixed',
@@ -469,9 +759,28 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
 
           {/* Participants */}
           <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Participants ({meeting.participants.length})
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Participants ({meeting.participants.length})
+              </h3>
+              {meeting.status === 'scheduled' && (
+                <button
+                  onClick={() => setShowEditParticipants(true)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #6d28d9',
+                    background: 'white',
+                    color: '#6d28d9',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ✏️ Edit Participants
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {meeting.participants.map((participant) => (
                 <div
@@ -487,12 +796,19 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '20px' }}>👤</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
-                      User #{participant.user_id}
-                      {participant.user_id === meeting.organizer_user_id && (
-                        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6d28d9' }}>(Organizer)</span>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
+                        {participant.participant_name || `User #${participant.user_id}`}
+                        {participant.user_id === meeting.organizer_user_id && (
+                          <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6d28d9' }}>(Organizer)</span>
+                        )}
+                      </div>
+                      {participant.participant_email && (
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          {participant.participant_email}
+                        </div>
                       )}
-                    </span>
+                    </div>
                   </div>
                   {participant.has_confirmed ? (
                     <span style={{ fontSize: '12px', fontWeight: 600, color: '#059669', background: '#d1fae5', padding: '4px 8px', borderRadius: '6px' }}>

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Meeting Creation with Name/Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.cancel {
+            background-color: #f44336;
+        }
+        button.cancel:hover {
+            background-color: #da190b;
+        }
+        .participant {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: white;
+        }
+        .participant button {
+            background-color: #ff5722;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗓️ Test Meeting API - Participant by Name/Email</h1>
+        
+        <div class="section">
+            <h2>1. Create Meeting with Name/Email</h2>
+            <label for="apiUrl">API Base URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8000" />
+            
+            <label for="token">Auth Token:</label>
+            <input type="text" id="token" placeholder="Bearer token..." />
+            
+            <label for="title">Meeting Title:</label>
+            <input type="text" id="title" value="Technical Interview" />
+            
+            <label for="startTime">Start Time:</label>
+            <input type="datetime-local" id="startTime" />
+            
+            <label for="endTime">End Time:</label>
+            <input type="datetime-local" id="endTime" />
+            
+            <label for="duration">Duration (minutes):</label>
+            <input type="number" id="duration" value="60" />
+            
+            <h3>Participants</h3>
+            <div id="participantsList"></div>
+            <button onclick="addParticipant()">+ Add Participant</button>
+            
+            <br><br>
+            <button onclick="createMeeting()">Create Meeting</button>
+        </div>
+        
+        <div class="section">
+            <h2>2. Cancel Meeting</h2>
+            <label for="meetingId">Meeting ID:</label>
+            <input type="number" id="meetingId" placeholder="Enter meeting ID" />
+            
+            <label for="cancelReason">Cancellation Reason:</label>
+            <textarea id="cancelReason" rows="3" placeholder="Enter reason..."></textarea>
+            
+            <label for="cancellerName">Canceller Name (optional):</label>
+            <input type="text" id="cancellerName" placeholder="John Doe" />
+            
+            <label for="cancellerEmail">Canceller Email (optional):</label>
+            <input type="email" id="cancellerEmail" placeholder="john.doe@example.com" />
+            
+            <button class="cancel" onclick="cancelMeeting()">Cancel Meeting</button>
+        </div>
+        
+        <div class="section">
+            <h2>3. Get Meeting Details</h2>
+            <label for="getMeetingId">Meeting ID:</label>
+            <input type="number" id="getMeetingId" placeholder="Enter meeting ID" />
+            
+            <button onclick="getMeeting()">Get Meeting</button>
+        </div>
+        
+        <div id="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Initialize datetime fields with default values
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+        
+        const startInput = document.getElementById('startTime');
+        const endInput = document.getElementById('endTime');
+        
+        startInput.value = tomorrow.toISOString().slice(0, 16);
+        
+        const endTime = new Date(tomorrow);
+        endTime.setHours(11, 0, 0, 0);
+        endInput.value = endTime.toISOString().slice(0, 16);
+        
+        let participantCount = 0;
+        
+        function addParticipant() {
+            participantCount++;
+            const participantsDiv = document.getElementById('participantsList');
+            const participantDiv = document.createElement('div');
+            participantDiv.className = 'participant';
+            participantDiv.id = `participant-${participantCount}`;
+            participantDiv.innerHTML = `
+                <label>Name:</label>
+                <input type="text" id="pname-${participantCount}" placeholder="John Doe" />
+                <label>Email:</label>
+                <input type="email" id="pemail-${participantCount}" placeholder="john.doe@example.com" />
+                <label>
+                    <input type="checkbox" id="prequired-${participantCount}" checked />
+                    Required Participant
+                </label>
+                <button onclick="removeParticipant(${participantCount})">Remove</button>
+            `;
+            participantsDiv.appendChild(participantDiv);
+        }
+        
+        function removeParticipant(id) {
+            const participant = document.getElementById(`participant-${id}`);
+            participant.remove();
+        }
+        
+        function getParticipants() {
+            const participants = [];
+            const participantsDiv = document.getElementById('participantsList');
+            const participantDivs = participantsDiv.querySelectorAll('.participant');
+            
+            participantDivs.forEach((div) => {
+                const id = div.id.split('-')[1];
+                const name = document.getElementById(`pname-${id}`).value;
+                const email = document.getElementById(`pemail-${id}`).value;
+                const required = document.getElementById(`prequired-${id}`).checked;
+                
+                if (name && email) {
+                    participants.push({
+                        name: name,
+                        email: email,
+                        is_required: required
+                    });
+                }
+            });
+            
+            return participants;
+        }
+        
+        async function createMeeting() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const title = document.getElementById('title').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            
+            const participants = getParticipants();
+            
+            if (participants.length === 0) {
+                showResponse('error', 'Please add at least one participant');
+                return;
+            }
+            
+            const meetingData = {
+                title: title,
+                scheduled_start: new Date(startTime).toISOString(),
+                scheduled_end: new Date(endTime).toISOString(),
+                duration_minutes: duration,
+                participants: participants
+            };
+            
+            try {
+                const response = await fetch(`${apiUrl}/meetings/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(meetingData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('success', `Meeting created successfully!\n\n${JSON.stringify(data, null, 2)}`);
+                    document.getElementById('meetingId').value = data.id;
+                } else {
+                    showResponse('error', `Error: ${data.detail || JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                showResponse('error', `Network error: ${error.message}`);
+            }
+        }
+        
+        async function cancelMeeting() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const meetingId = document.getElementById('meetingId').value;
+            const cancelReason = document.getElementById('cancelReason').value;
+            const cancellerName = document.getElementById('cancellerName').value;
+            const cancellerEmail = document.getElementById('cancellerEmail').value;
+            
+            if (!meetingId) {
+                showResponse('error', 'Please enter a meeting ID');
+                return;
+            }
+            
+            if (!cancelReason) {
+                showResponse('error', 'Please enter a cancellation reason');
+                return;
+            }
+            
+            const cancelData = {
+                cancellation_reason: cancelReason
+            };
+            
+            if (cancellerName) {
+                cancelData.canceller_name = cancellerName;
+            }
+            
+            if (cancellerEmail) {
+                cancelData.canceller_email = cancellerEmail;
+            }
+            
+            try {
+                const response = await fetch(`${apiUrl}/meetings/${meetingId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(cancelData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('success', `Meeting cancelled successfully!\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResponse('error', `Error: ${data.detail || JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                showResponse('error', `Network error: ${error.message}`);
+            }
+        }
+        
+        async function getMeeting() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const meetingId = document.getElementById('getMeetingId').value;
+            
+            if (!meetingId) {
+                showResponse('error', 'Please enter a meeting ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${apiUrl}/meetings/${meetingId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse('success', `Meeting details:\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    showResponse('error', `Error: ${data.detail || JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                showResponse('error', `Network error: ${error.message}`);
+            }
+        }
+        
+        function showResponse(type, message) {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = type;
+            responseDiv.textContent = message;
+            responseDiv.style.display = 'block';
+            
+            // Scroll to response
+            responseDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // Add one participant by default
+        addParticipant();
+    </script>
+</body>
+</html>

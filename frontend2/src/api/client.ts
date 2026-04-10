@@ -45,6 +45,9 @@ export const apiClient = {
   getCurrentUser: () =>
     api.get('/auth/me'),
 
+  searchUsers: (query: string, limit: number = 10) =>
+    api.get('/auth/users/search', { params: { q: query, limit } }),
+
   // Candidates
   createCandidateProfile: (data: any) =>
     api.post('/candidates/profile', data),
@@ -351,7 +354,8 @@ export const apiClient = {
     scheduled_end: string;   // ISO datetime
     duration_minutes: number;
     timezone?: string;
-    participant_user_ids: number[];
+    // Only use participants with name and email (no user IDs needed)
+    participants: Array<{ name: string; email: string; is_required?: boolean }>;
     job_posting_id?: number;
     match_id?: number;
     application_id?: number;
@@ -379,6 +383,7 @@ export const apiClient = {
     timezone?: string;
     location?: string;
     video_meeting_url?: string;
+    participants?: Array<{ name: string; email: string; is_required?: boolean }>;
   }) =>
     api.patch(`/meetings/${meetingId}`, data),
 

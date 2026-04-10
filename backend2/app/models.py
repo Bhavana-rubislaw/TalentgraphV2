@@ -674,6 +674,7 @@ class MeetingParticipant(SQLModel, table=True):
     
     # Relationships
     meeting: Meeting = Relationship(back_populates="participants")
+    user: "User" = Relationship()  # Added relationship to User for easy access to name/email
     
     # Unique constraint: one record per meeting-user pair
     __table_args__ = (UniqueConstraint("meeting_id", "user_id", name="unique_meeting_participant"),)
