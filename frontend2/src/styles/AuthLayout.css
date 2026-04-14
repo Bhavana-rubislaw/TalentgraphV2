@@ -10,6 +10,7 @@
   flex-direction: row;
   overflow: hidden;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #F5F6FA;
 }
 
 /* ═══ Left Branding Panel (40% on desktop) ═══ */
@@ -26,7 +27,7 @@
 .auth-gradient-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 40%, #8e6bb8 100%);
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 40%, #8e6bb8 100%);
   background-size: 200% 200%;
   animation: gradientShift 15s ease infinite;
 }

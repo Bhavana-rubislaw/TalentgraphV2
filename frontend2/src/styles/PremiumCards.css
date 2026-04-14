@@ -6,12 +6,12 @@
 
 /* ═══ JOB CARD (ELEVATED WITH STRONG SHADOWS) ═══ */
 .job-card {
-  background: var(--bg-surface);
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-6);
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-md);
+  background: white;
+  border: 1px solid #EDEFF5;
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.2s ease;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
   position: relative;
   overflow: hidden;
 }
@@ -21,16 +21,16 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 5px;
+  width: 4px;
   height: 100%;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
   opacity: 0;
-  transition: opacity var(--transition-base);
+  transition: opacity 0.2s ease;
 }
 
 .job-card:hover {
-  border-color: var(--purple-300);
-  box-shadow: var(--shadow-purple-lg);
+  border-color: #6C5CE7;
+  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.15);
   transform: translateY(-3px);
 }
 

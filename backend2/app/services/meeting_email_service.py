@@ -71,7 +71,7 @@ class MeetingEmailService:
                     <p style="margin: 10px 0;"><strong>Date & Time:</strong> {start_time_str}</p>
                     <p style="margin: 10px 0;"><strong>Duration:</strong> {meeting.duration_minutes} minutes</p>
                     <p style="margin: 10px 0;"><strong>Timezone:</strong> {meeting.timezone}</p>
-                    {f'<p style="margin: 10px 0;"><strong>Meeting Link:</strong> <a href="{meeting.video_meeting_url}">{meeting.video_meeting_url}</a></p>' if meeting.video_meeting_url else ''}
+                    {f'<p style="margin: 10px 0;"><strong>Meeting Link:</strong> <a href="{meeting.video_meeting_url}" style="color: #2563eb; text-decoration: underline;">{meeting.video_meeting_url}</a></p>' if meeting.video_meeting_url else ''}
                     {f'<p style="margin: 10px 0;"><strong>Location:</strong> {meeting.location}</p>' if meeting.location else ''}
                 </div>
                 

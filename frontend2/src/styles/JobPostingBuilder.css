@@ -3,27 +3,28 @@
    ============================================ */
 
 :root {
-  --jpb-primary: #7B5EA7;
-  --jpb-primary-hover: #6A4F99;
-  --jpb-primary-light: rgba(123, 94, 167, 0.1);
+  --jpb-primary: #6C5CE7;
+  --jpb-primary-hover: #5B45E0;
+  --jpb-primary-light: rgba(108, 92, 231, 0.1);
   --jpb-success: #2ECC71;
   --jpb-success-light: rgba(46, 204, 113, 0.1);
   --jpb-warning: #F0A830;
   --jpb-danger: #E74C3C;
   --jpb-danger-light: rgba(231, 76, 60, 0.1);
-  --jpb-bg: #F5F6FB;
+  --jpb-bg: #F5F6FA;
   --jpb-surface: #ffffff;
-  --jpb-surface-2: #f0f1f8;
-  --jpb-border: #E2E4EC;
-  --jpb-border-focus: #7B5EA7;
-  --jpb-text: #1A1D2E;
+  --jpb-surface-2: #F9FAFB;
+  --jpb-border: #E4E7EC;
+  --jpb-border-focus: #6C5CE7;
+  --jpb-text: #1D2939;
   --jpb-text-secondary: #44495C;
-  --jpb-text-muted: #8E93A6;
+  --jpb-text-muted: #667085;
   --jpb-radius: 10px;
   --jpb-radius-sm: 6px;
-  --jpb-radius-lg: 14px;
-  --jpb-shadow: 0 1px 3px rgba(123, 94, 167, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --jpb-shadow-lg: 0 8px 28px rgba(123, 94, 167, 0.12);
+  --jpb-radius-lg: 16px;
+  --jpb-shadow: 0 2px 4px rgba(0,0,0,.06);
+  --jpb-shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --jpb-shadow-lg: 0 8px 24px rgba(0,0,0,.12);
   --jpb-transition: 0.2s ease;
 }
 
@@ -36,6 +37,7 @@
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--jpb-text);
+  padding: 24px;
 }
 
 .jpb-loading {
@@ -71,11 +73,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 20px;
-  border-radius: var(--jpb-radius);
+  padding: 16px 20px;
+  border-radius: var(--jpb-radius-lg);
   font-size: 14px;
   font-weight: 600;
   box-shadow: var(--jpb-shadow-lg);
+  border: 1px solid var(--jpb-border);
   animation: jpb-toast-in 0.35s ease;
 }
 
@@ -93,7 +96,7 @@
 .jpb-toast-success {
   background: var(--jpb-success-light);
   color: #065f46;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(46, 204, 113, 0.3);
 }
 
 .jpb-toast-success svg { stroke: var(--jpb-success); }

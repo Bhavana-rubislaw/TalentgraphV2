@@ -22,7 +22,8 @@ interface ScheduleInterviewModalProps {
 interface FormData {
   candidateEmail: string;
   interviewDate: string;
-  interviewTime: string;
+  interviewStartTime: string;
+  interviewEndTime: string;
   timezone: string;
   meetingProvider: 'zoom' | 'google_meet' | 'microsoft_teams' | 'manual';
   meetingLink: string;
@@ -33,7 +34,8 @@ interface FormData {
 interface FormErrors {
   candidateEmail?: string;
   interviewDate?: string;
-  interviewTime?: string;
+  interviewStartTime?: string;
+  interviewEndTime?: string;
   meetingLink?: string;
 }
 
@@ -60,7 +62,8 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
   const [formData, setFormData] = useState<FormData>({
     candidateEmail: '',
     interviewDate: '',
-    interviewTime: '',
+    interviewStartTime: '',
+    interviewEndTime: '',
     timezone: 'America/New_York',
     meetingProvider: 'zoom',
     meetingLink: '',
@@ -79,7 +82,8 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       setFormData({
         candidateEmail,
         interviewDate: '',
-        interviewTime: '10:00',
+        interviewStartTime: '10:00',
+        interviewEndTime: '11:00',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
         meetingProvider: 'zoom',
         meetingLink: '',
@@ -114,9 +118,26 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       }
     }
     
-    // Validate time
-    if (!formData.interviewTime) {
-      newErrors.interviewTime = 'Interview time is required';
+    // Validate start time
+    if (!formData.interviewStartTime) {
+      newErrors.interviewStartTime = 'Interview start time is required';
+    }
+    
+    // Validate end time
+    if (!formData.interviewEndTime) {
+      newErrors.interviewEndTime = 'Interview end time is required';
+    }
+    
+    // Validate that end time is after start time
+    if (formData.interviewStartTime && formData.interviewEndTime) {
+      const [startHour, startMin] = formData.interviewStartTime.split(':').map(Number);
+      const [endHour, endMin] = formData.interviewEndTime.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      
+      if (endMinutes <= startMinutes) {
+        newErrors.interviewEndTime = 'End time must be after start time';
+      }
     }
     
     // Validate meeting link (required if manual, must be valid URL format)
@@ -151,19 +172,22 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         year: 'numeric' 
       });
       
-      // Convert 24h time to 12h format
-      const [hours, minutes] = formData.interviewTime.split(':');
-      const hour = parseInt(hours, 10);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const hour12 = hour % 12 || 12;
-      const formattedTime = `${hour12}:${minutes} ${ampm}`;
+      // Convert 24h time to 12h format for start and end times
+      const formatTime = (time24: string) => {
+        const [hours, minutes] = time24.split(':');
+        const hour = parseInt(hours, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        return `${hour12}:${minutes} ${ampm}`;
+      };
       
-      // Get timezone name for display, but send IANA value to backend
-      const timezoneName = TIMEZONES.find(tz => tz.value === formData.timezone)?.label || formData.timezone;
+      const formattedStartTime = formatTime(formData.interviewStartTime);
+      const formattedEndTime = formatTime(formData.interviewEndTime);
       
       const payload: any = {
         date: formattedDate,
-        time: formattedTime,
+        start_time: formattedStartTime,
+        end_time: formattedEndTime,
         timezone: formData.timezone,
         notes_for_candidate: formData.notes.trim() || undefined,
         email_subject: formData.subject.trim() || undefined
@@ -344,6 +368,9 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                 <span className="schedule-interview-section-icon">📆</span>
                 Interview Details
               </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', marginTop: '-8px', marginBottom: '16px' }}>
+                Select a date and time window for the interview. The video meeting link will be valid for the entire time frame.
+              </p>
               
               <div className="schedule-interview-field-group">
                 <div className="schedule-interview-field schedule-interview-field-half">
@@ -365,19 +392,36 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                 </div>
                 
                 <div className="schedule-interview-field schedule-interview-field-half">
-                  <label htmlFor="interviewTime">
-                    Time <span className="schedule-interview-required">*</span>
+                  <label htmlFor="interviewStartTime">
+                    Start Time <span className="schedule-interview-required">*</span>
                   </label>
                   <input
-                    id="interviewTime"
+                    id="interviewStartTime"
                     type="time"
-                    value={formData.interviewTime}
-                    onChange={(e) => handleInputChange('interviewTime', e.target.value)}
+                    value={formData.interviewStartTime}
+                    onChange={(e) => handleInputChange('interviewStartTime', e.target.value)}
                     disabled={isSubmitting}
-                    className={errors.interviewTime ? 'schedule-interview-input-error' : ''}
+                    className={errors.interviewStartTime ? 'schedule-interview-input-error' : ''}
                   />
-                  {errors.interviewTime && (
-                    <span className="schedule-interview-error">{errors.interviewTime}</span>
+                  {errors.interviewStartTime && (
+                    <span className="schedule-interview-error">{errors.interviewStartTime}</span>
+                  )}
+                </div>
+                
+                <div className="schedule-interview-field schedule-interview-field-half">
+                  <label htmlFor="interviewEndTime">
+                    End Time <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="interviewEndTime"
+                    type="time"
+                    value={formData.interviewEndTime}
+                    onChange={(e) => handleInputChange('interviewEndTime', e.target.value)}
+                    disabled={isSubmitting}
+                    className={errors.interviewEndTime ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.interviewEndTime && (
+                    <span className="schedule-interview-error">{errors.interviewEndTime}</span>
                   )}
                 </div>
               </div>

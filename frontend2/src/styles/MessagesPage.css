@@ -2,29 +2,29 @@
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --brand-primary: #5b45e0;        /* Indigo/purple — own message bubbles */
-  --brand-primary-dark: #4a37c7;
-  --brand-primary-light: #ede9ff;
+  --brand-primary: #6C5CE7;        /* Updated to match design system */
+  --brand-primary-dark: #5B45E0;
+  --brand-primary-light: #EEF2FF;
 
-  --bubble-mine-bg: #5b45e0;
+  --bubble-mine-bg: #6C5CE7;
   --bubble-mine-text: #ffffff;
 
   --bubble-theirs-bg: #f0f0f0;
-  --bubble-theirs-text: #1a1a2e;
+  --bubble-theirs-text: #1D2939;
 
-  --meta-color: #8a8fa8;
+  --meta-color: #667085;
   --meta-mine-color: rgba(255, 255, 255, 0.72);
 
   --receipt-sent-color: rgba(255, 255, 255, 0.65);
   --receipt-read-color: #22c55e;   /* Green — shows Read state */
 
   --sidebar-bg: #ffffff;
-  --sidebar-border: #e8e8f0;
-  --thread-bg: #f7f7fc;
+  --sidebar-border: #E4E7EC;
+  --thread-bg: #F5F6FA;
   --header-bg: #ffffff;
 
-  --conv-active-bg: #ede9ff;
-  --conv-hover-bg: #f5f5fb;
+  --conv-active-bg: #EEF2FF;
+  --conv-hover-bg: #F9FAFB;
 
   --radius-bubble: 18px;
   --radius-bubble-sharp: 4px;
@@ -33,11 +33,11 @@
   --font-size-base: 14px;
 
   --compose-bg: #ffffff;
-  --compose-border: #e0e0ec;
-  --compose-focus: #5b45e0;
+  --compose-border: #E4E7EC;
+  --compose-focus: #6C5CE7;
 
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-bubble-mine: 0 2px 8px rgba(91, 69, 224, 0.22);
+  --shadow-card: 0px 4px 12px rgba(0,0,0,0.08);
+  --shadow-bubble-mine: 0 2px 8px rgba(108, 92, 231, 0.22);
 }
 
 /* ── Page layout ────────────────────────────────────────────────────────────── */
@@ -45,11 +45,13 @@
 .messages-page {
   display: flex;
   height: 100%;
-  min-height: 0;
+  min-height: 100vh;
   background: var(--thread-bg);
   font-family: var(--font-base);
   font-size: var(--font-size-base);
   overflow: hidden;
+  padding: 24px;
+  gap: 0;
 }
 
 /* ── Sidebar ────────────────────────────────────────────────────────────────── */
@@ -61,7 +63,9 @@
   display: flex;
   flex-direction: column;
   background: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
+  border: 1px solid var(--sidebar-border);
+  border-radius: 16px 0 0 16px;
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -69,7 +73,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 16px 14px;
+  padding: 20px 16px 16px;
   border-bottom: 1px solid var(--sidebar-border);
   background: var(--header-bg);
   position: sticky;
@@ -78,9 +82,9 @@
 }
 
 .messages-title {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  color: #1a1a2e;
+  color: #1D2939;
   margin: 0;
   letter-spacing: -0.3px;
 }
@@ -90,7 +94,7 @@
   border: none;
   cursor: pointer;
   color: var(--meta-color);
-  padding: 6px;
+  padding: 8px;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -98,6 +102,8 @@
 }
 .messages-refresh-btn:hover {
   color: var(--brand-primary);
+  background: #F9FAFB;
+}
   background: var(--brand-primary-light);
 }
 .messages-refresh-btn svg {

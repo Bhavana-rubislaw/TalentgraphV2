@@ -551,30 +551,55 @@ async def update_meeting(
             existing_participant_ids = {p.user_id for p in meeting.participants}
             new_participant_ids_set = set(new_participant_ids)
             
-            # Remove participants that are no longer in the list
+            # Calculate what changed
             participants_to_remove = existing_participant_ids - new_participant_ids_set
-            if participants_to_remove:
-                for participant in meeting.participants:
-                    if participant.user_id in participants_to_remove:
-                        session.delete(participant)
-            
-            # Add new participants that weren't in the original list
             participants_to_add = new_participant_ids_set - existing_participant_ids
+            
+            print(f"DEBUG: participants_to_add = {participants_to_add}")
+            print(f"DEBUG: participants_to_remove = {participants_to_remove}")
+            
+            # Remove participants using bulk delete (safer than iterating and deleting)
+            if participants_to_remove:
+                from sqlalchemy import delete as sql_delete
+                stmt = sql_delete(MeetingParticipant).where(
+                    and_(
+                        MeetingParticipant.meeting_id == meeting.id,
+                        MeetingParticipant.user_id.in_(participants_to_remove)
+                    )
+                ).execution_options(synchronize_session=False)
+                session.exec(stmt)
+            
+            # Add new participants
             if participants_to_add:
                 for user_id in participants_to_add:
                     new_participant = MeetingParticipant(
                         meeting_id=meeting.id,
                         user_id=user_id,
                         is_required=True,
-                        has_confirmed=(user_id == meeting.organizer_user_id)  # Organizer auto-confirmed
+                        has_confirmed=(user_id == meeting.organizer_user_id)
                     )
                     session.add(new_participant)
             
-            # Participants that exist in both lists are kept with their existing data
-            # (preserves confirmation status, timestamps, etc.)
+            # Commit participant changes immediately
+            session.commit()
             
-            print(f"DEBUG: participants_to_add = {participants_to_add}")
-            print(f"DEBUG: participants_to_remove = {participants_to_remove}")
+            # Re-query meeting to get fresh data with updated participants
+            meeting = session.exec(
+                select(Meeting)
+                .where(Meeting.id == meeting.id)
+                .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+            ).first()
+            
+            # Debug: Verify meeting data loaded correctly
+            print(f"\n{'='*60}")
+            print(f"DEBUG: Re-queried meeting data:")
+            print(f"  Meeting ID: {meeting.id}")
+            print(f"  Title: {meeting.title}")
+            print(f"  video_meeting_url: {meeting.video_meeting_url}")
+            print(f"  video_provider: {meeting.video_provider}")
+            print(f"  location: {meeting.location}")
+            print(f"  Participants count: {len(meeting.participants)}")
+            print(f"{'='*60}\n")
             
             # Send email notifications for participant changes
             email_service = MeetingEmailService()
@@ -583,6 +608,7 @@ async def update_meeting(
             # Email newly added participants
             if participants_to_add:
                 print(f"Sending emails to {len(participants_to_add)} newly added participants")
+                
                 for user_id in participants_to_add:
                     recipient = session.get(User, user_id)
                     if recipient and user_id != current_user["user_id"]:
@@ -626,17 +652,24 @@ async def update_meeting(
                         )
                         print(f"  ✓ Removal email sent to {recipient.email}")
         
+        # Always re-query meeting fresh before updating other fields
+        # This ensures we never work with stale SQLAlchemy objects
+        meeting = session.exec(
+            select(Meeting)
+            .where(Meeting.id == meeting_id)
+            .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+        ).first()
+        
         # Update other fields - Use model_dump instead of dict for Pydantic v2
         update_dict = update_data.model_dump(exclude_unset=True, exclude={'participants'})
         for key, value in update_dict.items():
             setattr(meeting, key, value)
         
         meeting.updated_at = datetime.utcnow()
-        session.add(meeting)
+        # Don't call session.add() - meeting is already tracked after query
         session.commit()
         
-        # Refresh meeting with participants and user data
-        session.refresh(meeting)
+        # Re-query meeting one final time to ensure clean state
         meeting = session.exec(
             select(Meeting)
             .where(Meeting.id == meeting.id)

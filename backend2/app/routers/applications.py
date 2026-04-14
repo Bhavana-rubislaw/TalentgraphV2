@@ -464,7 +464,9 @@ def withdraw_application(
 class InterviewScheduleRequest(BaseModel):
     """Request payload for scheduling an interview"""
     date: str  # e.g., "March 27, 2026" or "2026-03-27"
-    time: str  # e.g., "10:00 AM" or "14:30"
+    time: Optional[str] = None  # e.g., "10:00 AM" or "14:30" (deprecated, use start_time/end_time)
+    start_time: Optional[str] = None  # e.g., "10:00 AM" or "14:30" - Time frame start
+    end_time: Optional[str] = None  # e.g., "11:00 AM" or "15:30" - Time frame end
     timezone: str  # e.g., "EST", "America/New_York"
     meeting_provider: Optional[str] = None  # "zoom", "google_meet", or "microsoft_teams" - triggers auto-generation
     meeting_link: Optional[str] = None  # Optional - provide manual link OR leave empty to auto-generate
@@ -493,7 +495,9 @@ def schedule_interview(
     """
     
     logger.info(f"[INTERVIEW] === ENDPOINT CALLED === Application ID: {application_id}")
-    logger.info(f"[INTERVIEW] Received payload: date={data.date}, time={data.time}, timezone={data.timezone}, meeting_provider={data.meeting_provider}, meeting_link={data.meeting_link}")
+    # Support both old 'time' field and new 'start_time/end_time' fields
+    time_display = data.time or f"{data.start_time} - {data.end_time}" if data.start_time and data.end_time else "N/A"
+    logger.info(f"[INTERVIEW] Received payload: date={data.date}, time={time_display}, timezone={data.timezone}, meeting_provider={data.meeting_provider}, meeting_link={data.meeting_link}")
     logger.info(f"[INTERVIEW] Current user: {current_user.get('email')}")
     
     # Get current user
@@ -537,27 +541,56 @@ def schedule_interview(
     # Prepare candidate name for emails and meeting topics
     candidate_name = getattr(candidate, 'name', None) or candidate_email.split('@')[0]
     
-    # Parse date and time strings to datetime object for Zoom API
-    # Frontend sends: date="March 27, 2026" or "2026-03-27", time="10:00 AM" or "14:30"
-    # Zoom expects: datetime object
+    # Support both old 'time' field and new 'start_time/end_time' fields
+    interview_start_time = data.start_time or data.time
+    interview_end_time = data.end_time
+    
+    if not interview_start_time:
+        raise HTTPException(status_code=400, detail="Interview start time is required")
+    
+    # Parse date and time strings to datetime object for API
+    # Frontend sends: date="March 27, 2026", start_time="10:00 AM", end_time="11:00 AM"
+    # Video APIs expect: datetime object
     interview_dt_obj = None
-    interview_datetime_str = f"{data.date} at {data.time}"  # For display and email
+    interview_end_dt_obj = None
+    
+    # Format display string for emails
+    if interview_end_time:
+        interview_datetime_str = f"{data.date} from {interview_start_time} to {interview_end_time}"
+    else:
+        interview_datetime_str = f"{data.date} at {interview_start_time}"
     
     try:
         from dateutil import parser as date_parser
-        # Combine date and time for parsing
-        datetime_str = f"{data.date} {data.time}"
+        # Combine date and start time for parsing
+        datetime_str = f"{data.date} {interview_start_time}"
         interview_dt_obj = date_parser.parse(datetime_str)
-        logger.info(f"[INTERVIEW] Parsed datetime: {interview_dt_obj}")
+        logger.info(f"[INTERVIEW] Parsed start datetime: {interview_dt_obj}")
+        
+        # Parse end time if provided
+        if interview_end_time:
+            end_datetime_str = f"{data.date} {interview_end_time}"
+            interview_end_dt_obj = date_parser.parse(end_datetime_str)
+            logger.info(f"[INTERVIEW] Parsed end datetime: {interview_end_dt_obj}")
     except ImportError:
         # Fallback if python-dateutil not installed
         logger.warning("[INTERVIEW] python-dateutil not installed, using basic datetime parsing")
         try:
-            # Try basic parsing for common formats
-            datetime_str = f"{data.date} {data.time}"
-            interview_dt_obj = date_parser.parse(datetime_str)
-        except:
-            logger.error(f"[INTERVIEW] Failed to parse datetime: {data.date} {data.time}")
+            # Use datetime.strptime with common format
+            from datetime import datetime as dt
+            datetime_str = f"{data.date} {interview_start_time}"
+            # Try parsing common format: "March 27, 2026 10:00 AM"
+            interview_dt_obj = dt.strptime(datetime_str, "%B %d, %Y %I:%M %p")
+            logger.info(f"[INTERVIEW] Parsed start datetime with strptime: {interview_dt_obj}")
+            
+            # Parse end time if provided
+            if interview_end_time:
+                end_datetime_str = f"{data.date} {interview_end_time}"
+                interview_end_dt_obj = dt.strptime(end_datetime_str, "%B %d, %Y %I:%M %p")
+                logger.info(f"[INTERVIEW] Parsed end datetime with strptime: {interview_end_dt_obj}")
+        except Exception as fallback_error:
+            logger.error(f"[INTERVIEW] Failed to parse datetime with fallback: {data.date} {data.time} - {fallback_error}")
+            # Continue without parsed datetime - string will be used for display
             pass
     except Exception as e:
         logger.error(f"[INTERVIEW] Error parsing datetime: {e}")
@@ -626,7 +659,7 @@ def schedule_interview(
             if not access_token:
                 raise HTTPException(
                     status_code=400,
-                    detail="Google Meet requires GOOGLE_MEET_ACCESS_TOKEN in .env file. Please configure it or provide a manual meeting link. See Google OAuth 2.0 documentation for obtaining an access token."
+                    detail="Google Meet integration requires GOOGLE_MEET_ACCESS_TOKEN in .env file. Note: Google access tokens expire hourly and need refresh tokens. For production use, consider using Zoom (which supports Server-to-Server OAuth) or provide a manual meeting link. See: https://developers.google.com/identity/protocols/oauth2"
                 )
         elif provider_enum == VideoProvider.MICROSOFT_TEAMS:
             if not api_key or not api_secret:
@@ -651,10 +684,18 @@ def schedule_interview(
             # Use parsed datetime object if available, otherwise pass string and let provider handle it
             meeting_start_time = interview_dt_obj if interview_dt_obj else interview_datetime_str
             
+            # Calculate duration in minutes from start and end times
+            duration_minutes = 60  # Default 1 hour
+            if interview_dt_obj and interview_end_dt_obj:
+                from datetime import timedelta
+                time_diff = interview_end_dt_obj - interview_dt_obj
+                duration_minutes = int(time_diff.total_seconds() / 60)
+                logger.info(f"[INTERVIEW] Calculated duration: {duration_minutes} minutes")
+            
             meeting_details = provider.create_meeting(
                 title=f"{job_posting.job_title} Interview - {candidate_name}",
                 start_time=meeting_start_time,  # datetime object
-                duration_minutes=60,  # Default 1 hour
+                duration_minutes=duration_minutes,  # Calculated from time range
                 description=f"Interview for {job_posting.job_title} position at {company.company_name}",
                 waiting_room=True,  # Default enabled
                 timezone=data.timezone  # Pass as kwarg
@@ -827,14 +868,24 @@ def schedule_interview(
                 scheduled_end = None
                 if interview_dt_obj:
                     scheduled_start = interview_dt_obj
-                    # Default 60 minute duration
-                    from datetime import timedelta
-                    scheduled_end = interview_dt_obj + timedelta(minutes=60)
+                    # Use parsed end time if available, otherwise default 60 minute duration
+                    if interview_end_dt_obj:
+                        scheduled_end = interview_end_dt_obj
+                    else:
+                        from datetime import timedelta
+                        scheduled_end = interview_dt_obj + timedelta(minutes=60)
                 
                 # Get candidate user
                 candidate_user = session.exec(
                     select(User).where(User.id == candidate.user_id)
                 ).first()
+                
+                # Calculate actual duration from time range
+                duration_minutes = 60  # Default
+                if interview_dt_obj and interview_end_dt_obj:
+                    from datetime import timedelta
+                    time_diff = interview_end_dt_obj - interview_dt_obj
+                    duration_minutes = int(time_diff.total_seconds() / 60)
                 
                 # Create meeting record
                 meeting = Meeting(
@@ -842,7 +893,7 @@ def schedule_interview(
                     description=data.notes_for_candidate or f"Interview with {candidate_name} for {job_posting.job_title}",
                     scheduled_start=scheduled_start or datetime.utcnow(),
                     scheduled_end=scheduled_end or datetime.utcnow(),
-                    duration_minutes=60,
+                    duration_minutes=duration_minutes,
                     timezone=data.timezone or "UTC",
                     location=meeting_link,
                     video_meeting_url=meeting_link,

@@ -6,8 +6,8 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: var(--gradient-light);
-  padding: 20px;
+  background: #F5F6FA;
+  padding: 24px;
 }
 
 .card-stack {
@@ -25,7 +25,8 @@
   height: 100%;
   background: white;
   border-radius: 20px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0px 6px 16px rgba(0,0,0,0.1);
+  border: 1px solid #EDEFF5;
   overflow: hidden;
   cursor: grab;
   user-select: none;

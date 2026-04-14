@@ -202,9 +202,6 @@ export const apiClient = {
   recruiterUndoSwipe: (candidateId: number, jobPostingId: number) =>
     api.delete(`/swipes/recruiter/undo/${candidateId}/${jobPostingId}`),
   
-  checkInviteStatus: (candidateId: number, jobPostingId: number) =>
-    api.get(`/swipes/check-invite-status/${candidateId}/${jobPostingId}`),
-  
   // Applications
   applyToJob: (jobPostingId: number, jobProfileId: number) =>
     api.post('/applications/apply', { job_posting_id: jobPostingId, job_profile_id: jobProfileId }),

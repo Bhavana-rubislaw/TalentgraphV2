@@ -255,47 +255,6 @@ def undo_swipe(
     return {"message": f"Undone {swipe_action} action", "action": "undo"}
 
 
-@router.get("/check-invite-status/{candidate_id}/{job_posting_id}")
-def check_invite_status(
-    candidate_id: int,
-    job_posting_id: int,
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Check if recruiter has already invited this candidate for this job"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=403, detail="Recruiters only")
-    
-    # Get all existing invites
-    existing_invites = session.exec(
-        select(Swipe)
-        .where(Swipe.candidate_id == candidate_id)
-        .where(Swipe.job_posting_id == job_posting_id)
-        .where(Swipe.action == "ask_to_apply")
-        .where(Swipe.action_by == "recruiter")
-        .order_by(Swipe.created_at.desc())
-    ).all()
-    
-    if not existing_invites:
-        return {
-            "already_invited": False,
-            "invite_count": 0,
-            "last_invite_date": None
-        }
-    
-    return {
-        "already_invited": True,
-        "invite_count": len(existing_invites),
-        "last_invite_date": existing_invites[0].created_at.isoformat(),
-        "first_invite_date": existing_invites[-1].created_at.isoformat()
-    }
-
-
 @router.post("/ask-to-apply")
 def ask_to_apply(
     data: CandidateSwipeRequest,
@@ -578,20 +537,24 @@ def recruiter_ask_to_apply(
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
     
-    # Check if already invited this candidate for this job
-    existing_invites = session.exec(
+    # Check if already invited this candidate for this job (prevent duplicates)
+    existing_invite = session.exec(
         select(Swipe)
         .where(Swipe.candidate_id == data.candidate_id)
         .where(Swipe.job_posting_id == data.job_posting_id)
         .where(Swipe.action == "ask_to_apply")
         .where(Swipe.action_by == "recruiter")
-        .order_by(Swipe.created_at.desc())
-    ).all()
+    ).first()
     
-    previous_invite_count = len(existing_invites)
-    last_invite_date = existing_invites[0].created_at if existing_invites else None
+    if existing_invite:
+        logger.info(f"[DUPLICATE INVITE PREVENTED] Candidate {data.candidate_id} already invited for job {data.job_posting_id}")
+        return {
+            "message": "Already asked candidate to apply",
+            "action": "ask_to_apply",
+            "duplicate_prevented": True
+        }
     
-    # Create swipe (allow multiple invites as reminders)
+    # Create swipe (single invite only)
     swipe = Swipe(
         candidate_id=data.candidate_id,
         company_id=company.id,
@@ -638,20 +601,15 @@ def recruiter_ask_to_apply(
 
     session.commit()
     
-    # Notify candidate of the invitation (or reminder)
+    # Notify candidate of the invitation
     candidate_obj = session.get(Candidate, data.candidate_id)
     if candidate_obj:
         candidate_user = session.exec(
             select(User).where(User.id == candidate_obj.user_id)
         ).first()
         if candidate_user:
-            # Customize message based on invite count
-            if previous_invite_count > 0:
-                title = "🔔 Reminder: Recruiter wants you to apply!"
-                message = f"{company.company_name} reminded you about {job_posting.job_title}"
-            else:
-                title = "📩 Recruiter invited you to apply!"
-                message = f"{company.company_name} wants you to apply for {job_posting.job_title}"
+            title = "📩 Recruiter invited you to apply!"
+            message = f"{company.company_name} wants you to apply for {job_posting.job_title}"
             
             push_notification(
                 session, candidate_user.id,
@@ -663,11 +621,8 @@ def recruiter_ask_to_apply(
             )
     
     return {
-        "message": "Reminder sent to candidate" if previous_invite_count > 0 else "Asked candidate to apply",
-        "action": "ask_to_apply",
-        "is_reminder": previous_invite_count > 0,
-        "invite_count": previous_invite_count + 1,
-        "last_invite_date": last_invite_date.isoformat() if last_invite_date else None
+        "message": "Asked candidate to apply",
+        "action": "ask_to_apply"
     }
 
 

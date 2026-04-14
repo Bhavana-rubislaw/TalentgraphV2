@@ -4,7 +4,7 @@ Pydantic models mirroring database structure
 """
 
 from typing import Optional, List, Any
-from pydantic import BaseModel, EmailStr, computed_field
+from pydantic import BaseModel, EmailStr, Field, computed_field
 from datetime import datetime
 from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
 
@@ -459,6 +459,15 @@ class MeetingBase(BaseModel):
 
 
 class MeetingCreate(MeetingBase):
+    """
+    Create a new meeting.
+    
+    Optional: video_meeting_url or video_provider with auto-generation configured
+    
+    At least one of the following must be provided:
+    - participant_user_ids (legacy method)
+    - participants (new method with name+email validation)
+    """
     # Support both methods: user IDs (old) or name+email (new)
     participant_user_ids: Optional[List[int]] = None  # Legacy support
     participants: Optional[List[MeetingParticipantSpec]] = None  # New method

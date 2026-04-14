@@ -6,24 +6,24 @@
 /* ====== VARIABLES & THEME (GLOSSY / POLISHED) ====== */
 :root {
   /* Primary Colors - Rich Glossy Purple */
-  --primary-color: #7B5EA7;
-  --primary-hover: #6A4F99;
-  --primary-light: #F0ECFA;
+  --primary-color: #6C5CE7;
+  --primary-hover: #5B45E0;
+  --primary-light: #EEF2FF;
   
   /* Neutral Colors */
-  --bg-primary: #F5F6FB;
+  --bg-primary: #F5F6FA;
   --bg-secondary: #FFFFFF;
-  --bg-tertiary: #EFF1F5;
-  --bg-sidebar: #F9FAFD;
+  --bg-tertiary: #F9FAFB;
+  --bg-sidebar: #FAFBFC;
   
   /* Text Colors */
-  --text-primary: #1A1D2E;
+  --text-primary: #1D2939;
   --text-secondary: #44495C;
-  --text-tertiary: #8E93A6;
+  --text-tertiary: #667085;
   
   /* Borders */
-  --border-light: #E2E4EC;
-  --border-medium: #CDD0DB;
+  --border-light: #E4E7EC;
+  --border-medium: #D0D5DD;
   
   /* Status Colors - Vibrant Glossy */
   --success: #2ECC71;
@@ -32,10 +32,10 @@
   --info: #5B8DEF;
   
   /* Shadows - Glossy with color tint */
-  --shadow-sm: 0 1px 3px rgba(123, 94, 167, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 14px rgba(123, 94, 167, 0.10), 0 2px 6px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 8px 28px rgba(123, 94, 167, 0.14), 0 4px 10px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 16px 44px rgba(123, 94, 167, 0.16), 0 6px 14px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+  --shadow-xl: 0 16px 44px rgba(0,0,0,.16);
   
   /* Spacing (8px system) */
   --spacing-1: 8px;
@@ -80,21 +80,24 @@ body {
   display: flex;
   flex-direction: column;
   background-color: var(--bg-primary);
+  padding: var(--spacing-3);
 }
 
 /* ====== TOP NAVIGATION BAR ====== */
 .top-navbar {
-  height: 64px;
+  height: 70px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-light);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--spacing-3);
+  padding: 0 var(--spacing-4);
   position: sticky;
-  top: 0;
+  top: var(--spacing-3);
   z-index: 100;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .navbar-left,

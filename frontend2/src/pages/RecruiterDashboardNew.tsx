@@ -409,29 +409,10 @@ const RecruiterDashboard: React.FC = () => {
     console.log('[RECRUITER ACTION] Ask to Apply - Candidate:', candidateId, 'Job Profile:', jobProfileId, 'Job Posting:', selectedJobId);
     
     try {
-      // First, check if already invited
-      const statusCheck = await apiClient.checkInviteStatus(candidateId, selectedJobId);
-      const { already_invited, invite_count, last_invite_date } = statusCheck.data;
+      // Send invitation
+      await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
       
-      // If already invited, show confirmation dialog
-      if (already_invited && invite_count > 0) {
-        const lastDate = new Date(last_invite_date).toLocaleDateString();
-        const confirmMessage = `You already invited this candidate ${invite_count} time${invite_count > 1 ? 's' : ''} (last on ${lastDate}).\n\nSend a reminder invite?`;
-        
-        const confirmed = window.confirm(confirmMessage);
-        if (!confirmed) {
-          console.log('[USER CANCELLED] Reminder invite cancelled by user');
-          return;
-        }
-        console.log('[USER CONFIRMED] Sending reminder invite');
-      }
-      
-      // Proceed with invite/reminder
-      const response = await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
-      const isReminder = response.data.is_reminder;
-      const newInviteCount = (invite_count || 0) + 1;
-      
-      console.log('[API SUCCESS]', isReminder ? 'Reminder sent' : 'Invitation sent');
+      console.log('[API SUCCESS] Invitation sent');
       
       // Optimistic update — recommendation cards
       setRecommendations((prev: any) => {
@@ -450,16 +431,16 @@ const RecruiterDashboard: React.FC = () => {
       setBrowseCandidates((prev) =>
         prev.map((c) =>
           c.candidate_id === candidateId
-            ? { ...c, already_invited: true, invite_count: newInviteCount }
+            ? { ...c, already_invited: true }
             : c
         )
       );
       
-      // Optimistic update — shortlist cards (update invite count & already_invited)
+      // Optimistic update — shortlist cards
       setShortlist((prev) =>
         prev.map((item: any) =>
           item.candidate.id === candidateId && item.job_profile?.id === jobProfileId
-            ? { ...item, already_invited: true, invite_count: newInviteCount }
+            ? { ...item, already_invited: true }
             : item
         )
       );
@@ -1581,7 +1562,7 @@ const RecruiterDashboard: React.FC = () => {
           >
             {/* Status Badge */}
             <div style={{ position: 'absolute', top: '18px', right: '18px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {item.invite_count > 0 && (
+              {item.already_invited && (
                 <span style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -1597,7 +1578,7 @@ const RecruiterDashboard: React.FC = () => {
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  Invited ({item.invite_count})
+                  Invited
                 </span>
               )}
               <span style={{
@@ -1746,12 +1727,18 @@ const RecruiterDashboard: React.FC = () => {
                   alignItems: 'center',
                   gap: '6px',
                   justifyContent: 'center',
-                  opacity: item.already_invited ? 0.7 : 1,
+                  opacity: item.already_invited ? 0.6 : 1,
+                  cursor: item.already_invited ? 'not-allowed' : 'pointer',
                   background: item.already_invited ? '#10b981' : undefined,
                   color: item.already_invited ? 'white' : undefined
                 }}
-                onClick={() => handleAskToApply(item.candidate.id, item.job_profile?.id)}
-                title={item.already_invited ? `Already invited ${item.invite_count || ''} time${item.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
+                onClick={() => {
+                  if (!item.already_invited) {
+                    handleAskToApply(item.candidate.id, item.job_profile?.id);
+                  }
+                }}
+                disabled={item.already_invited}
+                title={item.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
               >
                 <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -2437,7 +2424,7 @@ const RecruiterDashboard: React.FC = () => {
                 {/* Actions Row */}
                 <div className="ra-detail-actions">
                   <button 
-                    className="ra-btn ra-btn-outline" 
+                    className="ra-btn ra-btn-message" 
                     onClick={() => {
                       console.log('Candidate data:', selectedApp.candidate);
                       console.log('user_id:', selectedApp.candidate.user_id);
@@ -2455,7 +2442,7 @@ const RecruiterDashboard: React.FC = () => {
                     Message
                   </button>
                   <button 
-                    className="ra-btn ra-btn-outline" 
+                    className="ra-btn ra-btn-primary" 
                     onClick={() => {
                       // Map application_id to id for the modal
                       setSelectedAppForSchedule({
@@ -2714,37 +2701,16 @@ const RecruiterDashboard: React.FC = () => {
                               </div>
                             </div>
                             <button
+                              className="ra-btn ra-btn-success"
                               onClick={() => handleDownloadResume(selectedApp.application_id, resume.id, resume.filename)}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '6px 12px',
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                color: '#7c3aed',
-                                backgroundColor: 'white',
-                                border: '1px solid #7c3aed',
-                                borderRadius: '5px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                flexShrink: 0
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#7c3aed';
-                                e.currentTarget.style.color = 'white';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = 'white';
-                                e.currentTarget.style.color = '#7c3aed';
-                              }}
+                              title="Download resume file"
+                              style={{ flexShrink: 0 }}
                             >
                               <svg 
                                 viewBox="0 0 24 24" 
                                 fill="none" 
                                 stroke="currentColor" 
                                 strokeWidth="2"
-                                style={{ width: '14px', height: '14px' }}
                               >
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                 <polyline points="7 10 12 15 17 10"/>
@@ -2968,10 +2934,14 @@ const RecruiterDashboard: React.FC = () => {
                     />
                     <div className="ra-notes-footer">
                       <button 
-                        className="ra-btn ra-btn-outline" 
-                        style={{ height: 30, fontSize: 12 }} 
+                        className="ra-btn ra-btn-success" 
                         onClick={() => handleSaveApplicationNotes(selectedApp.application_id)}
                       >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                          <polyline points="17 21 17 13 7 13 7 21"/>
+                          <polyline points="7 3 7 8 15 8"/>
+                        </svg>
                         Save Notes
                       </button>
                       <span style={{ fontSize: 11, color: '#64748b', marginLeft: 8 }}>
@@ -3896,7 +3866,7 @@ const RecruiterDashboard: React.FC = () => {
                       }
                     }}
                     disabled={candidate.already_invited}
-                    title={candidate.already_invited ? `Already invited this candidate ${candidate.invite_count || ''} time${candidate.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
+                    title={candidate.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
                   >
                     {candidate.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
                   </button>
@@ -4568,11 +4538,11 @@ const RecruiterDashboard: React.FC = () => {
                   onClick={() => {
                     if (!viewCandidateProfile.already_invited && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
                       handleAskToApply(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
-                      setViewCandidateProfile({ ...viewCandidateProfile, already_invited: true, invite_count: 1 });
+                      setViewCandidateProfile({ ...viewCandidateProfile, already_invited: true });
                     }
                   }}
                   disabled={viewCandidateProfile.already_invited}
-                  title={viewCandidateProfile.already_invited ? `Already invited ${viewCandidateProfile.invite_count || ''} time${viewCandidateProfile.invite_count > 1 ? 's' : ''}` : 'Ask candidate to apply'}
+                  title={viewCandidateProfile.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
                 >
                   {viewCandidateProfile.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
                 </button>

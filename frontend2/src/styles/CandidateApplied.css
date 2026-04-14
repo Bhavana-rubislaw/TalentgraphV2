@@ -8,42 +8,47 @@
   max-width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
+  background: #F5F6FA;
+  min-height: 100vh;
+  padding: 24px;
 }
 
 /* ── Tab Filter ── */
 .cal-tabs {
   display: inline-flex;
   gap: 4px;
-  background: #f3f4f6;
-  border-radius: 10px;
-  padding: 4px;
-  margin-bottom: 16px;
+  background: white;
+  border: 1px solid #E4E7EC;
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 24px;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
 }
 
 .cal-tab {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 16px;
+  padding: 8px 16px;
   border: none;
   background: transparent;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
-  color: #6b7280;
+  color: #667085;
   cursor: pointer;
   transition: all 0.18s ease;
 }
 
 .cal-tab:hover {
-  color: #374151;
-  background: rgba(255, 255, 255, 0.5);
+  color: #1D2939;
+  background: #F9FAFB;
 }
 
 .cal-tab.active {
-  background: #fff;
-  color: #111827;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: #EEF2FF;
+  color: #6C5CE7;
+  box-shadow: 0 1px 3px rgba(108, 92, 231, 0.1);
 }
 
 .cal-tab-count {
@@ -60,20 +65,20 @@
 }
 
 .cal-tab.active .cal-tab-count {
-  background: rgba(123, 94, 167, 0.14);
-  color: #7B5EA7;
+  background: rgba(108, 92, 231, 0.15);
+  color: #6C5CE7;
 }
 
 .cal-tab:not(.active) .cal-tab-count {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: #E5E7EB;
+  color: #667085;
 }
 
 /* ── Job Card List ── */
 .cal-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 /* ── Job Preview Card ── */
@@ -82,18 +87,20 @@
   align-items: flex-start;
   gap: 20px;
   background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 20px 24px;
-  transition: border-color 0.18s, box-shadow 0.18s;
+  border: 1px solid #EDEFF5;
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.18s ease;
   position: relative;
   width: 100%;
   box-sizing: border-box;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
 }
 
 .cal-card:hover {
-  border-color: #C6B8E6;
-  box-shadow: 0 4px 14px rgba(123, 94, 167, 0.1);
+  border-color: #6C5CE7;
+  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.15);
+  transform: translateY(-2px);
 }
 
 /* ── Card Body (left) ── */

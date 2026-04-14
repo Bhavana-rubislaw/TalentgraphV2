@@ -1495,22 +1495,6 @@ const CandidateDashboard: React.FC = () => {
                     </svg>
                     Recruiter Invitation
                   </div>
-                  {invite.invite_count > 1 && (
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      padding: '4px 10px',
-                      background: '#fef3c7',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      color: '#92400e',
-                      letterSpacing: '0.3px'
-                    }}>
-                      🔔 Reminded {invite.invite_count} times
-                    </div>
-                  )}
                 </div>
 
                 {/* Job Header */}

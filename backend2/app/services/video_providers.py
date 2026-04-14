@@ -465,8 +465,19 @@ class GoogleMeetProvider(VideoProviderBase):
                 "password": None,  # Google Meet uses auth
                 "provider_data": data
             }
+        except requests.exceptions.HTTPError as e:
+            error_msg = str(e)
+            if e.response.status_code == 401:
+                error_msg = "401 Client Error: Unauthorized - Google access token has expired or is invalid. Access tokens expire after 1 hour and require a refresh token to renew. Please use Zoom or provide a manual meeting link instead."
+            elif hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    error_msg = f"{error_msg} - {error_detail}"
+                except:
+                    error_msg = f"{error_msg} - {e.response.text}"
+            raise VideoProviderError(f"Google Meet error: {error_msg}")
         except requests.exceptions.RequestException as e:
-            raise VideoProviderError(f"Google Meet API error: {str(e)}")
+            raise VideoProviderError(f"Google Meet error: {str(e)}")
     
     def delete_meeting(self, meeting_id: str) -> bool:
         """Delete Google Calendar event (and associated Meet)"""
