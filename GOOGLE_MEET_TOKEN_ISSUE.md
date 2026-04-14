@@ -36,8 +36,8 @@ This is a temporary workaround and **NOT recommended** for production.
 1. Go to [Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
 2. Click the gear icon (⚙️) and check "Use your own OAuth credentials"
 3. Enter your credentials from `.env`:
-   - OAuth Client ID: `446306611203-f3ovc5dqp555ebt8sad9c62p6ce5j6is.apps.googleusercontent.com`
-   - OAuth Client secret: `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`
+   - OAuth Client ID: `[YOUR_GOOGLE_CLIENT_ID_FROM_ENV]`
+   - OAuth Client secret: `[YOUR_GOOGLE_CLIENT_SECRET_FROM_ENV]`
 4. In Step 1, select:
    - `https://www.googleapis.com/auth/calendar`
    - `https://www.googleapis.com/auth/calendar.events`
