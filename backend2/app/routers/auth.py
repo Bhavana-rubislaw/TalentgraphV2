@@ -2,8 +2,7 @@
 Authentication routes - signup, login, token management
 """
 
-import logging
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from sqlmodel import Session, select
 from app.database import get_session
 from app.models import User, Candidate, Company, UserRole
@@ -13,8 +12,9 @@ from app.schemas import (
     CompanySignUp, CompanyLogin
 )
 from app.security import hash_password, verify_password, create_access_token, get_current_user
+from app.core.logging_config import get_logger, log_change
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 

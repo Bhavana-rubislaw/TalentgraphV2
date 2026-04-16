@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database import init_db
 from app.middleware.request_id import RequestIdMiddleware
+from app.core.logging_config import setup_logging, get_logger, log_change
 import os
 from pathlib import Path
 
@@ -18,16 +19,9 @@ from pathlib import Path
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('talentgraph_v2.log')
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure enhanced logging system
+setup_logging()
+logger = get_logger(__name__)
 
 # Initialize database on startup
 @asynccontextmanager
@@ -131,6 +125,10 @@ logger.info(f"[STARTUP] CORS origins configured: %s", origins)
 # Request-ID tracing — must be added AFTER CORSMiddleware
 app.add_middleware(RequestIdMiddleware)
 
+# Change tracking middleware for comprehensive logging
+from app.middleware.change_tracking import ChangeTrackingMiddleware
+app.add_middleware(ChangeTrackingMiddleware)
+
 
 # ============ ROOT ============
 
@@ -156,10 +154,15 @@ def health():
 from app.routers import (
     auth, candidates, company, job_postings, matches, recommendations, 
     swipes, dashboard, applications, notifications, activity_feed, 
-    messages, meetings, calendar, analytics
+    messages, meetings, calendar, analytics, logs
 )
 
-logger.info("[STARTUP] Registering routers...")
+log_change(
+    logger, 
+    action="startup", 
+    entity_type="application", 
+    message="Registering API routers"
+)
 
 # Core routers
 app.include_router(auth.router)
@@ -177,8 +180,14 @@ app.include_router(messages.router)  # Direct messaging system
 app.include_router(meetings.router)  # Meeting scheduler with email notifications
 app.include_router(calendar.router)  # Calendar & video provider OAuth integration
 app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
+app.include_router(logs.router)  # Comprehensive logging system
 
-logger.info("[STARTUP] All routers registered successfully")
+log_change(
+    logger,
+    action="startup_complete",
+    entity_type="application",
+    message="All routers registered successfully"
+)
 
 
 if __name__ == "__main__":

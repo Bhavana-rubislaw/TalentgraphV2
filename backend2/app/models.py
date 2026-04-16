@@ -504,6 +504,42 @@ class ActivityEvent(SQLModel, table=True):
     dedupe_key: Optional[str] = Field(default=None)
 
 
+class SystemLog(SQLModel, table=True):
+    """System-wide logging for debugging and monitoring.
+    
+    Captures all application logs for persistence beyond file system.
+    Survives deployments, restarts, and allows querying historical logs.
+    """
+    __tablename__ = "systemlog"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Log metadata
+    timestamp: datetime = Field(index=True)
+    level: str = Field(index=True)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    logger: str  # logger name (module hierarchy)
+    message: str  # log message
+    module: str  # Python module name
+    function: str  # Function name where log originated
+    line_number: int  # Line number in source
+    
+    # Request tracing
+    request_id: Optional[str] = Field(default=None, index=True)
+    user_id: Optional[int] = Field(default=None, index=True)
+    
+    # Change tracking
+    action: Optional[str] = Field(default=None, index=True)  # create, update, delete, etc.
+    entity_type: Optional[str] = Field(default=None, index=True)  # user, job, application, etc.
+    entity_id: Optional[str] = Field(default=None)
+    
+    # Additional context (JSON)
+    log_metadata: Optional[str] = Field(default=None)  # Serialized JSON metadata
+    exception: Optional[str] = Field(default=None)  # Exception traceback if any
+    
+    # Housekeeping
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ============ CHAT MODELS ============
 
 class Conversation(SQLModel, table=True):
