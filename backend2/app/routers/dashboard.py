@@ -149,6 +149,39 @@ def get_candidate_recommendations(
     ).all()
     logger.info(f"[CANDIDATE RECOMMENDATIONS] Evaluating {len(all_jobs)} active jobs")
     
+    # BATCH OPTIMIZATION: Pre-fetch all related data to avoid N+1 queries
+    # Instead of 4 queries per job, fetch once and build lookup maps
+    
+    # Batch fetch all swipes for this candidate
+    candidate_swipes = session.exec(
+        select(Swipe).where(
+            and_(
+                Swipe.candidate_id == candidate.id,
+                Swipe.action_by == "candidate"
+            )
+        )
+    ).all()
+    swipe_map = {(s.candidate_id, s.job_posting_id): s for s in candidate_swipes}
+    
+    # Batch fetch all applications for this candidate
+    candidate_applications = session.exec(
+        select(Application).where(Application.candidate_id == candidate.id)
+    ).all()
+    app_map = {(a.candidate_id, a.job_posting_id): a for a in candidate_applications}
+    
+    # Batch fetch all matches for this candidate
+    candidate_matches = session.exec(
+        select(Match).where(Match.candidate_id == candidate.id)
+    ).all()
+    match_map = {(m.candidate_id, m.job_posting_id): m for m in candidate_matches}
+    
+    # Batch fetch all companies for the jobs
+    company_ids = set(j.company_id for j in all_jobs)
+    companies = session.exec(
+        select(Company).where(Company.id.in_(company_ids))
+    ).all()
+    company_map = {c.id: c for c in companies}
+    
     # Format response with match info
     recommendations = []
     for job in all_jobs:
@@ -159,39 +192,11 @@ def get_candidate_recommendations(
         if match_info["score"] < 40:
             continue
         
-        # Check if already interacted
-        existing_swipe = session.exec(
-            select(Swipe).where(
-                and_(
-                    Swipe.candidate_id == candidate.id,
-                    Swipe.job_posting_id == job.id,
-                    Swipe.action_by == "candidate"
-                )
-            )
-        ).first()
-        
-        # Check if already applied
-        existing_application = session.exec(
-            select(Application).where(
-                and_(
-                    Application.candidate_id == candidate.id,
-                    Application.job_posting_id == job.id
-                )
-            )
-        ).first()
-
-        # Get match if exists
-        match = session.exec(
-            select(Match).where(
-                and_(
-                    Match.candidate_id == candidate.id,
-                    Match.job_posting_id == job.id
-                )
-            )
-        ).first()
-        
-        # Get company info
-        company = session.get(Company, job.company_id)
+        # Lookup from pre-fetched maps (O(1) access)
+        existing_swipe = swipe_map.get((candidate.id, job.id))
+        existing_application = app_map.get((candidate.id, job.id))
+        match = match_map.get((candidate.id, job.id))
+        company = company_map.get(job.company_id)
         
         recommendations.append({
             "job_posting": {
