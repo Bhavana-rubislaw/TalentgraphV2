@@ -464,6 +464,58 @@ class Notification(SQLModel, table=True):
     payload: Optional[str] = Field(default=None)
 
 
+class NotificationFrequency(str, Enum):
+    """Frequency for notification delivery"""
+    REALTIME = "realtime"  # Immediate delivery
+    DAILY = "daily"        # Once per day digest
+    WEEKLY = "weekly"      # Once per week digest
+
+
+class NotificationPreferences(SQLModel, table=True):
+    """User preferences for notification delivery across channels
+    
+    Stores per-user, per-event-type preferences for in-app and email notifications.
+    Default for new users: in-app ON (realtime), email ON (realtime) for all events.
+    """
+    __tablename__ = "notification_preferences"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Event type (matches Notification.event_type)
+    # Candidate: application_status, match_found, shortlisted, invitation, interview_scheduled, 
+    #           interview_reminder, message_received, job_recommendation
+    # Recruiter: application_received, match_found, interview_scheduled, interview_confirmed,
+    #           message_received, job_update
+    event_type: str = Field(index=True)
+    
+    # Channel toggles
+    in_app_enabled: bool = Field(default=True)
+    email_enabled: bool = Field(default=True)
+    
+    # Frequency (realtime, daily, weekly)
+    in_app_frequency: str = Field(
+        default=NotificationFrequency.REALTIME.value,
+        sa_column=Column(SQLEnum(NotificationFrequency, name="notification_frequency_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    email_frequency: str = Field(
+        default=NotificationFrequency.REALTIME.value,
+        sa_column=Column(SQLEnum(NotificationFrequency, name="notification_frequency_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    
+    # Priority level for categorization
+    priority: str = Field(default="normal")  # urgent, normal, low
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one preference row per user per event type
+    __table_args__ = (
+        UniqueConstraint('user_id', 'event_type', name='unique_user_event_preference'),
+    )
+
+
 # ============ AUDIT / ACTIVITY EVENT LOG ============
 
 class ActivityEvent(SQLModel, table=True):

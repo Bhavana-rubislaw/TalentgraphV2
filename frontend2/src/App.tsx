@@ -4,6 +4,7 @@ import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
 import WelcomePage from './pages/WelcomePage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import RecruiterProfilePage from './pages/RecruiterProfilePage';
 import JobPreferencesPage from './pages/JobPreferencesPage';
 import CandidateDashboard from './pages/CandidateDashboardNew';
 import RecruiterDashboard from './pages/RecruiterDashboardNew';
@@ -108,6 +109,14 @@ const App: React.FC = () => {
                   <ErrorBoundary>
                     <RecruiterDashboard />
                   </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recruiter/profile"
+              element={
+                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                  <RecruiterProfilePage />
                 </ProtectedRoute>
               }
             />

@@ -154,7 +154,7 @@ def health():
 from app.routers import (
     auth, candidates, company, job_postings, matches, recommendations, 
     swipes, dashboard, applications, notifications, activity_feed, 
-    messages, meetings, calendar, analytics, logs
+    messages, meetings, calendar, analytics, logs, notification_preferences
 )
 
 log_change(
@@ -175,6 +175,7 @@ app.include_router(swipes.router)
 app.include_router(dashboard.router)
 app.include_router(applications.router)
 app.include_router(notifications.router)
+app.include_router(notification_preferences.router)  # Notification preference settings
 app.include_router(activity_feed.router)
 app.include_router(messages.router)  # Direct messaging system
 app.include_router(meetings.router)  # Meeting scheduler with email notifications

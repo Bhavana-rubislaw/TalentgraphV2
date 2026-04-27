@@ -295,6 +295,33 @@ export const apiClient = {
   deleteNotification: (id: number) =>
     api.delete(`/notifications/${id}`),
 
+  // Notification Preferences
+  getNotificationPreferences: () =>
+    api.get('/notification-preferences'),
+  getDefaultNotificationPreferences: () =>
+    api.get('/notification-preferences/defaults'),
+  createOrUpdateNotificationPreference: (preference: {
+    event_type: string;
+    in_app_enabled: boolean;
+    email_enabled: boolean;
+    in_app_frequency: string;
+    email_frequency: string;
+    priority: string;
+  }) =>
+    api.post('/notification-preferences', preference),
+  updateNotificationPreferenceByEvent: (eventType: string, update: {
+    in_app_enabled?: boolean;
+    email_enabled?: boolean;
+    in_app_frequency?: string;
+    email_frequency?: string;
+    priority?: string;
+  }) =>
+    api.patch(`/notification-preferences/${eventType}`, update),
+  bulkUpdateNotificationPreferences: (preferences: any[]) =>
+    api.post('/notification-preferences/bulk', { preferences }),
+  deleteNotificationPreference: (id: number) =>
+    api.delete(`/notification-preferences/${id}`),
+
   // Activity Feed (backend source-of-truth audit log)
   getActivityFeed: (params?: {
     category?: 'applications' | 'swipes' | 'notifications' | 'matches' | 'profile' | 'job_posting';

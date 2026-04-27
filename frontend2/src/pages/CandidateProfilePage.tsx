@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/CandidatePages.css';
+import NotificationPreferences from '../components/NotificationPreferences';
 
 /* ── SVG Icons ── */
 const Icons = {
@@ -588,6 +589,11 @@ const CandidateProfilePage: React.FC = () => {
             <>
               {renderResumes()}
               {renderCertifications()}
+              
+              {/* Notification Preferences */}
+              <div className="cp-form-section" style={{ marginTop: 32 }}>
+                <NotificationPreferences />
+              </div>
             </>
           )}
         </div>

@@ -551,10 +551,52 @@ class MeetingRead(MeetingBase):
             'reschedule_request_preferred_times': meeting.reschedule_request_preferred_times,
             'created_at': meeting.created_at,
             'updated_at': meeting.updated_at,
-            'participants': participants,
+            'participants': participants
         }
         
         return cls(**data)
+
+
+# ============ NOTIFICATION PREFERENCES SCHEMAS ============
+
+class NotificationPreferenceBase(BaseModel):
+    """Base schema for notification preferences"""
+    event_type: str
+    in_app_enabled: bool = True
+    email_enabled: bool = True
+    in_app_frequency: str = "realtime"  # realtime, daily, weekly
+    email_frequency: str = "realtime"  # realtime, daily, weekly
+    priority: str = "normal"  # urgent, normal, low
+
+
+class NotificationPreferenceCreate(NotificationPreferenceBase):
+    """Schema for creating a notification preference"""
+    pass
+
+
+class NotificationPreferenceUpdate(BaseModel):
+    """Schema for updating notification preferences - all fields optional"""
+    in_app_enabled: Optional[bool] = None
+    email_enabled: Optional[bool] = None
+    in_app_frequency: Optional[str] = None
+    email_frequency: Optional[str] = None
+    priority: Optional[str] = None
+
+
+class NotificationPreferenceRead(NotificationPreferenceBase):
+    """Schema for reading notification preferences"""
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class NotificationPreferencesBulkUpdate(BaseModel):
+    """Schema for bulk updating multiple preferences at once"""
+    preferences: List[dict]  # List of {event_type, in_app_enabled, email_enabled, ...}
 
 
 class MeetingCancelRequest(BaseModel):
