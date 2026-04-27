@@ -591,7 +591,7 @@ const CandidateProfilePage: React.FC = () => {
               {renderCertifications()}
               
               {/* Notification Preferences */}
-              <div className="cp-form-section" style={{ marginTop: 32 }}>
+              <div style={{ marginTop: 32 }}>
                 <NotificationPreferences />
               </div>
             </>

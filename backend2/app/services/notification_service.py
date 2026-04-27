@@ -4,14 +4,33 @@ Centralized Notification Service — TalentGraph V2
 Consolidates notification creation logic that was previously duplicated
 across multiple routers (swipes, applications, matches, etc.)
 Enhanced with preference-based multi-channel delivery (in-app + email)
+
+PRODUCTION-READY FEATURES:
+- Event taxonomy validation via registry
+- Standardized payload schema
+- Async email delivery with retry
+- Delivery status tracking
+- Idempotency guarantees
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Union
 from sqlmodel import Session, select
 
 from app.models import Notification, User, NotificationPreferences
+from app.core.notification_registry import (
+    get_notification_spec,
+    validate_event_type,
+    get_default_channels,
+    get_priority,
+    get_category,
+    should_deduplicate,
+    get_dedup_window,
+    NotificationChannel
+)
+from app.notification_payloads import NotificationPayload
+from app.workers.email_worker import queue_notification_email
 
 logger = logging.getLogger(__name__)
 
@@ -26,30 +45,63 @@ class NotificationService:
         event_type: str,
         title: str,
         message: str,
-        payload: Optional[Dict[str, Any]] = None,
+        payload: Optional[Union[Dict[str, Any], NotificationPayload]] = None,
         email_data: Optional[Dict[str, Any]] = None,
         notification_type: str = "general",
-        commit: bool = True
+        commit: bool = True,
+        validate_taxonomy: bool = True
     ) -> Optional[Notification]:
         """
         Send notification respecting user preferences for in-app and email delivery.
         
+        ENHANCED WITH:
+        - Event taxonomy validation
+        - Deduplication logic
+        - Standardized payload schema
+        - Async email delivery (non-blocking)
+        
         Args:
             session: Database session
             user_id: ID of the user to notify
-            event_type: Type of notification (must match NotificationPreferences.event_type)
+            event_type: Type of notification (must match registry)
             title: Notification title
-            message: Notification message
-            payload: Optional JSON payload for in-app notification
+            message: Notification message (sanitized for PII in emails)
+            payload: NotificationPayload object or dict (will be standardized)
             email_data: Optional dict with email template data
             notification_type: Type classification (general, message, alert, etc.)
             commit: Whether to commit the transaction
+            validate_taxonomy: Whether to validate event_type against registry
             
         Returns:
             Created in-app Notification object or None if preferences block all channels
         """
         try:
-            # Get user preferences for this event type
+            # STEP 1: Validate event type
+            if validate_taxonomy and not validate_event_type(event_type):
+                logger.error(f"[NOTIFICATION] Invalid event_type: {event_type}")
+                raise ValueError(f"Invalid event_type '{event_type}'. Must be in registry.")
+            
+            # STEP 2: Check deduplication
+            if should_deduplicate(event_type):
+                dedup_window = get_dedup_window(event_type)
+                cutoff_time = datetime.utcnow() - timedelta(minutes=dedup_window)
+                
+                recent = session.exec(
+                    select(Notification).where(
+                        Notification.user_id == user_id,
+                        Notification.event_type == event_type,
+                        Notification.created_at >= cutoff_time
+                    )
+                ).first()
+                
+                if recent:
+                    logger.info(
+                        f"[NOTIFICATION] Deduplicated {event_type} for user {user_id} "
+                        f"(last notification within {dedup_window} minutes)"
+                    )
+                    return recent
+            
+            # STEP 3: Get user preferences for this event type
             preference = session.exec(
                 select(NotificationPreferences).where(
                     NotificationPreferences.user_id == user_id,
@@ -61,12 +113,32 @@ class NotificationService:
             in_app_enabled = preference.in_app_enabled if preference else True
             email_enabled = preference.email_enabled if preference else True
             
+            # If both channels disabled, log and skip
+            if not in_app_enabled and not email_enabled:
+                logger.info(
+                    f"[NOTIFICATION] Skipped {event_type} for user {user_id} "
+                    f"(all channels disabled by preference)"
+                )
+                return None
+            
             in_app_notification = None
             
-            # Send in-app notification if enabled
+            # STEP 4: Send in-app notification if enabled
             if in_app_enabled:
-                import json
-                payload_str = json.dumps(payload) if payload else None
+                # Standardize payload
+                if isinstance(payload, NotificationPayload):
+                    payload_str = payload.to_json_string()
+                elif isinstance(payload, dict):
+                    # Try to convert dict to NotificationPayload
+                    try:
+                        payload_obj = NotificationPayload(**payload)
+                        payload_str = payload_obj.to_json_string()
+                    except Exception:
+                        # Fallback: store as-is
+                        import json
+                        payload_str = json.dumps(payload)
+                else:
+                    payload_str = None
                 
                 in_app_notification = Notification(
                     user_id=user_id,
@@ -83,41 +155,49 @@ class NotificationService:
                 if commit:
                     session.commit()
                     session.refresh(in_app_notification)
-                    logger.info(f"[NOTIFICATION] Created in-app notification: {event_type} for user {user_id}")
+                    logger.info(
+                        f"[NOTIFICATION] Created in-app notification: {event_type} "
+                        f"for user {user_id} (notification_id={in_app_notification.id})"
+                    )
             
-            # Send email if enabled and email_data provided
+            # STEP 5: Queue email if enabled (ASYNC - non-blocking)
             if email_enabled and email_data:
                 try:
-                    from app.emailer import send_email
-                    from app.services.notification_email_service import NotificationEmailTemplates
-                    
                     # Get user for email address
                     user = session.exec(select(User).where(User.id == user_id)).first()
                     if not user:
                         logger.warning(f"[NOTIFICATION] User {user_id} not found for email")
                         return in_app_notification
                     
-                    # Generate email based on event type
-                    subject, html_body = NotificationService._generate_email_template(
+                    # Generate email subject
+                    subject, _ = NotificationService._generate_email_template(
                         event_type, email_data
                     )
                     
-                    # Send email
-                    send_email(
-                        to_email=user.email,
+                    # Queue email asynchronously (does NOT block API response)
+                    queue_notification_email(
+                        session=session,
+                        user_id=user_id,
+                        event_type=event_type,
+                        recipient_email=user.email,
                         subject=subject,
-                        html_body=html_body
+                        notification_id=in_app_notification.id if in_app_notification else None,
+                        delay_seconds=0  # Send immediately
                     )
-                    logger.info(f"[NOTIFICATION] Sent email: {event_type} to {user.email}")
+                    
+                    logger.info(
+                        f"[NOTIFICATION] Queued email: {event_type} for {user.email} "
+                        f"(async delivery)"
+                    )
                     
                 except Exception as e:
-                    logger.error(f"[NOTIFICATION] Failed to send email: {e}")
-                    # Don't fail the entire notification if email fails
+                    logger.error(f"[NOTIFICATION] Failed to queue email: {e}")
+                    # Don't fail the entire notification if email queueing fails
             
             return in_app_notification
             
         except Exception as e:
-            logger.error(f"[NOTIFICATION] Failed to send notification: {e}")
+            logger.error(f"[NOTIFICATION] Failed to send notification: {e}", exc_info=True)
             if commit:
                 session.rollback()
             return None

@@ -516,6 +516,56 @@ class NotificationPreferences(SQLModel, table=True):
     )
 
 
+class EmailDeliveryStatus(str, Enum):
+    """Email delivery status tracking"""
+    QUEUED = "queued"       # Queued for delivery
+    SENDING = "sending"     # Currently being sent
+    SENT = "sent"          # Successfully sent
+    FAILED = "failed"      # Delivery failed
+    BOUNCED = "bounced"    # Email bounced
+    SUPPRESSED = "suppressed"  # Suppressed due to user preferences
+
+
+class EmailDelivery(SQLModel, table=True):
+    """Tracks email delivery status for notifications
+    
+    Separate from Notification to track async email sending.
+    Enables retry logic, error tracking, and delivery analytics.
+    """
+    __tablename__ = "email_delivery"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    notification_id: Optional[int] = Field(default=None, foreign_key="notification.id", index=True)
+    
+    # Recipient info
+    user_id: int = Field(foreign_key="user.id", index=True)
+    recipient_email: str = Field(index=True)
+    
+    # Email details
+    event_type: str = Field(index=True)
+    subject: str
+    
+    # Delivery tracking
+    status: str = Field(
+        default=EmailDeliveryStatus.QUEUED.value,
+        sa_column=Column(SQLEnum(EmailDeliveryStatus, name="email_delivery_status_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    attempts: int = Field(default=0)
+    max_attempts: int = Field(default=3)
+    
+    # Error tracking
+    last_error: Optional[str] = Field(default=None)
+    last_attempt_at: Optional[datetime] = Field(default=None)
+    
+    # Idempotency
+    idempotency_key: str = Field(index=True, unique=True)  # Prevents duplicate sends
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    sent_at: Optional[datetime] = Field(default=None)
+    failed_at: Optional[datetime] = Field(default=None)
+
+
 # ============ AUDIT / ACTIVITY EVENT LOG ============
 
 class ActivityEvent(SQLModel, table=True):

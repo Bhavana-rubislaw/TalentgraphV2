@@ -8,8 +8,9 @@ const Icons = {
   mail: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
   check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
   x: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-  save: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
   alertTriangle: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  chevronDown: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  chevronUp: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"/></svg>,
 };
 
 /* ── Interfaces ── */
@@ -37,13 +38,13 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   // Candidate Events
   application_status: {
     label: 'Application Status Updates',
-    description: 'When your application status changes (under review, shortlisted, etc.)',
+    description: 'When your application status changes',
     icon: '📬',
     category: 'applications'
   },
   match_found: {
     label: 'New Matches',
-    description: 'When you match with a new job or candidate',
+    description: 'When you match with a new job',
     icon: '🎯',
     category: 'matches'
   },
@@ -55,13 +56,13 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   },
   invitation: {
     label: 'Direct Invitations',
-    description: 'When recruiters invite you to apply for positions',
+    description: 'When recruiters invite you to apply',
     icon: '✉️',
     category: 'applications'
   },
   interview_scheduled: {
     label: 'Interview Scheduled',
-    description: 'When an interview is scheduled with you',
+    description: 'When an interview is scheduled',
     icon: '📅',
     category: 'interviews'
   },
@@ -73,13 +74,13 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   },
   message_received: {
     label: 'New Messages',
-    description: 'When you receive new messages from recruiters or candidates',
+    description: 'When you receive messages from recruiters',
     icon: '💬',
     category: 'messages'
   },
   job_recommendation: {
     label: 'Job Recommendations',
-    description: 'When new jobs matching your preferences are posted',
+    description: 'When new matching jobs are posted',
     icon: '💼',
     category: 'jobs'
   },
@@ -87,19 +88,19 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   // Recruiter Events
   application_received: {
     label: 'New Applications',
-    description: 'When candidates apply to your job postings',
+    description: 'When candidates apply to your postings',
     icon: '📄',
     category: 'applications'
   },
   interview_confirmed: {
     label: 'Interview Confirmations',
-    description: 'When candidates confirm interview appointments',
+    description: 'When candidates confirm appointments',
     icon: '✅',
     category: 'interviews'
   },
   job_update: {
     label: 'Job Posting Updates',
-    description: 'Updates about your job postings (expiring, frozen, etc.)',
+    description: 'Updates about your job postings',
     icon: '📋',
     category: 'jobs'
   }
@@ -110,7 +111,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   matches: 'Matches & Connections',
   interviews: 'Interviews & Meetings',
   messages: 'Messages',
-  jobs: 'Job Postings'
+  jobs: 'Job Updates'
 };
 
 /* ================================================================
@@ -170,7 +171,6 @@ const NotificationPreferences: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Bulk update all preferences
       const prefsToUpdate = preferences.map(pref => ({
         event_type: pref.event_type,
         in_app_enabled: pref.in_app_enabled,
@@ -191,16 +191,13 @@ const NotificationPreferences: React.FC = () => {
     }
   };
 
-  const toggleAllEmail = (enabled: boolean) => {
+  const toggleAllNotifications = (enabled: boolean) => {
     setPreferences(prev =>
-      prev.map(pref => ({ ...pref, email_enabled: enabled }))
-    );
-    setHasChanges(true);
-  };
-
-  const toggleAllInApp = (enabled: boolean) => {
-    setPreferences(prev =>
-      prev.map(pref => ({ ...pref, in_app_enabled: enabled }))
+      prev.map(pref => ({ 
+        ...pref, 
+        in_app_enabled: enabled,
+        email_enabled: enabled 
+      }))
     );
     setHasChanges(true);
   };
@@ -224,162 +221,183 @@ const NotificationPreferences: React.FC = () => {
   }
 
   return (
-    <div className="notification-preferences">
+    <div className="cp-form-container">
       {/* Toast */}
       {toast && (
-        <div className={`notif-prefs-toast ${toast.type}`}>
-          <span className="toast-icon">
-            {toast.type === 'success' ? Icons.check : Icons.alertTriangle}
-          </span>
-          <span>{toast.message}</span>
+        <div className={`cp-toast ${toast.type}`}>
+          {toast.type === 'success' ? Icons.check : Icons.alertTriangle}
+          {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div className="notif-prefs-header">
-        <div className="header-content">
-          <div className="header-icon">{Icons.bell}</div>
-          <div className="header-text">
-            <h2>Notification Preferences</h2>
-            <p>Choose how and when you want to be notified</p>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="quick-actions">
-          <button
-            className="quick-action-btn"
-            onClick={() => toggleAllEmail(true)}
-            title="Enable all email notifications"
-          >
-            {Icons.mail} Enable All Emails
-          </button>
-          <button
-            className="quick-action-btn"
-            onClick={() => toggleAllEmail(false)}
-            title="Disable all email notifications"
-          >
-            {Icons.x} Disable All Emails
-          </button>
-        </div>
-      </div>
-
-      {/* Preferences by Category */}
-      {Object.entries(groupedPreferences).map(([category, prefs]) => (
-        <div key={category} className="notif-category-section">
-          <h3 className="category-title">{CATEGORY_LABELS[category] || category}</h3>
+      <div className="cp-form-section">
+        {/* Section Header */}
+        <div className="notif-section-header">
+          <h3 className="cp-form-section-title">
+            {Icons.bell} Notification Preferences
+          </h3>
+          <p className="notif-section-subtitle">Choose how and when you want to be notified</p>
           
-          <div className="notif-prefs-cards">
-            {prefs.map(pref => {
-              const metadata = EVENT_METADATA[pref.event_type];
-              if (!metadata) return null;
-
-              return (
-                <div key={pref.id} className="notif-pref-card">
-                  {/* Card Header */}
-                  <div className="card-header">
-                    <span className="event-icon">{metadata.icon}</span>
-                    <div className="event-info">
-                      <h4>{metadata.label}</h4>
-                      <p>{metadata.description}</p>
-                    </div>
-                    {pref.priority === 'urgent' && (
-                      <span className="priority-badge urgent">Urgent</span>
-                    )}
-                  </div>
-
-                  {/* Card Body - Toggles and Frequency */}
-                  <div className="card-body">
-                    {/* In-App Notification */}
-                    <div className="notification-channel">
-                      <div className="channel-header">
-                        <div className="channel-label">
-                          <span className="channel-icon">{Icons.bell}</span>
-                          <span>In-App Notification</span>
-                        </div>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={pref.in_app_enabled}
-                            onChange={(e) => handleToggle(pref.event_type, 'in_app_enabled', e.target.checked)}
-                          />
-                          <span className="toggle-slider"></span>
-                        </label>
-                      </div>
-                      {pref.in_app_enabled && (
-                        <div className="frequency-selector">
-                          <label>Frequency:</label>
-                          <select
-                            value={pref.in_app_frequency}
-                            onChange={(e) => handleFrequencyChange(pref.event_type, 'in_app_frequency', e.target.value)}
-                          >
-                            <option value="realtime">Realtime</option>
-                            <option value="daily">Daily Digest</option>
-                            <option value="weekly">Weekly Digest</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Email Notification */}
-                    <div className="notification-channel">
-                      <div className="channel-header">
-                        <div className="channel-label">
-                          <span className="channel-icon">{Icons.mail}</span>
-                          <span>Email Notification</span>
-                        </div>
-                        <label className="toggle-switch">
-                          <input
-                            type="checkbox"
-                            checked={pref.email_enabled}
-                            onChange={(e) => handleToggle(pref.event_type, 'email_enabled', e.target.checked)}
-                          />
-                          <span className="toggle-slider"></span>
-                        </label>
-                      </div>
-                      {pref.email_enabled && (
-                        <div className="frequency-selector">
-                          <label>Frequency:</label>
-                          <select
-                            value={pref.email_frequency}
-                            onChange={(e) => handleFrequencyChange(pref.event_type, 'email_frequency', e.target.value)}
-                          >
-                            <option value="realtime">Realtime</option>
-                            <option value="daily">Daily Digest</option>
-                            <option value="weekly">Weekly Digest</option>
-                          </select>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          {/* Global Controls */}
+          <div className="notif-global-actions">
+            <button
+              className="cp-btn cp-btn-outline cp-btn-sm"
+              onClick={() => toggleAllNotifications(true)}
+              title="Enable all notifications"
+            >
+              Enable All
+            </button>
+            <button
+              className="cp-btn cp-btn-outline cp-btn-sm"
+              onClick={() => toggleAllNotifications(false)}
+              title="Disable all notifications"
+            >
+              Disable All
+            </button>
           </div>
         </div>
-      ))}
 
-      {/* Save Button */}
-      <div className="notif-prefs-footer">
-        <button
-          className={`save-btn ${hasChanges ? 'has-changes' : ''}`}
-          onClick={handleSave}
-          disabled={!hasChanges || saving}
-        >
-          {saving ? (
-            <>
-              <span className="btn-spinner"></span>
-              Saving...
-            </>
-          ) : (
-            <>
-              {Icons.save}
-              Save Preferences
-            </>
-          )}
-        </button>
+        {/* Notification Items Grid (2-column) */}
+        {Object.entries(groupedPreferences).map(([category, prefs]) => (
+          <div key={category} className="notif-category-section">
+            {/* Category Title */}
+            <div className="notif-category-title-row">
+              <h4 className="notif-category-title">
+                {CATEGORY_LABELS[category] || category}
+                <span className="cp-count-badge">{prefs.length}</span>
+              </h4>
+            </div>
+
+            {/* Grid of Notification Cards */}
+            <div className="notif-items-grid">
+              {prefs.map(pref => {
+                const metadata = EVENT_METADATA[pref.event_type];
+                if (!metadata) return null;
+
+                return (
+                  <div key={pref.id} className="notif-item-card">
+                    {/* Card Header */}
+                    <div className="notif-card-header">
+                      <div className="notif-card-title-wrapper">
+                        <h5 className="notif-card-title">
+                          {metadata.label}
+                          {pref.priority === 'urgent' && (
+                            <span className="notif-badge-urgent">URGENT</span>
+                          )}
+                        </h5>
+                        <p className="notif-card-description">{metadata.description}</p>
+                      </div>
+                    </div>
+
+                    {/* Controls Section */}
+                    <div className="notif-card-controls">
+                      {/* In-App Row */}
+                      <div className="notif-control-row">
+                        <label className="notif-control-label">
+                          <span className="notif-label-icon">{Icons.bell}</span>
+                          In-App
+                        </label>
+                        <div className="notif-control-inputs">
+                          <label className="notif-toggle">
+                            <input
+                              type="checkbox"
+                              checked={pref.in_app_enabled}
+                              onChange={(e) => handleToggle(pref.event_type, 'in_app_enabled', e.target.checked)}
+                            />
+                            <span className="notif-toggle-slider"></span>
+                          </label>
+                          {pref.in_app_enabled && (
+                            <select
+                              className="notif-select"
+                              value={pref.in_app_frequency}
+                              onChange={(e) => handleFrequencyChange(pref.event_type, 'in_app_frequency', e.target.value)}
+                            >
+                              <option value="realtime">Real-time</option>
+                              <option value="daily">Daily</option>
+                              <option value="weekly">Weekly</option>
+                            </select>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Email Row */}
+                      <div className="notif-control-row">
+                        <label className="notif-control-label">
+                          <span className="notif-label-icon">{Icons.mail}</span>
+                          Email
+                        </label>
+                        <div className="notif-control-inputs">
+                          <label className="notif-toggle">
+                            <input
+                              type="checkbox"
+                              checked={pref.email_enabled}
+                              onChange={(e) => handleToggle(pref.event_type, 'email_enabled', e.target.checked)}
+                            />
+                            <span className="notif-toggle-slider"></span>
+                          </label>
+                          {pref.email_enabled && (
+                            <select
+                              className="notif-select"
+                              value={pref.email_frequency}
+                              onChange={(e) => handleFrequencyChange(pref.event_type, 'email_frequency', e.target.value)}
+                            >
+                              <option value="realtime">Real-time</option>
+                              <option value="daily">Daily</option>
+                              <option value="weekly">Weekly</option>
+                            </select>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        {/* Save Footer (only when changes) */}
         {hasChanges && (
-          <p className="unsaved-changes-note">You have unsaved changes</p>
+          <div className="notif-save-banner">
+            <div className="notif-save-banner-content">
+              <div className="notif-save-banner-left">
+                <span className="notif-save-banner-icon">{Icons.alertTriangle}</span>
+                <div className="notif-save-banner-text">
+                  <span className="notif-save-banner-title">Unsaved Changes</span>
+                  <span className="notif-save-banner-subtitle">Your notification preferences haven't been saved yet</span>
+                </div>
+              </div>
+              <div className="notif-save-banner-actions">
+                <button
+                  className="cp-btn cp-btn-outline cp-btn-sm"
+                  onClick={() => {
+                    fetchPreferences();
+                    setHasChanges(false);
+                  }}
+                  disabled={saving}
+                >
+                  Discard
+                </button>
+                <button
+                  className="cp-btn cp-btn-primary"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <>
+                      <span className="notif-btn-spinner"></span>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      {Icons.check}
+                      Save Preferences
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
