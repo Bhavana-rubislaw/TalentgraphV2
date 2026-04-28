@@ -4,7 +4,7 @@ Pydantic models mirroring database structure
 """
 
 from typing import Optional, List, Any
-from pydantic import BaseModel, EmailStr, Field, computed_field
+from pydantic import BaseModel, EmailStr, Field, computed_field, ConfigDict
 from datetime import datetime
 from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
 
@@ -405,8 +405,7 @@ class MeetingParticipantRead(MeetingParticipantBase):
     participant_name: Optional[str] = None
     participant_email: Optional[str] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
     
     @classmethod
     def from_orm_with_user(cls, participant):
@@ -471,14 +470,6 @@ class MeetingCreate(MeetingBase):
     # Support both methods: user IDs (old) or name+email (new)
     participant_user_ids: Optional[List[int]] = None  # Legacy support
     participants: Optional[List[MeetingParticipantSpec]] = None  # New method
-    
-    class Config:
-        # At least one must be provided
-        @staticmethod
-        def validate_participants(cls, values):
-            if not values.get('participant_user_ids') and not values.get('participants'):
-                raise ValueError("Either participant_user_ids or participants must be provided")
-            return values
 
 
 class MeetingUpdate(BaseModel):
@@ -510,8 +501,7 @@ class MeetingRead(MeetingBase):
     updated_at: datetime
     participants: List[MeetingParticipantRead] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
     
     @classmethod
     def from_orm_with_participants(cls, meeting):
@@ -590,8 +580,7 @@ class NotificationPreferenceRead(NotificationPreferenceBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class NotificationPreferencesBulkUpdate(BaseModel):

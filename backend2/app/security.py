@@ -38,8 +38,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(hours=JWT_EXP_HOURS))
-    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    from datetime import timezone
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(hours=JWT_EXP_HOURS))
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 

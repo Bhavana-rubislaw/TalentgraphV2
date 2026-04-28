@@ -6,7 +6,7 @@ All notifications must use these schemas to ensure consistency.
 """
 
 from typing import Optional, Dict, Any, Literal
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 import json
 
 
@@ -31,7 +31,8 @@ class NotificationAction(BaseModel):
         description="Additional parameters for the action"
     )
     
-    @validator("route")
+    @field_validator("route")
+    @classmethod
     def validate_route(cls, v):
         """Ensure route is not empty"""
         if not v or v.strip() == "":
@@ -57,8 +58,7 @@ class NotificationContextData(BaseModel):
     recruiter_name: Optional[str] = None
     status: Optional[str] = None
     
-    class Config:
-        extra = "allow"  # Allow additional fields
+    model_config = ConfigDict(extra="allow")  # Allow additional fields
 
 
 class NotificationPayload(BaseModel):

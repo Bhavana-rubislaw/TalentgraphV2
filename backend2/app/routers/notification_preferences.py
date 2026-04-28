@@ -143,7 +143,8 @@ def create_or_update_preference(
             # Update existing preference
             for key, value in preference_data.model_dump().items():
                 setattr(existing, key, value)
-            existing.updated_at = datetime.utcnow()
+            from datetime import timezone
+            existing.updated_at = datetime.now(timezone.utc)
             session.add(existing)
             session.commit()
             session.refresh(existing)
@@ -201,7 +202,8 @@ def update_preference_by_event(
         for key, value in update_dict.items():
             setattr(preference, key, value)
         
-        preference.updated_at = datetime.utcnow()
+        from datetime import timezone
+        preference.updated_at = datetime.now(timezone.utc)
         session.add(preference)
         session.commit()
         session.refresh(preference)
@@ -251,7 +253,8 @@ def bulk_update_preferences(
                 for key, value in pref_dict.items():
                     if key != "event_type" and hasattr(preference, key):
                         setattr(preference, key, value)
-                preference.updated_at = datetime.utcnow()
+                from datetime import timezone
+                preference.updated_at = datetime.now(timezone.utc)
             else:
                 # Create new
                 preference = NotificationPreferences(

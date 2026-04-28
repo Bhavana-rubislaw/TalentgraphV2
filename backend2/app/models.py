@@ -5,7 +5,7 @@ Candidate-centric talent marketplace with enhanced job profiles and postings
 
 from typing import Optional, List
 from datetime import datetime, date
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, String
 from sqlmodel import SQLModel, Field, Relationship, Column, Date
 from sqlalchemy import Enum as SQLEnum
 from enum import Enum
@@ -634,12 +634,12 @@ class SystemLog(SQLModel, table=True):
     entity_type: Optional[str] = Field(default=None, index=True)  # user, job, application, etc.
     entity_id: Optional[str] = Field(default=None)
     
-    # Additional context (JSON)
-    log_metadata: Optional[str] = Field(default=None)  # Serialized JSON metadata
+    # Additional context (JSON) - maps to 'metadata' column in database
+    log_metadata: Optional[str] = Field(default=None, sa_column=Column("metadata", String, nullable=True))
     exception: Optional[str] = Field(default=None)  # Exception traceback if any
     
     # Housekeeping
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now())
 
 
 # ============ CHAT MODELS ============

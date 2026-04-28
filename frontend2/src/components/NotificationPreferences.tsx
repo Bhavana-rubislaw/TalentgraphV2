@@ -157,17 +157,6 @@ const NotificationPreferences: React.FC = () => {
     setHasChanges(true);
   };
 
-  const handleFrequencyChange = (eventType: string, field: 'in_app_frequency' | 'email_frequency', value: string) => {
-    setPreferences(prev =>
-      prev.map(pref =>
-        pref.event_type === eventType
-          ? { ...pref, [field]: value }
-          : pref
-      )
-    );
-    setHasChanges(true);
-  };
-
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -175,8 +164,8 @@ const NotificationPreferences: React.FC = () => {
         event_type: pref.event_type,
         in_app_enabled: pref.in_app_enabled,
         email_enabled: pref.email_enabled,
-        in_app_frequency: pref.in_app_frequency,
-        email_frequency: pref.email_frequency,
+        in_app_frequency: 'realtime',
+        email_frequency: 'realtime',
         priority: pref.priority
       }));
 
@@ -236,7 +225,7 @@ const NotificationPreferences: React.FC = () => {
           <h3 className="cp-form-section-title">
             {Icons.bell} Notification Preferences
           </h3>
-          <p className="notif-section-subtitle">Choose how and when you want to be notified</p>
+          <p className="notif-section-subtitle">Choose how you want to be notified</p>
           
           {/* Global Controls */}
           <div className="notif-global-actions">
@@ -306,17 +295,6 @@ const NotificationPreferences: React.FC = () => {
                             />
                             <span className="notif-toggle-slider"></span>
                           </label>
-                          {pref.in_app_enabled && (
-                            <select
-                              className="notif-select"
-                              value={pref.in_app_frequency}
-                              onChange={(e) => handleFrequencyChange(pref.event_type, 'in_app_frequency', e.target.value)}
-                            >
-                              <option value="realtime">Real-time</option>
-                              <option value="daily">Daily</option>
-                              <option value="weekly">Weekly</option>
-                            </select>
-                          )}
                         </div>
                       </div>
 
@@ -335,17 +313,6 @@ const NotificationPreferences: React.FC = () => {
                             />
                             <span className="notif-toggle-slider"></span>
                           </label>
-                          {pref.email_enabled && (
-                            <select
-                              className="notif-select"
-                              value={pref.email_frequency}
-                              onChange={(e) => handleFrequencyChange(pref.event_type, 'email_frequency', e.target.value)}
-                            >
-                              <option value="realtime">Real-time</option>
-                              <option value="daily">Daily</option>
-                              <option value="weekly">Weekly</option>
-                            </select>
-                          )}
                         </div>
                       </div>
                     </div>
