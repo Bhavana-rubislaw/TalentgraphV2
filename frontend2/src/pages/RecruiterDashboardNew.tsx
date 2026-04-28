@@ -152,13 +152,8 @@ const RecruiterDashboard: React.FC = () => {
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
   const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'admin');
 
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const userName = userFullName || userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
   const userInitial = userName.charAt(0).toUpperCase();
-
-  const isAdmin = userRole === 'admin';
-  const isHR = userRole === 'hr';
-  const canManageTeam = isAdmin || isHR;
 
   useEffect(() => {
     // Fetch full profile from /auth/me
@@ -183,21 +178,6 @@ const RecruiterDashboard: React.FC = () => {
     };
     fetchProfile();
   }, []);
-
-  const fetchTeamMembers = async () => {
-    try {
-      const res = await apiClient.getTeamMembers();
-      setTeamMembers(res.data.team_members || []);
-      if (res.data.my_role) {
-        setUserRole(res.data.my_role);
-      }
-      if (res.data.company_name) {
-        setCompanyName(res.data.company_name);
-      }
-    } catch (err) {
-      console.log('[TEAM] Could not fetch team members:', err);
-    }
-  };
 
   useEffect(() => {
     fetchJobPostings();
