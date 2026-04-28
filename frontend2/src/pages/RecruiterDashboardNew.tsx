@@ -36,7 +36,6 @@ const RecruiterDashboard: React.FC = () => {
 
   console.log('[STATE] Initial tab:', activeTab);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showProfilePage, setShowProfilePage] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
   const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
   const [jobPostings, setJobPostings] = useState<any[]>([]);
@@ -3938,7 +3937,7 @@ const RecruiterDashboard: React.FC = () => {
             
             {showProfileMenu && (
               <div className="profile-menu">
-                <button onClick={() => { setShowProfileMenu(false); setShowProfilePage(true); fetchTeamMembers(); }}>
+                <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/profile'); }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -4319,74 +4318,223 @@ const RecruiterDashboard: React.FC = () => {
               </button>
             </div>
 
-            {/* Profile Card */}
-            <div className="profile-info-card">
-              <div className="profile-info-avatar">
-                <div className="profile-avatar-large">{userInitial}</div>
+            {/* Profile Card - Updated with cp-form styling */}
+            <div className="cp-form-container" style={{ marginBottom: 24 }}>
+              <div className="cp-form-section">
+                <h3 className="cp-form-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  Personal Information
+                </h3>
+                <div className="cp-profile-grid">
+                  <div className="cp-profile-field">
+                    <span className="cp-profile-label">Full Name</span>
+                    <span className="cp-profile-value">{userName || <span className="empty">Not provided</span>}</span>
+                  </div>
+                  <div className="cp-profile-field">
+                    <span className="cp-profile-label">Email</span>
+                    <span className="cp-profile-value">
+                      {userEmail ? <a href={`mailto:${userEmail}`}>{userEmail}</a> : <span className="empty">Not provided</span>}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="profile-info-details">
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Full Name</span>
-                  <span className="profile-detail-value">{userName}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Email</span>
-                  <span className="profile-detail-value">{userEmail}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Company</span>
-                  <span className="profile-detail-value">{companyName || 'Not specified'}</span>
-                </div>
-                <div className="profile-detail-row">
-                  <span className="profile-detail-label">Role</span>
-                  <span className="profile-detail-value profile-role-badge">{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</span>
+
+              <div className="cp-form-section">
+                <h3 className="cp-form-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                    <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/>
+                    <path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>
+                  </svg>
+                  Company Information
+                </h3>
+                <div className="cp-profile-grid">
+                  <div className="cp-profile-field">
+                    <span className="cp-profile-label">Company Name</span>
+                    <span className="cp-profile-value">{companyName || <span className="empty">Not provided</span>}</span>
+                  </div>
+                  <div className="cp-profile-field">
+                    <span className="cp-profile-label">Role</span>
+                    <span className="cp-profile-value">
+                      <span style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: '4px 12px',
+                        background: userRole === 'admin' ? '#FEF3C7' : userRole === 'hr' ? '#DBEAFE' : '#F3F4F6',
+                        color: userRole === 'admin' ? '#92400E' : userRole === 'hr' ? '#1E40AF' : '#374151',
+                        borderRadius: 999,
+                        textTransform: 'capitalize'
+                      }}>
+                        {userRole}
+                      </span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Team Management Section - Admin and HR only */}
             {canManageTeam && (
-              <div className="team-management-section">
-                <div className="team-section-header">
-                  <h3>Team Management</h3>
-                  <button className="btn-add-member">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="12" y1="5" x2="12" y2="19"/>
-                      <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Invite Member
-                  </button>
-                </div>
-                <div className="team-members-table">
-                  <div className="team-table-header">
-                    <span>Member</span>
-                    <span>Role</span>
-                    <span>Jobs Posted</span>
-                    <span>Status</span>
+              <div className="cp-form-container">
+                <div className="cp-form-section" style={{ borderBottom: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <h3 className="cp-form-section-title" style={{ margin: 0, border: 'none', padding: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18 }}>
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                      </svg>
+                      Team Management
+                    </h3>
+                    <button className="cp-btn cp-btn-primary cp-btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+                        <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                      </svg>
+                      Invite Member
+                    </button>
                   </div>
-                  {teamMembers.length === 0 ? (
-                    <div className="team-table-empty">Loading team data...</div>
-                  ) : (
-                    teamMembers.map((member) => (
-                      <div key={member.id} className={`team-table-row ${member.is_self ? 'is-self' : ''}`}>
-                        <div className="team-member-info">
-                          <div className="team-member-avatar">{member.name.charAt(0)}</div>
-                          <div>
-                            <div className="team-member-name">
-                              {member.name}
-                              {member.is_self && <span className="self-tag">You</span>}
-                            </div>
-                            <div className="team-member-email">{member.email}</div>
-                          </div>
-                        </div>
-                        <span className={`team-role-tag role-${member.role.toLowerCase()}`}>{member.role}</span>
-                        <span className="team-jobs-count">
-                          <strong>{member.jobs_posted}</strong> {member.jobs_posted === 1 ? 'job' : 'jobs'}
-                        </span>
-                        <span className={`team-status-tag ${member.status.toLowerCase()}`}>{member.status}</span>
+
+                  {/* Team Members Grid */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+                    {/* Table Header */}
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '2fr 1fr 1fr 1fr', 
+                      gap: 16, 
+                      padding: '12px 16px',
+                      background: '#F9FAFB',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--cp-text-tertiary, #667085)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>
+                      <span>Member</span>
+                      <span>Role</span>
+                      <span>Jobs Posted</span>
+                      <span>Status</span>
+                    </div>
+
+                    {/* Table Rows */}
+                    {teamMembers.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: 24, color: 'var(--cp-text-tertiary, #667085)' }}>
+                        Loading team data...
                       </div>
-                    ))
-                  )}
+                    ) : (
+                      teamMembers.map((member) => (
+                        <div 
+                          key={member.id} 
+                          style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '2fr 1fr 1fr 1fr', 
+                            gap: 16, 
+                            padding: '16px',
+                            background: member.is_self ? '#F8F9FF' : '#FFFFFF',
+                            border: '1px solid var(--cp-border, #E4E7EC)',
+                            borderRadius: 12,
+                            alignItems: 'center',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          {/* Member Info */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, var(--cp-accent, #6C5CE7), #8B7AE6)',
+                              color: 'white',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 600,
+                              fontSize: 16,
+                              flexShrink: 0
+                            }}>
+                              {member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ 
+                                fontSize: 14, 
+                                fontWeight: 600, 
+                                color: 'var(--cp-text-primary, #1D2939)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6
+                              }}>
+                                {member.name}
+                                {member.is_self && (
+                                  <span style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    padding: '2px 8px',
+                                    background: '#E0E7FF',
+                                    color: '#4F46E5',
+                                    borderRadius: 999,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em'
+                                  }}>
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ 
+                                fontSize: 13, 
+                                color: 'var(--cp-text-tertiary, #667085)',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {member.email}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Role Badge */}
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            padding: '4px 12px',
+                            background: member.role.toLowerCase() === 'admin' ? '#FEF3C7' :
+                                        member.role.toLowerCase() === 'hr' ? '#DBEAFE' : '#F3F4F6',
+                            color: member.role.toLowerCase() === 'admin' ? '#92400E' :
+                                    member.role.toLowerCase() === 'hr' ? '#1E40AF' : '#374151',
+                            borderRadius: 999,
+                            textTransform: 'capitalize',
+                            width: 'fit-content'
+                          }}>
+                            {member.role}
+                          </span>
+
+                          {/* Jobs Count */}
+                          <span style={{ fontSize: 14, color: 'var(--cp-text-secondary, #44495C)' }}>
+                            <strong style={{ color: 'var(--cp-text-primary, #1D2939)' }}>{member.jobs_posted}</strong> {member.jobs_posted === 1 ? 'job' : 'jobs'}
+                          </span>
+
+                          {/* Status Badge */}
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: 600,
+                            padding: '4px 12px',
+                            background: member.status.toLowerCase() === 'active' ? '#D1FAE5' : '#FEE2E2',
+                            color: member.status.toLowerCase() === 'active' ? '#065F46' : '#991B1B',
+                            borderRadius: 999,
+                            textTransform: 'capitalize',
+                            width: 'fit-content'
+                          }}>
+                            {member.status}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             )}

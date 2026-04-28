@@ -74,7 +74,7 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   },
   message_received: {
     label: 'New Messages',
-    description: 'When you receive messages from recruiters',
+    description: 'When you receive new messages',
     icon: '💬',
     category: 'messages'
   },
