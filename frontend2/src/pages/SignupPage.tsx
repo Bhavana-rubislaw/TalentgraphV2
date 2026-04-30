@@ -94,11 +94,12 @@ const SignupPage: React.FC = () => {
 
       // Redirect based on user type
       if (formData.userType === 'candidate') {
-        console.log('[NAVIGATION] Redirecting to candidate dashboard');
-        navigate('/candidate-dashboard');
+        console.log('[NAVIGATION] Redirecting to candidate profile setup');
+        navigate('/candidate-profile-setup');
       } else {
-        console.log('[NAVIGATION] Redirecting to recruiter dashboard');
-        navigate('/recruiter-dashboard');
+        // For recruiters, check if profile is complete via backend, or just go to setup
+        console.log('[NAVIGATION] Redirecting to company profile setup');
+        navigate('/company-profile-setup');
       }
     } catch (err: any) {
       console.error('[AUTH ERROR] Sign in failed:', err);
@@ -172,8 +173,9 @@ const SignupPage: React.FC = () => {
         console.log('[NAVIGATION] Redirecting to candidate dashboard');
         navigate('/candidate-dashboard');
       } else {
-        console.log('[NAVIGATION] Redirecting to recruiter dashboard');
-        navigate('/recruiter-dashboard');
+        // For recruiters, redirect to profile setup after signup
+        console.log('[NAVIGATION] Redirecting to company profile setup');
+        navigate('/company-profile-setup');
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Signup failed');

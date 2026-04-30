@@ -56,10 +56,21 @@ class NotificationSpec:
 
 
 # ================================
-# CANDIDATE NOTIFICATION TYPES (8)
+# CANDIDATE NOTIFICATION TYPES (9)
 # ================================
 
 CANDIDATE_NOTIFICATIONS = {
+    "application_submitted": NotificationSpec(
+        event_type="application_submitted",
+        display_name="Application Submitted",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.APPLICATIONS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/candidate/applications",
+        dedup_window_minutes=5,
+        description="Confirmation that application was successfully submitted"
+    ),
+    
     "application_status": NotificationSpec(
         event_type="application_status",
         display_name="Application Status Update",

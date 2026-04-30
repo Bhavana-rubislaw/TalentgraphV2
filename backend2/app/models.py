@@ -317,6 +317,17 @@ class Company(SQLModel, table=True):
     company_name: str
     company_email: str = Field(index=True)
     employee_type: str  # Admin, HR, Recruiter/Manager
+    
+    # Extended Profile Fields for Setup
+    company_website: Optional[str] = None
+    company_location: Optional[str] = None
+    department: Optional[str] = None
+    phone_number: Optional[str] = None
+    linkedin_profile: Optional[str] = None
+    hiring_focus: Optional[str] = None  # JSON array of job categories
+    company_description: Optional[str] = None
+    profile_complete: bool = Field(default=False)
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -544,6 +555,7 @@ class EmailDelivery(SQLModel, table=True):
     # Email details
     event_type: str = Field(index=True)
     subject: str
+    html_body: Optional[str] = Field(default=None)  # Store generated HTML
     
     # Delivery tracking
     status: str = Field(

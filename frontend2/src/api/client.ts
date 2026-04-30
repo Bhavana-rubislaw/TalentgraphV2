@@ -118,6 +118,27 @@ export const apiClient = {
   updateCompanyProfile: (data: any) =>
     api.put('/company/profile', data),
 
+  // Company Profile Setup
+  setupCompanyProfile: (data: {
+    full_name: string;
+    company_name: string;
+    company_role: string;
+    company_website?: string;
+    company_location?: string;
+    department?: string;
+    phone_number?: string;
+    linkedin_profile?: string;
+    hiring_focus?: string;
+    company_description?: string;
+  }) =>
+    api.post('/company/setup-profile', data),
+
+  getCompanyProfileStatus: () =>
+    api.get('/company/profile-status'),
+
+  updateExtendedCompanyProfile: (data: any) =>
+    api.put('/company/update-profile', data),
+
   // Job Postings
   createJobPosting: (data: any) =>
     api.post('/job-postings', data),

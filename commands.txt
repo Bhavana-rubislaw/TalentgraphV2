@@ -626,11 +626,13 @@ for r in router.routes:
 - Confirms which routes exist under candidates router.
 
 **Expected Output**
-- Includes `/candidates/job-profiles`, `/candidates/skill-catalogs`, resume/certifications routes, etc.
+-     Includes `/candidates/job-profiles`, `/candidates/skill-catalogs`, resume/certifications routes, etc.
 
 ---
 
-# H) Quick End‑to‑End Sanity Checklist
+
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+# H) Quick End‑to‑End Sanity Checklist            
 
 ## H1) Backend health
 ```powershell
@@ -646,9 +648,10 @@ Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST
 ```powershell
 curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/dashboard/candidate/matches
 ```
-
+      
 ## H4) Frontend typecheck
 ```powershell
 cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
 npx tsc --noEmit
 ```
+                                                                                                                                                                                                           

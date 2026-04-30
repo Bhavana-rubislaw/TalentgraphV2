@@ -216,9 +216,43 @@ class CompanyCreate(CompanyBase):
     pass
 
 
+class CompanyProfileSetup(BaseModel):
+    """Schema for company profile setup after signup"""
+    full_name: str
+    company_name: str
+    company_role: str  # Recruiter, HR, Admin
+    company_website: Optional[str] = None
+    company_location: Optional[str] = None
+    department: Optional[str] = None
+    phone_number: Optional[str] = None
+    linkedin_profile: Optional[str] = None
+    hiring_focus: Optional[str] = None  # JSON array of job categories
+    company_description: Optional[str] = None
+
+
+class CompanyProfileUpdate(BaseModel):
+    """Schema for updating company profile"""
+    company_name: Optional[str] = None
+    company_website: Optional[str] = None
+    company_location: Optional[str] = None
+    department: Optional[str] = None
+    phone_number: Optional[str] = None
+    linkedin_profile: Optional[str] = None
+    hiring_focus: Optional[str] = None
+    company_description: Optional[str] = None
+
+
 class CompanyRead(CompanyBase):
     id: int
     user_id: int
+    company_website: Optional[str] = None
+    company_location: Optional[str] = None
+    department: Optional[str] = None
+    phone_number: Optional[str] = None
+    linkedin_profile: Optional[str] = None
+    hiring_focus: Optional[str] = None
+    company_description: Optional[str] = None
+    profile_complete: bool
     created_at: datetime
 
 

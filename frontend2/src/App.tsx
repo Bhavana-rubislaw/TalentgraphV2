@@ -4,7 +4,9 @@ import LandingPage from './pages/LandingPage';
 import SignupPage from './pages/SignupPage';
 import WelcomePage from './pages/WelcomePage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
+import CandidateProfileSetupPage from './pages/CandidateProfileSetupPage';
 import RecruiterProfilePage from './pages/RecruiterProfilePage';
+import CompanyProfileSetupPage from './pages/CompanyProfileSetupPage';
 import JobPreferencesPage from './pages/JobPreferencesPage';
 import CandidateDashboard from './pages/CandidateDashboardNew';
 import RecruiterDashboard from './pages/RecruiterDashboardNew';
@@ -14,6 +16,7 @@ import { MeetingsPage } from './pages/MeetingsPage';
 import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { apiClient } from './api/client';
 import './index.css';
 
 // ── Role constants ────────────────────────────────────────────────
@@ -63,6 +66,124 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
   return <>{children}</>;
 };
 
+// ── Recruiter Protected Route with Profile Check ──────────────────
+// Checks if recruiter has completed profile setup
+const RecruiterProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, bootStatus } = useAuth();
+  const [profileStatus, setProfileStatus] = React.useState<{ loading: boolean; complete: boolean }>({
+    loading: true,
+    complete: false,
+  });
+
+  React.useEffect(() => {
+    const checkProfileStatus = async () => {
+      try {
+        const response = await apiClient.getCompanyProfileStatus();
+        console.log('[RecruiterProtectedRoute] Profile status:', response.data);
+        setProfileStatus({ loading: false, complete: response.data.profile_complete });
+      } catch (err) {
+        console.error('[RecruiterProtectedRoute] Failed to check profile status:', err);
+        // If error, assume incomplete and redirect to setup
+        setProfileStatus({ loading: false, complete: false });
+      }
+    };
+
+    if (bootStatus === 'done') {
+      checkProfileStatus();
+    }
+  }, [bootStatus]);
+
+  // Still validating token? wait
+  if (bootStatus === 'loading' || profileStatus.loading) return null;
+
+  const token = localStorage.getItem('token');
+  const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
+
+  if (!token) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  if (!RECRUITER_ROLES.includes(userRole)) {
+    console.log('[RecruiterProtectedRoute] Not a recruiter, redirecting');
+    return <Navigate to="/" replace />;
+  }
+
+  // Check if profile is complete
+  if (!profileStatus.complete) {
+    console.log('[RecruiterProtectedRoute] Profile incomplete, redirecting to setup');
+    return <Navigate to="/company-profile-setup" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// ── Candidate Protected Route with Profile Check ──────────────────
+// Checks if candidate has completed profile setup
+const CandidateProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, bootStatus } = useAuth();
+  const [profileStatus, setProfileStatus] = React.useState<{ loading: boolean; complete: boolean }>({ 
+    loading: true, 
+    complete: false 
+  });
+
+  React.useEffect(() => {
+    const checkProfileStatus = async () => {
+      try {
+        const response = await apiClient.getCandidateProfile();
+        console.log('[CandidateProtectedRoute] Profile exists:', response.data);
+        // If profile exists and has basic required fields, consider it complete
+        const isComplete = !!(response.data.name && response.data.email && response.data.phone);
+        setProfileStatus({ loading: false, complete: isComplete });
+        if (isComplete) {
+          localStorage.setItem('profile_complete', 'true');
+        }
+      } catch (err: any) {
+        console.error('[CandidateProtectedRoute] Profile check:', err);
+        // If 404, profile doesn't exist, redirect to setup
+        if (err.response?.status === 404) {
+          setProfileStatus({ loading: false, complete: false });
+        } else {
+          // For other errors, assume incomplete
+          setProfileStatus({ loading: false, complete: false });
+        }
+      }
+    };
+
+    if (bootStatus === 'done') {
+      // Check localStorage first for quick decision
+      const profileComplete = localStorage.getItem('profile_complete') === 'true';
+      if (profileComplete) {
+        setProfileStatus({ loading: false, complete: true });
+      } else {
+        checkProfileStatus();
+      }
+    }
+  }, [bootStatus]);
+
+  // Still validating token? wait
+  if (bootStatus === 'loading' || profileStatus.loading) return null;
+
+  const token = localStorage.getItem('token');
+  const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
+
+  if (!token) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  if (!CANDIDATE_ROLES.includes(userRole)) {
+    console.log('[CandidateProtectedRoute] Not a candidate, redirecting');
+    return <Navigate to="/" replace />;
+  }
+
+  // Check if profile is complete
+  if (!profileStatus.complete) {
+    console.log('[CandidateProtectedRoute] Profile incomplete, redirecting to setup');
+    return <Navigate to="/candidate-profile-setup" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // ── Boot spinner while /auth/me is in flight ──────────────────────
 const BootGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { bootStatus } = useAuth();
@@ -101,39 +222,57 @@ const App: React.FC = () => {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/signin" element={<SignupPage />} />
 
+            {/* Profile Setup Pages */}
+            <Route
+              path="/company-profile-setup"
+              element={
+                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                  <CompanyProfileSetupPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/candidate-profile-setup"
+              element={
+                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                  <CandidateProfileSetupPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Recruiting Platform Routes */}
             <Route
               path="/recruiter-dashboard"
               element={
-                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                <RecruiterProtectedRoute>
                   <ErrorBoundary>
                     <RecruiterDashboard />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </RecruiterProtectedRoute>
               }
             />
             <Route
               path="/recruiter/profile"
               element={
-                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                <RecruiterProtectedRoute>
                   <RecruiterProfilePage />
-                </ProtectedRoute>
+                </RecruiterProtectedRoute>
               }
             />
             <Route
               path="/recruiter/job-posting"
               element={
-                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                <RecruiterProtectedRoute>
                   <JobPostingForm />
-                </ProtectedRoute>
+                </RecruiterProtectedRoute>
               }
             />
             <Route
               path="/recruiter/job-postings"
               element={
-                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                <RecruiterProtectedRoute>
                   <JobPostingBuilder />
-                </ProtectedRoute>
+                </RecruiterProtectedRoute>
               }
             />
 
@@ -161,41 +300,41 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Legacy Candidate Routes (kept for compatibility) */}
+            {/* Candidate Routes */}
             <Route
               path="/welcome"
               element={
-                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                <CandidateProtectedRoute>
                   <WelcomePage />
-                </ProtectedRoute>
+                </CandidateProtectedRoute>
               }
             />
             <Route
               path="/candidate/profile"
               element={
-                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                <CandidateProtectedRoute>
                   <CandidateProfilePage />
-                </ProtectedRoute>
+                </CandidateProtectedRoute>
               }
             />
             <Route
               path="/candidate/job-preferences"
               element={
-                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                <CandidateProtectedRoute>
                   <ErrorBoundary>
                     <JobPreferencesPage />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </CandidateProtectedRoute>
               }
             />
             <Route
               path="/candidate-dashboard"
               element={
-                <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
+                <CandidateProtectedRoute>
                   <ErrorBoundary>
                     <CandidateDashboard />
                   </ErrorBoundary>
-                </ProtectedRoute>
+                </CandidateProtectedRoute>
               }
             />
 

@@ -14,7 +14,8 @@ from app.database import get_session
 from app.models import Application, Candidate, Company, JobPosting, JobProfile, User, JobPostingStatus, VideoProviderAccount, VideoProvider, Meeting, MeetingParticipant, MeetingStatus
 from app.schemas import ApplicationRead
 from app.security import get_current_user
-from app.routers.notifications import push_notification
+from app.routers.notifications import push_notification  # Legacy support for other endpoints
+from app.services.notification_service import NotificationService
 from app.services.audit import log_activity_event, snap_application
 from app.emailer import send_interview_schedule_email, EmailConfigError
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
@@ -151,21 +152,58 @@ def apply_to_job(
     session.commit()
     session.refresh(application)
     
-    # Notify recruiter of the new application
+    # 1. Send confirmation notification to candidate (applicant)
+    try:
+        NotificationService.send_notification(
+            session=session,
+            user_id=user.id,
+            event_type="application_submitted",
+            title="✅ Application Submitted Successfully",
+            message=f"Your application for {job_posting.job_title} has been submitted",
+            email_data={
+                "candidate_name": candidate.name,
+                "job_title": job_posting.job_title,
+                "company_name": company_obj.company_name if (company_obj := session.get(Company, job_posting.company_id)) else "the company",
+                "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
+            },
+            notification_type="general",
+            commit=False,
+            validate_taxonomy=True
+        )
+        logger.info(f"[APPLICATION] Sent confirmation notification to candidate {candidate.id}")
+    except Exception as e:
+        logger.error(f"[APPLICATION] Failed to send candidate notification: {e}")
+    
+    # 2. Notify recruiter of the new application
     company_obj = session.get(Company, job_posting.company_id)
     if company_obj:
         recruiter_user = session.exec(
             select(User).where(User.id == company_obj.user_id)
         ).first()
         if recruiter_user:
-            push_notification(
-                session, recruiter_user.id,
-                title="📎 New Application Received!",
-                message=f"A candidate applied for {job_posting.job_title}",
-                event_type="application",
-                route="/recruiter-dashboard",
-                route_context={"tab": "applications", "applicationId": application.id, "jobPostingId": job_posting_id},
-            )
+            try:
+                NotificationService.send_notification(
+                    session=session,
+                    user_id=recruiter_user.id,
+                    event_type="application_received",
+                    title="📎 New Application Received!",
+                    message=f"{candidate.name} applied for {job_posting.job_title}",
+                    email_data={
+                        "recruiter_name": company_obj.company_name,
+                        "candidate_name": candidate.name,
+                        "job_title": job_posting.job_title,
+                        "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/recruiter-dashboard?tab=applications&applicationId={application.id}"
+                    },
+                    notification_type="general",
+                    commit=False,
+                    validate_taxonomy=True
+                )
+                logger.info(f"[APPLICATION] Sent notification to recruiter {recruiter_user.id}")
+            except Exception as e:
+                logger.error(f"[APPLICATION] Failed to send recruiter notification: {e}")
+    
+    # Final commit for notifications
+    session.commit()
     
     return {
         "message": "Application submitted successfully",

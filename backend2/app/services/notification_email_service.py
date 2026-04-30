@@ -130,6 +130,66 @@ class NotificationEmailTemplates:
         return subject, html_body
     
     @classmethod
+    def application_submitted_email(cls, candidate_name: str, job_title: str, company_name: str, action_url: str = "") -> tuple[str, str]:
+        """Email confirmation when candidate submits an application"""
+        subject = f"Application Submitted: {job_title} at {company_name}"
+        
+        action_button = f"""
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #6d28d9, #8b5cf6); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);">
+                View My Applications
+            </a>
+        </div>
+        """ if action_url else ""
+        
+        body_content = f"""
+        <p style="color: #1e293b; font-size: 16px; margin: 0 0 24px;">
+            Hi <strong style="color: #6d28d9;">{candidate_name}</strong>,
+        </p>
+        
+        <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 12px; padding: 28px; margin: 0 0 28px; border-left: 4px solid #10b981;">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <span style="font-size: 48px;">✅</span>
+            </div>
+            <h2 style="color: #1e293b; font-size: 19px; font-weight: 700; margin: 0 0 12px; text-align: center;">
+                Application Successfully Submitted!
+            </h2>
+            <p style="color: #334155; font-size: 15px; margin: 0; text-align: center; line-height: 1.7;">
+                Your application for <strong>{job_title}</strong> at <strong>{company_name}</strong> has been received.
+            </p>
+        </div>
+        
+        <div style="background: #f8fafc; border-radius: 8px; padding: 24px; margin: 0 0 24px;">
+            <h3 style="color: #1e293b; font-size: 15px; font-weight: 700; margin: 0 0 12px;">
+                What happens next?
+            </h3>
+            <p style="color: #475569; font-size: 14px; line-height: 1.7; margin: 0;">
+                • The hiring team at {company_name} will review your application<br/>
+                • You'll receive an email notification when your application status changes<br/>
+                • You can track your application status anytime in your dashboard
+            </p>
+        </div>
+        
+        {action_button}
+        
+        <p style="color: #334155; font-size: 15px; line-height: 1.7; margin: 24px 0 0;">
+            Good luck with your application!<br/>
+            <strong style="color: #6d28d9;">The TalentGraph Team</strong>
+        </p>
+        """
+        
+        html_body = cls._get_base_template(
+            header_gradient="linear-gradient(135deg, #10b981, #34d399)",
+            header_emoji="📝",
+            header_title="Application Submitted",
+            header_subtitle=f"Your application for {job_title}",
+            body_content=body_content,
+            footer_note=f"You applied for {job_title} at {company_name}."
+        )
+        
+        return subject, html_body
+    
+    @classmethod
     def match_found_email(cls, candidate_name: str, job_title: str, company_name: str, match_score: int, action_url: str = "") -> tuple[str, str]:
         """Email for new match notifications"""
         subject = f"New Match: {job_title} at {company_name}"

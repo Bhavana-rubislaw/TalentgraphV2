@@ -98,6 +98,38 @@
   flex-shrink: 0;
 }
 
+/* Icon badge for header */
+.cp-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--cp-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cp-icon-badge svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Card icon in card header */
+.cp-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-accent-lighter);
+  color: var(--cp-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cp-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* ── Buttons ── */
 .cp-btn {
   display: inline-flex;
@@ -722,6 +754,204 @@
   width: 18px;
   height: 18px;
   color: var(--cp-accent);
+}
+
+/* Alias for section title */
+.cp-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cp-text-primary);
+  margin: 0 0 16px;
+  line-height: 1.3;
+  letter-spacing: -0.2px;
+}
+
+/* Section subtitle/description */
+.cp-section-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--cp-text-secondary);
+  margin: -8px 0 16px;
+  line-height: 1.5;
+}
+
+/* Form grid layouts */
+.cp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Form container */
+.cp-form-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label with icon */
+.cp-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cp-text-secondary);
+  letter-spacing: 0.1px;
+}
+.cp-label-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--cp-text-tertiary);
+  flex-shrink: 0;
+}
+.cp-label-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Direct input/select/textarea styles */
+.cp-input,
+.cp-select,
+.cp-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--cp-font);
+  border: 1px solid var(--cp-border);
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-surface);
+  color: var(--cp-text-primary);
+  transition: all var(--cp-transition);
+}
+.cp-input:hover,
+.cp-select:hover,
+.cp-textarea:hover {
+  border-color: var(--cp-border-hover);
+}
+.cp-input:focus,
+.cp-select:focus,
+.cp-textarea:focus {
+  outline: none;
+  border-color: var(--cp-accent);
+  box-shadow: var(--cp-shadow-focus);
+}
+.cp-input::placeholder,
+.cp-textarea::placeholder {
+  color: var(--cp-text-tertiary);
+}
+.cp-textarea {
+  min-height: 100px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.cp-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238792a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+/* Chip container for multi-select */
+.cp-chip-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Chip button (used for multi-select like hiring focus) */
+.cp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--cp-font);
+  border-radius: 20px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  color: var(--cp-text-secondary);
+  cursor: pointer;
+  transition: all var(--cp-transition);
+}
+.cp-chip:hover {
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+  background: var(--cp-accent-lighter);
+}
+.cp-chip-selected {
+  background: var(--cp-accent-light);
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+  font-weight: 600;
+}
+.cp-chip-check {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  color: var(--cp-accent);
+}
+.cp-chip-check svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Full width form group */
+.cp-form-group-full {
+  grid-column: 1 / -1;
+}
+
+/* Alert messages */
+.cp-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--cp-radius-sm);
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.cp-alert-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.cp-alert-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.cp-alert-error {
+  background: var(--cp-danger-light);
+  color: var(--cp-danger);
+  border: 1px solid var(--cp-danger);
+}
+.cp-alert-error .cp-alert-icon {
+  color: var(--cp-danger);
+}
+.cp-alert-success {
+  background: var(--cp-success-light);
+  color: #0a7c3e;
+  border: 1px solid var(--cp-success);
+}
+.cp-alert-success .cp-alert-icon {
+  color: var(--cp-success);
+}
+
+/* Form actions (button container) */
+.cp-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 28px;
+  border-top: 1px solid var(--cp-border);
+  background: #fafbfc;
 }
 
 .cp-form-grid-2 {
@@ -2129,5 +2359,230 @@
 @media (max-width: 480px) {
   .cp-radio-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   ONBOARDING PAGES — Company/Recruiter Profile Setup
+   Professional, compact, centered layout
+   ============================================================ */
+
+.cp-onboarding-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+  font-family: var(--cp-font);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+}
+
+.cp-onboarding-container {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Header */
+.cp-onboarding-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.cp-onboarding-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--cp-accent) 0%, #5B45E0 100%);
+  color: white;
+  border-radius: var(--cp-radius-md);
+  box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
+}
+.cp-onboarding-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.cp-onboarding-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cp-text-primary);
+  margin: 0 0 8px;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.cp-onboarding-subtitle {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--cp-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Main Card */
+.cp-onboarding-card {
+  background: var(--cp-surface);
+  border-radius: var(--cp-radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.cp-onboarding-form {
+  padding: 32px;
+}
+
+/* Section */
+.cp-onboarding-section {
+  margin-bottom: 28px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #f0f1f4;
+}
+.cp-onboarding-section:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.cp-onboarding-section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.cp-onboarding-section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--cp-radius-sm);
+  background: var(--cp-accent-lighter);
+  color: var(--cp-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cp-onboarding-section-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.cp-onboarding-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cp-text-primary);
+  margin: 0 0 2px;
+  line-height: 1.3;
+}
+
+.cp-onboarding-section-desc {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--cp-text-tertiary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Grid Layout */
+.cp-onboarding-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Action Buttons */
+.cp-onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f1f4;
+}
+
+/* Footer Note */
+.cp-onboarding-footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--cp-text-tertiary);
+  margin: 20px 0 0;
+}
+
+/* Loading Spinner */
+.cp-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: cpSpin 0.6s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes cpSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Compact form adjustments for onboarding */
+.cp-onboarding-form .cp-form-group {
+  margin-bottom: 0;
+}
+
+.cp-onboarding-form .cp-label {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cp-text-secondary);
+  display: block;
+}
+
+.cp-onboarding-form .cp-textarea {
+  min-height: 80px;
+}
+
+.cp-onboarding-form .cp-alert {
+  margin: 24px 0 0;
+}
+
+.cp-onboarding-form .cp-chip-container {
+  margin-top: 0;
+}
+
+/* Improve chip styling for onboarding */
+.cp-onboarding-section .cp-chip {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+/* Responsive: Single column on mobile */
+@media (max-width: 640px) {
+  .cp-onboarding-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .cp-onboarding-form {
+    padding: 24px;
+  }
+  
+  .cp-onboarding-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+  }
+  
+  .cp-onboarding-title {
+    font-size: 24px;
+  }
+  
+  .cp-onboarding-actions {
+    flex-direction: column;
+  }
+  
+  .cp-onboarding-actions .cp-btn {
+    width: 100%;
   }
 }

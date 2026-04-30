@@ -169,8 +169,8 @@ class NotificationService:
                         logger.warning(f"[NOTIFICATION] User {user_id} not found for email")
                         return in_app_notification
                     
-                    # Generate email subject
-                    subject, _ = NotificationService._generate_email_template(
+                    # Generate full email content (subject + HTML body)
+                    subject, html_body = NotificationService._generate_email_template(
                         event_type, email_data
                     )
                     
@@ -181,6 +181,7 @@ class NotificationService:
                         event_type=event_type,
                         recipient_email=user.email,
                         subject=subject,
+                        html_body=html_body,
                         notification_id=in_app_notification.id if in_app_notification else None,
                         delay_seconds=0  # Send immediately
                     )
@@ -217,6 +218,13 @@ class NotificationService:
                 company_name=data.get("company_name", ""),
                 status=data.get("status", ""),
                 message=data.get("message", ""),
+                action_url=data.get("action_url", "")
+            )
+        elif event_type == "application_submitted":
+            return templates.application_submitted_email(
+                candidate_name=data.get("candidate_name", ""),
+                job_title=data.get("job_title", ""),
+                company_name=data.get("company_name", ""),
                 action_url=data.get("action_url", "")
             )
         elif event_type == "match_found":
