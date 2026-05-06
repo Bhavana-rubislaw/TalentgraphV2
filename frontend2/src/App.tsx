@@ -111,6 +111,75 @@ const CandidateProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
   return <>{children}</>;
 };
 
+// ── Profile Setup Guard ──────────────────
+// Prevents completed users from accessing setup pages
+const ProfileSetupGuard: React.FC<{ children: React.ReactNode; userType: 'candidate' | 'company' }> = ({ children, userType }) => {
+  const { user, bootStatus } = useAuth();
+
+  if (bootStatus === 'loading') return null;
+
+  const isProfileComplete = user?.is_profile_complete ?? 
+    (localStorage.getItem('is_profile_complete') === 'true');
+
+  console.log('[ProfileSetupGuard]', {
+    userType,
+    isProfileComplete,
+    fromUser: user?.is_profile_complete,
+    fromLS: localStorage.getItem('is_profile_complete')
+  });
+
+  // If profile is already complete, redirect to dashboard
+  if (isProfileComplete) {
+    console.log('[ProfileSetupGuard] Profile complete - redirecting to dashboard');
+    if (userType === 'candidate') {
+      return <Navigate to="/candidate-dashboard" replace />;
+    } else {
+      return <Navigate to="/recruiter-dashboard" replace />;
+    }
+  }
+
+  return <>{children}</>;
+};
+
+// ── Dashboard Guard (Candidate only - allows skip) ──────────────────
+// Redirects incomplete profiles to setup page
+// Note: Candidates can skip and access dashboard, recruiters must complete
+const CandidateDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { bootStatus } = useAuth();
+
+  if (bootStatus === 'loading') return null;
+
+  // Candidates can skip profile setup and access dashboard
+  // So we don't enforce completion here, just render the dashboard
+  // The dashboard can show a banner to encourage profile completion
+  return <>{children}</>;
+};
+
+// ── Dashboard Guard (Recruiter - must complete) ──────────────────
+// Enforces profile completion before dashboard access
+const RecruiterDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, bootStatus } = useAuth();
+
+  if (bootStatus === 'loading') return null;
+
+  const isProfileComplete = user?.is_profile_complete ?? 
+    (localStorage.getItem('is_profile_complete') === 'true');
+
+  console.log('[RecruiterDashboardGuard]', {
+    isProfileComplete,
+    fromUser: user?.is_profile_complete,
+    fromLS: localStorage.getItem('is_profile_complete')
+  });
+
+  // Recruiters must complete profile before accessing dashboard
+  if (!isProfileComplete) {
+    console.log('[RecruiterDashboardGuard] Profile incomplete - redirecting to setup');
+    return <Navigate to="/company-profile-setup" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // ── Boot spinner while /auth/me is in flight ──────────────────────
 const BootGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { bootStatus } = useAuth();
@@ -154,7 +223,9 @@ const App: React.FC = () => {
               path="/company-profile-setup"
               element={
                 <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
-                  <CompanyProfileSetupPage />
+                  <ProfileSetupGuard userType="company">
+                    <CompanyProfileSetupPage />
+                  </ProfileSetupGuard>
                 </ProtectedRoute>
               }
             />
@@ -162,7 +233,9 @@ const App: React.FC = () => {
               path="/candidate-profile-setup"
               element={
                 <ProtectedRoute allowedRoles={CANDIDATE_ROLES}>
-                  <CandidateProfileSetupPage />
+                  <ProfileSetupGuard userType="candidate">
+                    <CandidateProfileSetupPage />
+                  </ProfileSetupGuard>
                 </ProtectedRoute>
               }
             />
@@ -172,9 +245,11 @@ const App: React.FC = () => {
               path="/recruiter-dashboard"
               element={
                 <RecruiterProtectedRoute>
-                  <ErrorBoundary>
-                    <RecruiterDashboard />
-                  </ErrorBoundary>
+                  <RecruiterDashboardGuard>
+                    <ErrorBoundary>
+                      <RecruiterDashboard />
+                    </ErrorBoundary>
+                  </RecruiterDashboardGuard>
                 </RecruiterProtectedRoute>
               }
             />
@@ -258,9 +333,11 @@ const App: React.FC = () => {
               path="/candidate-dashboard"
               element={
                 <CandidateProtectedRoute>
-                  <ErrorBoundary>
-                    <CandidateDashboard />
-                  </ErrorBoundary>
+                  <CandidateDashboardGuard>
+                    <ErrorBoundary>
+                      <CandidateDashboard />
+                    </ErrorBoundary>
+                  </CandidateDashboardGuard>
                 </CandidateProtectedRoute>
               }
             />

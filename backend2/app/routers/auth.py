@@ -14,6 +14,7 @@ from app.schemas import (
 )
 from app.security import hash_password, verify_password, create_access_token, get_current_user
 from app.core.logging_config import get_logger, log_change
+from app.services.profile_completion_service import get_profile_completion_status
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -110,6 +111,9 @@ def signup(user_data: UserCreate, session: Session = Depends(get_session)):
     }
     token = create_access_token(token_data)
     logger.info(f"[SIGNUP] Token generated for user: {new_user.email}")
+    
+    # Check profile completion
+    is_profile_complete = get_profile_completion_status(session, new_user)
 
     return {
         "ok": True,
@@ -119,7 +123,8 @@ def signup(user_data: UserCreate, session: Session = Depends(get_session)):
         "role": new_user.role,
         "user_type": user_data.user_type,
         "token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -154,6 +159,9 @@ def login(credentials: UserLogin, session: Session = Depends(get_session)):
     
     # Determine user_type from role
     user_type = "candidate" if user.role == UserRole.CANDIDATE else "company"
+    
+    # Check profile completion
+    is_profile_complete = get_profile_completion_status(session, user)
 
     return {
         "message": "Login successful",
@@ -163,7 +171,8 @@ def login(credentials: UserLogin, session: Session = Depends(get_session)):
         "user_id": user.id,
         "email": user.email,
         "role": user.role,
-        "user_type": user_type
+        "user_type": user_type,
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -205,6 +214,9 @@ def candidate_signup(user_data: CandidateSignUp, session: Session = Depends(get_
     }
     token = create_access_token(token_data)
     logger.info(f"[CANDIDATE_SIGNUP] Token generated for user: {new_user.email}")
+    
+    # Check profile completion (will be false for new signups)
+    is_profile_complete = get_profile_completion_status(session, new_user)
 
     return {
         "ok": True,
@@ -214,7 +226,8 @@ def candidate_signup(user_data: CandidateSignUp, session: Session = Depends(get_
         "role": new_user.role,
         "user_type": "candidate",
         "token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -256,6 +269,9 @@ def candidate_login(credentials: CandidateLogin, session: Session = Depends(get_
     }
     token = create_access_token(token_data)
     logger.info(f"[CANDIDATE_LOGIN] Successful login - Email: {user.email}, User ID: {user.id}")
+    
+    # Check profile completion
+    is_profile_complete = get_profile_completion_status(session, user)
 
     return {
         "message": "Candidate login successful",
@@ -265,7 +281,8 @@ def candidate_login(credentials: CandidateLogin, session: Session = Depends(get_
         "user_id": user.id,
         "email": user.email,
         "role": user.role,
-        "user_type": "candidate"
+        "user_type": "candidate",
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -334,6 +351,9 @@ def company_signup(user_data: CompanySignUp, session: Session = Depends(get_sess
     }
     token = create_access_token(token_data)
     logger.info(f"[COMPANY_SIGNUP] Token generated for user: {new_user.email}")
+    
+    # Check profile completion (will be false for new signups)
+    is_profile_complete = get_profile_completion_status(session, new_user)
 
     return {
         "ok": True,
@@ -343,7 +363,8 @@ def company_signup(user_data: CompanySignUp, session: Session = Depends(get_sess
         "role": new_user.role,
         "user_type": "company",
         "token": token,
-        "token_type": "bearer"
+        "token_type": "bearer",
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -389,6 +410,9 @@ def company_login(credentials: CompanyLogin, session: Session = Depends(get_sess
     }
     token = create_access_token(token_data)
     logger.info(f"[COMPANY_LOGIN] Successful login - Email: {user.email}, User ID: {user.id}, Role: {user.role}")
+    
+    # Check profile completion
+    is_profile_complete = get_profile_completion_status(session, user)
 
     return {
         "message": "Company login successful",
@@ -400,7 +424,8 @@ def company_login(credentials: CompanyLogin, session: Session = Depends(get_sess
         "full_name": user.full_name,
         "company_name": company_name,
         "role": user.role,
-        "user_type": "company"
+        "user_type": "company",
+        "is_profile_complete": is_profile_complete
     }
 
 
@@ -430,7 +455,11 @@ def get_current_user_info(current_user: dict = Depends(get_current_user), sessio
         "full_name": user.full_name,
     }
     
-    logger.info(f"[AUTH] /me returning - user_id: {user.id}, email: {user.email}, DB role: {user.role}, role type: {type(user.role)}")
+    # Check profile completion
+    is_profile_complete = get_profile_completion_status(session, user)
+    result["is_profile_complete"] = is_profile_complete
+    
+    logger.info(f"[AUTH] /me returning - user_id: {user.id}, email: {user.email}, DB role: {user.role}, role type: {type(user.role)}, profile_complete: {is_profile_complete}")
 
     # If company user, include company info
     if user.role != UserRole.CANDIDATE:

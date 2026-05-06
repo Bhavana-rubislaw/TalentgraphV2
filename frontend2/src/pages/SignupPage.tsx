@@ -82,6 +82,10 @@ const SignupPage: React.FC = () => {
       localStorage.setItem('role', response.data.role);
       if (response.data.full_name) localStorage.setItem('full_name', response.data.full_name);
       if (response.data.company_name) localStorage.setItem('company_name', response.data.company_name);
+      
+      // Store profile completion status
+      const isProfileComplete = response.data.is_profile_complete ?? false;
+      localStorage.setItem('is_profile_complete', String(isProfileComplete));
 
       // Immediately sync AuthContext so ProtectedRoute uses the fresh role
       setUser({
@@ -90,45 +94,24 @@ const SignupPage: React.FC = () => {
         role: (response.data.role || '').toLowerCase().trim(),
         full_name: response.data.full_name || '',
         company_name: response.data.company_name,
+        is_profile_complete: isProfileComplete,
       });
 
-      // Check profile status and redirect accordingly
+      // Redirect based on profile completion status
       if (formData.userType === 'candidate') {
-        console.log('[AUTH] Checking candidate profile status...');
-        try {
-          const profileStatus = await apiClient.getCandidateProfileStatus();
-          console.log('[AUTH] Candidate profile status:', profileStatus.data);
-          
-          if (profileStatus.data.profile_complete) {
-            console.log('[NAVIGATION] Profile complete - Redirecting to candidate dashboard');
-            navigate('/candidate-dashboard');
-          } else {
-            console.log('[NAVIGATION] Profile incomplete - Redirecting to candidate profile setup');
-            navigate('/candidate-profile-setup');
-          }
-        } catch (err) {
-          console.error('[AUTH] Error checking profile status:', err);
-          // If error checking status, redirect to setup to be safe
-          console.log('[NAVIGATION] Error checking status - Redirecting to candidate profile setup');
+        if (isProfileComplete) {
+          console.log('[NAVIGATION] Profile complete - Redirecting to candidate dashboard');
+          navigate('/candidate-dashboard');
+        } else {
+          console.log('[NAVIGATION] Profile incomplete - Redirecting to candidate profile setup');
           navigate('/candidate-profile-setup');
         }
       } else {
-        console.log('[AUTH] Checking company profile status...');
-        try {
-          const profileStatus = await apiClient.getCompanyProfileStatus();
-          console.log('[AUTH] Company profile status:', profileStatus.data);
-          
-          if (profileStatus.data.profile_complete) {
-            console.log('[NAVIGATION] Profile complete - Redirecting to recruiter dashboard');
-            navigate('/recruiter-dashboard');
-          } else {
-            console.log('[NAVIGATION] Profile incomplete - Redirecting to company profile setup');
-            navigate('/company-profile-setup');
-          }
-        } catch (err) {
-          console.error('[AUTH] Error checking profile status:', err);
-          // If error checking status, redirect to setup to be safe
-          console.log('[NAVIGATION] Error checking status - Redirecting to company profile setup');
+        if (isProfileComplete) {
+          console.log('[NAVIGATION] Profile complete - Redirecting to recruiter dashboard');
+          navigate('/recruiter-dashboard');
+        } else {
+          console.log('[NAVIGATION] Profile incomplete - Redirecting to company profile setup');
           navigate('/company-profile-setup');
         }
       }
@@ -189,6 +172,10 @@ const SignupPage: React.FC = () => {
       localStorage.setItem('role', response.data.role);
       if (response.data.full_name) localStorage.setItem('full_name', response.data.full_name);
       if (response.data.company_name) localStorage.setItem('company_name', response.data.company_name);
+      
+      // Store profile completion status (new signups are always incomplete)
+      const isProfileComplete = response.data.is_profile_complete ?? false;
+      localStorage.setItem('is_profile_complete', String(isProfileComplete));
 
       // Immediately sync AuthContext so ProtectedRoute uses the fresh role
       setUser({
@@ -197,9 +184,10 @@ const SignupPage: React.FC = () => {
         role: (response.data.role || '').toLowerCase().trim(),
         full_name: response.data.full_name || '',
         company_name: response.data.company_name,
+        is_profile_complete: isProfileComplete,
       });
 
-      // New users always go to profile setup
+      // New users always go to profile setup (is_profile_complete will be false)
       if (formData.userType === 'candidate') {
         console.log('[NAVIGATION] New candidate - Redirecting to profile setup');
         navigate('/candidate-profile-setup');

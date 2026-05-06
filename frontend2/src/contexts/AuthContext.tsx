@@ -9,6 +9,7 @@ export interface AuthUser {
   role: string;
   full_name: string;
   company_name?: string;
+  is_profile_complete?: boolean;
 }
 
 type BootStatus = 'loading' | 'done';
@@ -60,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: (data.role ?? '').toString().toLowerCase().trim(),
           full_name: data.full_name ?? '',
           company_name: data.company_name,
+          is_profile_complete: data.is_profile_complete ?? false,
         };
         
         console.log('[AuthContext] Normalized authUser:', authUser);
@@ -71,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (authUser.full_name) localStorage.setItem('full_name', authUser.full_name);
         if (authUser.company_name) localStorage.setItem('company_name', authUser.company_name);
         if (authUser.email) localStorage.setItem('email', authUser.email);
+        localStorage.setItem('is_profile_complete', String(authUser.is_profile_complete));
         
         console.log('[AuthContext] localStorage after sync:', {
           user_id: localStorage.getItem('user_id'),
@@ -87,6 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.removeItem('email');
           localStorage.removeItem('full_name');
           localStorage.removeItem('company_name');
+          localStorage.removeItem('is_profile_complete');
           setUser(null);
         }
         // Network error (status undefined) → keep existing localStorage state;
@@ -104,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('email');
     localStorage.removeItem('full_name');
     localStorage.removeItem('company_name');
+    localStorage.removeItem('is_profile_complete');
     setUser(null);
   }, []);
 

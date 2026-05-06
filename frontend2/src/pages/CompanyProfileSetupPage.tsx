@@ -141,6 +141,7 @@ const CompanyProfileSetupPage: React.FC = () => {
       // Update localStorage
       localStorage.setItem('full_name', formData.full_name);
       localStorage.setItem('company_name', formData.company_name);
+      localStorage.setItem('is_profile_complete', 'true');
 
       // Redirect to Recruiter Dashboard after a short delay
       setTimeout(() => {

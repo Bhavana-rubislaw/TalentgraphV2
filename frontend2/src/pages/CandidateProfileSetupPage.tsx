@@ -138,7 +138,7 @@ const CandidateProfileSetupPage: React.FC = () => {
 
       // Update localStorage
       localStorage.setItem('full_name', formData.name);
-      localStorage.setItem('profile_complete', 'true');
+      localStorage.setItem('is_profile_complete', 'true');
 
       // Redirect to Candidate Dashboard after a short delay
       setTimeout(() => {
