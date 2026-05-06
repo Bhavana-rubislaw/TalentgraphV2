@@ -314,6 +314,8 @@ Expected: `{"status":"ok"}`
 cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
 npm run dev -- --port 3003
 ```
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+npm run dev -- --port 3002
 
 **Use**
 - Runs React frontend with hot reload.

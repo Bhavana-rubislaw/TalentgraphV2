@@ -181,6 +181,7 @@ class Candidate(SQLModel, table=True):
     github_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     profile_summary: Optional[str] = None
+    profile_complete: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     

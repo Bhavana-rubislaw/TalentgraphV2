@@ -81,7 +81,8 @@ class DatabaseLogHandler(logging.Handler):
             if len(self.batch) >= self.batch_size:
                 self.flush_batch()
                 
-        except Exception:
+        except Exception as e:
+            logger.error(f"DatabaseLogHandler emit failed: {e}", exc_info=True)
             self.handleError(record)
     
     def flush_batch(self):

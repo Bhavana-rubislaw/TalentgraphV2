@@ -76,8 +76,8 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
             skill_ratio = matched / len(required_skills) if required_skills else 0
             details["skills_match"] = int(25 * skill_ratio)
             score += details["skills_match"]
-    except:
-        pass
+    except Exception as e:
+        logger.debug(f"Skills match calculation failed: {e}")
     
     # Experience match (20%)
     try:
@@ -86,7 +86,8 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
         if job_profile.years_of_experience >= min_years:
             details["experience_match"] = 20
             score += 20
-    except:
+    except Exception as e:
+        logger.debug(f"Experience match calculation failed: {e}")
         details["experience_match"] = 10
         score += 10
     
@@ -97,8 +98,8 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
         if profile_min <= posting_max:
             details["salary_match"] = 10
             score += 10
-    except:
-        pass
+    except Exception as e:
+        logger.debug(f"Salary match calculation failed: {e}")
     
     # Location match (10%)
     location_prefs = session.exec(

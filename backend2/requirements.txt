@@ -17,3 +17,8 @@ requests==2.31.0
 sendgrid==6.11.0             # Email service
 apscheduler==3.10.4          # Background job scheduler
 python-dateutil==2.8.2       # Date/time parsing for interview scheduling
+
+# Security & File Validation
+python-magic==0.4.27         # File type detection via magic bytes
+argon2-cffi==23.1.0          # Secure password hashing
+slowapi==0.1.9               # Rate limiting middleware

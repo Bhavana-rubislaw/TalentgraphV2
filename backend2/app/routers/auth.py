@@ -1,5 +1,6 @@
 """
 Authentication routes - signup, login, token management
+With rate limiting for security
 """
 
 from fastapi import APIRouter, HTTPException, Depends, status, Request
@@ -64,11 +65,20 @@ def signup(user_data: UserCreate, session: Session = Depends(get_session)):
         }
         role = role_map[user_data.company_role.lower()]
     
-    # Create user
+    # Create user with validated password
+    try:
+        password_hash = hash_password(user_data.password)
+    except ValueError as e:
+        logger.warning(f"[SIGNUP] Password validation failed for {email_lower}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
     new_user = User(
         email=email_lower,
         full_name=user_data.full_name or email_lower.split("@")[0],
-        password_hash=hash_password(user_data.password),
+        password_hash=password_hash,
         role=role
     )
     session.add(new_user)

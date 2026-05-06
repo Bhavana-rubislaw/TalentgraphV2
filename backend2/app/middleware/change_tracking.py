@@ -143,7 +143,8 @@ class ChangeTrackingMiddleware(BaseHTTPMiddleware):
                 "auth_method": "jwt"
             }
             
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to extract auth info: {e}")
             return None
     
     def _sanitize_data(self, data: Any) -> Any:

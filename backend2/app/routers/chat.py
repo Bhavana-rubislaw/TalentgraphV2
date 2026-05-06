@@ -330,8 +330,8 @@ def create_conversation(
             route_context={"conversation_id": conv.id},
             notification_type="message",
         )
-    except Exception:
-        logger.warning("Failed to push chat_started notification", exc_info=True)
+    except Exception as e:
+        logger.warning(f"Failed to push chat_started notification: {e}", exc_info=True)
 
     _touch_last_seen(session, user.id)
     return _serialize_conversation(conv, session, user.id)
@@ -586,5 +586,5 @@ def _notify_other_participant(
                     route_context={"conversation_id": conv.id},
                     notification_type="message",
                 )
-    except Exception:
-        logger.warning("Failed to push new_message notification", exc_info=True)
+    except Exception as e:
+        logger.warning(f"Failed to push new_message notification: {e}", exc_info=True)

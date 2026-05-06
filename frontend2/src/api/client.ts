@@ -55,6 +55,9 @@ export const apiClient = {
   getCandidateProfile: () =>
     api.get('/candidates/profile'),
   
+  getCandidateProfileStatus: () =>
+    api.get('/candidates/profile-status'),
+  
   updateCandidateProfile: (data: any) =>
     api.put('/candidates/profile', data),
   

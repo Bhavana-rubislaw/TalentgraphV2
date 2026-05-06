@@ -92,14 +92,45 @@ const SignupPage: React.FC = () => {
         company_name: response.data.company_name,
       });
 
-      // Redirect based on user type
+      // Check profile status and redirect accordingly
       if (formData.userType === 'candidate') {
-        console.log('[NAVIGATION] Redirecting to candidate profile setup');
-        navigate('/candidate-profile-setup');
+        console.log('[AUTH] Checking candidate profile status...');
+        try {
+          const profileStatus = await apiClient.getCandidateProfileStatus();
+          console.log('[AUTH] Candidate profile status:', profileStatus.data);
+          
+          if (profileStatus.data.profile_complete) {
+            console.log('[NAVIGATION] Profile complete - Redirecting to candidate dashboard');
+            navigate('/candidate-dashboard');
+          } else {
+            console.log('[NAVIGATION] Profile incomplete - Redirecting to candidate profile setup');
+            navigate('/candidate-profile-setup');
+          }
+        } catch (err) {
+          console.error('[AUTH] Error checking profile status:', err);
+          // If error checking status, redirect to setup to be safe
+          console.log('[NAVIGATION] Error checking status - Redirecting to candidate profile setup');
+          navigate('/candidate-profile-setup');
+        }
       } else {
-        // For recruiters, check if profile is complete via backend, or just go to setup
-        console.log('[NAVIGATION] Redirecting to company profile setup');
-        navigate('/company-profile-setup');
+        console.log('[AUTH] Checking company profile status...');
+        try {
+          const profileStatus = await apiClient.getCompanyProfileStatus();
+          console.log('[AUTH] Company profile status:', profileStatus.data);
+          
+          if (profileStatus.data.profile_complete) {
+            console.log('[NAVIGATION] Profile complete - Redirecting to recruiter dashboard');
+            navigate('/recruiter-dashboard');
+          } else {
+            console.log('[NAVIGATION] Profile incomplete - Redirecting to company profile setup');
+            navigate('/company-profile-setup');
+          }
+        } catch (err) {
+          console.error('[AUTH] Error checking profile status:', err);
+          // If error checking status, redirect to setup to be safe
+          console.log('[NAVIGATION] Error checking status - Redirecting to company profile setup');
+          navigate('/company-profile-setup');
+        }
       }
     } catch (err: any) {
       console.error('[AUTH ERROR] Sign in failed:', err);
@@ -168,13 +199,12 @@ const SignupPage: React.FC = () => {
         company_name: response.data.company_name,
       });
 
-      // Redirect based on user type
+      // New users always go to profile setup
       if (formData.userType === 'candidate') {
-        console.log('[NAVIGATION] Redirecting to candidate dashboard');
-        navigate('/candidate-dashboard');
+        console.log('[NAVIGATION] New candidate - Redirecting to profile setup');
+        navigate('/candidate-profile-setup');
       } else {
-        // For recruiters, redirect to profile setup after signup
-        console.log('[NAVIGATION] Redirecting to company profile setup');
+        console.log('[NAVIGATION] New company user - Redirecting to profile setup');
         navigate('/company-profile-setup');
       }
     } catch (err: any) {

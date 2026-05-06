@@ -628,7 +628,7 @@ async def schedule_meeting(...):
         company_name=company.name,
         job_title=job.job_title,
         meeting_id=meeting.id,
-        meeting_time=meeting.scheduled_at,
+        meeting_time=meeting.scheduled_start,
         meeting_link=meeting.meeting_link,
         action_token=token
     )

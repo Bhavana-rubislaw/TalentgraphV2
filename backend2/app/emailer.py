@@ -27,11 +27,11 @@ MAIL_PASSWORD = os.getenv("SMTP_PASSWORD", os.getenv("MAIL_PASSWORD", ""))
 MAIL_FROM = os.getenv("SMTP_FROM_EMAIL", os.getenv("MAIL_FROM", "talentgraph.interviews@gmail.com"))
 MAIL_FROM_NAME = os.getenv("SMTP_FROM_NAME", os.getenv("MAIL_FROM_NAME", "TalentGraph Interviews"))
 
-# Debug logging for email configuration
+# Debug logging for email configuration (SECURE - no password exposure)
 logger.info(f"[EMAIL CONFIG] MAIL_SERVER: {MAIL_SERVER}")
 logger.info(f"[EMAIL CONFIG] MAIL_PORT: {MAIL_PORT}")
 logger.info(f"[EMAIL CONFIG] MAIL_USERNAME: {MAIL_USERNAME}")
-logger.info(f"[EMAIL CONFIG] MAIL_PASSWORD: {'*' * len(MAIL_PASSWORD) if MAIL_PASSWORD else 'NOT SET'}")
+logger.info(f"[EMAIL CONFIG] MAIL_PASSWORD: {'*' * 8 if MAIL_PASSWORD else 'NOT SET'}")
 logger.info(f"[EMAIL CONFIG] MAIL_FROM: {MAIL_FROM}")
 logger.info(f"[EMAIL CONFIG] MAIL_FROM_NAME: {MAIL_FROM_NAME}")
 

@@ -273,8 +273,8 @@ class LifecycleService:
         meetings = session.exec(
             select(Meeting).where(
                 Meeting.status == MeetingStatus.SCHEDULED,
-                Meeting.scheduled_at >= start_window,
-                Meeting.scheduled_at <= end_window
+                Meeting.scheduled_start >= start_window,
+                Meeting.scheduled_start <= end_window
             )
         ).all()
         
@@ -299,7 +299,7 @@ class LifecycleService:
                     to_email=candidate.email,
                     candidate_name=f"{candidate.first_name} {candidate.last_name}",
                     job_title=job.job_title,
-                    meeting_time=meeting.scheduled_at,
+                    meeting_time=meeting.scheduled_start,
                     meeting_location=meeting.location or "Virtual",
                     meeting_link=meeting.meeting_link
                 )

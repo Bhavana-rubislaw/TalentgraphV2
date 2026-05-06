@@ -371,6 +371,17 @@ const CompanyProfileSetupPage: React.FC = () => {
                 Back to Login
               </button>
               <button
+                type="button"
+                className="cp-btn cp-btn-secondary"
+                onClick={() => {
+                  console.log('[COMPANY SETUP] Skipping profile setup');
+                  navigate('/recruiter-dashboard');
+                }}
+                disabled={loading}
+              >
+                Skip for Now
+              </button>
+              <button
                 type="submit"
                 className="cp-btn cp-btn-primary cp-btn-lg"
                 disabled={loading}

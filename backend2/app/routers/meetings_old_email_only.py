@@ -28,7 +28,7 @@ MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
 def send_email(to_email: str, subject: str, html_body: str) -> bool:
     """Send HTML email using smtplib (Python built-in, no external dependencies)"""
     if not MAIL_USERNAME or not MAIL_PASSWORD:
-        print(f"[MEETINGS] ⚠️ Email credentials not configured - skipping email to {to_email}")
+        logger.warning(f"[MEETINGS] Email credentials not configured - skipping email to {to_email}")
         return False
     
     try:
@@ -45,10 +45,10 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
             server.login(MAIL_USERNAME, MAIL_PASSWORD)
             server.sendmail(MAIL_FROM, to_email, msg.as_string())
         
-        print(f"[MEETINGS] ✅ Email sent to {to_email}")
+        logger.info(f"[MEETINGS] Email sent to {to_email}")
         return True
     except Exception as e:
-        print(f"[MEETINGS] ❌ Failed to send email to {to_email}: {str(e)}")
+        logger.error(f"[MEETINGS] Failed to send email to {to_email}: {str(e)}")
         return False
 
 

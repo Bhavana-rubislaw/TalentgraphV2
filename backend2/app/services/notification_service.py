@@ -133,8 +133,9 @@ class NotificationService:
                     try:
                         payload_obj = NotificationPayload(**payload)
                         payload_str = payload_obj.to_json_string()
-                    except Exception:
+                    except Exception as e:
                         # Fallback: store as-is
+                        logger.debug(f"Failed to convert payload dict to NotificationPayload: {e}")
                         import json
                         payload_str = json.dumps(payload)
                 else:

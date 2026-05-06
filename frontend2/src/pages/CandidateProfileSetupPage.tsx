@@ -380,6 +380,17 @@ const CandidateProfileSetupPage: React.FC = () => {
                 Back to Login
               </button>
               <button
+                type="button"
+                className="cp-btn cp-btn-secondary"
+                onClick={() => {
+                  console.log('[CANDIDATE SETUP] Skipping profile setup');
+                  navigate('/candidate-dashboard');
+                }}
+                disabled={loading}
+              >
+                Skip for Now
+              </button>
+              <button
                 type="submit"
                 className="cp-btn cp-btn-primary cp-btn-lg"
                 disabled={loading}

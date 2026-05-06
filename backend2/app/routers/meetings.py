@@ -207,7 +207,7 @@ async def create_meeting(
                     video_provider = video_account.provider
             except VideoProviderError as e:
                 # Log error but don't fail meeting creation
-                print(f"Failed to generate video link: {str(e)}")
+                logger.warning(f"Failed to generate video link: {str(e)}")
     
     # Create meeting
     meeting = Meeting(
@@ -273,7 +273,7 @@ async def create_meeting(
             session.add(meeting)
         except CalendarProviderError as e:
             # Log error but don't fail meeting creation
-            print(f"Failed to sync to {cal_account.provider.value} calendar: {str(e)}")
+            logger.warning(f"Failed to sync to {cal_account.provider.value} calendar: {str(e)}")
     
     session.commit()
     session.refresh(meeting)
@@ -408,24 +408,13 @@ async def list_meetings(
     # Execute query and get Meeting objects
     meetings = session.exec(query).all()
     
-    # Debug: Check serialization
-    print(f"\n=== GET /meetings/list DEBUG ===")
-    print(f"Found {len(meetings)} meetings for user {user_id}")
-    if meetings:
+    # Debug: Check serialization (using logger for security)
+    logger.debug(f"Found {len(meetings)} meetings for user {user_id}")
+    if meetings and logger.level <= logging.DEBUG:
         first_meeting = meetings[0]
-        print(f"First meeting: {first_meeting.id} has {len(first_meeting.participants)} participants")
-        for p in first_meeting.participants:
-            print(f"  Participant {p.id}: user_id={p.user_id}, user={p.user}, full_name={p.user.full_name if p.user else 'NO USER'}")
+        logger.debug(f"First meeting: {first_meeting.id} has {len(first_meeting.participants)} participants")
     
     result = [MeetingRead.from_orm_with_participants(m) for m in meetings]
-    
-    # Debug serialized result
-    if result:
-        first_result_dict = result[0].model_dump()
-        print(f"\nSerialized first meeting participants:")
-        for p in first_result_dict.get('participants', []):
-            print(f"  Participant {p.get('id')}: name={p.get('participant_name')}, email={p.get('participant_email')}")
-    print("=" * 50 + "\n")
     
     return result
 

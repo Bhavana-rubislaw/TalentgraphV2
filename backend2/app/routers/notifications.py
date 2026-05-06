@@ -58,8 +58,8 @@ def _serialize(n: Notification) -> Dict[str, Any]:
     if n.payload:
         try:
             payload = json.loads(n.payload)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to parse notification payload: {e}")
     return {
         "id": n.id,
         "title": n.title,

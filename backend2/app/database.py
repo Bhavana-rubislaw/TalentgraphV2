@@ -4,9 +4,12 @@ PostgreSQL with SQLModel ORM
 """
 
 import os
+import logging
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel, Session
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -37,7 +40,7 @@ def init_db():
     )
     
     SQLModel.metadata.create_all(engine)
-    print("[OK] Database initialized successfully!")
+    logger.info("[OK] Database initialized successfully!")
 
 
 def get_session():

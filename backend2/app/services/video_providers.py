@@ -142,7 +142,8 @@ class ZoomProvider(VideoProviderBase):
                 try:
                     error_detail = e.response.json()
                     error_msg = f"{error_msg} - {error_detail}"
-                except:
+                except Exception as parse_error:
+                    logger.debug(f"Failed to parse Zoom error response as JSON: {parse_error}")
                     error_msg = f"{error_msg} - {e.response.text}"
             raise VideoProviderError(f"Zoom OAuth error: {error_msg}")
     
@@ -254,7 +255,8 @@ class ZoomProvider(VideoProviderBase):
                     error_detail = e.response.json()
                     logger.error(f"[ZOOM] API error response: {error_detail}")
                     error_msg = f"{error_msg} - {error_detail}"
-                except:
+                except Exception as parse_error:
+                    logger.debug(f"Failed to parse Zoom error response as JSON: {parse_error}")
                     logger.error(f"[ZOOM] API error response (text): {e.response.text}")
                     error_msg = f"{error_msg} - {e.response.text}"
             raise VideoProviderError(error_msg)
@@ -473,7 +475,8 @@ class GoogleMeetProvider(VideoProviderBase):
                 try:
                     error_detail = e.response.json()
                     error_msg = f"{error_msg} - {error_detail}"
-                except:
+                except Exception as parse_error:
+                    logger.debug(f"Failed to parse Google error response as JSON: {parse_error}")
                     error_msg = f"{error_msg} - {e.response.text}"
             raise VideoProviderError(f"Google Meet error: {error_msg}")
         except requests.exceptions.RequestException as e:

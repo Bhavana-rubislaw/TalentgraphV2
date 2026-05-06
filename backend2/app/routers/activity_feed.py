@@ -70,7 +70,8 @@ def _build_summary(event: ActivityEvent) -> str:
     try:
         after = json.loads(event.after_value) if event.after_value else {}
         before = json.loads(event.before_value) if event.before_value else {}
-    except Exception:
+    except Exception as e:
+        logger.debug(f"Failed to parse activity event values: {e}")
         after = {}
         before = {}
 
@@ -99,7 +100,8 @@ def _serialize_event(event: ActivityEvent) -> Dict[str, Any]:
             return None
         try:
             return json.loads(s)
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Failed to parse JSON value: {e}")
             return None
 
     return {

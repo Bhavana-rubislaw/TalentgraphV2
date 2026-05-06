@@ -177,8 +177,8 @@ def send_notification_email_task(delivery_id: int):
                         delivery.last_error = f"Worker error: {str(e)[:500]}"
                         error_session.add(delivery)
                         error_session.commit()
-            except:
-                pass
+            except Exception as db_error:
+                logger.error(f"Failed to update delivery status in error handler: {db_error}", exc_info=True)
 
 
 def _generate_email_content(event_type: str, recipient_email: str, user: User) -> tuple[str, str]:

@@ -16,7 +16,6 @@ import { MeetingsPage } from './pages/MeetingsPage';
 import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { apiClient } from './api/client';
 import './index.css';
 
 // ── Role constants ────────────────────────────────────────────────
@@ -66,35 +65,13 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
   return <>{children}</>;
 };
 
-// ── Recruiter Protected Route with Profile Check ──────────────────
-// Checks if recruiter has completed profile setup
+// ── Recruiter Protected Route ──────────────────
+// Only checks authentication, allows dashboard access even without complete profile
 const RecruiterProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, bootStatus } = useAuth();
-  const [profileStatus, setProfileStatus] = React.useState<{ loading: boolean; complete: boolean }>({
-    loading: true,
-    complete: false,
-  });
-
-  React.useEffect(() => {
-    const checkProfileStatus = async () => {
-      try {
-        const response = await apiClient.getCompanyProfileStatus();
-        console.log('[RecruiterProtectedRoute] Profile status:', response.data);
-        setProfileStatus({ loading: false, complete: response.data.profile_complete });
-      } catch (err) {
-        console.error('[RecruiterProtectedRoute] Failed to check profile status:', err);
-        // If error, assume incomplete and redirect to setup
-        setProfileStatus({ loading: false, complete: false });
-      }
-    };
-
-    if (bootStatus === 'done') {
-      checkProfileStatus();
-    }
-  }, [bootStatus]);
 
   // Still validating token? wait
-  if (bootStatus === 'loading' || profileStatus.loading) return null;
+  if (bootStatus === 'loading') return null;
 
   const token = localStorage.getItem('token');
   const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
@@ -108,60 +85,16 @@ const RecruiterProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
     return <Navigate to="/" replace />;
   }
 
-  // Check if profile is complete
-  if (!profileStatus.complete) {
-    console.log('[RecruiterProtectedRoute] Profile incomplete, redirecting to setup');
-    return <Navigate to="/company-profile-setup" replace />;
-  }
-
   return <>{children}</>;
 };
 
-// ── Candidate Protected Route with Profile Check ──────────────────
-// Checks if candidate has completed profile setup
+// ── Candidate Protected Route ──────────────────
+// Only checks authentication, allows dashboard access even without complete profile
 const CandidateProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, bootStatus } = useAuth();
-  const [profileStatus, setProfileStatus] = React.useState<{ loading: boolean; complete: boolean }>({ 
-    loading: true, 
-    complete: false 
-  });
-
-  React.useEffect(() => {
-    const checkProfileStatus = async () => {
-      try {
-        const response = await apiClient.getCandidateProfile();
-        console.log('[CandidateProtectedRoute] Profile exists:', response.data);
-        // If profile exists and has basic required fields, consider it complete
-        const isComplete = !!(response.data.name && response.data.email && response.data.phone);
-        setProfileStatus({ loading: false, complete: isComplete });
-        if (isComplete) {
-          localStorage.setItem('profile_complete', 'true');
-        }
-      } catch (err: any) {
-        console.error('[CandidateProtectedRoute] Profile check:', err);
-        // If 404, profile doesn't exist, redirect to setup
-        if (err.response?.status === 404) {
-          setProfileStatus({ loading: false, complete: false });
-        } else {
-          // For other errors, assume incomplete
-          setProfileStatus({ loading: false, complete: false });
-        }
-      }
-    };
-
-    if (bootStatus === 'done') {
-      // Check localStorage first for quick decision
-      const profileComplete = localStorage.getItem('profile_complete') === 'true';
-      if (profileComplete) {
-        setProfileStatus({ loading: false, complete: true });
-      } else {
-        checkProfileStatus();
-      }
-    }
-  }, [bootStatus]);
 
   // Still validating token? wait
-  if (bootStatus === 'loading' || profileStatus.loading) return null;
+  if (bootStatus === 'loading') return null;
 
   const token = localStorage.getItem('token');
   const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
@@ -173,12 +106,6 @@ const CandidateProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
   if (!CANDIDATE_ROLES.includes(userRole)) {
     console.log('[CandidateProtectedRoute] Not a candidate, redirecting');
     return <Navigate to="/" replace />;
-  }
-
-  // Check if profile is complete
-  if (!profileStatus.complete) {
-    console.log('[CandidateProtectedRoute] Profile incomplete, redirecting to setup');
-    return <Navigate to="/candidate-profile-setup" replace />;
   }
 
   return <>{children}</>;

@@ -196,8 +196,8 @@ async def handle_inbound_email(
             )
             session.add(event)
             session.commit()
-        except:
-            pass
+        except Exception as db_error:
+            logger.error(f"Failed to log webhook event to database: {db_error}", exc_info=True)
         
         raise HTTPException(status_code=500, detail="Processing failed")
 
