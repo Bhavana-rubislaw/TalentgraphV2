@@ -90,6 +90,38 @@ const EMPTY: FormState = {
   skills: [], location_preferences: [],
 };
 
+/* ================================================================
+   ACCORDION SECTION WRAPPER (moved outside to prevent re-creation)
+   ================================================================ */
+interface SectionProps {
+  id: string;
+  icon: JSX.Element;
+  title: string;
+  children: React.ReactNode;
+  openSections: Set<string>;
+  toggleSection: (id: string) => void;
+}
+
+const Section: React.FC<SectionProps> = ({ id, icon, title, children, openSections, toggleSection }) => {
+  // Defensive check for HMR edge cases
+  if (!openSections || !toggleSection) {
+    console.error('Section component received undefined props:', { openSections, toggleSection, id });
+    return null;
+  }
+  
+  const isOpen = openSections.has(id);
+  return (
+    <div className={`cp-accordion-section ${isOpen ? 'open' : ''}`}>
+      <button type="button" className="cp-accordion-header" onClick={() => toggleSection(id)}>
+        <span className="cp-accordion-icon">{icon}</span>
+        <span className="cp-accordion-title">{title}</span>
+        <span className="cp-accordion-chevron">{isOpen ? I.chevUp : I.chevDown}</span>
+      </button>
+      {isOpen && <div className="cp-accordion-body">{children}</div>}
+    </div>
+  );
+};
+
 /* ================================================================ */
 const JobPreferencesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -128,6 +160,11 @@ const JobPreferencesPage: React.FC = () => {
     setToast({ message, type });
     toastRef.current = setTimeout(() => setToast(null), 3500);
   };
+
+  // Resume parsing state
+  const [resumeParsing, setResumeParsing] = useState(false);
+  const [parsedFields, setParsedFields] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ── fetch ── */
   useEffect(() => {
@@ -280,7 +317,136 @@ const JobPreferencesPage: React.FC = () => {
     setDeleteTarget(null);
   };
 
-  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setShowForm(true); };
+  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setShowForm(true); setParsedFields(new Set()); };
+
+  /* ── Resume Parsing ── */
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = [
+      'application/pdf', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain'
+    ];
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExt)) {
+      showToast('Please upload a PDF, DOCX, DOC, or TXT file', 'error');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      showToast('File size must be under 10MB', 'error');
+      return;
+    }
+
+    setResumeParsing(true);
+    console.log(`[Resume Upload] Starting upload for file: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log(`[Resume Upload] Sending request to backend...`);
+      const response = await apiClient.parseResumeForJobPreferences(formData);
+      console.log(`[Resume Upload] Backend response:`, response.data);
+      
+      const parsed = response.data.data;
+
+      // Track which fields were parsed
+      const newParsedFields = new Set<string>();
+
+      // Merge parsed data into form state
+      setForm(prev => {
+        const updated = { ...prev };
+
+        // Skills (if found with good confidence)
+        if (parsed.skills && parsed.skills.length > 0 && parsed.skills_confidence >= 0.3) {  // Lowered from 0.5
+          const newSkills: SelectedSkill[] = parsed.skills.map((skillName: string) => ({
+            skill_name: skillName,
+            skill_category: 'technical', // Assume technical from resume
+            proficiency_level: 'intermediate' // Default proficiency
+          }));
+          updated.skills = [...newSkills, ...prev.skills.filter((s: SelectedSkill) => s.skill_category !== 'technical')];
+          newParsedFields.add('skills');
+        }
+
+        // Years of experience
+        if (parsed.years_of_experience && parsed.years_of_experience_confidence >= 0.3) {  // Lowered from 0.5
+          updated.years_of_experience = parsed.years_of_experience;
+          updated.relevant_experience = parsed.years_of_experience;
+          newParsedFields.add('years_of_experience');
+          newParsedFields.add('relevant_experience');
+        }
+
+        // Seniority level
+        if (parsed.seniority_level && parsed.seniority_level_confidence >= 0.3) {  // Lowered from 0.5
+          updated.seniority_level = parsed.seniority_level;  // Backend now returns correct lowercase value
+          newParsedFields.add('seniority_level');
+        }
+
+        // Preferred job titles
+        if (parsed.preferred_job_titles && parsed.preferred_job_titles.length > 0 && parsed.preferred_job_titles_confidence >= 0.3) {  // Lowered from 0.5
+          updated.preferred_job_titles = JSON.stringify(parsed.preferred_job_titles);
+          newParsedFields.add('preferred_job_titles');
+        } else if (parsed.job_titles && parsed.job_titles.length > 0 && parsed.job_titles_confidence >= 0.3) {  // Lowered from 0.5
+          // Fallback to job_titles if preferred_job_titles not available
+          updated.preferred_job_titles = JSON.stringify(parsed.job_titles.slice(0, 3));
+          newParsedFields.add('preferred_job_titles');
+        }
+
+        // Education
+        if (parsed.highest_education && parsed.highest_education_confidence >= 0.3) {  // Lowered from 0.5
+          updated.highest_education = parsed.highest_education;  // Backend now returns correct lowercase value with underscores
+          newParsedFields.add('highest_education');
+        }
+
+        // Certifications
+        if (parsed.certifications && parsed.certifications.length > 0 && parsed.certifications_confidence >= 0.3) {  // Lowered from 0.5
+          // Note: This doesn't auto-link to existing certification IDs, just shows we found them
+          newParsedFields.add('certifications');
+        }
+
+        // URLs
+        if (parsed.linkedin_url && parsed.linkedin_url_confidence >= 0.5) {
+          updated.linkedin_url = parsed.linkedin_url;
+          newParsedFields.add('linkedin_url');
+        }
+        if (parsed.github_url && parsed.github_url_confidence >= 0.5) {
+          updated.github_url = parsed.github_url;
+          newParsedFields.add('github_url');
+        }
+        if (parsed.portfolio_url && parsed.portfolio_url_confidence >= 0.5) {
+          updated.portfolio_url = parsed.portfolio_url;
+          newParsedFields.add('portfolio_url');
+        }
+
+        return updated;
+      });
+
+      setParsedFields(newParsedFields);
+
+      const fieldCount = newParsedFields.size;
+      console.log(`[Resume Upload] Successfully parsed ${fieldCount} fields:`, Array.from(newParsedFields));
+      showToast(`Resume "${file.name}" parsed! Auto-filled ${fieldCount} field${fieldCount !== 1 ? 's' : ''}`, 'success');
+
+    } catch (err: any) {
+      console.error('[Resume Upload] Parsing error:', err);
+      console.error('[Resume Upload] Error response:', err.response?.data);
+      
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to parse resume';
+      showToast(`Error: ${errorMessage}`, 'error');
+    } finally {
+      setResumeParsing(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   /* ── filter ── */
   const filtered = profiles.filter(p => {
@@ -291,6 +457,27 @@ const JobPreferencesPage: React.FC = () => {
     if (filterWork && p.worktype !== filterWork) return false;
     return true;
   });
+
+  /* ── Helper for parsed field indicator ── */
+  const isParsed = (fieldName: string) => parsedFields.has(fieldName);
+  const parsedClass = (fieldName: string) => isParsed(fieldName) ? 'cp-field-parsed' : '';
+  const ParsedBadge = ({ fieldName }: { fieldName: string }) => 
+    isParsed(fieldName) ? (
+      <span style={{ 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        gap: '0.25rem', 
+        padding: '0.25rem 0.5rem', 
+        background: '#10b981', 
+        color: 'white', 
+        borderRadius: '4px', 
+        fontSize: '0.75rem', 
+        fontWeight: 600,
+        marginLeft: '0.5rem'
+      }}>
+        {I.check} Auto-filled
+      </span>
+    ) : null;
 
   /* ── accordion toggle ── */
   const toggleSection = (key: string) => {
@@ -381,23 +568,6 @@ const JobPreferencesPage: React.FC = () => {
   };
 
   /* ================================================================
-     ACCORDION SECTION WRAPPER
-     ================================================================ */
-  const Section = ({ id, icon, title, children }: { id: string; icon: JSX.Element; title: string; children: React.ReactNode }) => {
-    const isOpen = openSections.has(id);
-    return (
-      <div className={`cp-accordion-section ${isOpen ? 'open' : ''}`}>
-        <button type="button" className="cp-accordion-header" onClick={() => toggleSection(id)}>
-          <span className="cp-accordion-icon">{icon}</span>
-          <span className="cp-accordion-title">{title}</span>
-          <span className="cp-accordion-chevron">{isOpen ? I.chevUp : I.chevDown}</span>
-        </button>
-        {isOpen && <div className="cp-accordion-body">{children}</div>}
-      </div>
-    );
-  };
-
-  /* ================================================================
      RENDER — FORM
      ================================================================ */
   const renderForm = () => (
@@ -407,8 +577,66 @@ const JobPreferencesPage: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <div className="cp-form-container" style={{ marginBottom: 0 }}>
 
+            {/* Resume Upload Section */}
+            {!editingId && (
+              <div className="cp-resume-assist-banner" style={{ marginBottom: '1.5rem', padding: '1.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', color: 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                  <div style={{ fontSize: '2rem' }}>{I.file}</div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 600 }}>Quick Start with Resume</h3>
+                    <p style={{ margin: '0 0 1rem 0', opacity: 0.9, fontSize: '0.9rem' }}>
+                      Upload your resume to auto-fill: Skills, Experience, Education, Job Titles, and Social Links. 
+                      <br />
+                      <small>Salary and work preferences will remain blank for your manual input.</small>
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.docx"
+                        onChange={handleResumeUpload}
+                        disabled={resumeParsing}
+                        style={{ display: 'none' }}
+                        id="resume-upload-input"
+                      />
+                      <label
+                        htmlFor="resume-upload-input"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.75rem 1.5rem',
+                          background: 'white',
+                          color: '#667eea',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          cursor: resumeParsing ? 'not-allowed' : 'pointer',
+                          opacity: resumeParsing ? 0.7 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {resumeParsing ? (
+                          <>Parsing...</>
+                        ) : (
+                          <>
+                            {I.plus}
+                            <span>Upload Resume</span>
+                          </>
+                        )}
+                      </label>
+                      {parsedFields.size > 0 && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.2)', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                          {I.check} {parsedFields.size} fields auto-filled
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* S1: Role & Domain */}
-            <Section id="role" icon={I.briefcase} title="Role & Domain Preferences">
+            <Section id="role" icon={I.briefcase} title="Role & Domain Preferences" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
                 <label className="required">Profile Name</label>
                 <input type="text" name="profile_name" value={form.profile_name} onChange={inp} placeholder="e.g., Oracle Cloud Senior Developer" required />
@@ -432,8 +660,11 @@ const JobPreferencesPage: React.FC = () => {
                   <input type="text" name="job_role" value={form.job_role} onChange={inp} placeholder="e.g., Senior Developer" required />
                 </div>
                 <div className="cp-form-group">
-                  <label>Seniority Level</label>
-                  <select name="seniority_level" value={form.seniority_level} onChange={inp}>
+                  <label>
+                    Seniority Level
+                    <ParsedBadge fieldName="seniority_level" />
+                  </label>
+                  <select name="seniority_level" value={form.seniority_level} onChange={inp} className={parsedClass('seniority_level')}>
                     <option value="">Select...</option>
                     {['entry','junior','mid','senior','lead','manager'].map(v => <option key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</option>)}
                   </select>
@@ -441,7 +672,10 @@ const JobPreferencesPage: React.FC = () => {
               </div>
               {/* Preferred Job Titles — tag input */}
               <div className="cp-form-group">
-                <label>Preferred Job Titles</label>
+                <label>
+                  Preferred Job Titles
+                  <ParsedBadge fieldName="preferred_job_titles" />
+                </label>
                 <div className="cp-tag-input-wrap">
                   <input type="text" value={titleInput} onChange={(e) => setTitleInput(e.target.value)} placeholder="Type title + Enter" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('preferred_job_titles', titleInput); setTitleInput(''); } }} />
                 </div>
@@ -458,7 +692,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S2: Employment & Work Style */}
-            <Section id="work" icon={I.monitor} title="Employment Type & Work Style">
+            <Section id="work" icon={I.monitor} title="Employment Type & Work Style" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
                 <label className="required">Work Mode</label>
                 <div className="cp-radio-grid">
@@ -492,7 +726,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S3: Location */}
-            <Section id="location" icon={I.mapPin} title="Location Preferences">
+            <Section id="location" icon={I.mapPin} title="Location Preferences" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
                   <label>Remote Acceptance</label>
@@ -526,7 +760,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S4: Compensation */}
-            <Section id="comp" icon={I.dollar} title="Compensation Expectations">
+            <Section id="comp" icon={I.dollar} title="Compensation Expectations" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-3">
                 <div className="cp-form-group">
                   <label className="required">Currency</label>
@@ -562,7 +796,13 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S5: Skills */}
-            <Section id="skills" icon={I.code} title="Skills & Expertise">
+            <Section id="skills" icon={I.code} title="Skills & Expertise" openSections={openSections} toggleSection={toggleSection}>
+              {isParsed('skills') && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#065f46' }}>
+                  <span style={{ fontSize: '1.25rem' }}>{I.check}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Technical skills auto-filled from resume. You can edit or add more below.</span>
+                </div>
+              )}
               <SkillsPicker catalog={techCatalog} category="technical" selected={techSkills} onChange={setTechSkills} label="Technical Skills" />
               <div style={{ height: 20 }} />
               <SkillsPicker catalog={softCatalog} category="soft" selected={softSkills} onChange={setSoftSkills} label="Soft Skills" />
@@ -577,15 +817,21 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S6: Experience & Availability */}
-            <Section id="exp" icon={I.calendar} title="Experience & Availability">
+            <Section id="exp" icon={I.calendar} title="Experience & Availability" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label className="required">Total Years of Experience</label>
-                  <input type="number" name="years_of_experience" value={form.years_of_experience || ''} onChange={e => numInp('years_of_experience', e.target.value)} min="0" required />
+                  <label className="required">
+                    Total Years of Experience
+                    <ParsedBadge fieldName="years_of_experience" />
+                  </label>
+                  <input type="number" name="years_of_experience" value={form.years_of_experience || ''} onChange={e => numInp('years_of_experience', e.target.value)} min="0" required className={parsedClass('years_of_experience')} />
                 </div>
                 <div className="cp-form-group">
-                  <label>Relevant Experience</label>
-                  <input type="number" value={form.relevant_experience || ''} onChange={e => setForm(prev => ({ ...prev, relevant_experience: e.target.value ? Number(e.target.value) : null }))} min="0" />
+                  <label>
+                    Relevant Experience
+                    <ParsedBadge fieldName="relevant_experience" />
+                  </label>
+                  <input type="number" value={form.relevant_experience || ''} onChange={e => setForm(prev => ({ ...prev, relevant_experience: e.target.value ? Number(e.target.value) : null }))} min="0" className={parsedClass('relevant_experience')} />
                 </div>
               </div>
               <div className="cp-form-grid-2">
@@ -608,7 +854,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S7: Authorization */}
-            <Section id="auth" icon={I.shield} title="Authorization & Compliance">
+            <Section id="auth" icon={I.shield} title="Authorization & Compliance" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
                   <label className="required">Visa / Work Authorization</label>
@@ -630,22 +876,28 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S8: Education & Credentials */}
-            <Section id="edu" icon={I.graduation} title="Education & Credentials">
+            <Section id="edu" icon={I.graduation} title="Education & Credentials" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
-                <label>Highest Education Level</label>
-                <select name="highest_education" value={form.highest_education} onChange={inp}>
+                <label>
+                  Highest Education Level
+                  <ParsedBadge fieldName="highest_education" />
+                </label>
+                <select name="highest_education" value={form.highest_education} onChange={inp} className={parsedClass('highest_education')}>
                   <option value="">Select...</option>
                   <option value="high_school">High School</option><option value="associate">Associate Degree</option><option value="bachelor">Bachelor's Degree</option><option value="master">Master's Degree</option><option value="doctorate">Doctorate</option>
                 </select>
               </div>
               <div className="cp-form-group">
-                <label>Certifications from Profile</label>
+                <label>
+                  Certifications from Profile
+                  <ParsedBadge fieldName="certifications" />
+                </label>
                 <CertificationsSelector certifications={certifications} selectedIds={certIds} onChange={setCertIds} />
               </div>
             </Section>
 
             {/* S9: Resume */}
-            <Section id="resume" icon={I.file} title="Resume Attachment">
+            <Section id="resume" icon={I.file} title="Resume Attachment" openSections={openSections} toggleSection={toggleSection}>
               <ResumeSelector
                 resumes={resumes}
                 primaryResumeId={form.primary_resume_id}
@@ -654,21 +906,30 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S10: Socials / Hyperlinks */}
-            <Section id="socials" icon={I.link} title="Social & Web Links">
+            <Section id="socials" icon={I.link} title="Social & Web Links" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.linkedin}</span> LinkedIn</label>
-                  <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={inp} placeholder="https://linkedin.com/in/your-profile" />
+                  <label>
+                    <span className="cp-social-icon">{I.linkedin}</span> LinkedIn
+                    <ParsedBadge fieldName="linkedin_url" />
+                  </label>
+                  <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={inp} placeholder="https://linkedin.com/in/your-profile" className={parsedClass('linkedin_url')} />
                 </div>
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.github}</span> GitHub</label>
-                  <input type="url" name="github_url" value={form.github_url} onChange={inp} placeholder="https://github.com/username" />
+                  <label>
+                    <span className="cp-social-icon">{I.github}</span> GitHub
+                    <ParsedBadge fieldName="github_url" />
+                  </label>
+                  <input type="url" name="github_url" value={form.github_url} onChange={inp} placeholder="https://github.com/username" className={parsedClass('github_url')} />
                 </div>
               </div>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.globe}</span> Portfolio</label>
-                  <input type="url" name="portfolio_url" value={form.portfolio_url} onChange={inp} placeholder="https://your-portfolio.com" />
+                  <label>
+                    <span className="cp-social-icon">{I.globe}</span> Portfolio
+                    <ParsedBadge fieldName="portfolio_url" />
+                  </label>
+                  <input type="url" name="portfolio_url" value={form.portfolio_url} onChange={inp} placeholder="https://your-portfolio.com" className={parsedClass('portfolio_url')} />
                 </div>
                 <div className="cp-form-group">
                   <label><span className="cp-social-icon">{I.twitter}</span> Twitter / X</label>

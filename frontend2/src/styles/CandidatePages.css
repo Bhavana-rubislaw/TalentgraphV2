@@ -2597,3 +2597,220 @@
     width: 100%;
   }
 }
+
+/* ================== RESUME-ASSISTED ONBOARDING STYLES ================== */
+
+/* Mode Selection Cards */
+.cp-onboarding-mode-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.cp-mode-card {
+  background: white;
+  border: 2px solid var(--cp-border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cp-mode-card:hover {
+  border-color: var(--cp-primary);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+  transform: translateY(-2px);
+}
+
+.cp-mode-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cp-primary-light);
+  border-radius: 50%;
+  color: var(--cp-primary);
+}
+
+.cp-mode-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.cp-mode-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cp-text-primary);
+  margin-bottom: 12px;
+}
+
+.cp-mode-desc {
+  font-size: 14px;
+  color: var(--cp-text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.cp-mode-card .cp-btn {
+  width: 100%;
+}
+
+/* Resume Upload Area */
+.cp-upload-area {
+  text-align: center;
+  padding: 48px 32px;
+  border: 2px dashed var(--cp-border);
+  border-radius: 12px;
+  background: var(--cp-bg-light);
+}
+
+.cp-upload-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 50%;
+  color: var(--cp-primary);
+}
+
+.cp-upload-icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.cp-upload-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--cp-text-primary);
+  margin-bottom: 8px;
+}
+
+.cp-upload-desc {
+  font-size: 14px;
+  color: var(--cp-text-secondary);
+  margin-bottom: 24px;
+}
+
+.cp-file-selected {
+  margin-top: 16px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cp-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cp-text-primary);
+}
+
+.cp-file-size {
+  font-size: 13px;
+  color: var(--cp-text-secondary);
+}
+
+/* Info Banner */
+.cp-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.cp-info-icon {
+  width: 20px;
+  height: 20px;
+  color: #3B82F6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cp-info-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cp-info-content {
+  font-size: 14px;
+  color: #1E40AF;
+  line-height: 1.5;
+}
+
+.cp-info-content strong {
+  font-weight: 600;
+}
+
+/* Confidence Badges */
+.cp-confidence-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #F59E0B;
+  background: #FEF3C7;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Field Highlighting */
+.cp-input-missing,
+.cp-select-missing {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+}
+
+.cp-input-missing:focus,
+.cp-select-missing:focus {
+  border-color: #DC2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.cp-input-low-confidence {
+  border-color: #F59E0B !important;
+  background-color: #FFFBEB !important;
+}
+
+.cp-input-low-confidence:focus {
+  border-color: #D97706 !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+}
+
+.cp-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #EF4444;
+  font-weight: 500;
+}
+
+/* Responsive mode selection */
+@media (max-width: 768px) {
+  .cp-onboarding-mode-selection {
+    grid-template-columns: 1fr;
+  }
+  
+  .cp-mode-card {
+    padding: 24px;
+  }
+  
+  .cp-upload-area {
+    padding: 32px 24px;
+  }
+}

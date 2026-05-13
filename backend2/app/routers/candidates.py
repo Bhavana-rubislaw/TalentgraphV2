@@ -1,6 +1,7 @@
 """
 Candidate routes
 Profile management, job profiles, applications, file uploads
+Resume parsing endpoint added for job preferences auto-fill
 """
 
 import logging
@@ -524,3 +525,184 @@ def delete_certification(
     session.commit()
     
     return {"message": "Certification deleted"}
+
+
+# ============ RESUME PARSING FOR JOB PREFERENCES ============
+
+@router.post("/parse-resume-for-job-preferences", response_model=dict)
+async def parse_resume_for_job_preferences(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Parse resume to auto-fill job preference fields (Partial Resume Assist).
+    
+    This endpoint extracts:
+    - Skills (technical)
+    - Years of experience
+    - Seniority level
+    - Job titles / preferred roles
+    - Education level
+    - Certifications
+    - LinkedIn, GitHub, Portfolio URLs
+    
+    Fields NOT extracted (require manual input):
+    - Salary expectations
+    - Work type preferences
+    - Location preferences
+    - Travel willingness
+    - Notice period
+    - Work authorization
+    """
+    from app.services.resume_parser import ResumeParser
+    
+    logger.info(f"[RESUME PARSING] Job preferences parsing request from user: {current_user['email']}")
+    
+    # Validate user exists
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        logger.error(f"[RESUME PARSING] User not found: {current_user['email']}")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Validate file exists
+    if not file.filename:
+        logger.error("[RESUME PARSING] No filename provided")
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    # Log file details
+    logger.info(f"[RESUME PARSING] File upload details - Name: {file.filename}, Content-Type: {file.content_type}")
+    
+    # Validate file type
+    file_ext = Path(file.filename).suffix.lower()
+    allowed_extensions = ['.pdf', '.docx', '.doc', '.txt']
+    if file_ext not in allowed_extensions:
+        logger.error(f"[RESUME PARSING] Invalid file type: {file_ext}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid file type. Please upload PDF, DOCX, DOC, or TXT files only. Received: {file_ext}"
+        )
+    
+    # Validate file size (10MB limit)
+    content = await file.read()
+    file_size_mb = len(content) / (1024 * 1024)
+    logger.info(f"[RESUME PARSING] File size: {file_size_mb:.2f}MB")
+    
+    if file_size_mb > 10:
+        logger.error(f"[RESUME PARSING] File too large: {file_size_mb:.2f}MB")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File size must be under 10MB. Your file is {file_size_mb:.2f}MB"
+        )
+    
+    # Validate file is not empty
+    if len(content) == 0:
+        logger.error("[RESUME PARSING] Empty file uploaded")
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    
+    # Save to temporary file for parsing
+    import tempfile
+    temp_file_path = None
+    try:
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        
+        logger.info(f"[RESUME PARSING] Starting text extraction from: {file.filename}")
+        
+        # Extract text from resume
+        try:
+            resume_text = ResumeParser.extract_text_from_file(temp_file_path)
+            
+            if not resume_text or len(resume_text.strip()) < 50:
+                logger.error("[RESUME PARSING] Insufficient text extracted from resume")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Could not extract sufficient text from resume. Please ensure the file is not password-protected or corrupted."
+                )
+            
+            logger.info(f"[RESUME PARSING] Successfully extracted {len(resume_text)} characters from resume")
+        
+        except ImportError as e:
+            logger.error(f"[RESUME PARSING] Missing required library: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail="Resume parsing library not available. Please contact support."
+            )
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
+        except Exception as e:
+            logger.error(f"[RESUME PARSING] Text extraction failed: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to extract text from resume: {str(e)}. Please ensure the file is readable and not corrupted."
+            )
+        
+        # Parse resume for job preferences
+        try:
+            logger.info(f"[RESUME PARSING] Starting job preferences parsing for user: {current_user['email']}")
+            parsed_data = ResumeParser.parse_resume_for_job_preferences(resume_text)
+            
+            # Count successfully parsed fields (with confidence > 0.5)
+            parsed_field_count = sum(
+                1 for k, v in parsed_data.items() 
+                if k.endswith('_confidence') and v >= 0.5
+            )
+            
+            logger.info(f"[RESUME PARSING] Successfully parsed {parsed_field_count} fields from resume")
+            logger.info(f"[RESUME PARSING] Parsed fields: {[k.replace('_confidence', '') for k, v in parsed_data.items() if k.endswith('_confidence') and v >= 0.5]}")
+            
+            # Debug: Log all confidence scores
+            logger.info(f"[RESUME PARSING] All confidence scores: {[(k, v) for k, v in parsed_data.items() if k.endswith('_confidence')]}")
+            
+            # Structure response to match frontend expectations
+            response = {
+                "success": True,
+                "message": f"Resume parsed successfully. {parsed_field_count} fields auto-filled.",
+                "data": {
+                    "skills": parsed_data.get('skills', []),
+                    "skills_confidence": parsed_data.get('skills_confidence', 0.0),
+                    "years_of_experience": parsed_data.get('years_of_experience'),
+                    "years_of_experience_confidence": parsed_data.get('years_of_experience_confidence', 0.0),
+                    "seniority_level": parsed_data.get('seniority_level'),
+                    "seniority_level_confidence": parsed_data.get('seniority_level_confidence', 0.0),
+                    "job_titles": parsed_data.get('job_titles', []),
+                    "job_titles_confidence": parsed_data.get('job_titles_confidence', 0.0),
+                    "preferred_job_titles": parsed_data.get('preferred_job_titles', []),
+                    "preferred_job_titles_confidence": parsed_data.get('preferred_job_titles_confidence', 0.0),
+                    "highest_education": parsed_data.get('highest_education'),
+                    "highest_education_confidence": parsed_data.get('highest_education_confidence', 0.0),
+                    "certifications": parsed_data.get('certifications', []),
+                    "certifications_confidence": parsed_data.get('certifications_confidence', 0.0),
+                    "linkedin_url": parsed_data.get('linkedin_url'),
+                    "linkedin_url_confidence": parsed_data.get('linkedin_url_confidence', 0.0),
+                    "github_url": parsed_data.get('github_url'),
+                    "github_url_confidence": parsed_data.get('github_url_confidence', 0.0),
+                    "portfolio_url": parsed_data.get('portfolio_url'),
+                    "portfolio_url_confidence": parsed_data.get('portfolio_url_confidence', 0.0),
+                }
+            }
+            
+            logger.info(f"[RESUME PARSING] Parsing completed successfully for user: {current_user['email']}")
+            return response
+        
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
+        except Exception as e:
+            logger.error(f"[RESUME PARSING] Parsing failed with exception: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to parse resume content: {str(e)}. Please try again or contact support."
+            )
+    
+    finally:
+        # Clean up temporary file
+        if temp_file_path and Path(temp_file_path).exists():
+            try:
+                Path(temp_file_path).unlink()
+                logger.debug(f"[RESUME PARSING] Cleaned up temporary file: {temp_file_path}")
+            except Exception as e:
+                logger.warning(f"[RESUME PARSING] Failed to delete temporary file: {str(e)}")

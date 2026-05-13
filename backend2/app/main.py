@@ -97,6 +97,10 @@ default_origins = [
     "http://127.0.0.1:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
 ]
 
 # Optional env override: FRONTEND_ORIGINS="http://localhost:3002,https://app.example.com"
@@ -173,7 +177,8 @@ def health():
 from app.routers import (
     auth, candidates, company, job_postings, matches, recommendations, 
     swipes, dashboard, applications, notifications, activity_feed, 
-    messages, meetings, calendar, analytics, logs, notification_preferences
+    messages, meetings, calendar, analytics, logs, notification_preferences,
+    onboarding
 )
 
 log_change(
@@ -186,6 +191,7 @@ log_change(
 # Core routers
 app.include_router(auth.router)
 app.include_router(candidates.router)
+app.include_router(onboarding.router)  # Resume-assisted candidate onboarding
 app.include_router(company.router)
 app.include_router(job_postings.router)
 app.include_router(matches.router)
@@ -218,4 +224,5 @@ if __name__ == "__main__":
         port=8001,
         reload=True
     )
+
 

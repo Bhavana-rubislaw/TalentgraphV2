@@ -77,6 +77,34 @@ export const apiClient = {
   getCandidateSkillCatalogs: () =>
     api.get('/candidates/skill-catalogs'),
 
+  // Resume-assisted onboarding
+  uploadResumeForOnboarding: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/candidates/onboarding/upload-resume', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // Parse resume for job preferences
+  parseResumeForJobPreferences: (formData: FormData) => {
+    return api.post('/candidates/parse-resume-for-job-preferences', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  getOnboardingDraft: () =>
+    api.get('/candidates/onboarding/draft'),
+
+  updateOnboardingDraft: (data: any) =>
+    api.put('/candidates/onboarding/draft', data),
+
+  finalizeOnboarding: (reviewed: boolean = true) =>
+    api.post('/candidates/onboarding/finalize', { reviewed }),
+
+  deleteOnboardingDraft: () =>
+    api.delete('/candidates/onboarding/draft'),
+
   // Resume uploads
   uploadResume: (file: File) => {
     const formData = new FormData();

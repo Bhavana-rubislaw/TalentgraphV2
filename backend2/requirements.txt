@@ -22,3 +22,7 @@ python-dateutil==2.8.2       # Date/time parsing for interview scheduling
 python-magic==0.4.27         # File type detection via magic bytes
 argon2-cffi==23.1.0          # Secure password hashing
 slowapi==0.1.9               # Rate limiting middleware
+
+# Resume Parsing
+PyPDF2==3.0.1                # PDF text extraction
+python-docx==1.1.0           # DOCX text extraction

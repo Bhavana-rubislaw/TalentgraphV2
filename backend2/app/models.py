@@ -47,6 +47,20 @@ class CurrencyType(str, Enum):
     EUR = "eur"
 
 
+class ParseStatus(str, Enum):
+    """Resume parsing status"""
+    PENDING = "pending"
+    PARSING = "parsing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ReviewStatus(str, Enum):
+    """Draft profile review status"""
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+
+
 class JobPostingStatus(str, Enum):
     """
     Job posting lifecycle status
@@ -205,6 +219,62 @@ class Resume(SQLModel, table=True):
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="resumes")
+
+
+class ResumeDraftProfile(SQLModel, table=True):
+    """Draft profile created from resume parsing - not the final candidate profile"""
+    __tablename__ = "resume_draft_profile"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", unique=True)
+    
+    # Resume file info
+    resume_filename: str
+    resume_storage_path: str
+    
+    # Parsed candidate fields (may be incomplete or low confidence)
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    residential_address: Optional[str] = None
+    location_state: Optional[str] = None
+    location_county: Optional[str] = None
+    location_zipcode: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    profile_summary: Optional[str] = None
+    
+    # Confidence scores for each parsed field (0.0 to 1.0)
+    name_confidence: Optional[float] = None
+    email_confidence: Optional[float] = None
+    phone_confidence: Optional[float] = None
+    residential_address_confidence: Optional[float] = None
+    location_state_confidence: Optional[float] = None
+    location_county_confidence: Optional[float] = None
+    location_zipcode_confidence: Optional[float] = None
+    linkedin_url_confidence: Optional[float] = None
+    github_url_confidence: Optional[float] = None
+    portfolio_url_confidence: Optional[float] = None
+    profile_summary_confidence: Optional[float] = None
+    
+    # Parse and review status
+    parse_status: ParseStatus = Field(default=ParseStatus.PENDING, sa_column=Column(SQLEnum(ParseStatus)))
+    review_status: ReviewStatus = Field(default=ReviewStatus.PENDING, sa_column=Column(SQLEnum(ReviewStatus)))
+    
+    # Missing required fields (JSON array of field names)
+    missing_required_fields: Optional[str] = None  # JSON string: ["phone", "location_state"]
+    
+    # Parse error message (if parsing failed)
+    parse_error: Optional[str] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    finalized_at: Optional[datetime] = None
+    
+    # Relationships
+    user: User = Relationship()
 
 
 class Certification(SQLModel, table=True):

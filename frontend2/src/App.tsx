@@ -143,15 +143,32 @@ const ProfileSetupGuard: React.FC<{ children: React.ReactNode; userType: 'candid
 
 // ── Dashboard Guard (Candidate only - allows skip) ──────────────────
 // Redirects incomplete profiles to setup page
-// Note: Candidates can skip and access dashboard, recruiters must complete
+// Note: Candidates can skip and access dashboard, but only if they haven't started the onboarding process
 const CandidateDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { bootStatus } = useAuth();
+  const { user, bootStatus } = useAuth();
 
   if (bootStatus === 'loading') return null;
 
-  // Candidates can skip profile setup and access dashboard
-  // So we don't enforce completion here, just render the dashboard
-  // The dashboard can show a banner to encourage profile completion
+  const isProfileComplete = user?.is_profile_complete ?? 
+    (localStorage.getItem('is_profile_complete') === 'true');
+  
+  const hasStartedOnboarding = localStorage.getItem('onboarding_started') === 'true';
+
+  console.log('[CandidateDashboardGuard]', {
+    isProfileComplete,
+    hasStartedOnboarding,
+    fromUser: user?.is_profile_complete,
+    fromLS: localStorage.getItem('is_profile_complete')
+  });
+
+  // If user started onboarding but didn't complete it, redirect to setup
+  // This ensures users who start resume upload must complete the process
+  if (hasStartedOnboarding && !isProfileComplete) {
+    console.log('[CandidateDashboardGuard] Onboarding started but incomplete - redirecting to setup');
+    return <Navigate to="/candidate-profile-setup" replace />;
+  }
+
+  // Otherwise, allow access (candidates can skip initial onboarding)
   return <>{children}</>;
 };
 

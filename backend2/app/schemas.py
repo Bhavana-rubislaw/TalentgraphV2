@@ -204,6 +204,70 @@ class CandidateRead(CandidateBase):
     created_at: datetime
 
 
+# ============ RESUME DRAFT PROFILE SCHEMAS ============
+
+class ResumeDraftProfileRead(BaseModel):
+    """Draft profile with parsed resume data and confidence scores"""
+    id: int
+    user_id: int
+    resume_filename: str
+    
+    # Parsed fields
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    residential_address: Optional[str] = None
+    location_state: Optional[str] = None
+    location_county: Optional[str] = None
+    location_zipcode: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    profile_summary: Optional[str] = None
+    
+    # Confidence scores
+    name_confidence: Optional[float] = None
+    email_confidence: Optional[float] = None
+    phone_confidence: Optional[float] = None
+    residential_address_confidence: Optional[float] = None
+    location_state_confidence: Optional[float] = None
+    location_county_confidence: Optional[float] = None
+    location_zipcode_confidence: Optional[float] = None
+    linkedin_url_confidence: Optional[float] = None
+    github_url_confidence: Optional[float] = None
+    portfolio_url_confidence: Optional[float] = None
+    profile_summary_confidence: Optional[float] = None
+    
+    # Status
+    parse_status: str
+    review_status: str
+    missing_required_fields: Optional[List[str]] = None  # Parsed from JSON
+    parse_error: Optional[str] = None
+    
+    created_at: datetime
+    updated_at: datetime
+
+
+class ResumeDraftProfileUpdate(BaseModel):
+    """User edits to draft profile before finalization"""
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    residential_address: Optional[str] = None
+    location_state: Optional[str] = None
+    location_county: Optional[str] = None
+    location_zipcode: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    profile_summary: Optional[str] = None
+
+
+class ResumeDraftFinalizeRequest(BaseModel):
+    """Request to finalize draft and create actual candidate profile"""
+    reviewed: bool = True  # User confirms they reviewed the draft
+
+
 # ============ COMPANY SCHEMAS ============
 
 class CompanyBase(BaseModel):
