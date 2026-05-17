@@ -419,6 +419,13 @@ export const apiClient = {
   markDirectConversationRead: (conversationId: number) =>
     api.post(`/messages/conversations/${conversationId}/read`),
 
+  // Presence/Online Status
+  sendHeartbeat: () =>
+    api.post('/messages/heartbeat'),
+
+  getUserOnlineStatus: (userId: number) =>
+    api.get(`/messages/user/${userId}/status`),
+
   // ── Meeting Scheduler (Phase 1 - Core Scheduling) ──────────────────────────
   
   // Meeting CRUD

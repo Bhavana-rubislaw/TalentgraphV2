@@ -14,7 +14,7 @@ from typing import List, Dict, Any
 from app.database import get_session
 from app.models import (
     User, Candidate, Company, JobPosting, JobProfile, 
-    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus, Resume, Certification
+    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus, Resume, Certification, Meeting
 )
 from app.security import get_current_user
 
@@ -423,6 +423,17 @@ def get_applied_liked_jobs(
         job = session.get(JobPosting, app.job_posting_id)
         if job:
             company = session.get(Company, job.company_id)
+            
+            # Check if there's a scheduled interview for this application
+            interview_scheduled = session.exec(
+                select(Meeting).where(
+                    and_(
+                        Meeting.application_id == app.id,
+                        Meeting.status.in_(['scheduled', 'rescheduled'])
+                    )
+                )
+            ).first() is not None
+            
             # Skills
             posting_skills = []
             for sk in job.posting_skills:
@@ -457,6 +468,7 @@ def get_applied_liked_jobs(
                 "education_qualifications": job.education_qualifications,
                 "certifications_required": job.certifications_required,
                 "status": app.status,
+                "interview_scheduled": interview_scheduled,
                 "applied_at": app.applied_at.isoformat()
             })
     

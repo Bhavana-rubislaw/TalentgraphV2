@@ -11,6 +11,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 import json
+import logging
 
 from app.database import get_session
 from app.security import get_current_user
@@ -28,6 +29,8 @@ from app.schemas import (
 from app.routers.notifications import push_notification
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
 from app.services.calendar_providers import CalendarProviderFactory, CalendarProviderError
+
+logger = logging.getLogger(__name__)
 from app.services.meeting_service import MeetingService
 from app.services.meeting_email_service import MeetingEmailService
 

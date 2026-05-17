@@ -479,3 +479,55 @@ def mark_conversation_read(
     logger.info(f"Marked {len(unread_messages)} messages as read in conversation {conversation_id} for user {user.id}")
     
     return {"success": True}
+
+
+@router.post("/heartbeat")
+def update_presence(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """
+    UPDATE USER PRESENCE (HEARTBEAT)
+    
+    Updates the current user's last_seen_at timestamp.
+    Frontend should call this periodically (e.g., every 30 seconds) to maintain online status.
+    """
+    user = _get_user(session, current_user["email"])
+    
+    user.last_seen_at = datetime.utcnow()
+    session.add(user)
+    session.commit()
+    
+    return {
+        "success": True,
+        "last_seen_at": user.last_seen_at.isoformat() if user.last_seen_at else None
+    }
+
+
+@router.get("/user/{user_id}/status")
+def get_user_online_status(
+    user_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Dict[str, Any]:
+    """
+    GET USER ONLINE STATUS
+    
+    Returns whether a user is currently online (active within last 2 minutes).
+    Also returns last_seen_at timestamp.
+    """
+    target_user = session.get(User, user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # User is considered online if last_seen_at is within last 2 minutes
+    is_online = False
+    if target_user.last_seen_at:
+        time_since_last_seen = (datetime.utcnow() - target_user.last_seen_at).total_seconds()
+        is_online = time_since_last_seen < 120  # 2 minutes
+    
+    return {
+        "user_id": target_user.id,
+        "is_online": is_online,
+        "last_seen_at": target_user.last_seen_at.isoformat() if target_user.last_seen_at else None
+    }

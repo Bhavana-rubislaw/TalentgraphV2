@@ -1,4 +1,5 @@
-export type EventType = 'match' | 'invite' | 'application' | 'status_update' | 'shortlisted';
+// Using string instead of union to support all backend event types
+export type EventType = string;
 
 export interface NotificationPayload {
   route: string;

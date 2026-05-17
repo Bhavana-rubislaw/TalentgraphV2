@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification API Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <h1>🔔 Notification System Diagnostic</h1>
+    
+    <div class="test-box">
+        <h2>Step 1: Login</h2>
+        <button onclick="testLogin()">Login as Sarah (Candidate)</button>
+        <button onclick="testRecruiterLogin()">Login as Recruiter</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Step 2: Fetch Notifications</h2>
+        <button onclick="fetchNotifications()">Get Notifications</button>
+        <button onclick="fetchUnreadCount()">Get Unread Count</button>
+        <div id="notif-result"></div>
+    </div>
+    
+    <div class="test-box">
+        <h2>Step 3: Test API Directly</h2>
+        <button onclick="testBackendHealth()">Test Backend Health</button>
+        <div id="health-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let token = localStorage.getItem('token') || '';
+        
+        function updateStatus(elementId, html) {
+            document.getElementById(elementId).innerHTML = html;
+        }
+        
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/candidate/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'sarah.anderson@email.com',
+                        password: 'Kutty_1304'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                
+                updateStatus('login-result', `
+                    <p class="success">✅ Login successful!</p>
+                    <p>Token: ${token.substring(0, 30)}...</p>
+                    <p>User ID: ${data.user_id}</p>
+                `);
+            } catch (error) {
+                updateStatus('login-result', `
+                    <p class="error">❌ Login failed: ${error.message}</p>
+                `);
+            }
+        }
+        
+        async function testRecruiterLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/company/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'recruiter.jennifer@techcorp.com',
+                        password: 'Kutty_1304'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                
+                updateStatus('login-result', `
+                    <p class="success">✅ Login successful!</p>
+                    <p>Token: ${token.substring(0, 30)}...</p>
+                    <p>Company: ${data.company_name}</p>
+                `);
+            } catch (error) {
+                updateStatus('login-result', `
+                    <p class="error">❌ Login failed: ${error.message}</p>
+                `);
+            }
+        }
+        
+        async function fetchNotifications() {
+            if (!token) {
+                updateStatus('notif-result', '<p class="error">❌ Please login first!</p>');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications?limit=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const notifications = await response.json();
+                
+                updateStatus('notif-result', `
+                    <p class="success">✅ Fetched ${notifications.length} notifications</p>
+                    <pre>${JSON.stringify(notifications, null, 2)}</pre>
+                `);
+            } catch (error) {
+                updateStatus('notif-result', `
+                    <p class="error">❌ Fetch failed: ${error.message}</p>
+                `);
+            }
+        }
+        
+        async function fetchUnreadCount() {
+            if (!token) {
+                updateStatus('notif-result', '<p class="error">❌ Please login first!</p>');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/notifications/unread-count`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+                
+                const data = await response.json();
+                
+                updateStatus('notif-result', `
+                    <p class="success">✅ Unread count: ${data.count}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `);
+            } catch (error) {
+                updateStatus('notif-result', `
+                    <p class="error">❌ Fetch failed: ${error.message}</p>
+                `);
+            }
+        }
+        
+        async function testBackendHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                updateStatus('health-result', `
+                    <p class="success">✅ Backend is running!</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `);
+            } catch (error) {
+                updateStatus('health-result', `
+                    <p class="error">❌ Backend not accessible: ${error.message}</p>
+                    <p>Make sure backend is running on http://localhost:8001</p>
+                `);
+            }
+        }
+        
+        // Auto-test backend on load
+        window.onload = () => {
+            testBackendHealth();
+            if (token) {
+                updateStatus('login-result', '<p class="success">✅ Token found in localStorage</p>');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,687 @@
+/* ============================================
+   HORIZONTAL TAB DASHBOARD LAYOUT
+   Matching TalentGraph V2 Design Screenshot
+   ============================================ */
+
+/* ====== MAIN DASHBOARD CONTAINER ====== */
+.horizontal-dashboard {
+  min-height: 100vh;
+  background: #F8F9FA;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ====== TOP NAVIGATION BAR ====== */
+.talentgraph-topnav {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.talentgraph-topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.talentgraph-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.talentgraph-logo-icon {
+  width: 36px;
+  height: 36px;
+  background: #1F2937;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.talentgraph-logo-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1F2937;
+  letter-spacing: -0.5px;
+}
+
+.talentgraph-topnav-center {
+  flex: 1;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.talentgraph-search-bar {
+  position: relative;
+  width: 100%;
+}
+
+.talentgraph-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.talentgraph-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 48px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #F9FAFB;
+  font-size: 14px;
+  color: #1F2937;
+  transition: all 0.2s;
+}
+
+.talentgraph-search-input:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: #7C3AED;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+.talentgraph-search-input::placeholder {
+  color: #9CA3AF;
+}
+
+.talentgraph-topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.talentgraph-help-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #F3F4F6;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.talentgraph-help-btn:hover {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.talentgraph-notification-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #F3F4F6;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.talentgraph-notification-btn:hover {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.talentgraph-notification-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+}
+
+/* Override for NotificationBellDrawer component */
+.notif-bell-wrapper .icon-btn.notification-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #F3F4F6;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  padding: 0;
+}
+
+.notif-bell-wrapper .icon-btn.notification-btn:hover {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.notif-bell-wrapper .notif-bell-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid #FFFFFF;
+  font-size: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.talentgraph-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 6px;
+  border: none;
+  background: #F3F4F6;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.talentgraph-user-btn:hover {
+  background: #E5E7EB;
+}
+
+.talentgraph-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.talentgraph-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.talentgraph-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+  line-height: 1.2;
+}
+
+.talentgraph-user-role {
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.2;
+}
+
+/* ====== TAB NAVIGATION ====== */
+.talentgraph-tabs-container {
+  background: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+  padding: 0 32px;
+}
+
+.talentgraph-tabs {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+
+.talentgraph-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  border: none;
+  background: transparent;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  white-space: nowrap;
+}
+
+.talentgraph-tab:hover {
+  color: #374151;
+  background: #F9FAFB;
+}
+
+.talentgraph-tab.active {
+  color: #7C3AED;
+}
+
+.talentgraph-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #7C3AED;
+}
+
+.talentgraph-tab-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.talentgraph-tab-badge {
+  background: #F3F4F6;
+  color: #6B7280;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+.talentgraph-tab.active .talentgraph-tab-badge {
+  background: #EDE9FE;
+  color: #7C3AED;
+}
+
+/* ====== MAIN CONTENT AREA ====== */
+.talentgraph-main-content {
+  flex: 1;
+  padding: 32px 32px 64px;
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ====== BREADCRUMB & PAGE HEADER ====== */
+.talentgraph-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.talentgraph-breadcrumb-link {
+  color: #6B7280;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.talentgraph-breadcrumb-link:hover {
+  color: #374151;
+}
+
+.talentgraph-breadcrumb-separator {
+  color: #D1D5DB;
+  font-size: 12px;
+}
+
+.talentgraph-breadcrumb-current {
+  color: #1F2937;
+  font-weight: 500;
+}
+
+.talentgraph-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.talentgraph-page-header-left {
+  flex: 1;
+}
+
+.talentgraph-page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.talentgraph-page-subtitle {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.talentgraph-page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.talentgraph-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.talentgraph-btn-secondary:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+.talentgraph-btn-secondary svg {
+  width: 16px;
+  height: 16px;
+}
+
+.talentgraph-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+}
+
+.talentgraph-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+}
+
+.talentgraph-btn-primary svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ====== RESPONSIVE DESIGN ====== */
+@media (max-width: 1024px) {
+  .talentgraph-topnav {
+    padding: 0 20px;
+  }
+
+  .talentgraph-topnav-center {
+    max-width: 400px;
+    padding: 0 20px;
+  }
+
+  .talentgraph-tabs-container {
+    padding: 0 20px;
+    overflow-x: auto;
+  }
+
+  .talentgraph-tabs {
+    min-width: min-content;
+  }
+
+  .talentgraph-main-content {
+    padding: 24px 20px;
+  }
+
+  .talentgraph-page-title {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .talentgraph-topnav {
+    padding: 0 16px;
+  }
+
+  .talentgraph-topnav-center {
+    display: none;
+  }
+
+  .talentgraph-user-info {
+    display: none;
+  }
+
+  .talentgraph-tabs-container {
+    padding: 0 16px;
+  }
+
+  .talentgraph-tab {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+
+  .talentgraph-main-content {
+    padding: 20px 16px;
+  }
+
+  .talentgraph-page-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .talentgraph-page-title {
+    font-size: 24px;
+  }
+}
+
+/* ====== WELCOME BANNER & KPI CARDS ====== */
+.welcome-banner-modern {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.welcome-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.welcome-avatar-compact {
+  flex-shrink: 0;
+}
+
+.avatar-circle-compact {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.welcome-text-compact {
+  flex: 1;
+}
+
+.welcome-title-compact {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+.welcome-subtitle-compact {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0;
+}
+
+/* ====== CONTENT PANEL ====== */
+.content-panel-horizontal {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  min-height: 500px;
+}
+
+/* ====== TAB CREATE BUTTON ====== */
+.talentgraph-tab-create {
+  margin-left: auto;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  border-radius: 8px;
+  margin-right: 0;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 12px 20px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.talentgraph-tab-create:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.talentgraph-tab-create::after {
+  display: none;
+}
+
+/* ====== TAB BADGE AI STYLING ====== */
+.talentgraph-tab-badge-ai {
+  background: linear-gradient(90deg, #7C3AED, #8B5CF6);
+  color: white;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* ====== PROFILE MENU DROPDOWN ====== */
+.profile-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  min-width: 200px;
+  z-index: 1000;
+}
+
+.profile-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-menu button:hover {
+  background: #F3F4F6;
+  color: #1F2937;
+}
+
+.profile-menu button svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.profile-menu .menu-divider {
+  height: 1px;
+  background: #E5E7EB;
+  margin: 8px 0;
+}
+
+.profile-menu .logout-btn {
+  color: #DC2626;
+}
+
+.profile-menu .logout-btn:hover {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+/* ====== RESPONSIVE ADJUSTMENTS FOR NEW COMPONENTS ====== */
+@media (max-width: 768px) {
+  .welcome-banner-modern {
+    padding: 20px;
+  }
+
+  .welcome-header-compact {
+    margin-bottom: 20px;
+  }
+
+  .welcome-title-compact {
+    font-size: 20px;
+  }
+
+  .content-panel-horizontal {
+    padding: 20px;
+  }
+
+  .talentgraph-tab-create {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    margin: 0;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+}

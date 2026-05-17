@@ -7,6 +7,8 @@ import '../styles/PremiumDashboardV2.css';
 import '../styles/PremiumCards.css';
 import '../styles/PremiumModals.css';
 import '../styles/RecruiterApplications.css';
+import '../styles/HorizontalDashboard.css';
+import '../styles/AIRecommendations.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
@@ -575,6 +577,75 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
+  // ── Touch/swipe gesture support for recommendations ────────────
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      handleNextRec();
+    } else if (isRightSwipe) {
+      handlePreviousRec();
+    }
+  };
+
+  // Navigation handlers for recommendations
+  const handleNextRec = () => {
+    if (!recommendations || !recommendations.recommendations) return;
+    const visibleRecs = recommendationRoleFilter === 'all'
+      ? recommendations.recommendations
+      : recommendations.recommendations.filter((r: any) => {
+          const role =
+            (r.job_profile?.job_role as string | undefined) ||
+            (r.job_posting?.job_title as string | undefined) ||
+            (r.role as string | undefined) ||
+            '';
+          return role === recommendationRoleFilter;
+        });
+    if (recCardIndex < visibleRecs.length - 1) {
+      setRecCardIndex(recCardIndex + 1);
+    }
+  };
+
+  const handlePreviousRec = () => {
+    if (recCardIndex > 0) {
+      setRecCardIndex(recCardIndex - 1);
+    }
+  };
+
+  // Helper functions for recommendations
+  const getCandidateInitial = (name: string) => {
+    return name ? name.charAt(0).toUpperCase() : 'C';
+  };
+
+  const getMatchedSkills = (rec: any) => {
+    // Return top matched skills from candidate's profile
+    const skills = rec.job_profile?.skills || [];
+    return skills.slice(0, 4).map((sk: any) => ({
+      name: sk.skill_name,
+      level: sk.proficiency_level || 3
+    }));
+  };
+
+  const getSkillTags = (rec: any) => {
+    const skills = rec.job_profile?.skills || [];
+    return skills.slice(0, 6).map((sk: any) => sk.skill_name);
+  };
+
   const renderRecommendations = () => {
     if (jobPostings.length === 0) {
       return (
@@ -606,20 +677,111 @@ const RecruiterDashboard: React.FC = () => {
       return <div className="loading">Select a job posting...</div>;
     }
 
+    // Calculate metrics for KPI cards
+    const totalMatches = recommendations.recommendations.length;
+    const avgMatchScore = totalMatches > 0 
+      ? Math.round(recommendations.recommendations.reduce((sum: number, r: any) => sum + r.match_percentage, 0) / totalMatches)
+      : 0;
+    const newToday = recommendations.recommendations.filter((r: any) => {
+      if (!r.candidate.created_at) return false;
+      const createdDate = new Date(r.candidate.created_at);
+      const today = new Date();
+      return createdDate.toDateString() === today.toDateString();
+    }).length;
+    const openToOffers = recommendations.recommendations.filter((r: any) => 
+      r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
+    ).length;
+
+    // Filter and sort recommendations
+    const visibleRecs = recommendationRoleFilter === 'all'
+      ? recommendations.recommendations
+      : recommendations.recommendations.filter((r: any) => {
+          const role =
+            (r.job_profile?.job_role as string | undefined) ||
+            (r.job_posting?.job_title as string | undefined) ||
+            (r.role as string | undefined) ||
+            '';
+          return role === recommendationRoleFilter;
+        });
+
     return (
       <>
-        <div>
-        {/* Enhanced Job Posting Selector with Lifecycle Controls */}
-        <div className="purple-section-wrapper">
-        <div className="job-selector-modern">
-          <div className="selector-header">
-            <h3 className="selector-title">Select Job Posting</h3>
-            <span className="selector-count">{jobPostings.length} active positions</span>
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div>
+              <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '4px' }}>
+                AI Candidate Recommendations
+                {newToday > 0 && (
+                  <span style={{ 
+                    marginLeft: '12px', 
+                    fontSize: '14px', 
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '12px'
+                  }}>
+                    {newToday} new
+                  </span>
+                )}
+              </h2>
+              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+                Top candidates matched to: Sr. Product Designer - Stripe • Updated 12 min ago
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => fetchRecommendations()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 16px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: '#374151'
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <polyline points="1 4 1 10 7 10"/>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+                </svg>
+                Refresh AI
+              </button>
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 16px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  color: 'white',
+                  boxShadow: '0 2px 4px rgba(124, 58, 237, 0.2)'
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                Bulk Invite
+              </button>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+
+          {/* Job Selector */}
+          <div style={{ marginBottom: '16px' }}>
             <select
               className="job-select-modern"
-              style={{ flex: 1 }}
+              style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
               value={selectedJobId || ''}
               onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
             >
@@ -632,597 +794,634 @@ const RecruiterDashboard: React.FC = () => {
               ))}
             </select>
           </div>
-        </div>
 
-        {/* Reopened Job with Prior Applicants Notice */}
-        {selectedJobId && (() => {
-          const currentJob = allJobPostings.find(j => j.id === selectedJobId);
-          if (!currentJob || (currentJob.status || '').toLowerCase() !== 'reposted') return null;
-          
-          const priorApplicants = applications.filter(app => app.job_posting_id === selectedJobId);
-          if (priorApplicants.length === 0) return null;
-          
-          return (
-            <div style={{
-              padding: '14px 18px',
-              borderRadius: '8px',
-              backgroundColor: '#ede9fe',
-              border: '1px solid #8b5cf6',
-              marginTop: '16px',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-            }}>
-              <div style={{ fontSize: '20px' }}>🔄</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: '#7c3aed', marginBottom: '4px' }}>
-                  Job Reopened with Previous Applicants
-                </div>
-                <div style={{ fontSize: '13px', color: '#6b21a8' }}>
-                  This job has {priorApplicants.length} prior applicant(s) from before it was frozen. 
-                  Review existing applications in the Applications tab before sourcing new candidates.
-                </div>
+          {/* KPI Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                Total Matches
               </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{totalMatches}</div>
+                <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>+12% this week</div>
+              </div>
+            </div>
+
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                Avg Match Score
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{avgMatchScore}%</div>
+                <div style={{ fontSize: '12px', color: '#6B7280' }}>High quality pool</div>
+              </div>
+            </div>
+
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                Open to Offers
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{Math.round((openToOffers / totalMatches) * 100)}%</div>
+                <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>actively looking</div>
+              </div>
+            </div>
+
+            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                New Today
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{newToday}</div>
+                <div style={{ fontSize: '12px', color: '#6B7280' }}>3 with 5+ match</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters and Sorting */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setActiveTab('applications')}
+                onClick={() => setRecommendationRoleFilter('all')}
                 style={{
                   padding: '8px 16px',
-                  fontSize: '13px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#8b5cf6',
-                  color: 'white',
+                  border: recommendationRoleFilter === 'all' ? 'none' : '1px solid #E5E7EB',
+                  background: recommendationRoleFilter === 'all' ? '#7C3AED' : 'white',
+                  color: recommendationRoleFilter === 'all' ? 'white' : '#374151',
+                  borderRadius: '8px',
                   cursor: 'pointer',
-                  fontWeight: 500,
+                  fontSize: '13px',
+                  fontWeight: 500
                 }}
               >
-                View Applications
+                All {totalMatches}
+              </button>
+              <button
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  color: '#374151',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500
+                }}
+              >
+                Top Picks {Math.min(8, totalMatches)}
+              </button>
+              <button
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  color: '#374151',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500
+                }}
+              >
+                Recently Active {Math.min(11, totalMatches)}
+              </button>
+              <button
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  color: '#374151',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500
+                }}
+              >
+                Open to Offers {openToOffers}
               </button>
             </div>
-          );
-        })()}
-
-        {/* Recommendations Role Filter */}
-        {(() => {
-          const recRoleOptions: string[] = Array.from<string>(new Set<string>(
-              recommendations.recommendations
-                .map((r: any): string =>
-                  (r.job_profile?.job_role as string | undefined) ||
-                  (r.job_posting?.job_title as string | undefined) ||
-                  (r.role as string | undefined) ||
-                  ''
-                )
-                .filter((s: string) => s.length > 0)
-            )).sort();
-          if (recRoleOptions.length === 0) return null;
-          return (
-            <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <label htmlFor="rec-role-filter" style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)', whiteSpace: 'nowrap' }}>Role</label>
-                <select
-                  id="rec-role-filter"
-                  className="job-select-modern"
-                  style={{ minWidth: '160px', padding: '6px 10px', fontSize: '13px' }}
-                  value={recommendationRoleFilter}
-                  onChange={(e) => { setRecommendationRoleFilter(e.target.value); setRecCardIndex(0); }}
-                >
-                  <option value="all">All Roles</option>
-                  {recRoleOptions.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-              </div>
-              {recommendationRoleFilter !== 'all' && (
-                <button
-                  className="action-btn secondary"
-                  style={{ padding: '6px 12px', fontSize: '12px' }}
-                  onClick={() => { setRecommendationRoleFilter('all'); setRecCardIndex(0); }}
-                >
-                  Clear filters
-                </button>
-              )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '13px', color: '#6B7280' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }}>
+                  <line x1="4" y1="21" x2="4" y2="14"/>
+                  <line x1="4" y1="10" x2="4" y2="3"/>
+                  <line x1="12" y1="21" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12" y2="3"/>
+                  <line x1="20" y1="21" x2="20" y2="16"/>
+                  <line x1="20" y1="12" x2="20" y2="3"/>
+                  <line x1="1" y1="14" x2="7" y2="14"/>
+                  <line x1="9" y1="8" x2="15" y2="8"/>
+                  <line x1="17" y1="16" x2="23" y2="16"/>
+                </svg>
+                Sorted by:
+              </span>
+              <select
+                style={{
+                  padding: '6px 10px',
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                <option>AI match score</option>
+                <option>Most recent</option>
+                <option>Experience level</option>
+              </select>
             </div>
-          );
-        })()}
+          </div>
+        </div>
 
-        {/* Job Performance Dashboard */}
-        {jobAnalytics && (
-          <div className="job-performance-panel" style={{
-            background: 'linear-gradient(135deg, #523C76 0%, #604983 40%, #7963AD 100%)',
-            borderRadius: 'var(--radius-2xl)',
-            padding: 'var(--space-5)',
-            marginBottom: 'var(--space-6)',
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(106, 79, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.15)',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Header */}
-            <div style={{ marginBottom: 'var(--space-4)', position: 'relative', zIndex: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-                <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="24" height="24">
-                    <line x1="12" y1="20" x2="12" y2="10"/>
-                    <line x1="18" y1="20" x2="18" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="16"/>
+        {/* Main Content: Swipe Card + Sidebar */}
+        <div className="ai-recommendations-container">
+          {/* Left Column - Swipe Card */}
+          <div className="ai-recs-main">
+            {visibleRecs.length === 0 ? (
+              <div className="empty-state-modern">
+                <div className="empty-icon-professional">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                   </svg>
                 </div>
-                <h3 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#FFFFFF', textShadow: '0 1px 2px rgba(0,0,0,0.15)' }}>Job Performance Dashboard</h3>
+                <h3 className="empty-title">No Candidates Found</h3>
+                <p className="empty-subtitle">
+                  No matching candidates found for this job posting yet. Check back later as new candidates join the platform.
+                </p>
               </div>
-              <p style={{ margin: 0, fontSize: '16px', color: 'rgba(255, 255, 255, 0.9)', paddingLeft: '44px' }}>Last 90 days · {jobAnalytics.job_title}</p>
-            </div>
+            ) : (
+              <>
+                {/* Single Card View */}
+                {(() => {
+                  const rec = visibleRecs[recCardIndex];
+                  if (!rec) return null;
 
-            {/* Top Metrics Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', position: 'relative', zIndex: 2 }}>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '3px solid rgba(59, 130, 246, 0.6)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#3b82f6' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#3b82f6', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.views}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Views</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#8b5cf6', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.likes}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Likes</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{jobAnalytics.like_rate.toFixed(1)}% of views</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#10b981', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14,2 14,8 20,8"/>
-                      <line x1="16" y1="13" x2="8" y2="13"/>
-                      <line x1="16" y1="17" x2="8" y2="17"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.applications}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Applications</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{jobAnalytics.application_rate.toFixed(1)}% of views</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#f59e0b' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f59e0b', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                      <circle cx="9" cy="7" r="4"/>
-                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.interviews_scheduled}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Interviews</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{jobAnalytics.interview_rate.toFixed(1)}% of apps</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#06b6d4' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#06b6d4', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.offers_made}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Offers</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{jobAnalytics.offer_rate.toFixed(1)}% of interviews</div>
-                  </div>
-                </div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#10b981', flexShrink: 0 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                      <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.hires}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Hires</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{jobAnalytics.hire_rate.toFixed(1)}% of offers</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  const candidate = rec.candidate;
+                  const jobProfile = rec.job_profile;
+                  const matchPercentage = rec.match_percentage || 0;
+                  const matchedSkills = getMatchedSkills(rec);
+                  const skillTags = getSkillTags(rec);
 
-            {/* Conversion Funnel */}
-            <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)', marginBottom: 'var(--space-4)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden', zIndex: 2 }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#8b5cf6' }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="16" height="16">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                  </svg>
-                </div>
-                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Conversion Funnel</div>
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                <div style={{ flex: 1, minWidth: '90px', textAlign: 'center', background: 'var(--bg-section)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2)', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.views}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>Views</div>
-                  <div style={{ fontSize: '10px', marginTop: '2px', color: '#8b5cf6', fontWeight: 'var(--font-semibold)' }}>{jobAnalytics.views > 0 ? '100%' : '0.0%'}</div>
-                </div>
-                <div style={{ fontSize: '20px', color: '#8b5cf6' }}>→</div>
-                <div style={{ flex: 1, minWidth: '90px', textAlign: 'center', background: 'var(--bg-section)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2)', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.applications}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>Applied</div>
-                  <div style={{ fontSize: '10px', marginTop: '2px', color: '#8b5cf6', fontWeight: 'var(--font-semibold)' }}>{jobAnalytics.application_rate.toFixed(1)}%</div>
-                </div>
-                <div style={{ fontSize: '20px', color: '#8b5cf6' }}>→</div>
-                <div style={{ flex: 1, minWidth: '90px', textAlign: 'center', background: 'var(--bg-section)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2)', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.interviews_scheduled}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>Interviewed</div>
-                  <div style={{ fontSize: '10px', marginTop: '2px', color: '#8b5cf6', fontWeight: 'var(--font-semibold)' }}>{jobAnalytics.interview_rate.toFixed(1)}%</div>
-                </div>
-                <div style={{ fontSize: '20px', color: '#8b5cf6' }}>→</div>
-                <div style={{ flex: 1, minWidth: '90px', textAlign: 'center', background: 'var(--bg-section)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2)', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.offers_made}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginTop: '4px' }}>Offered</div>
-                  <div style={{ fontSize: '10px', marginTop: '2px', color: '#8b5cf6', fontWeight: 'var(--font-semibold)' }}>{jobAnalytics.offer_rate.toFixed(1)}%</div>
-                </div>
-                <div style={{ fontSize: '20px', color: '#10b981' }}>→</div>
-                <div style={{ flex: 1, minWidth: '90px', textAlign: 'center', background: '#f0fdf4', borderRadius: 'var(--radius-lg)', padding: 'var(--space-2)', border: '2px solid #10b981' }}>
-                  <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: '#10b981' }}>{jobAnalytics.hires}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: '#10b981', marginTop: '4px', fontWeight: 'var(--font-semibold)' }}>Hired</div>
-                  <div style={{ fontSize: '10px', marginTop: '2px', color: '#10b981', fontWeight: 'var(--font-semibold)' }}>{jobAnalytics.hire_rate.toFixed(1)}%</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Time Tracking */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-2)', position: 'relative', zIndex: 2 }}>
-              {jobAnalytics.avg_time_to_application_hours && (
-                <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#ec4899' }}></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ec4899', flexShrink: 0 }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>
-                        {jobAnalytics.avg_time_to_application_hours < 24 
-                          ? `${jobAnalytics.avg_time_to_application_hours.toFixed(1)} hrs`
-                          : `${(jobAnalytics.avg_time_to_application_hours / 24).toFixed(1)} days`
-                        }
+                  return (
+                    <div 
+                      className="ai-job-card"
+                      onTouchStart={onTouchStart}
+                      onTouchMove={onTouchMove}
+                      onTouchEnd={onTouchEnd}
+                    >
+                      {/* Match Badge */}
+                      <div className="ai-match-badge">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {matchPercentage}% Match
                       </div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Time to Application</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>Average response time</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {jobAnalytics.avg_time_to_hire_days && (
-                <div style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-3)', position: 'relative', border: '2px solid rgba(255,255,255,0.4)', boxShadow: '0 2px 8px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5)', overflow: 'hidden' }}>
-                  <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#8b5cf6', flexShrink: 0 }}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '24px', fontWeight: 'var(--font-bold)', color: 'var(--text-primary)' }}>{jobAnalytics.avg_time_to_hire_days.toFixed(1)} days</div>
-                      <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'var(--font-semibold)' }}>Time to Hire</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: '2px' }}>From application to hire</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {analyticsLoading && (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
-            <div style={{ fontSize: '14px' }}>Loading performance metrics...</div>
-          </div>
-        )}
-
-        <div className="purple-section-wrapper">
-        {recommendations.recommendations.length === 0 ? (
-          <div className="empty-state-modern">
-            <div className="empty-icon-professional">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-            </div>
-            <h3 className="empty-title">No Candidates Found</h3>
-            <p className="empty-subtitle">
-              No matching candidates found for this job posting yet. Check back later as new candidates join the platform.
-            </p>
-          </div>
-        ) : (() => {
-          // Show ALL cards with their status badges (shortlisted, passed, invited)
-          const allRecs = recommendations.recommendations;
-          const visibleRecs = recommendationRoleFilter === 'all'
-            ? allRecs
-            : allRecs.filter((r: any) => {
-                const role =
-                  (r.job_profile?.job_role as string | undefined) ||
-                  (r.job_posting?.job_title as string | undefined) ||
-                  (r.role as string | undefined) ||
-                  '';
-                return role === recommendationRoleFilter;
-              });
-          if (visibleRecs.length === 0) {
-            return (
-              <div className="empty-state-modern" style={{ marginTop: '24px' }}>
-                <h3 className="empty-title">No candidates match the selected role</h3>
-                <p className="empty-subtitle">Try selecting a different role or clear the filter.</p>
-              </div>
-            );
-          }
-          const safeIndex = Math.min(recCardIndex, visibleRecs.length - 1);
-          const rec = visibleRecs[safeIndex];
-          return (
-            <div className="carousel-container">
-              {/* Showing count */}
-              {recommendationRoleFilter !== 'all' && (
-                <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted, #94a3b8)', marginBottom: '8px' }}>
-                  Showing {visibleRecs.length} of {allRecs.length} candidates
-                </div>
-              )}
-              {/* Navigation Header */}
-              <div className="carousel-nav-header">
-                <button
-                  className="carousel-arrow-btn"
-                  onClick={() => setRecCardIndex(Math.max(safeIndex - 1, 0))}
-                  disabled={safeIndex === 0}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <div className="carousel-counter">
-                  <span className="carousel-current">{safeIndex + 1}</span>
-                  <span className="carousel-separator">of</span>
-                  <span className="carousel-total">{visibleRecs.length}</span>
-                  <span className="carousel-hint">candidates</span>
-                </div>
-                <button
-                  className="carousel-arrow-btn"
-                  onClick={() => setRecCardIndex(Math.min(safeIndex + 1, visibleRecs.length - 1))}
-                  disabled={safeIndex === visibleRecs.length - 1}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-              </div>
-
-              {/* Single Card */}
-              <div className="carousel-card-wrapper" key={`rec-${rec.candidate.id}-${rec.job_profile.id}`}>
-                <div className="candidate-card-modern carousel-card" onClick={() => setViewRecommendationProfile(rec)} style={{ cursor: 'pointer' }}>
-                  {/* Status Strip: shows action taken for this candidate */}
-                  {rec.already_actioned && (
-                    <div className="rec-status-strip">
-                      {rec.action_taken === 'like' && (
-                        <span className="rec-status-chip liked">
-                          <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                          Shortlisted
-                        </span>
-                      )}
-                      {rec.action_taken === 'pass' && (
-                        <span className="rec-status-chip passed">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          Passed
-                        </span>
-                      )}
-                      {rec.action_taken === 'ask_to_apply' && (
-                        <span className="rec-status-chip applied">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
-                          Invited
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {/* Card Header */}
-                  <div className="candidate-header-modern">
-                    <div className="candidate-avatar-modern">
-                      <div className="avatar-circle">
-                        {rec.candidate.name.charAt(0).toUpperCase()}
-                      </div>
-                    </div>
-                    <div className="candidate-title-section">
-                      <h3 className="candidate-name-modern">{rec.candidate.name}</h3>
-                      <div className="candidate-location">{rec.candidate.location_state}</div>
-                    </div>
-                    <div className="match-badge-modern">
-                      <div className="match-percentage">{rec.match_percentage}%</div>
-                      <div className="match-label">Match</div>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="candidate-content-modern">
-                    <div className="candidate-info-section">
-                      <div className="info-group">
-                        <h4 className="info-group-title">Contact Information</h4>
-                        <div className="info-items">
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                              <polyline points="22,6 12,13 2,6"/>
+                      {/* Candidate Header */}
+                      <div className="ai-job-card-header">
+                        <div className="ai-company-logo" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                          {getCandidateInitial(candidate.name)}
+                        </div>
+                        <div className="ai-company-info">
+                          <div className="ai-company-name">{candidate.name}</div>
+                          <div className="ai-company-verified">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            <span className="info-value">{rec.candidate.email}</span>
-                          </div>
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                            </svg>
-                            <span className="info-value">{rec.candidate.phone}</span>
+                            {jobProfile.job_role || 'Professional'}
                           </div>
                         </div>
                       </div>
 
-                      <div className="info-group">
-                        <h4 className="info-group-title">Experience & Skills</h4>
-                        <div className="info-items">
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      {/* Profile Title */}
+                      <h3 className="ai-job-title">{jobProfile.profile_name || candidate.name}</h3>
+                      <p className="ai-job-team">{candidate.location_state || 'Location not specified'}</p>
+
+                      {/* Candidate Details Grid */}
+                      <div className="ai-job-details">
+                        <div className="ai-job-detail">
+                          <div className="ai-job-detail-label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                             </svg>
-                            <span className="info-value">{rec.job_profile.years_of_experience} years experience</span>
+                            Experience
                           </div>
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                              <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            <span className="info-value">{rec.job_profile.worktype} • {rec.job_profile.employment_type}</span>
+                          <div className="ai-job-detail-value">
+                            {jobProfile.years_of_experience || 0}+ years
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="candidate-preferences-section">
-                      <div className="info-group">
-                        <h4 className="info-group-title">Preferences</h4>
-                        <div className="info-items">
-                          <div className="salary-range">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <div className="ai-job-detail">
+                          <div className="ai-job-detail-label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <line x1="12" y1="1" x2="12" y2="23"/>
                               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                             </svg>
-                            <div className="salary-info">
-                              <span className="salary-amount">${rec.job_profile.salary_min}k - ${rec.job_profile.salary_max}k</span>
-                              <span className="salary-label">Expected salary</span>
-                            </div>
+                            Salary
                           </div>
-                          <div className="info-item">
-                            <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M9 11l3 3L22 4"/>
-                              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                          <div className="ai-job-detail-value">
+                            ${jobProfile.salary_min || 0}k-${jobProfile.salary_max || 0}k
+                          </div>
+                        </div>
+                        <div className="ai-job-detail">
+                          <div className="ai-job-detail-label">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                              <circle cx="12" cy="10" r="3"/>
                             </svg>
-                            <span className="info-value">Visa: {rec.job_profile.visa_status.replace('_', ' ')}</span>
+                            Work Type
                           </div>
-                          {rec.job_profile.availability_date && (
-                            <div className="info-item">
-                              <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                              </svg>
-                              <span className="info-value">Available: {rec.job_profile.availability_date}</span>
-                            </div>
-                          )}
+                          <div className="ai-job-detail-value">{jobProfile.worktype || 'Remote'}</div>
                         </div>
                       </div>
 
-                      {rec.has_applied && (
-                        <div className="application-status">
-                          <div className="status-badge applied">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="20 6 9 17 4 12"/>
+                      {/* Job Posting Preview */}
+                      {rec.job_posting && (
+                        <div style={{
+                          background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
+                          padding: '16px',
+                          borderRadius: '12px',
+                          marginTop: '16px',
+                          border: '1px solid #C7D2FE'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            marginBottom: '12px'
+                          }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" width="20" height="20">
+                              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                             </svg>
-                            <span>Applied • {rec.application_status}</span>
+                            <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4338CA' }}>
+                              Job Posting Preview
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 600, color: '#1F2937' }}>
+                              {rec.job_posting.job_title || 'Untitled Position'}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                              <div style={{ color: '#6B7280' }}>
+                                <span style={{ fontWeight: 500 }}>📍 Location:</span> {rec.job_posting.location_city || 'Remote'}
+                              </div>
+                              <div style={{ color: '#6B7280' }}>
+                                <span style={{ fontWeight: 500 }}>💰 Salary:</span> ${rec.job_posting.salary_min || 0}k-${rec.job_posting.salary_max || 0}k
+                              </div>
+                              <div style={{ color: '#6B7280' }}>
+                                <span style={{ fontWeight: 500 }}>🏢 Type:</span> {rec.job_posting.worktype || 'Full-time'}
+                              </div>
+                              <div style={{ color: '#6B7280' }}>
+                                <span style={{ fontWeight: 500 }}>📊 Experience:</span> {rec.job_posting.years_of_experience || 0}+ yrs
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Action Buttons */}
-                  <div className="candidate-actions-modern">
-                    <div className="action-buttons-grid">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'pass') handleRecruiterPass(rec.candidate.id, rec.job_profile.id); }}
-                        className={`action-btn ${rec.action_taken === 'pass' ? 'action-btn-done passed-done' : 'secondary'}`}
-                        disabled={rec.action_taken === 'pass'}
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"/>
-                          <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                        {rec.action_taken === 'pass' ? 'Passed ✓' : 'Pass'}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'like') handleRecruiterLike(rec.candidate.id, rec.job_profile.id); }}
-                        className={`action-btn ${rec.action_taken === 'like' ? 'action-btn-done liked-done' : 'primary'}`}
-                        disabled={rec.action_taken === 'like'}
-                      >
-                        <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                        </svg>
-                        {rec.action_taken === 'like' ? 'Shortlisted ✓' : 'Like'}
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); if (rec.action_taken !== 'ask_to_apply') handleAskToApply(rec.candidate.id, rec.job_profile.id); }}
-                        className={`action-btn ${rec.action_taken === 'ask_to_apply' ? 'action-btn-done applied-done' : 'success'}`}
+                      {/* Candidate's Job Preferences */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        marginTop: '16px',
+                        border: '1px solid #FCD34D'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          marginBottom: '12px'
+                        }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" width="20" height="20">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                          </svg>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#92400E' }}>
+                            Candidate's Job Preferences
+                          </h4>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+                            {jobProfile.preferred_job_titles && (
+                              <div style={{ color: '#78350F', gridColumn: '1 / -1' }}>
+                                <span style={{ fontWeight: 500 }}>🎯 Preferred Roles:</span> {jobProfile.preferred_job_titles}
+                              </div>
+                            )}
+                            <div style={{ color: '#78350F' }}>
+                              <span style={{ fontWeight: 500 }}>💼 Work Type:</span> {jobProfile.worktype || 'Any'}
+                            </div>
+                            <div style={{ color: '#78350F' }}>
+                              <span style={{ fontWeight: 500 }}>📍 Location:</span> {jobProfile.desired_job_locations || 'Flexible'}
+                            </div>
+                            {jobProfile.relocation_willingness && (
+                              <div style={{ color: '#78350F' }}>
+                                <span style={{ fontWeight: 500 }}>🚚 Relocation:</span> {jobProfile.relocation_willingness}
+                              </div>
+                            )}
+                            {jobProfile.notice_period && (
+                              <div style={{ color: '#78350F' }}>
+                                <span style={{ fontWeight: 500 }}>📅 Notice Period:</span> {jobProfile.notice_period}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Skill Tags */}
+                      {skillTags.length > 0 && (
+                        <div className="ai-skill-tags">
+                          {skillTags.map((skill, idx) => (
+                            <span key={idx} className="ai-skill-tag">{skill}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="ai-action-buttons">
+                        <button 
+                          className="ai-action-btn pass"
+                          onClick={() => handleRecruiterPass(candidate.id, jobProfile.id)}
+                          disabled={rec.action_taken === 'pass'}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                          </svg>
+                          {rec.action_taken === 'pass' ? 'Passed' : 'Pass'}
+                        </button>
+                        <button 
+                          className="ai-action-btn save"
+                          onClick={() => handleRecruiterLike(candidate.id, jobProfile.id)}
+                          disabled={rec.action_taken === 'like'}
+                        >
+                          <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/>
+                          </svg>
+                          {rec.action_taken === 'like' ? 'Shortlisted' : 'Shortlist'}
+                        </button>
+                        <button 
+                          className="ai-action-btn apply"
+                          onClick={() => handleStartMessage(candidate.user_id)}
+                          disabled={!candidate.user_id}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          </svg>
+                          Message
+                        </button>
+                        <button 
+                          className="ai-action-btn view-details"
+                          onClick={() => setViewRecommendationProfile(rec)}
+                        >
+                          View Details
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M9 18l6-6-6-6"/>
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Invite Button (prominent secondary action) */}
+                      <button 
+                        className="ai-action-btn-primary"
+                        onClick={() => handleAskToApply(candidate.id, jobProfile.id)}
                         disabled={rec.action_taken === 'ask_to_apply'}
+                        style={{
+                          width: '100%',
+                          marginTop: '12px',
+                          padding: '12px',
+                          background: rec.action_taken === 'ask_to_apply' ? '#10B981' : 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: 'white',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          cursor: rec.action_taken === 'ask_to_apply' ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px'
+                        }}
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
                           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                           <polyline points="22,6 12,13 2,6"/>
                         </svg>
-                        {rec.action_taken === 'ask_to_apply' ? '✓ Asked to Apply' : 'Ask to Apply'}
-                      </button>
-                      <button
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          if (rec.candidate.user_id) {
-                            handleStartMessage(rec.candidate.user_id);
-                          } else {
-                            alert('Cannot message this candidate: User ID not available');
-                          }
-                        }}
-                        className="action-btn message"
-                        aria-label={`Message ${rec.candidate.name}`}
-                        title="Start conversation with candidate"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        </svg>
-                        Message
+                        {rec.action_taken === 'ask_to_apply' ? '✓ Invitation Sent' : 'Invite to Apply'}
                       </button>
                     </div>
+                  );
+                })()}
+
+                {/* Pagination with Navigation Arrows */}
+                <div className="ai-pagination">
+                  <button 
+                    className="ai-pagination-arrow ai-pagination-arrow-left"
+                    onClick={handlePreviousRec}
+                    disabled={recCardIndex === 0}
+                    aria-label="Previous candidate"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                  </button>
+                  
+                  <div className="ai-pagination-content">
+                    <div className="ai-pagination-dots">
+                      {visibleRecs.map((_: any, idx: number) => (
+                        <div
+                          key={idx}
+                          className={`ai-pagination-dot ${idx === recCardIndex ? 'active' : ''}`}
+                          onClick={() => setRecCardIndex(idx)}
+                          role="button"
+                          aria-label={`Go to candidate ${idx + 1}`}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setRecCardIndex(idx);
+                            }
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="ai-pagination-text">{recCardIndex + 1} of {visibleRecs.length}</span>
+                  </div>
+
+                  <button 
+                    className="ai-pagination-arrow ai-pagination-arrow-right"
+                    onClick={handleNextRec}
+                    disabled={recCardIndex === visibleRecs.length - 1}
+                    aria-label="Next candidate"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div style={{ width: '320px', flexShrink: 0 }}>
+            {/* AI Pipeline Insight */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="18" height="18">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                  </svg>
+                </div>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                  AI Pipeline Insight
+                </h3>
+              </div>
+              <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.6', marginBottom: '12px' }}>
+                <strong style={{ color: '#7C3AED' }}>Live update:</strong> 24 new candidates match your criteria this week, 3 are 95%+ matches currently interviewing elsewhere.
+              </div>
+              <div style={{ fontSize: '12px', color: '#9CA3AF', marginBottom: '12px' }}>This week breakdown:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: '#4B5563' }}>Design Systems</span>
+                    <span style={{ fontWeight: 600, color: '#1F2937' }}>62 / 24</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(62 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #7C3AED, #A78BFA)', borderRadius: '3px' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: '#4B5563' }}>B2B SaaS</span>
+                    <span style={{ fontWeight: 600, color: '#1F2937' }}>39 / 24</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(39 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #3B82F6, #60A5FA)', borderRadius: '3px' }}></div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                    <span style={{ color: '#4B5563' }}>Payments UX</span>
+                    <span style={{ fontWeight: 600, color: '#1F2937' }}>11 / 24</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: `${(11 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #34D399)', borderRadius: '3px' }}></div>
                   </div>
                 </div>
               </div>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#7C3AED'
+                }}
+              >
+                View full analytics →
+              </button>
+            </div>
 
-              {/* Keyboard hint */}
-              <div className="carousel-keyboard-hint">
-                Use <kbd>&#8592;</kbd> <kbd>&#8594;</kbd> arrow keys to browse
+            {/* Search Filters */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
+                  Search Filters
+                </h3>
+                <span style={{ fontSize: '11px', padding: '3px 8px', background: '#10B981', color: 'white', borderRadius: '4px', fontWeight: 600 }}>
+                  Active for this role
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
+                  Seniors
+                </span>
+                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
+                  Remote/Hybrid
+                </span>
+                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
+                  $160k-$220k
+                </span>
+                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
+                  US Time Zones
+                </span>
+                <span style={{ padding: '6px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
+                  Design Systems
+                </span>
+              </div>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #E5E7EB',
+                  background: 'white',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  color: '#374151'
+                }}
+              >
+                Edit filters
+              </button>
+            </div>
+
+            {/* Hiring Funnel */}
+            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0, marginBottom: '16px' }}>
+                Hiring Funnel
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  { label: 'Recommended', count: 248, color: '#7C3AED', width: 100 },
+                  { label: 'Shortlisted', count: 10, color: '#3B82F6', width: 40 },
+                  { label: 'Applied', count: 47, color: '#10B981', width: 60 },
+                  { label: 'Interview', count: 9, color: '#F59E0B', width: 35 },
+                  { label: 'Offer', count: 3, color: '#EF4444', width: 20 }
+                ].map((stage, idx) => (
+                  <div key={idx}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', alignItems: 'center' }}>
+                      <span style={{ color: '#4B5563', fontWeight: 500 }}>{stage.label}</span>
+                      <span style={{ fontWeight: 600, color: '#1F2937' }}>{stage.count}</span>
+                    </div>
+                    <div style={{ height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${stage.width}%`, height: '100%', background: stage.color, borderRadius: '4px' }}></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          );
-        })()}
+
+            {/* Recruiter Tip */}
+            <div style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: '12px', padding: '16px', border: '1px solid #FCD34D' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <div style={{ fontSize: '20px' }}>💡</div>
+                <div>
+                  <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#92400E', margin: 0, marginBottom: '6px' }}>
+                    Recruiter Tip
+                  </h4>
+                  <p style={{ fontSize: '12px', color: '#78350F', lineHeight: '1.5', margin: 0 }}>
+                    Candidates with 95%+ match scores have a 3x higher response rate. Prioritize reaching out to them first!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Recommendation Candidate Profile Drawer */}
@@ -1403,8 +1602,6 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         );
       })()}
-      </div>
-      </div>
       </>
     );
   };
@@ -3885,401 +4082,287 @@ const RecruiterDashboard: React.FC = () => {
   };
 
   return (
-    <div className="modern-dashboard">
+    <div className="horizontal-dashboard">
       {/* Top Navigation Bar */}
-      <div className="top-navbar">
-        <div className="navbar-left">
-          <div className="app-logo">
-            <span className="logo-text">TalentGraph</span>
+      <div className="talentgraph-topnav">
+        <div className="talentgraph-topnav-left">
+          <div className="talentgraph-logo">
+            <div className="talentgraph-logo-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 20, height: 20 }}>
+                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+              </svg>
+            </div>
+            <span className="talentgraph-logo-text">TalentGraph</span>
           </div>
         </div>
-        
-        <div className="navbar-center">
-          <h2 className="page-title">Recruiter Dashboard</h2>
+
+        <div className="talentgraph-topnav-center">
         </div>
-        
-        <div className="navbar-right">
+
+        <div className="talentgraph-topnav-right">
+          <button className="talentgraph-help-btn" title="Help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </button>
+
           <NotificationBellDrawer role="recruiter" />
-          
-          <div className="profile-dropdown">
-            <button 
-              className="profile-avatar-btn"
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-            >
-              <div className="avatar">{userInitial}</div>
-              <span className="profile-name">{userName}</span>
-              <span className="chevron">
+
+          <button className="talentgraph-user-btn" onClick={() => setShowProfileMenu(!showProfileMenu)}>
+            <div className="talentgraph-user-avatar">{userInitial}</div>
+            <div className="talentgraph-user-info">
+              <div className="talentgraph-user-name">{userName}</div>
+              <div className="talentgraph-user-role">Recruiter {userRole !== 'admin' && `• ${companyName}`}</div>
+            </div>
+          </button>
+
+          {showProfileMenu && (
+            <div className="profile-menu" style={{ position: 'absolute', top: '60px', right: '32px', zIndex: 1000 }}>
+              <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/profile'); }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="6 9 12 15 18 9"/>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
                 </svg>
-              </span>
-            </button>
-            
-            {showProfileMenu && (
-              <div className="profile-menu">
-                <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/profile'); }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  My Profile
-                </button>
-                <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/job-postings'); }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="16"/>
-                    <line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                  Job Postings
-                </button>
-                <div className="menu-divider"></div>
-                <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/'); }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
+                My Profile
+              </button>
+              <button onClick={() => { setShowProfileMenu(false); navigate('/recruiter/job-postings'); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="16"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                Job Postings
+              </button>
+              <button onClick={() => { setShowProfileMenu(false); navigate('/meetings'); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Meetings
+              </button>
+              <div className="menu-divider"></div>
+              <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/'); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Dashboard Layout */}
-      <div className="dashboard-layout">
-        {/* Premium Sidebar with Professional Navigation */}
-        <div className="sidebar">
-          <div style={{
-            padding: 'var(--space-4) var(--space-6)',
-            borderBottom: '1px solid var(--gray-200)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <h3 style={{
-              fontSize: 'var(--text-sm)',
-              fontWeight: 'var(--font-semibold)',
-              color: 'var(--gray-700)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              margin: '0 0 var(--space-2) 0'
-            }}>
-              Dashboard
-            </h3>
-            <p style={{
-              fontSize: 'var(--text-xs)',
-              color: 'var(--gray-500)',
-              margin: '0',
-              lineHeight: 'var(--leading-normal)'
-            }}>
-              Manage your recruitment pipeline
-            </p>
+      {/* Horizontal Tab Navigation */}
+      <div className="talentgraph-tabs-container">
+        <div className="talentgraph-tabs">
+          <button 
+            className={`talentgraph-tab ${activeTab === 'recommendations' ? 'active' : ''}`}
+            onClick={() => setActiveTab('recommendations')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            AI Recommendations
+            <span className="talentgraph-tab-badge-ai">AI</span>
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'browse' ? 'active' : ''}`}
+            onClick={() => setActiveTab('browse')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            Browse
+            {browseTotal > 0 && (
+              <span className="talentgraph-tab-badge">{browseTotal}</span>
+            )}
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'shortlist' ? 'active' : ''}`}
+            onClick={() => setActiveTab('shortlist')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+            Shortlisted
+            {shortlist.length > 0 && (
+              <span className="talentgraph-tab-badge">{shortlist.length}</span>
+            )}
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'applications' ? 'active' : ''}`}
+            onClick={() => setActiveTab('applications')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10,9 9,9 8,9"/>
+            </svg>
+            Applications
+            {applications.length > 0 && (
+              <span className="talentgraph-tab-badge">{applications.length}</span>
+            )}
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'matches' ? 'active' : ''}`}
+            onClick={() => setActiveTab('matches')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+            Matches
+            {matches.length > 0 && (
+              <span className="talentgraph-tab-badge">{matches.length}</span>
+            )}
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'messages' ? 'active' : ''}`}
+            onClick={() => setActiveTab('messages')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Messages
+          </button>
+
+          <button 
+            className="talentgraph-tab talentgraph-tab-create"
+            onClick={() => {
+              console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
+              navigate('/recruiter/job-postings');
+            }}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="16"/>
+              <line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            Post Job
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="talentgraph-main-content">
+        {/* Welcome Banner with KPI Cards */}
+        <div className="welcome-banner-modern">
+          <div className="welcome-header-compact">
+            <div className="welcome-avatar-compact">
+              <div className="avatar-circle-compact">{userInitial}</div>
+            </div>
+            <div className="welcome-text-compact">
+              <h1 className="welcome-title-compact">Welcome back, {userName}</h1>
+              <p className="welcome-subtitle-compact">Manage your recruitment pipeline • {companyName}</p>
+            </div>
           </div>
-          
-          <nav className="sidebar-nav">
-            {/* Main Workflow Section */}
-            <div style={{ marginBottom: 'var(--space-6)' }}>
-              <div style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--gray-400)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: 'var(--space-3)',
-                paddingLeft: 'var(--space-6)'
-              }}>
-                Candidate Pipeline
+
+          {/* KPI Banner */}
+          <div className="kpi-banner-container">
+            <div className="kpi-card kpi-card-green">
+              <div className="kpi-card-top">
+                <span className="kpi-title">ACTIVE JOBS</span>
+                <div className="kpi-icon-wrapper kpi-icon-green">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" strokeWidth="2" fill="none"/>
+                    <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" strokeWidth="2" fill="none"/>
+                  </svg>
+                </div>
               </div>
-              
-              <button 
-                className={`nav-item ${activeTab === 'recommendations' ? 'active' : ''}`}
-                onClick={() => setActiveTab('recommendations')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                  </svg>
-                </span>
-                <span className="nav-label">AI Recommendations</span>
-                <span style={{
-                  fontSize: 'var(--text-xs)',
-                  background: 'linear-gradient(90deg, var(--accent-primary), #8b5cf6)',
-                  color: 'white',
-                  padding: '2px 6px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 'var(--font-semibold)'
-                }}>
-                  AI
-                </span>
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'browse' ? 'active' : ''}`}
-                onClick={() => setActiveTab('browse')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="M21 21l-4.35-4.35"/>
-                  </svg>
-                </span>
-                <span className="nav-label">Browse Candidates</span>
-                {browseTotal > 0 && <span className="nav-badge">{browseTotal}</span>}
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'shortlist' ? 'active' : ''}`}
-                onClick={() => setActiveTab('shortlist')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="kpi-value-row">
+                <span className="kpi-value">{jobPostings.length}</span>
+                <span className="kpi-badge kpi-badge-green">open</span>
+              </div>
+              <p className="kpi-subtitle">{allJobPostings.filter(j => (j.status || '').toLowerCase() === 'frozen').length} frozen positions</p>
+            </div>
+
+            <div className="kpi-card kpi-card-blue">
+              <div className="kpi-card-top">
+                <span className="kpi-title">SHORTLISTED</span>
+                <div className="kpi-icon-wrapper kpi-icon-blue">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                   </svg>
-                </span>
-                <span className="nav-label">Shortlisted</span>
-                {shortlist.length > 0 && <span className="nav-badge">{shortlist.length}</span>}
-              </button>
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">{shortlist.length}</span>
+                <span className="kpi-badge kpi-badge-blue">saved</span>
+              </div>
+              <p className="kpi-subtitle">Top talent candidates</p>
             </div>
 
-            {/* Applications & Matches Section */}
-            <div style={{ marginBottom: 'var(--space-6)' }}>
-              <div style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--gray-400)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: 'var(--space-3)',
-                paddingLeft: 'var(--space-6)'
-              }}>
-                Active Applications
-              </div>
-              
-              <button 
-                className={`nav-item ${activeTab === 'applications' ? 'active' : ''}`}
-                onClick={() => setActiveTab('applications')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <div className="kpi-card kpi-card-purple">
+              <div className="kpi-card-top">
+                <span className="kpi-title">APPLICATIONS</span>
+                <div className="kpi-icon-wrapper kpi-icon-purple">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
+                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="1" fill="none"/>
                   </svg>
-                </span>
-                <span className="nav-label">Applications</span>
-                {applications.length > 0 && <span className="nav-badge">{applications.length}</span>}
-              </button>
-              
-              <button 
-                className={`nav-item ${activeTab === 'matches' ? 'active' : ''}`}
-                onClick={() => setActiveTab('matches')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">{applications.length}</span>
+                <span className="kpi-badge kpi-badge-purple">pending</span>
+              </div>
+              <p className="kpi-subtitle">Awaiting review</p>
+            </div>
+
+            <div className="kpi-card kpi-card-orange">
+              <div className="kpi-card-top">
+                <span className="kpi-title">MATCHES</span>
+                <div className="kpi-icon-wrapper kpi-icon-orange">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
-                </span>
-                <span className="nav-label">Mutual Matches</span>
-                {matches.length > 0 && <span className="nav-badge">{matches.length}</span>}
-              </button>
-            </div>
-
-            {/* Communication Section */}
-            <div style={{ marginBottom: 'var(--space-6)' }}>
-              <div style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--gray-400)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: 'var(--space-3)',
-                paddingLeft: 'var(--space-6)'
-              }}>
-                Communication
+                </div>
               </div>
-              
-              <button
-                className={`nav-item ${activeTab === 'messages' ? 'active' : ''}`}
-                onClick={() => setActiveTab('messages')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </span>
-                <span className="nav-label">Messages</span>
-              </button>
-              
-              <button
-                className="nav-item"
-                onClick={() => navigate('/meetings')}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </span>
-                <span className="nav-label">Meetings</span>
-              </button>
-            </div>
-
-            {/* Management Section */}
-            <div style={{
-              borderTop: '1px solid var(--gray-200)',
-              paddingTop: 'var(--space-6)',
-              marginTop: 'auto'
-            }}>
-              <div style={{
-                fontSize: 'var(--text-xs)',
-                fontWeight: 'var(--font-semibold)',
-                color: 'var(--gray-400)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                marginBottom: 'var(--space-3)',
-                paddingLeft: 'var(--space-6)'
-              }}>
-                Management
+              <div className="kpi-value-row">
+                <span className="kpi-value">{matches.length}</span>
+                <span className="kpi-badge kpi-badge-orange">mutual</span>
               </div>
-              
-              <button 
-                type="button"
-                className="nav-item"
-                onClick={() => {
-                  console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
-                  navigate('/recruiter/job-postings');
-                }}
-              >
-                <span className="nav-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="16"/>
-                    <line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
-                </span>
-                <span className="nav-label">Job Posting Builder</span>
-                <span style={{
-                  fontSize: 'var(--text-xs)',
-                  background: 'var(--success)',
-                  color: 'white',
-                  padding: '2px 6px',
-                  borderRadius: 'var(--radius-sm)',
-                  fontWeight: 'var(--font-semibold)'
-                }}>
-                  +
-                </span>
-              </button>
+              <p className="kpi-subtitle">Both parties interested</p>
             </div>
-          </nav>
+          </div>
         </div>
 
-        {/* Main Content */}
-        <div className="main-content">
-          {/* Welcome Card - Simple Version */}
-          <div className="welcome-card-modern">
-            <div className="welcome-content-enhanced">
-              <div className="welcome-header">
-                <div className="welcome-avatar">
-                  <div className="user-avatar">{userInitial}</div>
-                </div>
-                <div className="welcome-text">
-                  <h1 className="welcome-title-modern">Welcome back, {userName}</h1>
-                  <p className="welcome-subtitle-modern">Here's your recruitment activity overview</p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Enhanced KPI Cards with Icons */}
-            <div className="kpi-grid-modern">
-              <div className="kpi-card-enhanced active-jobs">
-                <div className="kpi-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
-                  </svg>
-                </div>
-                <div className="kpi-content">
-                  <div className="kpi-value">{jobPostings.length}</div>
-                  <div className="kpi-label">Active Jobs</div>
-                </div>
-                <div className="kpi-trend" style={{ fontSize: '11px', color: '#64748b' }}>
-                  {allJobPostings.filter(j => (j.status || '').toLowerCase() === 'frozen').length} frozen
-                </div>
-              </div>
-              
-              <div className="kpi-card-enhanced shortlisted">
-                <div className="kpi-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </div>
-                <div className="kpi-content">
-                  <div className="kpi-value">{shortlist.length}</div>
-                  <div className="kpi-label">Shortlisted</div>
-                </div>
-                <div className="kpi-change">This week</div>
-              </div>
-              
-              <div className="kpi-card-enhanced applications">
-                <div className="kpi-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                  </svg>
-                </div>
-                <div className="kpi-content">
-                  <div className="kpi-value">{applications.length}</div>
-                  <div className="kpi-label">Applications</div>
-                </div>
-                <div className="kpi-change">Pending review</div>
-              </div>
-              
-              <div className="kpi-card-enhanced matches">
-                <div className="kpi-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </div>
-                <div className="kpi-content">
-                  <div className="kpi-value">{matches.length}</div>
-                  <div className="kpi-label">Matches</div>
-                </div>
-                <div className="kpi-trend positive">+3 new</div>
-              </div>
-            </div>
+        {/* Content Panel */}
+        <div className="content-panel-horizontal">
+          <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
+            {renderRecommendations()}
           </div>
-
-          {/* Content Panel */}
-          <div className="content-panel">
-            <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
-              {renderRecommendations()}
-            </div>
-            <div style={{ display: activeTab === 'shortlist' ? 'block' : 'none' }}>
-              {renderShortlist()}
-            </div>
-            <div style={{ display: activeTab === 'applications' ? 'block' : 'none' }}>
-              {renderApplications()}
-            </div>
-            <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
-              {renderMatches()}
-            </div>
-            <div style={{ display: activeTab === 'browse' ? 'block' : 'none' }}>
-              {renderBrowseCandidates()}
-            </div>
-            <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
-              <ChatWindow />
-            </div>
+          <div style={{ display: activeTab === 'shortlist' ? 'block' : 'none' }}>
+            {renderShortlist()}
+          </div>
+          <div style={{ display: activeTab === 'applications' ? 'block' : 'none' }}>
+            {renderApplications()}
+          </div>
+          <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
+            {renderMatches()}
+          </div>
+          <div style={{ display: activeTab === 'browse' ? 'block' : 'none' }}>
+            {renderBrowseCandidates()}
+          </div>
+          <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
+            <ChatWindow />
           </div>
         </div>
       </div>

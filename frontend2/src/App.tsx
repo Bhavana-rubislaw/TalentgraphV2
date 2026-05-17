@@ -231,9 +231,10 @@ const App: React.FC = () => {
         <BootGate>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<SignupPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/signin" element={<SignupPage />} />
+            <Route path="/landing" element={<LandingPage />} />
 
             {/* Profile Setup Pages */}
             <Route
