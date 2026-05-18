@@ -440,16 +440,20 @@ Write-Host "Token received: $($jsonResponse.access_token.Substring(0,20))..."
 
 **Command**
 ```powershell
-$body = '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}'
+$body = '{"email":"recruiter2.jennifer@techcorp.com","password":"Kutty_1304"}'
 $res = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body $body -ContentType "application/json"
 $res | ConvertTo-Json
 ```
 
 **Use**
-- Logs in company user and returns JSON response.
+- Logs in company user (recruiter or HR) and returns JSON response.
 
 **Expected Output**
 - JSON with `access_token`, `role`, `company_name`, etc.
+
+**Note**
+- Admin users must use `/auth/admin/login` endpoint
+- Only one admin exists: `talentgraph.interviews@gmail.com`
 
 ---
 

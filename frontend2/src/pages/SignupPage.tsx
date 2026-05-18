@@ -23,8 +23,8 @@ const SignupPage: React.FC = () => {
     fullName: '',
     password: '',
     userType: isCompanyFlow ? 'company' : (isCandidateFlow ? 'candidate' : 'company'),
-    companyRole: urlRole === 'recruiter' ? 'recruiter' : 'admin',
-    signInRole: 'admin', // For sign-in role validation
+    companyRole: urlRole === 'recruiter' ? 'recruiter' : 'recruiter', // Default to recruiter instead of admin
+    signInRole: 'recruiter', // For sign-in role validation
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
@@ -33,18 +33,18 @@ const SignupPage: React.FC = () => {
   useEffect(() => {
     // Update companyRole if URL param changes
     if (urlRole) {
-      if (urlRole === 'recruiter') {
+      if (urlRole === 'recruiter' || urlRole === 'hr' || urlRole === 'admin') {
+        setFormData(prev => ({
+          ...prev,
+          userType: 'company',
+          companyRole: urlRole
+        }));
+      } else {
+        // Default to recruiter for any other URL role
         setFormData(prev => ({
           ...prev,
           userType: 'company',
           companyRole: 'recruiter'
-        }));
-      } else {
-        // Default to admin for any other URL role
-        setFormData(prev => ({
-          ...prev,
-          userType: 'company',
-          companyRole: 'admin'
         }));
       }
     }
@@ -62,11 +62,43 @@ const SignupPage: React.FC = () => {
     setError('');
     setLoading(true);
 
-    console.log('[AUTH] Sign in attempt - Email:', formData.email, 'UserType:', formData.userType);
+    console.log('[AUTH] Sign in attempt - Email:', formData.email, 'UserType:', formData.userType, 'CompanyRole:', formData.companyRole);
     try {
       let response;
       
-      // Use appropriate login endpoint based on user type
+      // Check if admin role is selected OR if this is the system admin email
+      if ((formData.userType === 'company' && formData.companyRole === 'admin') || 
+          formData.email.toLowerCase() === 'talentgraph.interviews@gmail.com') {
+        // Use admin login endpoint
+        response = await apiClient.post('/auth/admin/login', {
+          email: formData.email,
+          password: formData.password
+        });
+        console.log('[AUTH SUCCESS] System admin logged in - Email:', response.data.email);
+        
+        // Save token and user info
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user_id', String(response.data.user_id));
+        localStorage.setItem('email', response.data.email);
+        localStorage.setItem('role', 'admin');
+        if (response.data.full_name) localStorage.setItem('full_name', response.data.full_name);
+        
+        // Set user in context
+        setUser({
+          user_id: response.data.user_id,
+          email: response.data.email,
+          role: 'admin',
+          full_name: response.data.full_name || '',
+          is_profile_complete: true,
+        });
+        
+        // Redirect to admin dashboard or default page
+        console.log('[NAVIGATION] System admin - Redirecting to admin dashboard');
+        navigate('/admin/logs'); // or any admin route you have
+        return;
+      }
+      
+      // Regular user login (candidate/recruiter/hr)
       if (formData.userType === 'candidate') {
         response = await apiClient.candidateLogin(formData.email, formData.password);
         console.log('[AUTH SUCCESS] Candidate logged in - Email:', response.data.email);
@@ -135,6 +167,12 @@ const SignupPage: React.FC = () => {
     }
 
     setError('');
+
+    // Prevent admin signup
+    if (formData.userType === 'company' && formData.companyRole === 'admin') {
+      setError('System Admin accounts cannot be created through signup. Admin is for sign-in only.');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       console.warn('[VALIDATION] Password mismatch');
@@ -230,7 +268,7 @@ const SignupPage: React.FC = () => {
             Sign in to your TalentGraph account
           </p>
           <p className="auth-platform-description">
-            TalentGraph connects candidates, recruiters, HR teams, and admins through intelligent profile matching, job discovery, application tracking, interview scheduling, and real-time notifications.
+            TalentGraph connects candidates, recruiters, HR teams, and system administrators through intelligent profile matching, job discovery, application tracking, interview scheduling, and real-time notifications.
           </p>
           
           {/* Role Cards */}
@@ -284,8 +322,8 @@ const SignupPage: React.FC = () => {
                 </svg>
               </div>
               <div className="auth-role-content">
-                <h3 className="auth-role-title">Admin</h3>
-                <p className="auth-role-description">Manage platform and system health</p>
+                <h3 className="auth-role-title">System Admin</h3>
+                <p className="auth-role-description">Platform administration (restricted access)</p>
               </div>
             </div>
           </div>
@@ -357,7 +395,7 @@ const SignupPage: React.FC = () => {
                   <button
                     type="button"
                     className={`auth-role-select-button ${formData.userType === 'candidate' ? 'active' : ''}`}
-                    onClick={() => setFormData({ ...formData, userType: 'candidate', companyRole: 'admin' })}
+                    onClick={() => setFormData({ ...formData, userType: 'candidate', companyRole: 'recruiter' })}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -380,6 +418,7 @@ const SignupPage: React.FC = () => {
                     type="button"
                     className={`auth-role-select-button ${formData.userType === 'company' && formData.companyRole === 'admin' ? 'active' : ''}`}
                     onClick={() => setFormData({ ...formData, userType: 'company', companyRole: 'admin' })}
+                    title="System Administrator - Sign in only"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M12 15C15.866 15 19 11.866 19 8C19 4.13401 15.866 1 12 1C8.13401 1 5 4.13401 5 8C5 11.866 8.13401 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -388,6 +427,11 @@ const SignupPage: React.FC = () => {
                     Admin
                   </button>
                 </div>
+                {formData.userType === 'company' && formData.companyRole === 'admin' && (
+                  <div style={{marginTop: '8px', fontSize: '12px', color: '#666', fontStyle: 'italic'}}>
+                    System Admin login only. Use: talentgraph.interviews@gmail.com
+                  </div>
+                )}
               </div>
 
               {/* Email Field */}

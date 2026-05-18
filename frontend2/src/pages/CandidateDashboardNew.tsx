@@ -852,20 +852,78 @@ const CandidateDashboard: React.FC = () => {
       return companyName ? companyName.charAt(0).toUpperCase() : 'C';
     };
 
-    // Helper to get top matched skills (mock data - replace with real matching logic)
+    // Helper to get top matched skills from actual recommendation data
     const getMatchedSkills = (rec: any) => {
-      return [
-        { name: 'Design Systems', percentage: 98 },
-        { name: 'Figma & Tooling', percentage: 94 },
-        { name: 'Component Libraries', percentage: 91 },
-        { name: 'Accessibility (a11y)', percentage: 87 },
-      ];
+      const posting_skills = rec.job_posting?.posting_skills || [];
+      return posting_skills.slice(0, 4).map((sk: any) => ({
+        name: sk.skill_name,
+        percentage: sk.rating ? (sk.rating * 20) : 75  // Convert rating 1-5 to percentage
+      }));
     };
 
     // Helper to get skill tags
     const getSkillTags = (rec: any) => {
-      return ['Design Systems', 'Figma', 'Component Libraries', 'Accessibility'];
+      const skills = rec.job_posting?.posting_skills || [];
+      return skills.slice(0, 4).map((sk: any) => sk.skill_name);
     };
+
+    // Generate dynamic AI match reasons based on actual match details
+    const generateMatchReason = (rec: any) => {
+      const details = rec.match_details || {};
+      const reasons: string[] = [];
+      
+      // Product/Role match
+      if (details.product_match >= 30) {
+        reasons.push(`Perfect ${rec.job_posting?.product_vendor || 'product'} match`);
+      } else if (details.product_match >= 20) {
+        reasons.push(`Good ${rec.job_posting?.product_vendor || 'product'} alignment`);
+      }
+      
+      // Skills match
+      if (details.skills_match >= 20) {
+        reasons.push('strong technical skills alignment');
+      } else if (details.skills_match >= 15) {
+        reasons.push('good skills match');
+      } else if (details.skills_match > 0) {
+        reasons.push('some relevant skills');
+      }
+      
+      // Experience match
+      if (details.experience_match >= 20) {
+        reasons.push('experience level matches perfectly');
+      } else if (details.experience_match >= 10) {
+        reasons.push('relevant experience level');
+      }
+      
+      // Location match
+      if (details.location_match >= 10) {
+        reasons.push('location preference aligned');
+      }
+      
+      // Salary match
+      if (details.salary_match >= 10) {
+        reasons.push('salary expectations in range');
+      }
+      
+      // Worktype preference
+      const worktype = rec.job_posting?.worktype;
+      if (worktype && details.location_match > 0) {
+        reasons.push(`${worktype} work arrangement`);
+      }
+      
+      // Default fallback
+      if (reasons.length === 0) {
+        return 'This role aligns with your profile and preferences.';
+      }
+      
+      // Capitalize first reason
+      if (reasons.length > 0) {
+        reasons[0] = reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1);
+      }
+      
+      return reasons.join(', ') + '.';
+    };
+
 
     if (jobProfiles.length === 0) {
       return (
@@ -1117,6 +1175,14 @@ const CandidateDashboard: React.FC = () => {
                 const matchedSkills = getMatchedSkills(rec);
                 const skillTags = getSkillTags(rec);
 
+                // Log match details for debugging
+                console.log('[REC CARD DATA]', {
+                  matchPercentage,
+                  match_details: rec.match_details,
+                  matchReason: generateMatchReason(rec),
+                  skills: skillTags
+                });
+
                 return (
                   <div 
                     className="ai-job-card"
@@ -1163,7 +1229,9 @@ const CandidateDashboard: React.FC = () => {
                           Salary
                         </div>
                         <div className="ai-job-detail-value">
-                          ${jobPosting.salary_min ? `${Math.floor(jobPosting.salary_min / 1000)}` : '160'}-{jobPosting.salary_max ? `${Math.floor(jobPosting.salary_max / 1000)}k` : '200k'}
+                          {jobPosting.salary_min && jobPosting.salary_max 
+                            ? `$${Math.floor(jobPosting.salary_min / 1000)}k-${Math.floor(jobPosting.salary_max / 1000)}k`
+                            : 'Not disclosed'}
                         </div>
                       </div>
                       <div className="ai-job-detail">
@@ -1184,7 +1252,7 @@ const CandidateDashboard: React.FC = () => {
                           </svg>
                           Location
                         </div>
-                        <div className="ai-job-detail-value">{jobPosting.location || 'Remote'}</div>
+                        <div className="ai-job-detail-value">{jobPosting.worktype || jobPosting.location || 'Remote'}</div>
                       </div>
                     </div>
 
@@ -1197,8 +1265,78 @@ const CandidateDashboard: React.FC = () => {
                         <span className="ai-match-reason-title">AI Match Reason</span>
                       </div>
                       <p className="ai-match-reason-text">
-                        Strong alignment with your design systems experience and remote preference.
+                        {generateMatchReason(rec)}
                       </p>
+                      
+                      {/* Match Score Breakdown */}
+                      {rec.match_details && (
+                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {rec.match_details.product_match > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Role Match</span>
+                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${(rec.match_details.product_match / 35) * 100}%`, 
+                                  height: '100%', 
+                                  background: '#7B5EA7',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#7B5EA7', minWidth: '30px', textAlign: 'right' }}>
+                                {rec.match_details.product_match}%
+                              </span>
+                            </div>
+                          )}
+                          {rec.match_details.skills_match > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Skills</span>
+                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${(rec.match_details.skills_match / 25) * 100}%`, 
+                                  height: '100%', 
+                                  background: '#10B981',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669', minWidth: '30px', textAlign: 'right' }}>
+                                {rec.match_details.skills_match}%
+                              </span>
+                            </div>
+                          )}
+                          {rec.match_details.experience_match > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Experience</span>
+                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${(rec.match_details.experience_match / 20) * 100}%`, 
+                                  height: '100%', 
+                                  background: '#3B82F6',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', minWidth: '30px', textAlign: 'right' }}>
+                                {rec.match_details.experience_match}%
+                              </span>
+                            </div>
+                          )}
+                          {(rec.match_details.salary_match > 0 || rec.match_details.location_match > 0) && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Preferences</span>
+                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${((rec.match_details.salary_match + rec.match_details.location_match) / 20) * 100}%`, 
+                                  height: '100%', 
+                                  background: '#F59E0B',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#D97706', minWidth: '30px', textAlign: 'right' }}>
+                                {rec.match_details.salary_match + rec.match_details.location_match}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Skill Tags */}
@@ -1428,10 +1566,117 @@ const CandidateDashboard: React.FC = () => {
             </div>
 
             <div className="cal-drawer-body">
+              {/* Product/Vendor Section */}
+              {(viewRecommendationJob.job_posting.product_vendor || viewRecommendationJob.job_posting.product_type) && (
+                <div className="cal-drawer-section">
+                  <div className="cal-drawer-section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                    Product & Technology
+                  </div>
+                  <div className="cal-drawer-meta-grid">
+                    {viewRecommendationJob.job_posting.product_vendor && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Product/Vendor</span>
+                        <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.product_vendor}</span>
+                      </div>
+                    )}
+                    {viewRecommendationJob.job_posting.product_type && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Product Type</span>
+                        <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.product_type}</span>
+                      </div>
+                    )}
+                    {viewRecommendationJob.job_posting.job_category && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Category</span>
+                        <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.job_category}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Match Score Section */}
+              <div className="cal-drawer-section">
+                <div className="cal-drawer-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  AI Match Analysis
+                </div>
+                <div className="cal-drawer-field">
+                  <span className="cal-drawer-field-label">Overall Match</span>
+                  <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 600, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
+                </div>
+                {viewRecommendationJob.match_details && (
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {viewRecommendationJob.match_details.product_match > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Role Match</span>
+                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(viewRecommendationJob.match_details.product_match / 35) * 100}%`, height: '100%', background: '#7B5EA7' }} />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#7B5EA7', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.product_match}%</span>
+                      </div>
+                    )}
+                    {viewRecommendationJob.match_details.skills_match > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Skills</span>
+                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(viewRecommendationJob.match_details.skills_match / 25) * 100}%`, height: '100%', background: '#10B981' }} />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#059669', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.skills_match}%</span>
+                      </div>
+                    )}
+                    {viewRecommendationJob.match_details.experience_match > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Experience</span>
+                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${(viewRecommendationJob.match_details.experience_match / 20) * 100}%`, height: '100%', background: '#3B82F6' }} />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#2563EB', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.experience_match}%</span>
+                      </div>
+                    )}
+                    {(viewRecommendationJob.match_details.salary_match > 0 || viewRecommendationJob.match_details.location_match > 0) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Preferences</span>
+                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${((viewRecommendationJob.match_details.salary_match + viewRecommendationJob.match_details.location_match) / 20) * 100}%`, height: '100%', background: '#F59E0B' }} />
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#D97706', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.salary_match + viewRecommendationJob.match_details.location_match}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Compensation Section */}
+              <div className="cal-drawer-section">
+                <div className="cal-drawer-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  Compensation
+                </div>
+                <div className="cal-drawer-meta-grid">
+                  <div className="cal-drawer-field">
+                    <span className="cal-drawer-field-label">Salary Range</span>
+                    <span className="cal-drawer-field-value">
+                      ${viewRecommendationJob.job_posting.salary_min ? Math.floor(viewRecommendationJob.job_posting.salary_min / 1000) : '?'}k - 
+                      ${viewRecommendationJob.job_posting.salary_max ? Math.floor(viewRecommendationJob.job_posting.salary_max / 1000) : '?'}k
+                      {viewRecommendationJob.job_posting.salary_currency && ` ${viewRecommendationJob.job_posting.salary_currency.toUpperCase()}`}
+                    </span>
+                  </div>
+                  {viewRecommendationJob.job_posting.pay_type && (
+                    <div className="cal-drawer-field">
+                      <span className="cal-drawer-field-label">Pay Type</span>
+                      <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.pay_type === 'hourly' ? 'Hourly' : 'Annually'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Job Overview Section */}
               <div className="cal-drawer-section">
                 <div className="cal-drawer-section-title">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                  Overview
+                  Position Details
                 </div>
                 <div className="cal-drawer-meta-grid">
                   {viewRecommendationJob.job_posting.location && (
@@ -1449,7 +1694,7 @@ const CandidateDashboard: React.FC = () => {
                   {viewRecommendationJob.job_posting.employment_type && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Employment</span>
-                      <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.employment_type}</span>
+                      <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.employment_type.toUpperCase()}</span>
                     </div>
                   )}
                   {viewRecommendationJob.job_posting.seniority_level && (
@@ -1458,16 +1703,18 @@ const CandidateDashboard: React.FC = () => {
                       <span className="cal-drawer-field-value">{viewRecommendationJob.job_posting.seniority_level}</span>
                     </div>
                   )}
+                  {viewRecommendationJob.job_posting.start_date && (
+                    <div className="cal-drawer-field">
+                      <span className="cal-drawer-field-label">Start Date</span>
+                      <span className="cal-drawer-field-value">{new Date(viewRecommendationJob.job_posting.start_date).toLocaleDateString()}</span>
+                    </div>
+                  )}
                   {viewRecommendationJob.job_posting.end_date && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Apply By</span>
                       <span className="cal-drawer-field-value">{new Date(viewRecommendationJob.job_posting.end_date).toLocaleDateString()}</span>
                     </div>
                   )}
-                  <div className="cal-drawer-field">
-                    <span className="cal-drawer-field-label">Match Score</span>
-                    <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 600 }}>{viewRecommendationJob.match_percentage}%</span>
-                  </div>
                 </div>
               </div>
 

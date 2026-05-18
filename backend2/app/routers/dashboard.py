@@ -662,7 +662,7 @@ def get_recruiter_recommendations(
         
         if not candidate or not profile or not job_posting:
             logger.warning(
-                "Skipping orphaned shortlist swipe id=%s (candidate=%s, profile=%s, posting=%s)",
+                "Skipping orphaned profile id=%s (candidate=%s, profile=%s, posting=%s)",
                 profile.id,
                 bool(candidate),
                 bool(profile),
@@ -701,6 +701,47 @@ def get_recruiter_recommendations(
             )
         ).first()
         
+        # Skills
+        skills_list = []
+        for sk in profile.skills:
+            skills_list.append({
+                "skill_name": sk.skill_name,
+                "skill_category": sk.skill_category,
+                "proficiency_level": sk.proficiency_level
+            })
+        
+        # Location preferences
+        location_prefs = []
+        for lp in profile.location_preferences:
+            location_prefs.append({
+                "city": lp.city,
+                "state": lp.state,
+                "country": lp.country
+            })
+        
+        # Resumes
+        resumes_list = []
+        for r in candidate.resumes:
+            resumes_list.append({
+                "id": r.id,
+                "filename": r.filename,
+                "storage_path": r.storage_path,
+                "uploaded_at": r.uploaded_at.isoformat() if r.uploaded_at else None
+            })
+        
+        # Certifications
+        certs_list = []
+        for ct in candidate.certifications:
+            certs_list.append({
+                "id": ct.id,
+                "name": ct.name,
+                "issuer": ct.issuer,
+                "filename": ct.filename,
+                "storage_path": ct.storage_path,
+                "issued_date": ct.issued_date,
+                "expiry_date": ct.expiry_date
+            })
+        
         recommendations.append({
             "candidate": {
                 "id": candidate.id,
@@ -708,7 +749,12 @@ def get_recruiter_recommendations(
                 "name": candidate.name,
                 "email": candidate.email,
                 "phone": candidate.phone,
-                "location_state": candidate.location_state
+                "location_state": candidate.location_state,
+                "linkedin_url": candidate.linkedin_url,
+                "github_url": candidate.github_url,
+                "portfolio_url": candidate.portfolio_url,
+                "resumes": resumes_list,
+                "certifications": certs_list
             },
             "job_profile": {
                 "id": profile.id,
@@ -719,7 +765,16 @@ def get_recruiter_recommendations(
                 "salary_min": profile.salary_min,
                 "salary_max": profile.salary_max,
                 "visa_status": profile.visa_status,
-                "availability_date": profile.availability_date
+                "availability_date": profile.availability_date,
+                "highest_education": profile.highest_education,
+                "security_clearance": profile.security_clearance,
+                "linkedin_url": profile.linkedin_url,
+                "github_url": profile.github_url,
+                "portfolio_url": profile.portfolio_url,
+                "twitter_url": profile.twitter_url,
+                "website_url": profile.website_url,
+                "skills": skills_list,
+                "location_preferences": location_prefs
             },
             "match_percentage": match.match_percentage if match else 80.0,
             "already_actioned": existing_swipe is not None,

@@ -964,6 +964,43 @@ const RecruiterDashboard: React.FC = () => {
                   const matchedSkills = getMatchedSkills(rec);
                   const skillTags = getSkillTags(rec);
 
+                  // Calculate compensation overlap
+                  const jobSalaryMin = rec.job_posting?.salary_min || 0;
+                  const jobSalaryMax = rec.job_posting?.salary_max || 0;
+                  const candidateSalaryMin = jobProfile.salary_min || 0;
+                  const candidateSalaryMax = jobProfile.salary_max || 0;
+                  
+                  const overlapMin = Math.max(jobSalaryMin, candidateSalaryMin);
+                  const overlapMax = Math.min(jobSalaryMax, candidateSalaryMax);
+                  const hasOverlap = overlapMax >= overlapMin;
+                  const overlapPct = hasOverlap 
+                    ? ((overlapMax - overlapMin) / Math.max(candidateSalaryMax - candidateSalaryMin, 1)) * 100
+                    : 0;
+                  
+                  const compStatus = overlapPct > 70 ? 'high' : overlapPct > 30 ? 'medium' : 'low';
+                  const compColor = compStatus === 'high' ? '#10B981' : compStatus === 'medium' ? '#F59E0B' : '#EF4444';
+
+                  // Calculate availability risk
+                  const availabilityDate = jobProfile.availability_date ? new Date(jobProfile.availability_date) : null;
+                  const daysUntilAvailable = availabilityDate 
+                    ? Math.ceil((availabilityDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                    : 0;
+                  const availabilityRisk = daysUntilAvailable <= 0 ? 'immediate' : daysUntilAvailable <= 30 ? 'soon' : 'delayed';
+                  const availabilityColor = availabilityRisk === 'immediate' ? '#10B981' : availabilityRisk === 'soon' ? '#F59E0B' : '#6B7280';
+                  const availabilityLabel = availabilityRisk === 'immediate' ? 'Available Now' : 
+                    availabilityRisk === 'soon' ? `${daysUntilAvailable}d notice` : 
+                    `${daysUntilAvailable}d notice`;
+
+                  // Work authorization status
+                  const visaStatus = jobProfile.visa_status || 'unknown';
+                  const authStatus = visaStatus.toLowerCase().includes('citizen') || visaStatus.toLowerCase().includes('authorized') 
+                    ? 'authorized' 
+                    : visaStatus.toLowerCase().includes('sponsorship') || visaStatus.toLowerCase().includes('h1b') || visaStatus.toLowerCase().includes('visa')
+                    ? 'needs_sponsorship'
+                    : 'unknown';
+                  const authColor = authStatus === 'authorized' ? '#10B981' : authStatus === 'needs_sponsorship' ? '#F59E0B' : '#6B7280';
+                  const authLabel = authStatus === 'authorized' ? '✓ Authorized' : authStatus === 'needs_sponsorship' ? '⚠ Needs Visa' : 'Status Unknown';
+
                   return (
                     <div 
                       className="ai-job-card"
@@ -972,11 +1009,13 @@ const RecruiterDashboard: React.FC = () => {
                       onTouchEnd={onTouchEnd}
                     >
                       {/* Match Badge */}
-                      <div className="ai-match-badge">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        {matchPercentage}% Match
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                        <div className="ai-match-badge">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          {matchPercentage}% Match
+                        </div>
                       </div>
 
                       {/* Candidate Header */}
@@ -997,7 +1036,163 @@ const RecruiterDashboard: React.FC = () => {
 
                       {/* Profile Title */}
                       <h3 className="ai-job-title">{jobProfile.profile_name || candidate.name}</h3>
-                      <p className="ai-job-team">{candidate.location_state || 'Location not specified'}</p>
+                      <p className="ai-job-team">
+                        {jobProfile.job_role || 'Professional'} • {candidate.location_state || 'Location not specified'}
+                      </p>
+
+                      {/* Current Role Alignment - Quick Visual */}
+                      {rec.job_posting && (
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          background: '#F9FAFB',
+                          borderRadius: '6px',
+                          marginTop: '8px',
+                          fontSize: '12px'
+                        }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" width="16" height="16">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                          </svg>
+                          <span style={{ color: '#6B7280' }}>
+                            Applied for: <span style={{ fontWeight: 600, color: '#374151' }}>{rec.job_posting.job_title}</span>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Match Breakdown Visualization */}
+                      <div style={{
+                        background: '#F9FAFB',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        marginTop: '12px',
+                        marginBottom: '16px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '8px'
+                        }}>
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
+                            Match Breakdown
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                            Overall: {matchPercentage}%
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {/* Skills Match */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Skills</span>
+                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${Math.min(matchPercentage + 5, 95)}%`, 
+                                  height: '100%', 
+                                  background: 'linear-gradient(90deg, #10B981, #059669)',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669', minWidth: '30px', textAlign: 'right' }}>
+                                {Math.min(matchPercentage + 5, 95)}%
+                              </span>
+                            </div>
+                          </div>
+                          {/* Experience Match */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Experience</span>
+                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${Math.min(matchPercentage, 100)}%`, 
+                                  height: '100%', 
+                                  background: 'linear-gradient(90deg, #3B82F6, #2563EB)',
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', minWidth: '30px', textAlign: 'right' }}>
+                                {Math.min(matchPercentage, 100)}%
+                              </span>
+                            </div>
+                          </div>
+                          {/* Compensation Match */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Salary</span>
+                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ 
+                                  width: `${overlapPct}%`, 
+                                  height: '100%', 
+                                  background: `linear-gradient(90deg, ${compColor}, ${compColor}dd)`,
+                                  transition: 'width 0.3s ease'
+                                }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: compColor, minWidth: '30px', textAlign: 'right' }}>
+                                {Math.round(overlapPct)}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Skill Match Chips */}
+                      {matchedSkills.length > 0 && (
+                        <div style={{ marginBottom: '16px' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            marginBottom: '8px' 
+                          }}>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
+                              Top Skill Matches
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#6B7280' }}>
+                              {matchedSkills.length} verified
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {matchedSkills.slice(0, 4).map((skill: any, idx: number) => (
+                              <span key={idx} style={{
+                                fontSize: '11px',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                background: 'linear-gradient(135deg, #10B98120, #05966920)',
+                                border: '1px solid #10B981',
+                                color: '#047857',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}>
+                                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                {skill.name || skill.skill_name || skill}
+                                {skill.level && skill.level >= 4 && (
+                                  <span style={{ marginLeft: '2px', fontSize: '9px' }}>★</span>
+                                )}
+                              </span>
+                            ))}
+                            {skillTags.length > 4 && (
+                              <span style={{
+                                fontSize: '11px',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                background: '#F3F4F6',
+                                color: '#6B7280',
+                                fontWeight: 600
+                              }}>
+                                +{skillTags.length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Candidate Details Grid */}
                       <div className="ai-job-details">
@@ -1021,8 +1216,22 @@ const RecruiterDashboard: React.FC = () => {
                             </svg>
                             Salary
                           </div>
-                          <div className="ai-job-detail-value">
-                            ${jobProfile.salary_min || 0}k-${jobProfile.salary_max || 0}k
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div className="ai-job-detail-value">
+                              ${jobProfile.salary_min || 0}k-${jobProfile.salary_max || 0}k
+                            </div>
+                            {hasOverlap && (
+                              <span style={{
+                                fontSize: '10px',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                background: `${compColor}20`,
+                                color: compColor,
+                                fontWeight: 700
+                              }}>
+                                {compStatus === 'high' ? '✓' : compStatus === 'medium' ? '~' : '!'}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="ai-job-detail">
@@ -1140,6 +1349,73 @@ const RecruiterDashboard: React.FC = () => {
                         </div>
                       )}
 
+                      {/* Profile Quality & Quick Actions */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '8px',
+                        padding: '12px',
+                        background: '#F9FAFB',
+                        borderRadius: '8px',
+                        marginTop: '16px',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: 'white'
+                          }}>
+                            {Math.round(
+                              ((jobProfile.profile_name ? 20 : 0) +
+                              (jobProfile.years_of_experience ? 20 : 0) +
+                              (skillTags.length > 0 ? 20 : 0) +
+                              (jobProfile.salary_min ? 20 : 0) +
+                              (candidate.email ? 20 : 0)) / 100 * 100
+                            )}%
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>
+                              Profile Completeness
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#6B7280' }}>
+                              {candidate.email && candidate.phone ? 'Contactable' : 'Limited contact info'}
+                            </div>
+                          </div>
+                        </div>
+                        {candidate.email && (
+                          <a
+                            href={`mailto:${candidate.email}`}
+                            style={{
+                              padding: '6px 12px',
+                              background: 'white',
+                              border: '1px solid #E5E7EB',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              color: '#374151',
+                              textDecoration: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                              <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Email
+                          </a>
+                        )}
+                      </div>
+
                       {/* Action Buttons */}
                       <div className="ai-action-buttons">
                         <button 
@@ -1160,7 +1436,7 @@ const RecruiterDashboard: React.FC = () => {
                           <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/>
                           </svg>
-                          {rec.action_taken === 'like' ? 'Shortlisted' : 'Shortlist'}
+                          {rec.action_taken === 'like' ? 'Liked' : 'Like'}
                         </button>
                         <button 
                           className="ai-action-btn apply"
@@ -1527,6 +1803,323 @@ const RecruiterDashboard: React.FC = () => {
                         <div key={index} className="vp-skill-tag">
                           <span className="vp-skill-name">{skill.skill_name}</span>
                           {skill.rating && <span className="vp-skill-level">L{skill.rating}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Education & Authorization Section */}
+                {(rec.job_profile.highest_education || rec.job_profile.security_clearance) && (
+                  <div className="vp-section">
+                    <h3 className="vp-section-title">
+                      <svg className="vp-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                      </svg>
+                      Education & Clearance
+                    </h3>
+                    <div className="vp-info-grid">
+                      {rec.job_profile.highest_education && (
+                        <div className="vp-info-item">
+                          <span className="vp-info-label">Education</span>
+                          <span className="vp-info-value">{rec.job_profile.highest_education.replace(/_/g, ' ').split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</span>
+                        </div>
+                      )}
+                      {rec.job_profile.security_clearance && (
+                        <div className="vp-info-item">
+                          <span className="vp-info-label">Security Clearance</span>
+                          <span className="vp-info-value">{rec.job_profile.security_clearance.replace(/_/g, ' ').toUpperCase()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Hyperlinks Section */}
+                {(rec.job_profile.linkedin_url || rec.job_profile.github_url || rec.job_profile.portfolio_url || rec.job_profile.twitter_url || rec.job_profile.website_url || rec.candidate.linkedin_url || rec.candidate.github_url || rec.candidate.portfolio_url) && (
+                  <div className="vp-section">
+                    <h3 className="vp-section-title">
+                      <svg className="vp-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                      </svg>
+                      Professional Links
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {(rec.job_profile.linkedin_url || rec.candidate.linkedin_url) && (
+                        <a 
+                          href={rec.job_profile.linkedin_url || rec.candidate.linkedin_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            padding: '10px 12px', 
+                            background: '#0A66C2', 
+                            color: 'white', 
+                            borderRadius: '6px', 
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                          </svg>
+                          LinkedIn Profile
+                        </a>
+                      )}
+                      {(rec.job_profile.github_url || rec.candidate.github_url) && (
+                        <a 
+                          href={rec.job_profile.github_url || rec.candidate.github_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            padding: '10px 12px', 
+                            background: '#24292e', 
+                            color: 'white', 
+                            borderRadius: '6px', 
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                          </svg>
+                          GitHub Profile
+                        </a>
+                      )}
+                      {(rec.job_profile.portfolio_url || rec.candidate.portfolio_url) && (
+                        <a 
+                          href={rec.job_profile.portfolio_url || rec.candidate.portfolio_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            padding: '10px 12px', 
+                            background: '#7B5EA7', 
+                            color: 'white', 
+                            borderRadius: '6px', 
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                          </svg>
+                          Portfolio
+                        </a>
+                      )}
+                      {rec.job_profile.twitter_url && (
+                        <a 
+                          href={rec.job_profile.twitter_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            padding: '10px 12px', 
+                            background: '#1DA1F2', 
+                            color: 'white', 
+                            borderRadius: '6px', 
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                          </svg>
+                          Twitter/X
+                        </a>
+                      )}
+                      {rec.job_profile.website_url && (
+                        <a 
+                          href={rec.job_profile.website_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            padding: '10px 12px', 
+                            background: '#6B7280', 
+                            color: 'white', 
+                            borderRadius: '6px', 
+                            textDecoration: 'none',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                          <svg style={{ width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                          </svg>
+                          Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resume Section */}
+                {rec.candidate.resumes && rec.candidate.resumes.length > 0 && (
+                  <div className="vp-section">
+                    <h3 className="vp-section-title">
+                      <svg className="vp-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                      Resumes
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {rec.candidate.resumes.map((resume: any, index: number) => (
+                        <a
+                          key={resume.id}
+                          href={`http://127.0.0.1:8001/uploads/resumes/${resume.storage_path}`}
+                          download
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            background: '#F3F4F6',
+                            borderRadius: '8px',
+                            textDecoration: 'none',
+                            color: '#111827',
+                            border: '1px solid #E5E7EB',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#E5E7EB';
+                            e.currentTarget.style.borderColor = '#7B5EA7';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#F3F4F6';
+                            e.currentTarget.style.borderColor = '#E5E7EB';
+                          }}
+                        >
+                          <svg style={{ width: '20px', height: '20px', color: '#7B5EA7', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                          </svg>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 500 }}>{resume.filename}</div>
+                            <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                              Uploaded {new Date(resume.uploaded_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <svg style={{ width: '18px', height: '18px', color: '#7B5EA7', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Certifications Section */}
+                {rec.candidate.certifications && rec.candidate.certifications.length > 0 && (
+                  <div className="vp-section">
+                    <h3 className="vp-section-title">
+                      <svg className="vp-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                      </svg>
+                      Certifications
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {rec.candidate.certifications.map((cert: any, index: number) => (
+                        <div key={cert.id}>
+                          {cert.storage_path ? (
+                            <a
+                              href={`http://127.0.0.1:8001/uploads/certifications/${cert.storage_path}`}
+                              download
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                padding: '12px',
+                                background: '#F0FDF4',
+                                borderRadius: '8px',
+                                textDecoration: 'none',
+                                color: '#111827',
+                                border: '1px solid #86EFAC',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = '#DCFCE7';
+                                e.currentTarget.style.borderColor = '#10B981';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = '#F0FDF4';
+                                e.currentTarget.style.borderColor = '#86EFAC';
+                              }}
+                            >
+                              <svg style={{ width: '20px', height: '20px', color: '#10B981', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                              </svg>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 500 }}>{cert.name}</div>
+                                {cert.issuer && <div style={{ fontSize: '12px', color: '#059669' }}>Issued by: {cert.issuer}</div>}
+                                {(cert.issued_date || cert.expiry_date) && (
+                                  <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                                    {cert.issued_date && `Issued: ${cert.issued_date}`}
+                                    {cert.issued_date && cert.expiry_date && ' • '}
+                                    {cert.expiry_date && `Expires: ${cert.expiry_date}`}
+                                  </div>
+                                )}
+                              </div>
+                              <svg style={{ width: '18px', height: '18px', color: '#10B981', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                            </a>
+                          ) : (
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '12px',
+                              padding: '12px',
+                              background: '#F9FAFB',
+                              borderRadius: '8px',
+                              border: '1px solid #E5E7EB'
+                            }}>
+                              <svg style={{ width: '20px', height: '20px', color: '#9CA3AF', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>
+                              </svg>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '14px', fontWeight: 500 }}>{cert.name}</div>
+                                {cert.issuer && <div style={{ fontSize: '12px', color: '#6B7280' }}>Issued by: {cert.issuer}</div>}
+                                {(cert.issued_date || cert.expiry_date) && (
+                                  <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+                                    {cert.issued_date && `Issued: ${cert.issued_date}`}
+                                    {cert.issued_date && cert.expiry_date && ' • '}
+                                    {cert.expiry_date && `Expires: ${cert.expiry_date}`}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

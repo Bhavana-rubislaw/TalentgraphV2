@@ -292,7 +292,7 @@ def candidate_login(credentials: CandidateLogin, session: Session = Depends(get_
 
 @router.post("/company/signup", response_model=dict)
 def company_signup(user_data: CompanySignUp, session: Session = Depends(get_session)):
-    """Register a new company account"""
+    """Register a new company account (HR or Recruiter only, not Admin)"""
     email_lower = user_data.email.lower()
     logger.info(f"[COMPANY_SIGNUP] Attempting signup for email: {email_lower}, role: {user_data.company_role}")
     
@@ -305,16 +305,15 @@ def company_signup(user_data: CompanySignUp, session: Session = Depends(get_sess
             detail="Email already registered"
         )
     
-    # Validate company_role
-    if user_data.company_role.lower() not in ["admin", "hr", "recruiter"]:
+    # Validate company_role - exclude admin
+    if user_data.company_role.lower() not in ["hr", "recruiter"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="company_role must be admin, hr, or recruiter"
+            detail="company_role must be 'hr' or 'recruiter'. Admin accounts cannot be created through signup."
         )
     
     # Map company_role to UserRole enum
     role_map = {
-        "admin": UserRole.ADMIN,
         "hr": UserRole.HR,
         "recruiter": UserRole.RECRUITER
     }
@@ -368,9 +367,62 @@ def company_signup(user_data: CompanySignUp, session: Session = Depends(get_sess
     }
 
 
+@router.post("/admin/login", response_model=dict)
+def admin_login(credentials: CompanyLogin, session: Session = Depends(get_session)):
+    """Login for system admin only (talentgraph.interviews@gmail.com)"""
+    email_lower = credentials.email.lower()
+    logger.info(f"[ADMIN_LOGIN] Login attempt for email: {email_lower}")
+    
+    # Find user
+    user = session.exec(select(User).where(User.email == email_lower)).first()
+    if not user or not verify_password(credentials.password, user.password_hash):
+        logger.warning(f"[ADMIN_LOGIN] Failed login attempt for email: {email_lower}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    
+    # Check if user is actually an admin
+    if user.role != UserRole.ADMIN:
+        logger.warning(f"[ADMIN_LOGIN] Non-admin tried to login: {email_lower}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This login is for system administrators only."
+        )
+
+    if not user.is_active:
+        logger.warning(f"[ADMIN_LOGIN] Inactive account login attempt: {email_lower}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
+
+    token_data = {
+        "sub": user.email,
+        "email": user.email,
+        "user_id": user.id,
+        "role": user.role
+    }
+    token = create_access_token(token_data)
+    logger.info(f"[ADMIN_LOGIN] Successful login - Email: {user.email}, User ID: {user.id}, Role: {user.role}")
+
+    return {
+        "message": "Admin login successful",
+        "access_token": token,
+        "token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "user_type": "admin",
+        "is_profile_complete": True
+    }
+
+
 @router.post("/company/login", response_model=dict)
 def company_login(credentials: CompanyLogin, session: Session = Depends(get_session)):
-    """Login for company users only"""
+    """Login for company users (HR and Recruiters only, not Admins)"""
     email_lower = credentials.email.lower()
     logger.info(f"[COMPANY_LOGIN] Login attempt for email: {email_lower}")
     
@@ -389,6 +441,14 @@ def company_login(credentials: CompanyLogin, session: Session = Depends(get_sess
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This login is for company users only. Please use the candidate login."
+        )
+    
+    # Exclude admins from company login
+    if user.role == UserRole.ADMIN:
+        logger.warning(f"[COMPANY_LOGIN] Admin tried to login via company login: {email_lower}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="System administrators must use the admin login. Please contact support."
         )
 
     if not user.is_active:
