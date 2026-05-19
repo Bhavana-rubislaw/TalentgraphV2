@@ -10,12 +10,15 @@ Handles all email communications for meeting lifecycle:
 """
 
 import os
+import logging
 from datetime import datetime
 from typing import Optional
 from sqlmodel import Session
 
 from app.models import Meeting, User
 from app.services.email_service import SendGridEmailProvider, SMTPEmailProvider
+
+logger = logging.getLogger(__name__)
 
 
 class MeetingEmailService:
@@ -24,13 +27,17 @@ class MeetingEmailService:
     def __init__(self):
         # Initialize email provider
         provider_type = os.getenv('EMAIL_PROVIDER', 'sendgrid')
+        logger.info(f"[MEETING EMAIL] Initializing with provider: {provider_type}")
         
         if provider_type == 'sendgrid':
             self.provider = SendGridEmailProvider()
+            logger.info("[MEETING EMAIL] Using SendGrid provider")
         else:
             self.provider = SMTPEmailProvider()
+            logger.info("[MEETING EMAIL] Using SMTP provider")
         
         self.app_url = os.getenv('APP_URL', 'http://localhost:3000')
+        logger.info(f"[MEETING EMAIL] App URL: {self.app_url}")
     
     def send_interview_scheduled_email(
         self,
@@ -128,8 +135,9 @@ class MeetingEmailService:
                 html_body=html_body,
                 text_body=text_body
             )
+            logger.info(f"✓ Interview scheduled email sent to {recipient_user.email} for meeting: {meeting.title}")
         except Exception as e:
-            print(f"Failed to send interview scheduled email: {e}")
+            logger.error(f"✗ Failed to send interview scheduled email to {recipient_user.email}: {e}", exc_info=True)
     
     def send_interview_cancelled_email(
         self,
@@ -190,8 +198,9 @@ class MeetingEmailService:
                 html_body=html_body,
                 text_body=text_body
             )
+            logger.info(f"✓ Cancellation email sent to {recipient_user.email} for meeting: {meeting.title}")
         except Exception as e:
-            print(f"Failed to send cancellation email: {e}")
+            logger.error(f"✗ Failed to send cancellation email to {recipient_user.email}: {e}", exc_info=True)
     
     def send_reschedule_request_email(
         self,
@@ -257,8 +266,9 @@ class MeetingEmailService:
                 html_body=html_body,
                 text_body=text_body
             )
+            logger.info(f"✓ Reschedule request email sent to {recipient_user.email} for meeting: {meeting.title}")
         except Exception as e:
-            print(f"Failed to send reschedule request email: {e}")
+            logger.error(f"✗ Failed to send reschedule request email to {recipient_user.email}: {e}", exc_info=True)
     
     def send_reschedule_approved_email(
         self,
@@ -336,5 +346,6 @@ class MeetingEmailService:
                 html_body=html_body,
                 text_body=text_body
             )
+            logger.info(f"✓ Reschedule approved email sent to {recipient_user.email} for meeting: {meeting.title}")
         except Exception as e:
-            print(f"Failed to send reschedule approved email: {e}")
+            logger.error(f"✗ Failed to send reschedule approved email to {recipient_user.email}: {e}", exc_info=True)

@@ -5,6 +5,7 @@ import SkillsPicker, { SelectedSkill } from '../components/SkillsPicker';
 import ResumeSelector, { ResumeOption } from '../components/ResumeSelector';
 import CertificationsSelector, { CertOption } from '../components/CertificationsSelector';
 import LivePreview from '../components/LivePreview';
+import CascadingTaxonomySelect from '../components/CascadingTaxonomySelect';
 import '../styles/CandidatePages.css';
 
 /* ── SVG Icons ── */
@@ -642,23 +643,19 @@ const JobPreferencesPage: React.FC = () => {
                 <input type="text" name="profile_name" value={form.profile_name} onChange={inp} placeholder="e.g., Oracle Cloud Senior Developer" required />
                 <span className="cp-helper-text">A unique name for this preference</span>
               </div>
+              
+              {/* Dynamic 3-Tier Taxonomy Selection */}
+              <CascadingTaxonomySelect
+                selectedVendor={form.product_vendor}
+                selectedProductType={form.product_type}
+                selectedRole={form.job_role}
+                onVendorChange={(name) => setForm(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' }))}
+                onProductTypeChange={(name) => setForm(prev => ({ ...prev, product_type: name, job_role: '' }))}
+                onRoleChange={(name) => setForm(prev => ({ ...prev, job_role: name }))}
+                required={true}
+              />
+              
               <div className="cp-form-grid-2">
-                <div className="cp-form-group">
-                  <label className="required">Product Vendor</label>
-                  <select name="product_vendor" value={form.product_vendor} onChange={inp} required>
-                    <option value="Oracle">Oracle</option><option value="SAP">SAP</option><option value="Salesforce">Salesforce</option><option value="Microsoft">Microsoft</option>
-                  </select>
-                </div>
-                <div className="cp-form-group">
-                  <label className="required">Product Type</label>
-                  <input type="text" name="product_type" value={form.product_type} onChange={inp} placeholder="e.g., ERP Cloud, HCM" required />
-                </div>
-              </div>
-              <div className="cp-form-grid-2">
-                <div className="cp-form-group">
-                  <label className="required">Job Role</label>
-                  <input type="text" name="job_role" value={form.job_role} onChange={inp} placeholder="e.g., Senior Developer" required />
-                </div>
                 <div className="cp-form-group">
                   <label>
                     Seniority Level

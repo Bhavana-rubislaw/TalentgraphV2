@@ -318,41 +318,62 @@ async def create_meeting(
         )
     
     # Send notifications to all participants (except organizer)
+    logger.info(f"[MEETING CREATE] Sending notifications for meeting {meeting.id} to {len(participant_user_ids)} participants")
+    notifications_sent = 0
     for user_id in participant_user_ids:
-        push_notification(
-            session=session,
-            user_id=user_id,
-            title="New Meeting Scheduled",
-            message=f"{user_full_name} scheduled a meeting: {meeting_data.title}",
-            event_type="interview_scheduled",
-            route=f"/meetings/{meeting.id}"
-        )
+        try:
+            notif = push_notification(
+                session=session,
+                user_id=user_id,
+                title="New Meeting Scheduled",
+                message=f"{user_full_name} scheduled a meeting: {meeting_data.title}",
+                event_type="interview_scheduled",
+                route=f"/meetings/{meeting.id}"
+            )
+            notifications_sent += 1
+            logger.info(f"✓ Notification sent to user {user_id}, notification ID: {notif.id}")
+        except Exception as e:
+            logger.error(f"✗ Failed to send notification to user {user_id}: {e}", exc_info=True)
+    
+    logger.info(f"[MEETING CREATE] Sent {notifications_sent}/{len(participant_user_ids)} notifications successfully")
     
     # Send email notifications with action tokens
     email_service = MeetingEmailService()
+    emails_sent = 0
+    email_failures = []
+    
     for user_id in participant_user_ids:
         recipient = session.get(User, user_id)
         if recipient:
-            # Generate action tokens for the participant
-            confirm_token = MeetingService.generate_action_token(
-                session, meeting.id, user_id, "confirm"
-            )
-            cancel_token = MeetingService.generate_action_token(
-                session, meeting.id, user_id, "cancel"
-            )
-            reschedule_token = MeetingService.generate_action_token(
-                session, meeting.id, user_id, "reschedule"
-            )
-            
-            email_service.send_interview_scheduled_email(
-                session=session,
-                meeting=meeting,
-                recipient_user=recipient,
-                organizer_user=current_user_obj,
-                confirm_token=confirm_token,
-                cancel_token=cancel_token,
-                reschedule_token=reschedule_token
-            )
+            try:
+                # Generate action tokens for the participant
+                confirm_token = MeetingService.generate_action_token(
+                    session, meeting.id, user_id, "confirm"
+                )
+                cancel_token = MeetingService.generate_action_token(
+                    session, meeting.id, user_id, "cancel"
+                )
+                reschedule_token = MeetingService.generate_action_token(
+                    session, meeting.id, user_id, "reschedule"
+                )
+                
+                email_service.send_interview_scheduled_email(
+                    session=session,
+                    meeting=meeting,
+                    recipient_user=recipient,
+                    organizer_user=current_user_obj,
+                    confirm_token=confirm_token,
+                    cancel_token=cancel_token,
+                    reschedule_token=reschedule_token
+                )
+                emails_sent += 1
+            except Exception as e:
+                logger.error(f"✗ Failed to send email to {recipient.email}: {e}", exc_info=True)
+                email_failures.append(recipient.email)
+    
+    logger.info(f"[MEETING CREATE] Sent {emails_sent}/{len(participant_user_ids)} emails successfully")
+    if email_failures:
+        logger.warning(f"[MEETING CREATE] Email failures for: {', '.join(email_failures)}")
     
     # Refresh meeting with participants and user data
     meeting = session.exec(

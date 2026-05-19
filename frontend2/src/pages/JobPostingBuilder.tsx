@@ -3,6 +3,7 @@ import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/JobPostingBuilder.css';
 import { StatusBadge, SectionCard, LifecycleActions, JobPreviewPanel, FormProgressBar } from '../components/JobPostingComponents';
+import CascadingTaxonomySelect from '../components/CascadingTaxonomySelect';
 
 // ============ TYPES ============
 interface PostingSkill {
@@ -117,88 +118,10 @@ const VISA_OPTIONS = [
   'US Citizen', 'Green Card', 'H1B', 'OPT', 'CPT',
   'Sponsorship Available', 'Not Required',
 ];
-const PRODUCT_VENDORS = ['Oracle'];
 
-// Oracle Product → Role mapping
-const ORACLE_PRODUCTS: Record<string, string[]> = {
-  'Oracle Fusion Cloud Financials': [
-    'Functional Consultant', 'Technical Consultant', 'Solution Architect',
-    'Implementation Lead', 'Business Analyst', 'Finance SME', 'Project Manager',
-  ],
-  'Oracle Fusion Cloud HCM': [
-    'HCM Functional Consultant', 'HCM Technical Consultant', 'Payroll Consultant',
-    'Benefits Consultant', 'Absence Management Consultant', 'Talent Management Consultant',
-    'HCM Solution Architect', 'Implementation Lead', 'Business Analyst',
-  ],
-  'Oracle Fusion Cloud SCM': [
-    'SCM Functional Consultant', 'SCM Technical Consultant', 'Procurement Consultant',
-    'Inventory Management Consultant', 'Order Management Consultant', 'Manufacturing Consultant',
-    'SCM Solution Architect', 'Implementation Lead',
-  ],
-  'Oracle Fusion Cloud PPM': [
-    'PPM Functional Consultant', 'PPM Technical Consultant', 'Project Manager',
-    'Grants Management Consultant', 'PPM Solution Architect',
-  ],
-  'Oracle Fusion Cloud CX': [
-    'CX Functional Consultant', 'CX Technical Consultant', 'Sales Cloud Consultant',
-    'Service Cloud Consultant', 'Marketing Cloud Consultant', 'CPQ Consultant',
-    'CX Solution Architect',
-  ],
-  'Oracle Fusion Cloud ERP': [
-    'ERP Functional Consultant', 'ERP Technical Consultant', 'ERP Solution Architect',
-    'Implementation Lead', 'Business Analyst', 'Finance Consultant', 'Procurement Consultant',
-  ],
-  'Oracle Integration Cloud (OIC)': [
-    'Integration Developer', 'Integration Architect', 'OIC Consultant',
-    'Technical Lead', 'Middleware Consultant',
-  ],
-  'Oracle VBCS': [
-    'VBCS Developer', 'UI/UX Developer', 'Frontend Consultant',
-    'Application Developer', 'Technical Lead',
-  ],
-  'Oracle Analytics Cloud': [
-    'Analytics Consultant', 'BI Developer', 'Data Analyst',
-    'OTBI Developer', 'Analytics Architect', 'Reporting Specialist',
-  ],
-  'Oracle EPM Cloud': [
-    'EPM Functional Consultant', 'EPM Technical Consultant', 'Planning Consultant',
-    'PBCS Consultant', 'FCCS Consultant', 'ARCS Consultant', 'EPM Architect',
-  ],
-  'Oracle E-Business Suite (EBS)': [
-    'EBS Functional Consultant', 'EBS Technical Consultant', 'EBS DBA',
-    'Forms/Reports Developer', 'EBS Solution Architect', 'EBS Upgrade Specialist',
-  ],
-  'Oracle PeopleSoft': [
-    'PeopleSoft Functional Consultant', 'PeopleSoft Technical Consultant',
-    'PeopleSoft DBA', 'PeopleTools Developer', 'PeopleSoft Architect',
-  ],
-  'Oracle Database': [
-    'Database Administrator', 'Database Developer', 'Performance Tuning Specialist',
-    'RAC Specialist', 'Data Guard Specialist', 'Database Architect',
-  ],
-  'Oracle Autonomous Database': [
-    'Cloud DBA', 'Autonomous DB Specialist', 'Database Architect',
-    'Data Engineer', 'Migration Specialist',
-  ],
-  'Oracle Cloud Infrastructure (OCI)': [
-    'Cloud Architect', 'Cloud Engineer', 'DevOps Engineer',
-    'Infrastructure Consultant', 'Security Specialist', 'Network Engineer',
-  ],
-  'Oracle NetSuite': [
-    'NetSuite Functional Consultant', 'NetSuite Technical Consultant',
-    'SuiteScript Developer', 'NetSuite Administrator', 'NetSuite Architect',
-  ],
-  'Oracle Primavera': [
-    'Primavera P6 Consultant', 'Primavera Administrator', 'Project Controls Specialist',
-    'Scheduling Analyst', 'Primavera Architect',
-  ],
-  'Oracle APEX': [
-    'APEX Developer', 'APEX Architect', 'Application Developer',
-    'Low-Code Developer', 'Technical Lead',
-  ],
-};
-
-const ORACLE_PRODUCT_LIST = Object.keys(ORACLE_PRODUCTS);
+// NOTE: Product taxonomy (vendors, product types, roles) now loaded dynamically from database
+// The hardcoded PRODUCT_VENDORS and ORACLE_PRODUCTS constants have been removed
+// Use CascadingTaxonomySelect component for vendor/product/role selection
 
 const EDUCATION_OPTIONS = [
   "Bachelor's Degree", "Master's Degree", "PhD", "Associate's Degree",
@@ -314,21 +237,10 @@ const JobPostingBuilder: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    if (name === 'product_type') {
-      // When product changes, reset the role
-      setFormData(prev => ({ ...prev, product_type: value, job_role: '' }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     // Clear field error
     if (errors[name]) setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
   };
-
-  // Get roles for the currently selected Oracle product
-  const availableRoles = useMemo(() => {
-    if (!formData.product_type) return [];
-    return ORACLE_PRODUCTS[formData.product_type] || [];
-  }, [formData.product_type]);
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -1034,43 +946,22 @@ const JobPostingBuilder: React.FC = () => {
                     <h3>Job Details</h3>
                   </div>
 
-                  {/* Row 1: Product Vendor (locked to Oracle) */}
+                  {/* Dynamic 3-Tier Taxonomy Selection */}
                   <div className="jpb-field jpb-field-full">
-                    <label>Product Vendor</label>
-                    <select name="product_vendor" value={formData.product_vendor} onChange={handleInputChange}>
-                      {PRODUCT_VENDORS.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Row 2: Product Type & Role (cascading) */}
-                  <div className="jpb-form-row">
-                    <div className="jpb-field">
-                      <label>Product Type <span className="jpb-required">*</span></label>
-                      <select
-                        name="product_type"
-                        value={formData.product_type}
-                        onChange={handleInputChange}
-                        className={errors.job_category ? 'jpb-error-input' : ''}
-                      >
-                        <option value="">Select Product</option>
-                        {ORACLE_PRODUCT_LIST.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      {errors.job_category && <span className="jpb-error-text">{errors.job_category}</span>}
-                    </div>
-                    <div className="jpb-field">
-                      <label>Role <span className="jpb-required">*</span></label>
-                      <select
-                        name="job_role"
-                        value={formData.job_role}
-                        onChange={handleInputChange}
-                        disabled={availableRoles.length === 0}
-                        className={errors.job_role ? 'jpb-error-input' : ''}
-                      >
-                        <option value="">{availableRoles.length === 0 ? 'Select a product first' : 'Select Role'}</option>
-                        {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                      {errors.job_role && <span className="jpb-error-text">{errors.job_role}</span>}
-                    </div>
+                    <CascadingTaxonomySelect
+                      selectedVendor={formData.product_vendor}
+                      selectedProductType={formData.product_type}
+                      selectedRole={formData.job_role}
+                      onVendorChange={(name) => setFormData(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' }))}
+                      onProductTypeChange={(name) => setFormData(prev => ({ ...prev, product_type: name, job_role: '' }))}
+                      onRoleChange={(name) => setFormData(prev => ({ ...prev, job_role: name }))}
+                      required={true}
+                      errors={{
+                        vendor: errors.product_vendor,
+                        productType: errors.job_category || errors.product_type,
+                        role: errors.job_role,
+                      }}
+                    />
                   </div>
 
                   {/* Row 3: Job Title */}

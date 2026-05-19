@@ -597,6 +597,58 @@ export const apiClient = {
     metadata?: Record<string, any>;
   }) =>
     api.post('/analytics/events', data),
+
+  // ── Product Taxonomy (Vendor/Product/Role) ─────────────────────────────────
+  
+  // Get all vendors
+  getTaxonomyVendors: (search?: string, limit?: number, offset?: number) =>
+    api.get('/product-taxonomy/vendors', { 
+      params: { search, limit, offset } 
+    }),
+
+  // Get vendor with all product types
+  getTaxonomyVendor: (vendorId: number) =>
+    api.get(`/product-taxonomy/vendors/${vendorId}`),
+
+  // Get product types for a vendor
+  getTaxonomyProductTypes: (vendorId: number, search?: string) =>
+    api.get(`/product-taxonomy/vendors/${vendorId}/product-types`, { 
+      params: { search } 
+    }),
+
+  // Get product type with all roles
+  getTaxonomyProductType: (typeId: number) =>
+    api.get(`/product-taxonomy/product-types/${typeId}`),
+
+  // Get roles for a product type
+  getTaxonomyRoles: (typeId: number, search?: string) =>
+    api.get(`/product-taxonomy/product-types/${typeId}/roles`, { 
+      params: { search } 
+    }),
+
+  // Global search across taxonomy
+  searchTaxonomy: (query: string, limit?: number) =>
+    api.get('/product-taxonomy/search', { 
+      params: { q: query, limit } 
+    }),
+
+  // Create custom taxonomy entries (for advanced users)
+  createCustomVendor: (name: string, description?: string) =>
+    api.post('/product-taxonomy/vendors/custom', { name, description }),
+
+  createCustomProductType: (vendorId: number, name: string, description?: string) =>
+    api.post('/product-taxonomy/product-types/custom', { 
+      vendor_id: vendorId, 
+      name, 
+      description 
+    }),
+
+  createCustomRole: (productTypeId: number, name: string, description?: string) =>
+    api.post('/product-taxonomy/roles/custom', { 
+      product_type_id: productTypeId, 
+      name, 
+      description 
+    }),
 };
 
 export default api;
