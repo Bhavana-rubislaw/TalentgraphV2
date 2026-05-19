@@ -178,7 +178,7 @@ from app.routers import (
     auth, candidates, company, job_postings, matches, recommendations, 
     swipes, dashboard, applications, notifications, activity_feed, 
     messages, meetings, calendar, analytics, logs, notification_preferences,
-    onboarding
+    onboarding, product_taxonomy
 )
 
 log_change(
@@ -207,6 +207,7 @@ app.include_router(meetings.router)  # Meeting scheduler with email notification
 app.include_router(calendar.router)  # Calendar & video provider OAuth integration
 app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
 app.include_router(logs.router)  # Comprehensive logging system
+app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences
 
 log_change(
     logger,

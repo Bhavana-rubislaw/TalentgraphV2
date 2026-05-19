@@ -159,6 +159,83 @@ class AnalyticsEventType(str, Enum):
     OTHER = "other"
 
 
+# ============ PRODUCT TAXONOMY MODELS ============
+
+class ProductVendor(SQLModel, table=True):
+    """
+    Product vendors/companies (e.g., Salesforce, SAP, AWS, Oracle)
+    Supports both curated core taxonomy and user-generated custom entries
+    """
+    __tablename__ = "product_vendor"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)  # Vendor name (e.g., "Salesforce", "SAP")
+    description: Optional[str] = None  # Optional description
+    is_custom: bool = Field(default=False)  # True if user-generated, False if curated
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")  # User who created custom vendor
+    usage_count: int = Field(default=0)  # Track popularity for sorting
+    is_active: bool = Field(default=True)  # Soft delete flag
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    product_types: List["ProductType"] = Relationship(back_populates="vendor")
+    creator: Optional["User"] = Relationship()
+
+
+class ProductType(SQLModel, table=True):
+    """
+    Product types under a vendor (e.g., Sales Cloud, S/4HANA, Lambda)
+    """
+    __tablename__ = "product_type"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    vendor_id: int = Field(foreign_key="product_vendor.id", index=True)
+    name: str = Field(index=True)  # Product type name
+    description: Optional[str] = None
+    is_custom: bool = Field(default=False)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    usage_count: int = Field(default=0)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    vendor: ProductVendor = Relationship(back_populates="product_types")
+    roles: List["ProductRole"] = Relationship(back_populates="product_type")
+    creator: Optional["User"] = Relationship()
+    
+    __table_args__ = (
+        UniqueConstraint('vendor_id', 'name', name='unique_vendor_product_type'),
+    )
+
+
+class ProductRole(SQLModel, table=True):
+    """
+    Roles associated with a product type (e.g., Salesforce Developer, SAP Consultant)
+    """
+    __tablename__ = "product_role"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    product_type_id: int = Field(foreign_key="product_type.id", index=True)
+    name: str = Field(index=True)  # Role name
+    description: Optional[str] = None
+    is_custom: bool = Field(default=False)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    usage_count: int = Field(default=0)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    product_type: ProductType = Relationship(back_populates="roles")
+    creator: Optional["User"] = Relationship()
+    
+    __table_args__ = (
+        UniqueConstraint('product_type_id', 'name', name='unique_product_type_role'),
+    )
+
+
 # ============ USER MODELS ============
 
 class User(SQLModel, table=True):
@@ -322,9 +399,17 @@ class JobProfile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     candidate_id: int = Field(foreign_key="candidate.id")
     profile_name: str
-    product_vendor: str  # Oracle, SAP, etc.
-    product_type: str
-    job_role: str
+    
+    # Product Taxonomy (NEW - standardized)
+    vendor_id: Optional[int] = Field(default=None, foreign_key="product_vendor.id", index=True)
+    product_type_id: Optional[int] = Field(default=None, foreign_key="product_type.id", index=True)
+    role_id: Optional[int] = Field(default=None, foreign_key="product_role.id", index=True)
+    
+    # Legacy text fields (deprecated - kept for backward compatibility)
+    product_vendor: Optional[str] = None  # Oracle, SAP, etc.
+    product_type: Optional[str] = None
+    job_role: Optional[str] = None
+    
     years_of_experience: int
     worktype: WorkType
     employment_type: EmploymentType

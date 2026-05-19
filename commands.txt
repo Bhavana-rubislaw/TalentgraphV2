@@ -157,6 +157,28 @@ python reset_db.py
 
 ---
 
+## B1.1) Complete reset and reseed (recommended)
+
+**Command**
+```powershell
+python reset_db_clean.py
+```
+
+**Use**
+- Complete database reset in one command:
+  1. Drops and recreates schema
+  2. Recreates all tables
+  3. Creates system admin (talentgraph.interviews@gmail.com)
+  4. Reseeds test data with recruiter2.* emails
+- Recommended over manual reset + seed
+
+**Expected Output**
+- Progress through 4 steps
+- Verification showing 1 ADMIN, 12 RECRUITER, 6 HR, 3 CANDIDATE
+- Confirms no old admin.* emails exist
+
+---
+
 ## B2) Seed DB with test users/companies/jobs
 
 **Command**
@@ -175,6 +197,26 @@ python seed_data_v2.py
 python check_jobs.py
 ```
 Expected: lists job counts per company, total 24.
+
+---
+
+## B2.1) List all users by role (verify seed data)
+
+**Command**
+```powershell
+python list_users_by_role.py
+```
+
+**Use**
+- Shows all users in database grouped by role (ADMIN, RECRUITER, HR, CANDIDATE).
+- Helpful to verify seed data and check for old admin.* emails.
+
+**Expected Output**
+- Formatted list showing:
+  - ADMIN (1 user): talentgraph.interviews@gmail.com
+  - RECRUITER (12 users): recruiter2.*, recruiter.*
+  - HR (6 users): hr.*
+  - CANDIDATE (N users)
 
 ---
 

@@ -14,12 +14,47 @@ from typing import List, Dict, Any
 from app.database import get_session
 from app.models import (
     User, Candidate, Company, JobPosting, JobProfile, 
-    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus, Resume, Certification, Meeting
+    Match, Application, Swipe, UserRole, Skill, LocationPreference, JobPostingStatus, Resume, Certification, Meeting,
+    ProductVendor, ProductType, ProductRole
 )
 from app.security import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+
+
+def get_taxonomy_names(job_profile: JobProfile, session: Session) -> dict:
+    """Get taxonomy names from IDs for display, fallback to text fields"""
+    vendor_name = None
+    product_type_name = None
+    role_name = None
+    
+    # Try FK IDs first
+    if job_profile.vendor_id:
+        vendor = session.get(ProductVendor, job_profile.vendor_id)
+        vendor_name = vendor.name if vendor else None
+    
+    if job_profile.product_type_id:
+        product_type = session.get(ProductType, job_profile.product_type_id)
+        product_type_name = product_type.name if product_type else None
+    
+    if job_profile.role_id:
+        role = session.get(ProductRole, job_profile.role_id)
+        role_name = role.name if role else None
+    
+    # Fallback to text fields if FK IDs not available
+    if not vendor_name:
+        vendor_name = job_profile.product_vendor
+    if not product_type_name:
+        product_type_name = job_profile.product_type
+    if not role_name:
+        role_name = job_profile.job_role
+    
+    return {
+        "product_vendor": vendor_name,
+        "product_type": product_type_name,
+        "job_role": role_name
+    }
 
 
 def merge_social_links(job_profile: JobProfile, candidate: Candidate) -> dict:
@@ -742,6 +777,9 @@ def get_recruiter_recommendations(
                 "expiry_date": ct.expiry_date
             })
         
+        # Get taxonomy names for display
+        taxonomy = get_taxonomy_names(profile, session)
+        
         recommendations.append({
             "candidate": {
                 "id": candidate.id,
@@ -759,6 +797,9 @@ def get_recruiter_recommendations(
             "job_profile": {
                 "id": profile.id,
                 "profile_name": profile.profile_name,
+                "product_vendor": taxonomy["product_vendor"],
+                "product_type": taxonomy["product_type"],
+                "job_role": taxonomy["job_role"],
                 "years_of_experience": profile.years_of_experience,
                 "worktype": profile.worktype,
                 "employment_type": profile.employment_type,
@@ -928,6 +969,9 @@ def get_recruiter_shortlist(
         invite_count = len(invite_swipes)
         already_invited = invite_count > 0
 
+        # Get taxonomy names for display
+        taxonomy = get_taxonomy_names(job_profile, session)
+
         result.append({
             "candidate": {
                 "id": candidate.id,
@@ -944,9 +988,9 @@ def get_recruiter_shortlist(
             "job_profile": {
                 "id": job_profile.id,
                 "profile_name": job_profile.profile_name,
-                "job_role": job_profile.job_role,
-                "product_vendor": job_profile.product_vendor,
-                "product_type": job_profile.product_type,
+                "job_role": taxonomy["job_role"],
+                "product_vendor": taxonomy["product_vendor"],
+                "product_type": taxonomy["product_type"],
                 "years_of_experience": job_profile.years_of_experience,
                 "worktype": job_profile.worktype,
                 "employment_type": job_profile.employment_type,
@@ -1102,6 +1146,9 @@ def get_recruiter_applications(
         # Merge social links with precedence: profile → candidate fallback
         social_links = merge_social_links(job_profile, candidate)
         
+        # Get taxonomy names for display
+        taxonomy = get_taxonomy_names(job_profile, session)
+        
         result.append({
             "application_id": app.id,
             "status": app.status,
@@ -1124,7 +1171,7 @@ def get_recruiter_applications(
             "job_profile": {
                 "id": job_profile.id,
                 "profile_name": job_profile.profile_name,
-                "desired_role": job_profile.job_role,
+                "desired_role": taxonomy["job_role"],
                 "desired_salary": f"{job_profile.salary_currency.upper() if job_profile.salary_currency else '$'} {int(job_profile.salary_min):,} - {int(job_profile.salary_max):,}" if job_profile.salary_min is not None else None,
                 "desired_location": job_profile.worktype.value if job_profile.worktype else None,
                 "work_preference": job_profile.worktype.value if job_profile.worktype else None,
@@ -1377,6 +1424,9 @@ def get_recruiter_matches(
         # Merge social links with precedence: profile → candidate fallback
         social_links = merge_social_links(job_profile, candidate)
 
+        # Get taxonomy names for display
+        taxonomy = get_taxonomy_names(job_profile, session)
+
         result.append({
             "match_id": match.id,
             "candidate": {
@@ -1394,9 +1444,9 @@ def get_recruiter_matches(
             "job_profile": {
                 "id": job_profile.id,
                 "profile_name": job_profile.profile_name,
-                "job_role": job_profile.job_role,
-                "product_vendor": job_profile.product_vendor,
-                "product_type": job_profile.product_type,
+                "job_role": taxonomy["job_role"],
+                "product_vendor": taxonomy["product_vendor"],
+                "product_type": taxonomy["product_type"],
                 "years_of_experience": job_profile.years_of_experience,
                 "worktype": job_profile.worktype,
                 "employment_type": job_profile.employment_type,
