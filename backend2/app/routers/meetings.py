@@ -468,23 +468,8 @@ async def get_meeting(
     if not (is_participant or is_organizer):
         raise HTTPException(status_code=403, detail="Access denied")
     
-    # Debug: log what we're about to serialize
-    print(f"\n=== GET /meetings/{meeting_id} DEBUG ===")
-    print(f"Meeting has {len(meeting.participants)} participants")
-    for p in meeting.participants:
-        print(f"  Participant {p.id}: user_id={p.user_id}, user={p.user}, user.full_name={p.user.full_name if p.user else 'NO USER'}")
-    
+    logger.debug(f"GET /meetings/{meeting_id}: {len(meeting.participants)} participants")
     result = MeetingRead.from_orm_with_participants(meeting)
-    
-    # Debug: log the serialized result
-    import json
-    result_dict = result.model_dump()
-    print(f"\n=== Serialized Result ===")
-    print(f"Participants in result: {len(result_dict.get('participants', []))}")
-    for p in result_dict.get('participants', []):
-        print(f"  Participant {p.get('id')}: participant_name={p.get('participant_name')}, participant_email={p.get('participant_email')}")
-    print("=" * 50 + "\n")
-    
     return result
 
 
@@ -503,11 +488,7 @@ async def update_meeting(
     - Notifies all participants of changes
     """
     
-    print(f"\n{'='*60}")
-    print(f"PATCH /meetings/{meeting_id} - START")
-    print(f"User: {current_user['email']} (ID: {current_user['user_id']})")
-    print(f"Update data: {update_data.model_dump()}")
-    print(f"{'='*60}\n")
+    logger.info(f"PATCH /meetings/{meeting_id} - User: {current_user['email']} (ID: {current_user['user_id']})")
     
     try:
         meeting = session.get(Meeting, meeting_id)
@@ -568,8 +549,7 @@ async def update_meeting(
             participants_to_remove = existing_participant_ids - new_participant_ids_set
             participants_to_add = new_participant_ids_set - existing_participant_ids
             
-            print(f"DEBUG: participants_to_add = {participants_to_add}")
-            print(f"DEBUG: participants_to_remove = {participants_to_remove}")
+            logger.debug(f"participants_to_add={participants_to_add}, participants_to_remove={participants_to_remove}")
             
             # Remove participants using bulk delete (safer than iterating and deleting)
             if participants_to_remove:
@@ -603,16 +583,7 @@ async def update_meeting(
                 .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
             ).first()
             
-            # Debug: Verify meeting data loaded correctly
-            print(f"\n{'='*60}")
-            print(f"DEBUG: Re-queried meeting data:")
-            print(f"  Meeting ID: {meeting.id}")
-            print(f"  Title: {meeting.title}")
-            print(f"  video_meeting_url: {meeting.video_meeting_url}")
-            print(f"  video_provider: {meeting.video_provider}")
-            print(f"  location: {meeting.location}")
-            print(f"  Participants count: {len(meeting.participants)}")
-            print(f"{'='*60}\n")
+            logger.debug(f"Re-queried meeting {meeting.id}: title={meeting.title}, participants={len(meeting.participants)}")
             
             # Send email notifications for participant changes
             email_service = MeetingEmailService()
@@ -620,12 +591,12 @@ async def update_meeting(
             
             # Email newly added participants
             if participants_to_add:
-                print(f"Sending emails to {len(participants_to_add)} newly added participants")
+                logger.info(f"Sending emails to {len(participants_to_add)} newly added participants")
                 
                 for user_id in participants_to_add:
                     recipient = session.get(User, user_id)
                     if recipient and user_id != current_user["user_id"]:
-                        print(f"  Sending invitation email to {recipient.email}")
+                        logger.info(f"Sending invitation email to {recipient.email}")
                         # Generate action tokens for new participant
                         confirm_token = MeetingService.generate_action_token(
                             session, meeting.id, user_id, "confirm"
@@ -646,15 +617,15 @@ async def update_meeting(
                             cancel_token=cancel_token,
                             reschedule_token=reschedule_token
                         )
-                        print(f"  ✓ Email sent to {recipient.email}")
+                        logger.info(f"Email sent to {recipient.email}")
             
             # Notify removed participants via email
             if participants_to_remove:
-                print(f"Sending removal emails to {len(participants_to_remove)} removed participants")
+                logger.info(f"Sending removal emails to {len(participants_to_remove)} removed participants")
                 for user_id in participants_to_remove:
                     recipient = session.get(User, user_id)
                     if recipient and user_id != current_user["user_id"]:
-                        print(f"  Sending removal email to {recipient.email}")
+                        logger.info(f"Sending removal email to {recipient.email}")
                         # Use cancellation email template for removed participants
                         email_service.send_interview_cancelled_email(
                             session=session,
@@ -663,7 +634,7 @@ async def update_meeting(
                             cancelled_by_user=current_user_obj,
                             cancellation_reason=f"You have been removed from this meeting by {current_user_obj.full_name}."
                         )
-                        print(f"  ✓ Removal email sent to {recipient.email}")
+                        logger.info(f"Removal email sent to {recipient.email}")
         
         # Always re-query meeting fresh before updating other fields
         # This ensures we never work with stale SQLAlchemy objects
@@ -706,14 +677,7 @@ async def update_meeting(
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-        print(f"\n{'!'*60}")
-        print(f"!!! ERROR in PATCH /meetings/{meeting_id} !!!")
-        print(f"{'!'*60}")
-        traceback.print_exc()
-        print(f"\nError type: {type(e).__name__}")
-        print(f"Error message: {str(e)}")
-        print(f"{'!'*60}\n")
+        logger.error(f"ERROR in PATCH /meetings/{meeting_id}: {type(e).__name__}: {str(e)}", exc_info=True)
         session.rollback()
         raise HTTPException(
             status_code=500,
@@ -831,7 +795,7 @@ async def cancel_meeting(
                 if event_id:
                     provider.delete_event(event_id)
             except CalendarProviderError as e:
-                print(f"Failed to delete from {cal_account.provider.value} calendar: {str(e)}")
+                logger.warning(f"Failed to delete from {cal_account.provider.value} calendar: {str(e)}")
     
     # Send notifications to other participants
     notification_title = "Meeting Cancelled"
@@ -919,19 +883,20 @@ async def reschedule_meeting(
                 detail=f"User {participant.user_id} has a scheduling conflict"
             )
     
+    # Clear reschedule request fields if this was in response to a request
+    was_reschedule_requested = meeting.status == MeetingStatus.RESCHEDULE_REQUESTED
+    if was_reschedule_requested:
+        meeting.reschedule_requested_at = None
+        meeting.reschedule_requested_by_user_id = None
+        meeting.reschedule_request_reason = None
+        meeting.reschedule_request_preferred_times = None
+    
     # Update meeting
     meeting.scheduled_start = reschedule_data.scheduled_start
     meeting.scheduled_end = reschedule_data.scheduled_end
     meeting.timezone = reschedule_data.timezone or meeting.timezone
     meeting.status = MeetingStatus.SCHEDULED
     meeting.updated_at = datetime.utcnow()
-    
-    # Clear reschedule request fields if this was in response to a request
-    if meeting.status == MeetingStatus.RESCHEDULE_REQUESTED:
-        meeting.reschedule_requested_at = None
-        meeting.reschedule_requested_by_user_id = None
-        meeting.reschedule_request_reason = None
-        meeting.reschedule_request_preferred_times = None
     
     session.add(meeting)
     session.commit()
@@ -997,7 +962,7 @@ async def reschedule_meeting(
                     end_time=reschedule_data.scheduled_end
                 )
         except CalendarProviderError as e:
-            print(f"Failed to update {cal_account.provider.value} calendar: {str(e)}")
+            logger.warning(f"Failed to update {cal_account.provider.value} calendar: {str(e)}")
     
     # Notify participants
     MeetingService.notify_participants(
@@ -1694,14 +1659,16 @@ async def propose_availability_slots(
     
     # Notify recipient
     if slots_data:
+        proposer = session.get(User, current_user["user_id"])
+        proposer_name = proposer.full_name if proposer else "A recruiter"
         push_notification(
             session=session,
-            target_user_id=slots_data[0].proposed_to_user_id,
-            notification_type="availability_proposed",
+            user_id=slots_data[0].proposed_to_user_id,
             title="Interview Times Available",
-            message=f"{current_user.full_name} proposed {len(slots_data)} interview time slots",
-            related_id=created_slots[0].id if created_slots else None,
-            action_url="/meetings/availability"
+            message=f"{proposer_name} proposed {len(slots_data)} interview time slots",
+            event_type="availability_proposed",
+            route="/meetings/availability",
+            notification_type="meeting"
         )
     
     return created_slots
@@ -1796,14 +1763,16 @@ async def select_availability_slot(
     session.commit()
     
     # Notify organizer
+    selector = session.get(User, current_user["user_id"])
+    selector_name = selector.full_name if selector else "A candidate"
     push_notification(
         session=session,
-        target_user_id=slot.proposed_by_user_id,
-        notification_type="slot_selected",
+        user_id=slot.proposed_by_user_id,
         title="Interview Time Confirmed",
-        message=f"{current_user.full_name} selected an interview time",
-        related_id=meeting.id,
-        action_url=f"/meetings/{meeting.id}"
+        message=f"{selector_name} selected an interview time",
+        event_type="slot_selected",
+        route=f"/meetings/{meeting.id}",
+        notification_type="meeting"
     )
     
     session.refresh(meeting)

@@ -10,6 +10,11 @@ from datetime import datetime, timedelta
 # Add app to path
 sys.path.insert(0, os.path.dirname(__file__))
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from sqlmodel import Session, select
 from app.database import engine
 from app.models import User, Meeting, MeetingParticipant, Notification

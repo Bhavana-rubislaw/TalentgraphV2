@@ -17,39 +17,27 @@ import '../styles/MessagesPage.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface OtherUser {
-  id: number | null;
-  full_name: string;
-  is_online: boolean;
-  last_seen_at: string | null;
-}
-
 interface Conversation {
   id: number;
-  candidate_id: number;
-  job_posting_id: number;
-  company_id: number;
   candidate_name: string;
-  candidate_user_id: number | null;
   recruiter_name: string;
-  recruiter_user_id: number | null;
-  job_title: string;
   last_message_preview: string;
   last_message_at: string | null;
   unread_count: number;
-  other_user: OtherUser;
+  other_user_name: string;
+  other_user_id: number | null;
 }
 
 interface Message {
   id: number;
   conversation_id: number;
   sender_user_id: number;
+  receiver_user_id: number;
   sender_name: string;
-  sender_role: string;  // 'candidate' | 'recruiter' | 'hr' | 'admin'
-  text: string;
+  receiver_name: string;
+  content: string;
   is_read: boolean;
   read_at: string | null;
-  status: string;  // 'sent' | 'read'
   created_at: string;
 }
 
@@ -86,53 +74,8 @@ function presenceLabel(isOnline: boolean, lastSeenAt: string | null): string | n
  * - If current user is the candidate → returns recruiter name
  * - If current user is the recruiter → returns candidate name
  */
-function getOtherParticipantName(conversation: Conversation, currentUserId: number): string {
-  // Debug logging in development
-  if (import.meta.env.DEV) {
-    console.log('[getOtherParticipantName]', {
-      conversationId: conversation.id,
-      currentUserId,
-      candidateUserId: conversation.candidate_user_id,
-      recruiterUserId: conversation.recruiter_user_id,
-      candidateName: conversation.candidate_name,
-      recruiterName: conversation.recruiter_name,
-      otherUserFullName: conversation.other_user?.full_name,
-    });
-  }
-
-  // Use the pre-computed other_user from backend (most reliable)
-  if (conversation.other_user?.full_name && conversation.other_user.full_name !== 'Unknown') {
-    console.log('[getOtherParticipantName] Using other_user.full_name:', conversation.other_user.full_name);
-    return conversation.other_user.full_name;
-  }
-  
-  // Fallback: manually determine based on user IDs
-  // Check which participant the current user is NOT
-  if (conversation.candidate_user_id && currentUserId === conversation.candidate_user_id) {
-    // Current user is the candidate → show recruiter
-    console.log('[getOtherParticipantName] Current user is candidate, showing recruiter:', conversation.recruiter_name);
-    return conversation.recruiter_name || 'Recruiter';
-  } else if (conversation.recruiter_user_id && currentUserId === conversation.recruiter_user_id) {
-    // Current user is the recruiter → show candidate
-    console.log('[getOtherParticipantName] Current user is recruiter, showing candidate:', conversation.candidate_name);
-    return conversation.candidate_name || 'Candidate';
-  }
-  
-  // Additional fallback: if IDs don't match, determine by checking which name isn't the current user's
-  // This handles cases where user_id relationships might be missing
-  const currentUserName = localStorage.getItem('full_name') || '';
-  if (conversation.candidate_name && conversation.candidate_name !== currentUserName) {
-    console.log('[getOtherParticipantName] Using candidate_name (name mismatch):', conversation.candidate_name);
-    return conversation.candidate_name;
-  }
-  if (conversation.recruiter_name && conversation.recruiter_name !== currentUserName) {
-    console.log('[getOtherParticipantName] Using recruiter_name (name mismatch):', conversation.recruiter_name);
-    return conversation.recruiter_name;
-  }
-  
-  // Ultimate fallback
-  console.warn('[getOtherParticipantName] Could not determine other participant, using Unknown');
-  return 'Unknown';
+function getOtherParticipantName(conversation: Conversation): string {
+  return conversation.other_user_name || 'Unknown';
 }
 
 /**
@@ -146,13 +89,6 @@ function isOwnMessage(message: Message, currentUserId: number): boolean {
   
   // Debug log (remove after verification)
   if (import.meta.env.DEV) {
-    console.log('Message ownership check:', {
-      senderUserId,
-      currentUserIdNum,
-      senderName: message.sender_name,
-      text: message.text.substring(0, 20),
-      isMine: result,
-    });
   }
   
   return result;
@@ -237,7 +173,7 @@ const ConversationList: React.FC<ConversationListProps> = ({
   return (
     <ul className="conv-list" role="listbox" aria-label="Conversations">
       {conversations.map((conv) => {
-        const otherParticipantName = getOtherParticipantName(conv, currentUserId);
+        const otherParticipantName = getOtherParticipantName(conv);
         return (
           <li
             key={conv.id}
@@ -252,12 +188,6 @@ const ConversationList: React.FC<ConversationListProps> = ({
               <div className="conv-avatar">
                 {otherParticipantName.charAt(0).toUpperCase()}
               </div>
-              {conv.other_user.is_online && (
-                <span
-                  className="presence-dot presence-dot--online"
-                  title="Active now"
-                />
-              )}
             </div>
             <div className="conv-info">
               <div className="conv-row-top">
@@ -265,9 +195,6 @@ const ConversationList: React.FC<ConversationListProps> = ({
                 {conv.last_message_at && (
                   <span className="conv-time">{formatTime(conv.last_message_at)}</span>
                 )}
-              </div>
-              <div className="conv-row-sub">
-                <span className="conv-job">{conv.job_title}</span>
               </div>
               <div className="conv-row-preview">
                 <span className="conv-preview">{conv.last_message_preview || 'No messages yet'}</span>
@@ -370,10 +297,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({
     }
   };
 
-  const presence = presenceLabel(
-    conversation.other_user.is_online,
-    conversation.other_user.last_seen_at,
-  );
+  const presence = null; // Presence via heartbeat not yet wired to conversation list
 
   // Group consecutive messages by sender for visual grouping
   const groupedMessages = messages.map((msg, idx) => {
@@ -388,7 +312,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({
   });
 
   // Get the other participant's name for the header
-  const otherParticipantName = getOtherParticipantName(conversation, currentUserId);
+  const otherParticipantName = getOtherParticipantName(conversation);
 
   return (
     <div className="chat-thread">
@@ -400,12 +324,9 @@ const ChatThread: React.FC<ChatThreadProps> = ({
         <div className="thread-header-info">
           <div className="thread-header-name">{otherParticipantName}</div>
           <div className="thread-header-meta">
-            {conversation.job_title}
             {presence && (
               <span className="thread-presence">
-                <span
-                  className={`presence-dot${conversation.other_user.is_online ? ' presence-dot--online' : ''}`}
-                />
+                <span className="presence-dot" />
                 {presence}
               </span>
             )}
@@ -461,7 +382,7 @@ const ChatThread: React.FC<ChatThreadProps> = ({
                   isLastInGroup ? 'msg-bubble--last' : '',
                 ].filter(Boolean).join(' ')}
               >
-                {msg.text}
+                {msg.content}
               </div>
 
               {/* Metadata: timestamp + status (only on last bubble in group) */}
@@ -472,9 +393,9 @@ const ChatThread: React.FC<ChatThreadProps> = ({
                   </span>
                   {isMine && (
                     <span className="msg-status">
-                      <ReadReceiptIcon status={msg.status} />
+                      <ReadReceiptIcon status={msg.is_read ? 'read' : 'sent'} />
                       <span className="msg-status-label">
-                        {msg.status === 'read' ? 'Read' : 'Sent'}
+                        {msg.is_read ? 'Read' : 'Sent'}
                       </span>
                     </span>
                   )}
@@ -553,11 +474,6 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
   // Debug: Log current user info on mount
   useEffect(() => {
     if (import.meta.env.DEV) {
-      console.log('MessagesPage: Current user:', {
-        currentUserId,
-        currentUserRole,
-        fromAuth: !!user?.user_id,
-      });
     }
   }, [currentUserId, currentUserRole, user]);
 
@@ -573,7 +489,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
 
   // ── Mark conversation as read (used by ChatThread) ────────────────────────
   const handleMarkRead = useCallback(async (convId: number) => {
-    await apiClient.markConversationRead(convId);
+    await apiClient.markDirectConversationRead(convId);
     // Update local message statuses to 'read' for incoming messages
     setMessages((prev) =>
       prev.map((m) =>
@@ -590,12 +506,12 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
 
   // ── Load messages for a conversation ─────────────────────────────────────
   const loadMessages = useCallback(
-    async (convId: number, before?: number) => {
+    async (convId: number, offset?: number) => {
       setLoadingMsgs(true);
       try {
-        const res = await apiClient.getMessages(convId, { limit: 50, before });
+        const res = await apiClient.getConversationMessages(convId, 50, offset ?? 0);
         const newMsgs: Message[] = res.data;
-        if (before !== undefined) {
+        if (offset !== undefined && offset > 0) {
           // Prepend older messages
           setMessages((prev) => [...newMsgs, ...prev]);
         } else {
@@ -626,7 +542,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
     setLoadingConvs(true);
     setError(null);
     try {
-      const res = await apiClient.getConversations();
+      const res = await apiClient.getDirectConversations();
       const convs: Conversation[] = res.data;
       setConversations(convs);
 
@@ -637,7 +553,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
           setSelectedConv(found);
           await loadMessages(found.id);
           try {
-            await apiClient.markConversationRead(found.id);
+            await apiClient.markDirectConversationRead(found.id);
             setConversations((prev) =>
               prev.map((c) => (c.id === found.id ? { ...c, unread_count: 0 } : c))
             );
@@ -653,7 +569,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
         }, { replace: true });
         await loadMessages(latest.id);
         try {
-          await apiClient.markConversationRead(latest.id);
+          await apiClient.markDirectConversationRead(latest.id);
           setConversations((prev) =>
             prev.map((c) => (c.id === latest.id ? { ...c, unread_count: 0 } : c))
           );
@@ -695,7 +611,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
       // Mark as read when opening — ChatThread will also fire, but this handles
       // the initial open before messages render.
       try {
-        await apiClient.markConversationRead(conv.id);
+        await apiClient.markDirectConversationRead(conv.id);
         setConversations((prev) =>
           prev.map((c) => (c.id === conv.id ? { ...c, unread_count: 0 } : c))
         );
@@ -708,7 +624,7 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
   const handleSend = useCallback(
     async (text: string) => {
       if (!selectedConv) return;
-      const res = await apiClient.sendMessage(selectedConv.id, text);
+      const res = await apiClient.sendDirectMessage(selectedConv.id, text);
       const newMsg: Message = res.data;
       setMessages((prev) => [...prev, newMsg]);
       setError(null);
@@ -726,20 +642,20 @@ const MessagesPage: React.FC<MessagesPageProps> = (_props) => {
   // ── Load more (pagination) ────────────────────────────────────────────────
   const handleLoadMore = useCallback(() => {
     if (!selectedConv || messages.length === 0) return;
-    loadMessages(selectedConv.id, messages[0].id);
+    loadMessages(selectedConv.id, messages.length);
   }, [selectedConv, messages, loadMessages]);
 
   // ── Polling: refresh conversations + messages every 10s ──────────────────
   useEffect(() => {
     const tick = async () => {
       try {
-        const res = await apiClient.getConversations();
+        const res = await apiClient.getDirectConversations();
         setConversations(res.data);
       } catch { /* silent */ }
 
       if (selectedConv) {
         try {
-          const res = await apiClient.getMessages(selectedConv.id, { limit: 50 });
+          const res = await apiClient.getConversationMessages(selectedConv.id, 50, 0);
           const newMsgs: Message[] = res.data;
           setMessages(newMsgs);
 

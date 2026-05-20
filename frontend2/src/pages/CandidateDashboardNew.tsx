@@ -12,8 +12,9 @@ import '../styles/AIRecommendations.css';
 import '../styles/HorizontalDashboard.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
+import { MeetingSchedulerTab } from '../components/meetings';
 
-const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches', 'messages'] as const;
+const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches', 'messages', 'meetings'] as const;
 
 // ── FilterPill: fully custom accessible dropdown ──────────────────────────────
 interface FilterPillOption {
@@ -462,10 +463,8 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const fetchJobProfiles = async () => {
-    console.log('[API CALL] Fetching job profiles');
     try {
       const response = await apiClient.getJobProfiles();
-      console.log('[API SUCCESS] Job profiles fetched, count:', response.data.length);
       setJobProfiles(response.data);
       if (response.data.length === 0) return;
       const validIds: number[] = response.data.map((p: any) => p.id);
@@ -475,7 +474,6 @@ const CandidateDashboard: React.FC = () => {
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedProfileId(parsedId);
       } else {
-        console.log('[STATE] Auto-selecting first profile:', response.data[0].id);
         setSelectedProfileId(response.data[0].id);
       }
     } catch (error) {
@@ -485,11 +483,9 @@ const CandidateDashboard: React.FC = () => {
 
   const fetchRecommendations = async () => {
     if (!selectedProfileId) return;
-    console.log('[API CALL] Fetching recommendations for profile:', selectedProfileId);
     setLoading(true);
     try {
       const response = await apiClient.getCandidateRecommendations(selectedProfileId);
-      console.log('[API SUCCESS] Recommendations fetched, count:', response.data.length);
       setRecommendations(response.data);
     } catch (error) {
       console.error('[API ERROR] Failed to fetch recommendations:', error);
@@ -509,14 +505,11 @@ const CandidateDashboard: React.FC = () => {
 
   const fetchUpcomingInterviews = async () => {
     try {
-      console.log('[INTERVIEWS] Fetching upcoming interviews...');
       const response = await apiClient.getMeetings({
         upcoming_only: true,
         status: 'scheduled'
       });
       const meetings = response.data || [];
-      console.log('[INTERVIEWS] API response:', meetings.length, 'meetings found', meetings);
-      
       // Transform backend meeting data to our format
       const interviews = meetings.map((meeting: any) => {
         const startDate = new Date(meeting.scheduled_start);
@@ -534,8 +527,6 @@ const CandidateDashboard: React.FC = () => {
           meetingLink: meeting.meeting_link || meeting.video_link || '#'
         };
       });
-      
-      console.log('[INTERVIEWS] Transformed interviews:', interviews);
       setUpcomingInterviews(interviews);
     } catch (error: any) {
       console.error('[INTERVIEWS] Error fetching:', error);
@@ -557,9 +548,6 @@ const CandidateDashboard: React.FC = () => {
   const fetchAppliedLiked = async () => {
     try {
       const response = await apiClient.getAppliedLikedJobs();
-      console.log('✅ Applied/Liked response:', response.data);
-      console.log('  - Applied jobs:', response.data.applied_jobs?.length || 0);
-      console.log('  - Liked jobs:', response.data.liked_jobs?.length || 0);
       setAppliedLiked(response.data);
     } catch (error) {
       console.error('❌ Failed to fetch applied/liked jobs:', error);
@@ -583,10 +571,8 @@ const CandidateDashboard: React.FC = () => {
     
     if (alreadyLiked) {
       // Undo the like
-      console.log('[SWIPE ACTION] Undo Like - Job:', jobPostingId);
       try {
         await apiClient.undoSwipe(jobPostingId);
-        console.log('[API SUCCESS] Undo swipe recorded');
         // Update state to remove swipe
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
@@ -601,10 +587,8 @@ const CandidateDashboard: React.FC = () => {
       }
     } else {
       // Like the job
-      console.log('[SWIPE ACTION] Like - Job:', jobPostingId, 'Profile:', selectedProfileId);
       try {
         await apiClient.swipeLike(selectedProfileId, jobPostingId);
-        console.log('[API SUCCESS] Swipe like recorded');
         // Optimistically update so card stays visible with "Liked" status
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
@@ -628,10 +612,8 @@ const CandidateDashboard: React.FC = () => {
     
     if (alreadyPassed) {
       // Undo the pass
-      console.log('[SWIPE ACTION] Undo Pass - Job:', jobPostingId);
       try {
         await apiClient.undoSwipe(jobPostingId);
-        console.log('[API SUCCESS] Undo swipe recorded');
         // Update state to remove swipe
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
@@ -644,10 +626,8 @@ const CandidateDashboard: React.FC = () => {
       }
     } else {
       // Pass on the job
-      console.log('[SWIPE ACTION] Pass - Job:', jobPostingId, 'Profile:', selectedProfileId);
       try {
         await apiClient.swipePass(selectedProfileId, jobPostingId);
-        console.log('[API SUCCESS] Swipe pass recorded');
         // Optimistically mark as passed — card stays visible with Passed badge
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
@@ -705,13 +685,10 @@ const CandidateDashboard: React.FC = () => {
 
   // Withdraw application
   const handleWithdrawApplication = async (applicationId: number, jobPostingId: number) => {
-    console.log('[APPLICATION] Withdrawing application:', applicationId, 'for job:', jobPostingId);
     setWithdrawingJobId(jobPostingId);
     
     try {
       await apiClient.withdrawApplication(applicationId);
-      console.log('[API SUCCESS] Application withdrawn');
-      
       // Update recommendations state to show as not applied
       setRecommendations(prev => prev.map(r =>
         r.job_posting.id === jobPostingId
@@ -761,17 +738,12 @@ const CandidateDashboard: React.FC = () => {
     const alreadyAppliedInInvites = invites.find(inv => inv.job_posting.id === jobPostingId)?.already_applied;
     
     if (alreadyAppliedInRecs || alreadyAppliedInAvailable || alreadyAppliedInMatches || alreadyAppliedInInvites) {
-      console.log('[APPLICATION] Already applied to job:', jobPostingId, '- skipping API call');
       return;
     }
-    
-    console.log('[APPLICATION] Applying to job:', jobPostingId, 'with profile:', selectedJobProfileId);
     setApplyingJobId(jobPostingId);
     
     try {
       await apiClient.applyToJob(jobPostingId, selectedJobProfileId);
-      console.log('[API SUCCESS] Application submitted');
-      
       // Update recommendations state to show Applied
       setRecommendations(prev => prev.map(r =>
         r.job_posting.id === jobPostingId
@@ -805,12 +777,8 @@ const CandidateDashboard: React.FC = () => {
       
     } catch (error: any) {
       const msg = error?.response?.data?.detail;
-      console.log('[APPLICATION ERROR]', error?.response?.status, msg);
-      
       // If already applied (400), show as Applied
       if (error?.response?.status === 400 && typeof msg === 'string' && msg.toLowerCase().includes('already applied')) {
-        console.log('[APPLICATION] Already applied - updating UI to show Applied state');
-        
         // Update local state to show Applied
         setRecommendations(prev => prev.map(r =>
           r.job_posting.id === jobPostingId
@@ -1176,13 +1144,6 @@ const CandidateDashboard: React.FC = () => {
                 const skillTags = getSkillTags(rec);
 
                 // Log match details for debugging
-                console.log('[REC CARD DATA]', {
-                  matchPercentage,
-                  match_details: rec.match_details,
-                  matchReason: generateMatchReason(rec),
-                  skills: skillTags
-                });
-
                 return (
                   <div 
                     className="ai-job-card"
@@ -3574,11 +3535,6 @@ const CandidateDashboard: React.FC = () => {
 
   const renderAppliedLiked = () => {
     const { applied_jobs, liked_jobs } = appliedLiked;
-    console.log('📊 renderAppliedLiked:', { 
-      jobListTab, 
-      appliedCount: applied_jobs?.length || 0, 
-      likedCount: liked_jobs?.length || 0 
-    });
     const rawItems = jobListTab === 'applied' ? applied_jobs : liked_jobs;
 
     // Calculate application statistics
@@ -5604,6 +5560,8 @@ const CandidateDashboard: React.FC = () => {
         return renderMatches();
       case 'messages':
         return <ChatWindow />;
+      case 'meetings':
+        return <MeetingSchedulerTab role="candidate" />;
       default:
         return renderRecommendations();
     }
@@ -5621,7 +5579,8 @@ const CandidateDashboard: React.FC = () => {
       available: 'Available',
       applied: 'Applied',
       matches: 'Matches',
-      messages: 'Messages'
+      messages: 'Messages',
+      meetings: 'Meetings'
     };
     return names[tab] || tab;
   };
@@ -5768,6 +5727,19 @@ const CandidateDashboard: React.FC = () => {
             </svg>
             Messages
             <span className="talentgraph-tab-badge">5</span>
+          </button>
+
+          <button 
+            className={`talentgraph-tab ${activeTab === 'meetings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('meetings')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Meetings
           </button>
         </div>
       </div>

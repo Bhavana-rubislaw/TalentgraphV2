@@ -31,21 +31,21 @@
 /* ============ PAGE LAYOUT ============ */
 
 .jpb-page {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: var(--jpb-bg);
   display: flex;
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--jpb-text);
-  padding: 24px;
 }
 
 .jpb-loading {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   gap: 16px;
   color: var(--jpb-text-muted);
 }

@@ -240,22 +240,6 @@ export function MeetingsPage() {
 
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
-                onClick={() => setShowAvailabilityModal(true)}
-                style={{
-                  padding: '12px 24px',
-                  borderRadius: '10px',
-                  border: '2px solid #6d28d9',
-                  background: 'white',
-                  color: '#6d28d9',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                📌 Propose Times
-              </button>
-              
-              <button
                 onClick={() => setShowCreateModal(true)}
                 style={{
                   padding: '12px 24px',

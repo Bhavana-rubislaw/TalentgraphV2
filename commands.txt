@@ -328,9 +328,8 @@ print('Done!')
 
 **Command**
 ```powershell
-cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2"
-.\venv\Scripts\Activate.ps1
-uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+deactivate
+
 ```
 
 **Use**
@@ -348,7 +347,9 @@ curl.exe -s http://127.0.0.1:8001/health
 Expected: `{"status":"ok"}`
 
 ---
-
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2" 
+.\venv\Scripts\Activate.ps1 
+ uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ## C2) Start frontend (Vite)
 
 **Command**

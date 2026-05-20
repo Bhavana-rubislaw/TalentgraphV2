@@ -144,8 +144,6 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
     // Note: This component uses old meeting logic. Consider migrating to the new
     // Meetings API (/meetings/create) for full integration with calendar and notifications.
     // Old email-only scheduling is deprecated.
-    console.log('ℹ️ Meeting scheduled locally (email-only scheduling deprecated)');
-    
     // Show success animation and reset
     setSuccess(true);
     setTimeout(()=>{ 

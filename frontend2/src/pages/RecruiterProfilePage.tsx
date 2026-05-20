@@ -16,6 +16,8 @@ const Icons = {
   userPlus: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
   check: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
   alertTriangle: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  chevDown: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  phone: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.87 19.79 19.79 0 011.12 1.19 2 2 0 013.11 1h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L7.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>,
 };
 
 /* ── Interfaces ── */
@@ -60,6 +62,9 @@ const RecruiterProfilePage: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [userRole, setUserRole] = useState<string>('recruiter');
   const [companyName, setCompanyName] = useState<string>('');
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['personal', 'company']));
+  const toggleSection = (id: string) => setOpenSections(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const [editingSection, setEditingSection] = useState<string | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -111,7 +116,6 @@ const RecruiterProfilePage: React.FC = () => {
         setCompanyName(res.data.company_name);
       }
     } catch (err) {
-      console.log('[TEAM] Could not fetch team members:', err);
     }
   };
 
@@ -134,46 +138,118 @@ const RecruiterProfilePage: React.FC = () => {
   };
 
   /* ================================================================
-     RENDER — PROFILE VIEW (READ-ONLY)
+     RENDER — PROFILE VIEW (accordion cards with inline edit)
      ================================================================ */
   const renderProfileView = () => (
-    <div className="cp-form-container">
+    <>
       {/* Personal Info */}
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title">{Icons.user} Personal Information</h3>
-        <div className="cp-profile-grid">
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Full Name</span>
-            <span className="cp-profile-value">{profile.name || <span className="empty">Not provided</span>}</span>
+      <div className={`cp-profile-card ${openSections.has('personal') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('personal')}>
+          <span className="cp-profile-card-header-icon">{Icons.user}</span>
+          <span className="cp-profile-card-header-text">Personal Information</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {editingSection !== 'personal' && (
+              <button type="button" className="cp-profile-card-header-btn" onClick={(e) => { e.stopPropagation(); setEditingSection('personal'); openSections.has('personal') || toggleSection('personal'); }}>
+                {Icons.edit} Edit
+              </button>
+            )}
+            <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+          </span>
+        </button>
+        {openSections.has('personal') && (
+          <div className="cp-profile-card-body">
+            {editingSection === 'personal' ? (
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); setEditingSection(null); }}>
+                <div className="cp-form-grid-2">
+                  <div className="cp-form-group">
+                    <label className="required">Full Name</label>
+                    <input type="text" name="name" value={profile.name} onChange={handleInputChange} placeholder="Enter your full name" required />
+                  </div>
+                  <div className="cp-form-group">
+                    <label className="required">Email</label>
+                    <input type="email" name="email" value={profile.email} onChange={handleInputChange} placeholder="your.email@company.com" required />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" value={profile.phone} onChange={handleInputChange} placeholder="+1 (555) 000-0000" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+                  <button type="button" className="cp-btn cp-btn-outline cp-btn-sm" onClick={() => setEditingSection(null)}>Cancel</button>
+                  <button type="submit" className="cp-btn cp-btn-primary cp-btn-sm">{Icons.check} Save</button>
+                </div>
+              </form>
+            ) : (
+              <div className="cp-profile-view-grid">
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Full Name</span>
+                  <span className="cp-profile-view-value">{profile.name || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Email</span>
+                  <span className="cp-profile-view-value">
+                    {profile.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : <span className="empty">Not provided</span>}
+                  </span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Phone</span>
+                  <span className="cp-profile-view-value">{profile.phone || <span className="empty">Not provided</span>}</span>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Email</span>
-            <span className="cp-profile-value">
-              {profile.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : <span className="empty">Not provided</span>}
-            </span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Phone</span>
-            <span className="cp-profile-value">{profile.phone || <span className="empty">Not provided</span>}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Company Info */}
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title">{Icons.building} Company Information</h3>
-        <div className="cp-profile-grid">
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Company Name</span>
-            <span className="cp-profile-value">{profile.company_name || companyName || <span className="empty">Not provided</span>}</span>
+      <div className={`cp-profile-card ${openSections.has('company') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('company')}>
+          <span className="cp-profile-card-header-icon">{Icons.building}</span>
+          <span className="cp-profile-card-header-text">Company Information</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {editingSection !== 'company' && (
+              <button type="button" className="cp-profile-card-header-btn" onClick={(e) => { e.stopPropagation(); setEditingSection('company'); openSections.has('company') || toggleSection('company'); }}>
+                {Icons.edit} Edit
+              </button>
+            )}
+            <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+          </span>
+        </button>
+        {openSections.has('company') && (
+          <div className="cp-profile-card-body">
+            {editingSection === 'company' ? (
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); setEditingSection(null); }}>
+                <div className="cp-form-grid-2">
+                  <div className="cp-form-group">
+                    <label>Company Name</label>
+                    <input type="text" name="company_name" value={profile.company_name} onChange={handleInputChange} placeholder="Your company name" />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>Your Role</label>
+                    <input type="text" name="company_role" value={profile.company_role} onChange={handleInputChange} placeholder="e.g., Recruiter, HR Manager" />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+                  <button type="button" className="cp-btn cp-btn-outline cp-btn-sm" onClick={() => setEditingSection(null)}>Cancel</button>
+                  <button type="submit" className="cp-btn cp-btn-primary cp-btn-sm">{Icons.check} Save</button>
+                </div>
+              </form>
+            ) : (
+              <div className="cp-profile-view-grid">
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Company Name</span>
+                  <span className="cp-profile-view-value">{profile.company_name || companyName || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Role</span>
+                  <span className="cp-profile-view-value">{profile.company_role || userRole || <span className="empty">Not provided</span>}</span>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Role</span>
-            <span className="cp-profile-value">{profile.company_role || userRole || <span className="empty">Not provided</span>}</span>
-          </div>
-        </div>
+        )}
       </div>
-    </div>
+    </>
   );
 
   /* ================================================================
@@ -270,7 +346,49 @@ const RecruiterProfilePage: React.FC = () => {
   );
 
   /* ================================================================
-     RENDER — TEAM MANAGEMENT SECTION
+     RENDER — TEAM SIDEBAR WIDGET
+     ================================================================ */
+  const renderTeamSidebar = () => (
+    <div className="cp-sidebar-widget">
+      <div className="cp-sidebar-widget-title">
+        <span className="cp-sidebar-widget-icon">{Icons.users}</span>
+        Team Members
+      </div>
+      <div className="cp-sidebar-widget-body">
+        {teamMembers.map(member => (
+          <div key={member.id} className={`cp-team-member-card${member.is_self ? ' is-self' : ''}`}>
+            <div className="cp-team-member-top">
+              <div className="cp-team-avatar">{member.name.charAt(0).toUpperCase()}</div>
+              <div className="cp-team-name-block">
+                <div className="cp-team-name">
+                  {member.name}
+                  {member.is_self && <span className="cp-team-you-badge">You</span>}
+                </div>
+                <div className="cp-team-email">{member.email}</div>
+              </div>
+            </div>
+            <div className="cp-team-member-meta">
+              <span className="cp-team-jobs-count">{member.jobs_posted} {member.jobs_posted === 1 ? 'job' : 'jobs'}</span>
+              <span className={`cp-status-dot-badge ${member.status.toLowerCase() === 'active' ? 'active' : 'inactive'}`}>
+                {member.status}
+              </span>
+            </div>
+          </div>
+        ))}
+        {teamMembers.length === 0 && (
+          <p style={{ fontSize: 13, color: 'var(--cp-text-tertiary)', textAlign: 'center', padding: '12px 0' }}>No team members yet.</p>
+        )}
+        {canManageTeam && (
+          <button className="cp-sidebar-upload-btn" style={{ marginTop: 8 }}>
+            {Icons.userPlus} Invite Member
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  /* ================================================================
+     RENDER — TEAM MANAGEMENT SECTION (legacy, unused)
      ================================================================ */
   const renderTeamManagement = () => {
     if (!canManageTeam || teamMembers.length === 0) return null;
@@ -448,47 +566,45 @@ const RecruiterProfilePage: React.FC = () => {
      ================================================================ */
   return (
     <div className="cp-page">
-      {/* Header */}
-      <div className="cp-header">
-        <div className="cp-header-inner">
-          <div className="cp-header-left">
-            <h1 className="cp-header-title">My Profile</h1>
-            <p className="cp-header-subtitle">
-              {isEditing
-                ? 'Update your profile information'
-                : 'Manage your profile, team, and preferences'}
-            </p>
-          </div>
-          <div className="cp-header-actions">
-            {hasProfile && !isEditing && (
-              <button className="cp-btn cp-btn-primary" onClick={() => setIsEditing(true)}>
-                {Icons.edit} Edit Profile
-              </button>
-            )}
-            <button className="cp-btn cp-btn-outline" onClick={() => navigate('/recruiter-dashboard')}>
-              {Icons.layout} Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
       {loading ? (
         renderSkeleton()
       ) : (
         <div className="cp-content">
-          {/* Profile read or edit view */}
-          {isEditing ? renderProfileForm() : renderProfileView()}
+          {/* Breadcrumb */}
+          <nav className="cp-breadcrumb">
+            <a onClick={() => navigate('/recruiter-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+            <span className="cp-breadcrumb-sep">›</span>
+            <span className="cp-breadcrumb-current">Profile</span>
+          </nav>
 
-          {/* Team Management - show for admin/hr roles */}
-          {hasProfile && !isEditing && renderTeamManagement()}
+          {/* Page Title */}
+          <div className="cp-page-title-block">
+            <h1 className="cp-page-h1">Recruiter Profile</h1>
+          </div>
 
-          {/* Notification Preferences - always show after profile is loaded */}
-          {hasProfile && (
-            <div style={{ marginTop: 32 }}>
-              <NotificationPreferences />
+          {/* Two-column layout */}
+          <div className="cp-page-layout">
+            {/* Left: accordion profile sections or form */}
+            <div className="cp-main-col">
+              {isEditing ? renderProfileForm() : renderProfileView()}
             </div>
-          )}
+
+            {/* Right: team sidebar */}
+            <div className="cp-sidebar-col">
+              {renderTeamSidebar()}
+              {hasProfile && (
+                <div className="cp-sidebar-widget" style={{ marginTop: 0 }}>
+                  <div className="cp-sidebar-widget-title">
+                    <span className="cp-sidebar-widget-icon">{Icons.layout}</span>
+                    Preferences
+                  </div>
+                  <div className="cp-sidebar-widget-body">
+                    <NotificationPreferences />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

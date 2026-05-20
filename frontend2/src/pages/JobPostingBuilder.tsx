@@ -145,11 +145,15 @@ const JobPostingBuilder: React.FC = () => {
   const [listSearch, setListSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'reposted' | 'cancelled'>('all');
   const [showPreview, setShowPreview] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedPostingId, setSelectedPostingId] = useState<number | null>(null);
   
   // Cancel modal state
   const [showCancelModal, setShowCancelModal] = useState<number | null>(null);
   const [cancelReason, setCancelReason] = useState<string>('');
   const [customReason, setCustomReason] = useState<string>('');
+  const PAGE_SIZE_POSTINGS = 9;
+  const [currentPostPage, setCurrentPostPage] = useState(1);
 
   // Skills state
   const [skillSearchTech, setSkillSearchTech] = useState('');
@@ -224,6 +228,9 @@ const JobPostingBuilder: React.FC = () => {
       return () => clearTimeout(t);
     }
   }, [toast]);
+
+  // Reset pagination when filters change
+  useEffect(() => { setCurrentPostPage(1); }, [listSearch, statusFilter]);
 
   // Dirty tracking
   useEffect(() => {
@@ -371,6 +378,7 @@ const JobPostingBuilder: React.FC = () => {
     setEditingId(posting.id);
     setIsDirty(false);
     setErrors({});
+    setShowForm(true);
   };
 
   const handleDuplicatePosting = (posting: JobPosting) => {
@@ -422,6 +430,7 @@ const JobPostingBuilder: React.FC = () => {
     setEditingId(null);
     setIsDirty(false);
     setErrors({});
+    setShowForm(true);
   };
 
   const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate' | 'repost', e: React.MouseEvent) => {
@@ -544,6 +553,26 @@ const JobPostingBuilder: React.FC = () => {
     );
   }, [postings, listSearch, statusFilter]);
 
+  // ============ PAGINATION ============
+
+  const totalPostPages = Math.ceil(filteredPostings.length / PAGE_SIZE_POSTINGS);
+  const paginatedPostings = filteredPostings.slice(
+    (currentPostPage - 1) * PAGE_SIZE_POSTINGS,
+    currentPostPage * PAGE_SIZE_POSTINGS
+  );
+  const getPostPageNumbers = (): (number | string)[] => {
+    if (totalPostPages <= 7) return Array.from({ length: totalPostPages }, (_, i) => i + 1);
+    const pages: (number | string)[] = [];
+    if (currentPostPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPostPages);
+    } else if (currentPostPage >= totalPostPages - 3) {
+      pages.push(1, '...', totalPostPages - 4, totalPostPages - 3, totalPostPages - 2, totalPostPages - 1, totalPostPages);
+    } else {
+      pages.push(1, '...', currentPostPage - 1, currentPostPage, currentPostPage + 1, '...', totalPostPages);
+    }
+    return pages;
+  };
+
   // ============ FORMAT HELPERS ============
 
   const formatSalary = (min: string, max: string, currency: string, payType: string) => {
@@ -571,6 +600,165 @@ const JobPostingBuilder: React.FC = () => {
     );
   }
 
+  // ---- LIST VIEW ----
+  if (!showForm) {
+    const worktypeLabel = (wt: string) => ({ remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' }[wt] || wt);
+    const fmtSalary = (min: number, max: number, cur: string) => {
+      const fmt = (v: number) => v >= 1000 ? `${Math.round(v/1000)}k` : v.toLocaleString();
+      return `${(cur||'USD').toUpperCase()} ${fmt(min)} – ${fmt(max)}`;
+    };
+
+    return (
+      <div className="cp-page">
+        {/* Toast */}
+        {toast && (
+          <div className={`jpb-toast jpb-toast-${toast.type}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {toast.type === 'success' ? <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></> : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}
+            </svg>
+            <span>{toast.message}</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="cp-list-header">
+          <nav className="cp-breadcrumb">
+            <a onClick={() => navigate('/recruiter-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+            <span className="cp-breadcrumb-sep">›</span>
+            <span className="cp-breadcrumb-current">Job Postings</span>
+          </nav>
+
+          <div className="cp-page-title-block">
+            <h1 className="cp-page-h1">Job Postings</h1>
+            <button className="jpb-btn jpb-btn-primary" onClick={handleNewPosting}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Posting
+            </button>
+          </div>
+
+          <div className="cp-filter-bar">
+            <div className="cp-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search postings..." value={listSearch} onChange={e => setListSearch(e.target.value)} />
+            </div>
+            <div className="cp-filter-chips">
+              {(['all','active','frozen','reposted','cancelled'] as const).map(s => (
+                <button key={s} className={`cp-filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => setStatusFilter(s)}>
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable card grid */}
+        <div className="cp-page-body">
+          {filteredPostings.length === 0 ? (
+            <div className="cp-empty-state">
+              <svg className="cp-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+              <h3 className="cp-empty-title">No job postings yet</h3>
+              <p className="cp-empty-text">Create your first job posting to start hiring.</p>
+              <button className="jpb-btn jpb-btn-primary cp-btn-lg" onClick={handleNewPosting}>+ Create First Posting</button>
+            </div>
+          ) : (
+            <div className="cp-main-grid">
+              {paginatedPostings.map(p => {
+                const nStatus = (p.status || '').toLowerCase();
+                const skills = p.posting_skills || [];
+                return (
+                  <div key={p.id} className="cp-posting-card" onClick={() => setSelectedPostingId(selectedPostingId === p.id ? null : p.id)}>
+                    <div className="cp-posting-card-top">
+                      <div>
+                        <div className="cp-posting-card-title">{p.job_title}</div>
+                        <div className="cp-posting-card-dept">{p.product_vendor}{p.product_type ? ` · ${p.product_type}` : ''}</div>
+                      </div>
+                      <span className={`cp-posting-status ${nStatus}`}>{p.status || 'active'}</span>
+                    </div>
+                    {skills.length > 0 && (
+                      <div className="cp-posting-card-skill-tags">
+                        {skills.slice(0,4).map((s: any,i: number) => <span key={i} className="cp-posting-card-skill-tag">{s.skill_name}</span>)}
+                        {skills.length > 4 && <span className="cp-posting-card-skill-tag">+{skills.length-4}</span>}
+                      </div>
+                    )}
+                    <div className="cp-posting-card-meta">
+                      {p.location && <span>📍 {p.location}</span>}
+                      <span>🏠 {worktypeLabel(p.worktype)}</span>
+                      {p.salary_min > 0 && <span>💰 {fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}</span>}
+                    </div>
+                    <div className="cp-posting-card-footer">
+                      <span className="cp-posting-card-apps">
+                        {p.created_at && `Posted ${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      </span>
+                      <div className="cp-posting-card-action-btns">
+                        <button className="cp-posting-action-btn" onClick={(e) => { e.stopPropagation(); loadPosting(p); }}>Edit</button>
+                        {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
+                          <button className="cp-posting-action-btn freeze" onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}>Freeze</button>
+                        )}
+                        {nStatus === 'frozen' && (
+                          <>
+                            <button className="cp-posting-action-btn unfreeze" onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}>Unfreeze</button>
+                            <button className="cp-posting-action-btn repost" onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}>Repost</button>
+                          </>
+                        )}
+                        {nStatus !== 'cancelled' && (
+                          <button className="cp-posting-action-btn cancel" onClick={(e) => { e.stopPropagation(); setShowCancelModal(p.id); }}>Cancel</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination footer */}
+        {totalPostPages > 1 && (
+          <div className="cp-pagination-footer">
+            <span className="cp-pagination-info">
+              Showing {(currentPostPage - 1) * PAGE_SIZE_POSTINGS + 1}–{Math.min(currentPostPage * PAGE_SIZE_POSTINGS, filteredPostings.length)} of {filteredPostings.length}
+            </span>
+            <div className="cp-pagination-buttons">
+              <button className="cp-pag-btn" onClick={() => setCurrentPostPage(p => p - 1)} disabled={currentPostPage === 1}>← Prev</button>
+              {getPostPageNumbers().map((pn, i) =>
+                pn === '...' ? (
+                  <span key={`e${i}`} className="cp-pag-btn ellipsis">…</span>
+                ) : (
+                  <button key={pn} className={`cp-pag-btn${currentPostPage === pn ? ' active' : ''}`} onClick={() => setCurrentPostPage(pn as number)}>{pn}</button>
+                )
+              )}
+              <button className="cp-pag-btn" onClick={() => setCurrentPostPage(p => p + 1)} disabled={currentPostPage === totalPostPages}>Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Modal */}
+        {showCancelModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setShowCancelModal(null)}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 12px' }}>Cancel Job Posting</h3>
+              <select value={cancelReason} onChange={e => setCancelReason(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14 }}>
+                <option value="">Select reason...</option>
+                <option value="position_filled">Position Filled</option>
+                <option value="budget_cut">Budget Cut</option>
+                <option value="requirements_changed">Requirements Changed</option>
+                <option value="other">Other</option>
+              </select>
+              {cancelReason === 'other' && (
+                <textarea value={customReason} onChange={e => setCustomReason(e.target.value)} placeholder="Enter reason..." style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14, height: 80, resize: 'vertical', fontFamily: 'inherit' }} />
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button className="jpb-btn jpb-btn-outline" onClick={() => setShowCancelModal(null)}>Cancel</button>
+                <button className="jpb-btn jpb-btn-danger" onClick={handleCancelJob} disabled={!cancelReason}>Confirm Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="jpb-page">
       {/* Toast */}
@@ -593,8 +781,10 @@ const JobPostingBuilder: React.FC = () => {
             type="button"
             className="jpb-back-btn" 
             onClick={() => {
-              console.log('[JPB NAV] Back button clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
-              navigate(-1);
+              if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+              setShowForm(false);
+              setEditingId(null);
+              setIsDirty(false);
             }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

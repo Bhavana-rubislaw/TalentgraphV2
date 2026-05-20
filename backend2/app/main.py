@@ -101,6 +101,10 @@ default_origins = [
     "http://127.0.0.1:3002",
     "http://localhost:3003",
     "http://127.0.0.1:3003",
+    "http://localhost:3004",
+    "http://127.0.0.1:3004",
+    "http://localhost:3005",
+    "http://127.0.0.1:3005",
 ]
 
 # Optional env override: FRONTEND_ORIGINS="http://localhost:3002,https://app.example.com"
@@ -178,7 +182,7 @@ from app.routers import (
     auth, candidates, company, job_postings, matches, recommendations, 
     swipes, dashboard, applications, notifications, activity_feed, 
     messages, meetings, calendar, analytics, logs, notification_preferences,
-    onboarding, product_taxonomy
+    onboarding, product_taxonomy, admin
 )
 
 log_change(
@@ -208,6 +212,7 @@ app.include_router(calendar.router)  # Calendar & video provider OAuth integrati
 app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
 app.include_router(logs.router)  # Comprehensive logging system
 app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences
+app.include_router(admin.router)             # Admin portal management APIs
 
 log_change(
     logger,

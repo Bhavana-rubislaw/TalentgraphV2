@@ -53,8 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .getCurrentUser()
       .then((res) => {
         const data = res.data;
-        console.log('[AuthContext] /auth/me response:', data);
-        
         const authUser: AuthUser = {
           user_id: data.user_id,
           email: data.email ?? '',
@@ -63,8 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           company_name: data.company_name,
           is_profile_complete: data.is_profile_complete ?? false,
         };
-        
-        console.log('[AuthContext] Normalized authUser:', authUser);
         setUser(authUser);
         
         // Sync back to localStorage so legacy reads still work
@@ -74,12 +70,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (authUser.company_name) localStorage.setItem('company_name', authUser.company_name);
         if (authUser.email) localStorage.setItem('email', authUser.email);
         localStorage.setItem('is_profile_complete', String(authUser.is_profile_complete));
-        
-        console.log('[AuthContext] localStorage after sync:', {
-          user_id: localStorage.getItem('user_id'),
-          role: localStorage.getItem('role'),
-          email: localStorage.getItem('email')
-        });
       })
       .catch((err) => {
         const status = err?.response?.status;

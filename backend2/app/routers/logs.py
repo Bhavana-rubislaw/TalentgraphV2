@@ -163,7 +163,7 @@ async def get_logs(
     limit: int = 100,
     offset: int = 0,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Query system logs with filters
@@ -171,7 +171,7 @@ async def get_logs(
     """
     
     # Only admins can access logs
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Build query with filters
@@ -241,7 +241,7 @@ async def get_logs(
         extra={
             "action": "query_logs",
             "entity_type": "system_logs",
-            "user_id": current_user.id,
+            "user_id": current_user.get("user_id"),
             "metadata": {
                 "total": total,
                 "returned": len(logs),
@@ -268,7 +268,7 @@ async def get_logs(
 async def get_log_stats(
     hours: int = 24,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get aggregated log statistics
@@ -276,7 +276,7 @@ async def get_log_stats(
     """
     
     # Only admins can access log stats
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Time range
@@ -323,7 +323,7 @@ async def get_log_stats(
         extra={
             "action": "get_stats",
             "entity_type": "system_logs",
-            "user_id": current_user.id,
+            "user_id": current_user.get("user_id"),
             "metadata": {"hours": hours, "total_logs": total_logs}
         }
     )
@@ -342,7 +342,7 @@ async def get_log_stats(
 async def cleanup_old_logs(
     days: int = 30,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Clean up logs older than specified days
@@ -350,7 +350,7 @@ async def cleanup_old_logs(
     """
     
     # Only admins can cleanup logs
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     if days < 7:
@@ -374,7 +374,7 @@ async def cleanup_old_logs(
         extra={
             "action": "cleanup_logs",
             "entity_type": "system_logs",
-            "user_id": current_user.id,
+            "user_id": current_user.get("user_id"),
             "metadata": {"days": days, "deleted": logs_to_delete}
         }
     )
@@ -388,7 +388,7 @@ async def export_logs(
     end_date: Optional[datetime] = None,
     level: Optional[str] = None,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Export logs as JSON for analysis
@@ -396,7 +396,7 @@ async def export_logs(
     """
     
     # Only admins can export logs
-    if current_user.role != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     # Build query
@@ -441,7 +441,7 @@ async def export_logs(
         extra={
             "action": "export_logs",
             "entity_type": "system_logs",
-            "user_id": current_user.id,
+            "user_id": current_user.get("user_id"),
             "metadata": {"exported_count": len(export_data)}
         }
     )

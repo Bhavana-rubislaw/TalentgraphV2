@@ -7,6 +7,11 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 from app.services.email_service import SMTPEmailProvider
 
 

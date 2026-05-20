@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { apiClient } from '../../api/client';
+import { apiClient, API_BASE } from '../../api/client';
 import { MeetingType } from '../../types/meeting';
 
 interface CreateMeetingModalProps {
@@ -103,20 +103,14 @@ export function CreateMeetingModal({
       
       try {
         const token = localStorage.getItem('access_token');
-        console.log('Searching for users:', searchQuery);
-        
         const response = await fetch(
-          `http://localhost:8000/auth/users/search?q=${encodeURIComponent(searchQuery)}`,
+          `${API_BASE}/auth/users/search?q=${encodeURIComponent(searchQuery)}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        
-        console.log('Search response status:', response.status);
-        
         if (response.ok) {
           const users = await response.json();
-          console.log('Search results:', users);
           setSearchResults(users);
         } else {
           const errorData = await response.text();

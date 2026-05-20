@@ -6,7 +6,6 @@ import '../styles/Form.css';
 import '../styles/AuthLayout.css';
 
 const SignupPage: React.FC = () => {
-  console.log('[COMPONENT MOUNT] SignupPage loaded');
   const navigate = useNavigate();
   const { setUser } = useAuth();
   const location = useLocation();
@@ -16,8 +15,6 @@ const SignupPage: React.FC = () => {
   const urlRole = searchParams.get('role');
   const isCompanyFlow = searchParams.get('type') === 'company' || urlRole !== null;
   const isCandidateFlow = searchParams.get('type') === 'candidate';
-  console.log('[PAGE INFO] Mode:', isSignIn ? 'SignIn' : 'SignUp', 'URL Role:', urlRole, 'IsCompany:', isCompanyFlow, 'IsCandidate:', isCandidateFlow);
-  
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -61,8 +58,6 @@ const SignupPage: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
-    console.log('[AUTH] Sign in attempt - Email:', formData.email, 'UserType:', formData.userType, 'CompanyRole:', formData.companyRole);
     try {
       let response;
       
@@ -74,8 +69,6 @@ const SignupPage: React.FC = () => {
           email: formData.email,
           password: formData.password
         });
-        console.log('[AUTH SUCCESS] System admin logged in - Email:', response.data.email);
-        
         // Save token and user info
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user_id', String(response.data.user_id));
@@ -93,7 +86,6 @@ const SignupPage: React.FC = () => {
         });
         
         // Redirect to admin dashboard or default page
-        console.log('[NAVIGATION] System admin - Redirecting to admin dashboard');
         navigate('/admin/logs'); // or any admin route you have
         return;
       }
@@ -101,10 +93,8 @@ const SignupPage: React.FC = () => {
       // Regular user login (candidate/recruiter/hr)
       if (formData.userType === 'candidate') {
         response = await apiClient.candidateLogin(formData.email, formData.password);
-        console.log('[AUTH SUCCESS] Candidate logged in - Email:', response.data.email);
       } else {
         response = await apiClient.companyLogin(formData.email, formData.password);
-        console.log('[AUTH SUCCESS] Company user logged in - Email:', response.data.email, 'Role:', response.data.role);
       }
 
       // Save token and user info
@@ -132,18 +122,14 @@ const SignupPage: React.FC = () => {
       // Redirect based on profile completion status
       if (formData.userType === 'candidate') {
         if (isProfileComplete) {
-          console.log('[NAVIGATION] Profile complete - Redirecting to candidate dashboard');
           navigate('/candidate-dashboard');
         } else {
-          console.log('[NAVIGATION] Profile incomplete - Redirecting to candidate profile setup');
           navigate('/candidate-profile-setup');
         }
       } else {
         if (isProfileComplete) {
-          console.log('[NAVIGATION] Profile complete - Redirecting to recruiter dashboard');
           navigate('/recruiter-dashboard');
         } else {
-          console.log('[NAVIGATION] Profile incomplete - Redirecting to company profile setup');
           navigate('/company-profile-setup');
         }
       }
@@ -181,7 +167,6 @@ const SignupPage: React.FC = () => {
     }
 
     setLoading(true);
-    console.log('[AUTH] Sign up attempt - Email:', formData.email, 'UserType:', formData.userType, 'CompanyRole:', formData.companyRole);
     try {
       let response;
       
@@ -192,7 +177,6 @@ const SignupPage: React.FC = () => {
           formData.fullName,
           formData.password
         );
-        console.log('[AUTH SUCCESS] Candidate registered - Email:', response.data.email);
       } else {
         response = await apiClient.companySignup(
           formData.email,
@@ -200,7 +184,6 @@ const SignupPage: React.FC = () => {
           formData.password,
           formData.companyRole
         );
-        console.log('[AUTH SUCCESS] Company user registered - Email:', response.data.email, 'Role:', response.data.role);
       }
 
       // Save token and user info
@@ -227,10 +210,8 @@ const SignupPage: React.FC = () => {
 
       // New users always go to profile setup (is_profile_complete will be false)
       if (formData.userType === 'candidate') {
-        console.log('[NAVIGATION] New candidate - Redirecting to profile setup');
         navigate('/candidate-profile-setup');
       } else {
-        console.log('[NAVIGATION] New company user - Redirecting to profile setup');
         navigate('/company-profile-setup');
       }
     } catch (err: any) {

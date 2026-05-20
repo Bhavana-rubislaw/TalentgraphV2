@@ -48,7 +48,7 @@ class DatabaseLogHandler(logging.Handler):
     
     def __init__(self, level=logging.NOTSET):
         super().__init__(level)
-        self.batch_size = 100
+        self.batch_size = 1  # Write immediately so admin portal shows logs in real-time
         self.batch = []
     
     def emit(self, record: logging.LogRecord):
@@ -138,7 +138,7 @@ def setup_logging():
     
     # Database handler for persistence
     db_handler = DatabaseLogHandler()
-    db_handler.setLevel(logging.WARNING)  # Only warnings and above to DB
+    db_handler.setLevel(logging.INFO)  # INFO and above to DB so admin portal shows all logs
     root_logger.addHandler(db_handler)
     
     # Specific loggers

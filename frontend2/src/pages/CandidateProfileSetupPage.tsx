@@ -178,11 +178,9 @@ const CandidateProfileSetupPage: React.FC = () => {
     setError('');
 
     try {
-      console.log('[ONBOARDING] Uploading resume for parsing...');
       const response = await apiClient.uploadResumeForOnboarding(resumeFile);
       
       if (response.data) {
-        console.log('[ONBOARDING] Resume parsed successfully', response.data);
         setDraftProfile(response.data);
         loadDraftToForm(response.data);
         setSuccess('Resume parsed! Please review and fill any missing information.');
@@ -210,7 +208,6 @@ const CandidateProfileSetupPage: React.FC = () => {
     setError('');
 
     try {
-      console.log('[ONBOARDING] Saving draft updates...');
       const response = await apiClient.updateOnboardingDraft(formData);
       setDraftProfile(response.data);
       setSuccess('Draft saved successfully!');
@@ -241,18 +238,13 @@ const CandidateProfileSetupPage: React.FC = () => {
     try {
       if (mode === 'resume' && draftProfile) {
         // Resume path - finalize the draft
-        console.log('[ONBOARDING] Finalizing draft profile...');
-        
         // Update draft first with latest changes
         await apiClient.updateOnboardingDraft(formData);
         
         // Then finalize
         const response = await apiClient.finalizeOnboarding(true);
-        console.log('[ONBOARDING] Finalization successful', response.data);
-        
       } else {
         // Manual path - create profile directly
-        console.log('[ONBOARDING] Creating profile manually...');
         await apiClient.createCandidateProfile(formData);
       }
 

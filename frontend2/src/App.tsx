@@ -35,28 +35,16 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
 
   const token = localStorage.getItem('token');
   const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
-
-  console.log('[ProtectedRoute] Check:', {
-    allowedRoles,
-    userRole,
-    fromUser: user?.role,
-    fromLS: localStorage.getItem('role'),
-    isMatch: allowedRoles.includes(userRole)
-  });
-
   if (!token) {
     return <Navigate to="/signin" replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-    console.log('[ProtectedRoute] Role mismatch - redirecting. UserRole:', userRole, 'Allowed:', allowedRoles);
     // Smart redirect: send to the correct dashboard instead of root
     if (CANDIDATE_ROLES.includes(userRole)) {
-      console.log('[ProtectedRoute] Redirecting candidate to /candidate-dashboard');
       return <Navigate to="/candidate-dashboard" replace />;
     }
     if (RECRUITER_ROLES.includes(userRole)) {
-      console.log('[ProtectedRoute] Redirecting recruiter to /recruiter-dashboard');
       return <Navigate to="/recruiter-dashboard" replace />;
     }
     return <Navigate to="/" replace />;
@@ -81,7 +69,6 @@ const RecruiterProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
   }
 
   if (!RECRUITER_ROLES.includes(userRole)) {
-    console.log('[RecruiterProtectedRoute] Not a recruiter, redirecting');
     return <Navigate to="/" replace />;
   }
 
@@ -104,7 +91,6 @@ const CandidateProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
   }
 
   if (!CANDIDATE_ROLES.includes(userRole)) {
-    console.log('[CandidateProtectedRoute] Not a candidate, redirecting');
     return <Navigate to="/" replace />;
   }
 
@@ -120,17 +106,8 @@ const ProfileSetupGuard: React.FC<{ children: React.ReactNode; userType: 'candid
 
   const isProfileComplete = user?.is_profile_complete ?? 
     (localStorage.getItem('is_profile_complete') === 'true');
-
-  console.log('[ProfileSetupGuard]', {
-    userType,
-    isProfileComplete,
-    fromUser: user?.is_profile_complete,
-    fromLS: localStorage.getItem('is_profile_complete')
-  });
-
   // If profile is already complete, redirect to dashboard
   if (isProfileComplete) {
-    console.log('[ProfileSetupGuard] Profile complete - redirecting to dashboard');
     if (userType === 'candidate') {
       return <Navigate to="/candidate-dashboard" replace />;
     } else {
@@ -153,18 +130,9 @@ const CandidateDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ chil
     (localStorage.getItem('is_profile_complete') === 'true');
   
   const hasStartedOnboarding = localStorage.getItem('onboarding_started') === 'true';
-
-  console.log('[CandidateDashboardGuard]', {
-    isProfileComplete,
-    hasStartedOnboarding,
-    fromUser: user?.is_profile_complete,
-    fromLS: localStorage.getItem('is_profile_complete')
-  });
-
   // If user started onboarding but didn't complete it, redirect to setup
   // This ensures users who start resume upload must complete the process
   if (hasStartedOnboarding && !isProfileComplete) {
-    console.log('[CandidateDashboardGuard] Onboarding started but incomplete - redirecting to setup');
     return <Navigate to="/candidate-profile-setup" replace />;
   }
 
@@ -181,16 +149,8 @@ const RecruiterDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const isProfileComplete = user?.is_profile_complete ?? 
     (localStorage.getItem('is_profile_complete') === 'true');
-
-  console.log('[RecruiterDashboardGuard]', {
-    isProfileComplete,
-    fromUser: user?.is_profile_complete,
-    fromLS: localStorage.getItem('is_profile_complete')
-  });
-
   // Recruiters must complete profile before accessing dashboard
   if (!isProfileComplete) {
-    console.log('[RecruiterDashboardGuard] Profile incomplete - redirecting to setup');
     return <Navigate to="/company-profile-setup" replace />;
   }
 

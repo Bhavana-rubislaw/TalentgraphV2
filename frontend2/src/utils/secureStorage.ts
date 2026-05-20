@@ -128,7 +128,6 @@ class SecureStorage {
       if (value) {
         this.setToken(key, value);
         localStorage.removeItem(key);
-        console.log(`[SecureStorage] Migrated ${key} from localStorage to sessionStorage`);
       }
     } catch (error) {
       console.error('[SecureStorage] Migration failed:', error);

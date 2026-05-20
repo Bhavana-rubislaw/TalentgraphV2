@@ -130,12 +130,7 @@ const CompanyProfileSetupPage: React.FC = () => {
         hiring_focus: formData.hiring_focus.length > 0 ? JSON.stringify(formData.hiring_focus) : undefined,
         company_description: formData.company_description || undefined,
       };
-
-      console.log('[COMPANY SETUP] Submitting profile:', payload);
-
       const response = await apiClient.setupCompanyProfile(payload);
-      console.log('[COMPANY SETUP] Profile setup successful:', response.data);
-
       setSuccess('Profile setup completed successfully!');
 
       // Update localStorage
@@ -375,7 +370,6 @@ const CompanyProfileSetupPage: React.FC = () => {
                 type="button"
                 className="cp-btn cp-btn-secondary"
                 onClick={() => {
-                  console.log('[COMPANY SETUP] Skipping profile setup');
                   navigate('/recruiter-dashboard');
                 }}
                 disabled={loading}

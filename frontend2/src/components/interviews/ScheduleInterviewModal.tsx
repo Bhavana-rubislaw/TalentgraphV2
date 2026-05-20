@@ -164,53 +164,41 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     setSubmitError(null);
     
     try {
-      // Format datetime for backend
-      const date = new Date(formData.interviewDate);
-      const formattedDate = date.toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
-      });
+      // Build ISO datetimes for the meeting
+      const [startHour, startMin] = formData.interviewStartTime.split(':').map(Number);
+      const [endHour, endMin] = formData.interviewEndTime.split(':').map(Number);
       
-      // Convert 24h time to 12h format for start and end times
-      const formatTime = (time24: string) => {
-        const [hours, minutes] = time24.split(':');
-        const hour = parseInt(hours, 10);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const hour12 = hour % 12 || 12;
-        return `${hour12}:${minutes} ${ampm}`;
-      };
+      const startDate = new Date(`${formData.interviewDate}T${formData.interviewStartTime}:00`);
+      const endDate = new Date(`${formData.interviewDate}T${formData.interviewEndTime}:00`);
+      const durationMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
       
-      const formattedStartTime = formatTime(formData.interviewStartTime);
-      const formattedEndTime = formatTime(formData.interviewEndTime);
+      const participants: Array<{ name: string; email: string; is_required?: boolean }> = [];
+      if (formData.candidateEmail.trim()) {
+        participants.push({
+          name: application.candidate?.name || 'Candidate',
+          email: formData.candidateEmail.trim(),
+          is_required: true
+        });
+      }
       
-      const payload: any = {
-        date: formattedDate,
-        start_time: formattedStartTime,
-        end_time: formattedEndTime,
+      const payload: Parameters<typeof apiClient.createMeeting>[0] = {
+        title: formData.subject.trim() || `Interview - ${application.job_posting?.job_title || 'Position'}`,
+        description: formData.notes.trim() || undefined,
+        meeting_type: 'interview',
+        scheduled_start: startDate.toISOString(),
+        scheduled_end: endDate.toISOString(),
+        duration_minutes: durationMinutes,
         timezone: formData.timezone,
-        notes_for_candidate: formData.notes.trim() || undefined,
-        email_subject: formData.subject.trim() || undefined
+        participants,
+        application_id: application.id,
+        video_provider: formData.meetingProvider !== 'manual' ? formData.meetingProvider : undefined,
+        video_meeting_url: formData.meetingProvider === 'manual' ? formData.meetingLink.trim() : undefined,
       };
       
-      // Add meeting provider preference if not manual
-      if (formData.meetingProvider !== 'manual') {
-        payload.meeting_provider = formData.meetingProvider;
-      }
-      
-      // Add meeting_link only if manual and provided
-      if (formData.meetingProvider === 'manual' && formData.meetingLink.trim()) {
-        payload.meeting_link = formData.meetingLink.trim();
-      }
-      
-      const response = await apiClient.scheduleInterview(application.id, payload);
-      
-      console.log('[INTERVIEW] Successfully scheduled:', response.data);
-      
+      const response = await apiClient.createMeeting(payload);
       setResponseData(response.data);
       setSubmitSuccess(true);
       
-      // Call success callback after a short delay to show success state
       setTimeout(() => {
         if (onSuccess) {
           onSuccess();
@@ -219,7 +207,6 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
       }, 1500);
       
     } catch (error: any) {
-      console.error('[INTERVIEW] Failed to schedule:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to schedule interview';
       setSubmitError(errorMessage);
     } finally {

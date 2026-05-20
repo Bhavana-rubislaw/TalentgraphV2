@@ -12,11 +12,11 @@ import '../styles/AIRecommendations.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
+import { MeetingSchedulerTab } from '../components/meetings';
 
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings'] as const;
 
 const RecruiterDashboard: React.FC = () => {
-  console.log('[COMPONENT MOUNT] RecruiterDashboard loaded');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -35,8 +35,6 @@ const RecruiterDashboard: React.FC = () => {
     },
     [setSearchParams]
   );
-
-  console.log('[STATE] Initial tab:', activeTab);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
   const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
@@ -148,6 +146,7 @@ const RecruiterDashboard: React.FC = () => {
   // ── Filter states ─────────────────────────────────────────────
   const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
   const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
+  const [recommendationQuickFilter, setRecommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
 
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
@@ -175,7 +174,6 @@ const RecruiterDashboard: React.FC = () => {
           localStorage.setItem('role', res.data.role);
         }
       } catch (err) {
-        console.log('[PROFILE] Could not fetch profile:', err);
       }
     };
     fetchProfile();
@@ -205,6 +203,14 @@ const RecruiterDashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, [browseSearch]);
 
+  // ── Auto-refresh applications every 60 seconds ────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchApplications();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'browse') {
       fetchBrowseCandidates();
@@ -228,11 +234,8 @@ const RecruiterDashboard: React.FC = () => {
   }, [handleKeyDown]);
 
   const fetchJobPostings = async () => {
-    console.log('[API CALL] Fetching job postings');
     try {
       const response = await apiClient.getJobPostings();
-      console.log('[API SUCCESS] Job postings fetched, count:', response.data.length);
-      console.log('[DEBUG] First job status:', response.data[0]?.status, 'type:', typeof response.data[0]?.status);
       setAllJobPostings(response.data); // Store all jobs including frozen
       
       // Filter to show only active/reposted jobs in main selector (case-insensitive)
@@ -240,7 +243,6 @@ const RecruiterDashboard: React.FC = () => {
         const status = (job.status || '').toLowerCase();
         return status === 'active' || status === 'reposted';
       });
-      console.log('[DEBUG] Filtered active jobs:', activeJobs.length);
       setJobPostings(activeJobs);
       
       if (response.data.length === 0) return;
@@ -251,7 +253,6 @@ const RecruiterDashboard: React.FC = () => {
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedJobId(parsedId);
       } else if (activeJobs.length > 0) {
-        console.log('[STATE] Auto-selecting first active job:', activeJobs[0].id);
         setSelectedJobId(activeJobs[0].id);
       }
     } catch (error) {
@@ -263,11 +264,9 @@ const RecruiterDashboard: React.FC = () => {
 
   const fetchRecommendations = async () => {
     if (!selectedJobId) return;
-    console.log('[API CALL] Fetching recruiter recommendations for job:', selectedJobId);
     setLoading(true);
     try {
       const response = await apiClient.getRecruiterRecommendations(selectedJobId);
-      console.log('[API SUCCESS] Recommendations fetched with analytics:', response.data);
       setRecommendations(response.data);
     } catch (error) {
       console.error('[API ERROR] Failed to fetch recommendations:', error);
@@ -278,11 +277,9 @@ const RecruiterDashboard: React.FC = () => {
 
   const fetchJobAnalytics = async () => {
     if (!selectedJobId) return;
-    console.log('[API CALL] Fetching job analytics for job:', selectedJobId);
     setAnalyticsLoading(true);
     try {
       const response = await apiClient.getJobAnalytics(selectedJobId, 90);
-      console.log('[API SUCCESS] Job analytics fetched:', response.data);
       setJobAnalytics(response.data);
     } catch (error) {
       console.error('[API ERROR] Failed to fetch job analytics:', error);
@@ -294,9 +291,7 @@ const RecruiterDashboard: React.FC = () => {
 
   const fetchShortlist = async () => {
     try {
-      console.log('[API CALL] Fetching recruiter shortlist');
       const response = await apiClient.getRecruiterShortlist();
-      console.log('[API SUCCESS] Shortlist fetched, count:', response.data.length, 'data:', response.data);
       setShortlist(response.data);
     } catch (error) {
       console.error('[API ERROR] Failed to fetch shortlist:', error);
@@ -343,10 +338,8 @@ const RecruiterDashboard: React.FC = () => {
 
   const handleRecruiterLike = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;
-    console.log('[RECRUITER SWIPE] Like - Candidate:', candidateId, 'Job Profile:', jobProfileId, 'Job Posting:', selectedJobId);
     try {
       await apiClient.recruiterLike(candidateId, jobProfileId, selectedJobId);
-      console.log('[API SUCCESS] Recruiter like recorded');
       // Optimistic update — card stays with Shortlisted badge
       setRecommendations((prev: any) => ({
         ...prev,
@@ -366,10 +359,8 @@ const RecruiterDashboard: React.FC = () => {
 
   const handleRecruiterPass = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;
-    console.log('[RECRUITER SWIPE] Pass - Candidate:', candidateId, 'Job Profile:', jobProfileId, 'Job Posting:', selectedJobId);
     try {
       await apiClient.recruiterPass(candidateId, jobProfileId, selectedJobId);
-      console.log('[API SUCCESS] Recruiter pass recorded');
       // Optimistic update — card stays with Passed badge
       setRecommendations((prev: any) => ({
         ...prev,
@@ -387,14 +378,9 @@ const RecruiterDashboard: React.FC = () => {
 
   const handleAskToApply = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;
-    console.log('[RECRUITER ACTION] Ask to Apply - Candidate:', candidateId, 'Job Profile:', jobProfileId, 'Job Posting:', selectedJobId);
-    
     try {
       // Send invitation
       await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
-      
-      console.log('[API SUCCESS] Invitation sent');
-      
       // Optimistic update — recommendation cards
       setRecommendations((prev: any) => {
         if (!prev || !prev.recommendations) return prev;
@@ -439,14 +425,10 @@ const RecruiterDashboard: React.FC = () => {
       return;
     }
     try {
-      console.log('[MESSAGE] Starting conversation with candidate user ID:', candidateUserId);
       const res = await apiClient.startConversation(candidateUserId);
-      console.log('[MESSAGE] Conversation response:', res.data);
-      
       const convId = res.data.conversation.id;
       
       // Navigate to messages tab with conversation
-      console.log('[MESSAGE] Navigating to messages tab with conversation ID:', convId);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'messages');
@@ -468,14 +450,10 @@ const RecruiterDashboard: React.FC = () => {
     }
 
     try {
-      console.log('[MESSAGE] Starting conversation with candidate user ID:', candidateUserId);
       const res = await apiClient.startConversation(candidateUserId);
-      console.log('[MESSAGE] Conversation response:', res.data);
-      
       const convId = res.data.conversation.id;
       
       // Navigate to messages tab with conversation
-      console.log('[MESSAGE] Navigating to messages tab with conversation ID:', convId);
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'messages');
@@ -490,10 +468,8 @@ const RecruiterDashboard: React.FC = () => {
   };
 
   const handleUpdateApplicationStatus = async (applicationId: number, status: string) => {
-    console.log('[APPLICATION UPDATE] Application ID:', applicationId, 'New Status:', status);
     try {
       await apiClient.updateApplicationStatus(applicationId, status);
-      console.log('[API SUCCESS] Application status updated to:', status);
       alert(`Application status updated to ${status}`);
       fetchApplications();
     } catch (error) {
@@ -528,7 +504,6 @@ const RecruiterDashboard: React.FC = () => {
   // Download resume for an application
   const handleDownloadResume = async (applicationId: number, resumeId: number, filename: string) => {
     try {
-      console.log('[RESUME DOWNLOAD] Starting download:', { applicationId, resumeId, filename });
       const response = await apiClient.downloadRecruiterApplicationResume(applicationId, resumeId);
       
       // Create a blob URL and trigger download
@@ -541,8 +516,6 @@ const RecruiterDashboard: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
-      console.log('[RESUME DOWNLOAD] Success');
       alert('Resume download started');
     } catch (error: any) {
       console.error('[RESUME DOWNLOAD] Failed:', error);
@@ -554,7 +527,6 @@ const RecruiterDashboard: React.FC = () => {
   // Download certification for an application
   const handleDownloadCertification = async (applicationId: number, certificationId: number, filename: string) => {
     try {
-      console.log('[CERTIFICATION DOWNLOAD] Starting download:', { applicationId, certificationId, filename });
       const response = await apiClient.downloadRecruiterApplicationCertification(applicationId, certificationId);
       
       // Create a blob URL and trigger download
@@ -567,8 +539,6 @@ const RecruiterDashboard: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
-      console.log('[CERTIFICATION DOWNLOAD] Success');
       alert('Certification download started');
     } catch (error: any) {
       console.error('[CERTIFICATION DOWNLOAD] Failed:', error);
@@ -661,7 +631,7 @@ const RecruiterDashboard: React.FC = () => {
             Create your first job posting to start receiving candidate recommendations and applications.
           </p>
           <div className="empty-actions">
-            <button onClick={() => { console.log('[NAVIGATION] To Job Posting Builder'); navigate('/recruiter/job-postings'); }} className="btn-primary">
+            <button onClick={() => { navigate('/recruiter/job-postings'); }} className="btn-primary">
               Create Job Posting
             </button>
           </div>
@@ -691,9 +661,10 @@ const RecruiterDashboard: React.FC = () => {
     const openToOffers = recommendations.recommendations.filter((r: any) => 
       r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
     ).length;
+    const topPicksCount = recommendations.recommendations.filter((r: any) => (r.match_percentage || 0) >= 80).length;
 
-    // Filter and sort recommendations
-    const visibleRecs = recommendationRoleFilter === 'all'
+    // Filter and sort recommendations — role filter + quick filter
+    let visibleRecs = recommendationRoleFilter === 'all'
       ? recommendations.recommendations
       : recommendations.recommendations.filter((r: any) => {
           const role =
@@ -703,6 +674,17 @@ const RecruiterDashboard: React.FC = () => {
             '';
           return role === recommendationRoleFilter;
         });
+    if (recommendationQuickFilter === 'top_picks') {
+      visibleRecs = visibleRecs.filter((r: any) => (r.match_percentage || 0) >= 80);
+    } else if (recommendationQuickFilter === 'recently_active') {
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      visibleRecs = visibleRecs.filter((r: any) => r.candidate.created_at && new Date(r.candidate.created_at) >= cutoff);
+    } else if (recommendationQuickFilter === 'open_to_offers') {
+      visibleRecs = visibleRecs.filter((r: any) =>
+        r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
+      );
+    }
+    const hasActiveRecFilters = recommendationRoleFilter !== 'all' || recommendationQuickFilter !== 'all';
 
     return (
       <>
@@ -730,51 +712,7 @@ const RecruiterDashboard: React.FC = () => {
                 Top candidates matched to: Sr. Product Designer - Stripe • Updated 12 min ago
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => fetchRecommendations()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 16px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  color: '#374151'
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                  <polyline points="1 4 1 10 7 10"/>
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
-                </svg>
-                Refresh AI
-              </button>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '10px 16px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: 'white',
-                  boxShadow: '0 2px 4px rgba(124, 58, 237, 0.2)'
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-                Bulk Invite
-              </button>
-            </div>
+
           </div>
 
           {/* Job Selector */}
@@ -839,15 +777,15 @@ const RecruiterDashboard: React.FC = () => {
           </div>
 
           {/* Filters and Sorting */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '8px' }}>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
-                onClick={() => setRecommendationRoleFilter('all')}
+                onClick={() => { setRecommendationRoleFilter('all'); setRecommendationQuickFilter('all'); }}
                 style={{
                   padding: '8px 16px',
-                  border: recommendationRoleFilter === 'all' ? 'none' : '1px solid #E5E7EB',
-                  background: recommendationRoleFilter === 'all' ? '#7C3AED' : 'white',
-                  color: recommendationRoleFilter === 'all' ? 'white' : '#374151',
+                  border: (!hasActiveRecFilters) ? 'none' : '1px solid #E5E7EB',
+                  background: (!hasActiveRecFilters) ? '#7C3AED' : 'white',
+                  color: (!hasActiveRecFilters) ? 'white' : '#374151',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '13px',
@@ -857,39 +795,42 @@ const RecruiterDashboard: React.FC = () => {
                 All {totalMatches}
               </button>
               <button
+                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'top_picks' ? 'all' : 'top_picks')}
                 style={{
                   padding: '8px 16px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  color: '#374151',
+                  border: recommendationQuickFilter === 'top_picks' ? 'none' : '1px solid #E5E7EB',
+                  background: recommendationQuickFilter === 'top_picks' ? '#7C3AED' : 'white',
+                  color: recommendationQuickFilter === 'top_picks' ? 'white' : '#374151',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: 500
                 }}
               >
-                Top Picks {Math.min(8, totalMatches)}
+                Top Picks {topPicksCount}
               </button>
               <button
+                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'recently_active' ? 'all' : 'recently_active')}
                 style={{
                   padding: '8px 16px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  color: '#374151',
+                  border: recommendationQuickFilter === 'recently_active' ? 'none' : '1px solid #E5E7EB',
+                  background: recommendationQuickFilter === 'recently_active' ? '#7C3AED' : 'white',
+                  color: recommendationQuickFilter === 'recently_active' ? 'white' : '#374151',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '13px',
                   fontWeight: 500
                 }}
               >
-                Recently Active {Math.min(11, totalMatches)}
+                Recently Active {newToday}
               </button>
               <button
+                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'open_to_offers' ? 'all' : 'open_to_offers')}
                 style={{
                   padding: '8px 16px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  color: '#374151',
+                  border: recommendationQuickFilter === 'open_to_offers' ? 'none' : '1px solid #E5E7EB',
+                  background: recommendationQuickFilter === 'open_to_offers' ? '#7C3AED' : 'white',
+                  color: recommendationQuickFilter === 'open_to_offers' ? 'white' : '#374151',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontSize: '13px',
@@ -930,6 +871,43 @@ const RecruiterDashboard: React.FC = () => {
               </select>
             </div>
           </div>
+
+          {/* Active Filter Pills */}
+          {hasActiveRecFilters && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active:</span>
+              {recommendationQuickFilter !== 'all' && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 12px', background: '#EDE9FE', color: '#7C3AED',
+                  borderRadius: '20px', fontSize: '13px', fontWeight: 500, border: '1px solid #C4B5FD'
+                }}>
+                  {recommendationQuickFilter === 'top_picks' ? 'Top Picks' : recommendationQuickFilter === 'recently_active' ? 'Recently Active' : 'Open to Offers'}
+                  <button onClick={() => setRecommendationQuickFilter('all')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </span>
+              )}
+              {recommendationRoleFilter !== 'all' && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 12px', background: '#EDE9FE', color: '#7C3AED',
+                  borderRadius: '20px', fontSize: '13px', fontWeight: 500, border: '1px solid #C4B5FD'
+                }}>
+                  Role: {recommendationRoleFilter}
+                  <button onClick={() => setRecommendationRoleFilter('all')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </span>
+              )}
+              <button onClick={() => { setRecommendationRoleFilter('all'); setRecommendationQuickFilter('all'); }}
+                style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: '20px', padding: '5px 12px', cursor: 'pointer', fontWeight: 500 }}>
+                Clear All
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Main Content: Swipe Card + Sidebar */}
@@ -1193,6 +1171,39 @@ const RecruiterDashboard: React.FC = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Match Drivers — Why this match? */}
+                      {(() => {
+                        const drivers: string[] = [];
+                        const skills = (rec.job_profile?.skills || []) as any[];
+                        if (skills.length > 0) drivers.push(`Skill match: ${skills[0].skill_name || skills[0].name || skills[0]}`);
+                        const yoe = rec.job_profile?.years_of_experience;
+                        if (yoe && yoe >= 2) drivers.push(`${yoe}+ years of experience`);
+                        const loc = rec.candidate?.location_state;
+                        if (loc) drivers.push(`Located in ${loc}`);
+                        const wt = rec.job_profile?.worktype;
+                        if (wt && drivers.length < 3) drivers.push(`Preferred: ${wt}`);
+                        const emp = rec.job_profile?.employment_type;
+                        if (emp && drivers.length < 3) drivers.push(`${emp} role`);
+                        const top3 = drivers.slice(0, 3);
+                        if (top3.length === 0) return null;
+                        return (
+                          <div style={{ marginBottom: '16px', padding: '12px', background: 'linear-gradient(135deg, #EDE9FE, #F5F3FF)', borderRadius: '10px', border: '1px solid #DDD6FE' }}>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#5B21B6', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                              Why this match?
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                              {top3.map((d, i) => (
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#4C1D95' }}>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" width="14" height="14"><path d="M20 6L9 17l-5-5"/></svg>
+                                  {d}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Candidate Details Grid */}
                       <div className="ai-job-details">
@@ -1543,144 +1554,34 @@ const RecruiterDashboard: React.FC = () => {
 
           {/* Right Sidebar */}
           <div style={{ width: '320px', flexShrink: 0 }}>
-            {/* AI Pipeline Insight */}
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="18" height="18">
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-                  </svg>
-                </div>
-                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
-                  AI Pipeline Insight
-                </h3>
-              </div>
-              <div style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.6', marginBottom: '12px' }}>
-                <strong style={{ color: '#7C3AED' }}>Live update:</strong> 24 new candidates match your criteria this week, 3 are 95%+ matches currently interviewing elsewhere.
-              </div>
-              <div style={{ fontSize: '12px', color: '#9CA3AF', marginBottom: '12px' }}>This week breakdown:</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                    <span style={{ color: '#4B5563' }}>Design Systems</span>
-                    <span style={{ fontWeight: 600, color: '#1F2937' }}>62 / 24</span>
-                  </div>
-                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(62 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #7C3AED, #A78BFA)', borderRadius: '3px' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                    <span style={{ color: '#4B5563' }}>B2B SaaS</span>
-                    <span style={{ fontWeight: 600, color: '#1F2937' }}>39 / 24</span>
-                  </div>
-                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(39 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #3B82F6, #60A5FA)', borderRadius: '3px' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                    <span style={{ color: '#4B5563' }}>Payments UX</span>
-                    <span style={{ fontWeight: 600, color: '#1F2937' }}>11 / 24</span>
-                  </div>
-                  <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(11 / 100) * 100}%`, height: '100%', background: 'linear-gradient(90deg, #10B981, #34D399)', borderRadius: '3px' }}></div>
-                  </div>
-                </div>
-              </div>
-              <button
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#7C3AED'
-                }}
-              >
-                View full analytics →
-              </button>
-            </div>
-
-            {/* Search Filters */}
-            <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0 }}>
-                  Search Filters
-                </h3>
-                <span style={{ fontSize: '11px', padding: '3px 8px', background: '#10B981', color: 'white', borderRadius: '4px', fontWeight: 600 }}>
-                  Active for this role
-                </span>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
-                  Seniors
-                </span>
-                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
-                  Remote/Hybrid
-                </span>
-                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
-                  $160k-$220k
-                </span>
-                <span style={{ padding: '6px 10px', background: '#F3F4F6', color: '#374151', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
-                  US Time Zones
-                </span>
-                <span style={{ padding: '6px 10px', background: '#EDE9FE', color: '#7C3AED', borderRadius: '6px', fontSize: '12px', fontWeight: 500 }}>
-                  Design Systems
-                </span>
-              </div>
-              <button
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  border: '1px solid #E5E7EB',
-                  background: 'white',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: 500,
-                  color: '#374151'
-                }}
-              >
-                Edit filters
-              </button>
-            </div>
-
             {/* Hiring Funnel */}
             <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', marginBottom: '16px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1F2937', margin: 0, marginBottom: '16px' }}>
                 Hiring Funnel
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {[
-                  { label: 'Recommended', count: 248, color: '#7C3AED', width: 100 },
-                  { label: 'Shortlisted', count: 10, color: '#3B82F6', width: 40 },
-                  { label: 'Applied', count: 47, color: '#10B981', width: 60 },
-                  { label: 'Interview', count: 9, color: '#F59E0B', width: 35 },
-                  { label: 'Offer', count: 3, color: '#EF4444', width: 20 }
-                ].map((stage, idx) => (
-                  <div key={idx}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', alignItems: 'center' }}>
-                      <span style={{ color: '#4B5563', fontWeight: 500 }}>{stage.label}</span>
-                      <span style={{ fontWeight: 600, color: '#1F2937' }}>{stage.count}</span>
+                {(() => {
+                  const funnelStages = [
+                    { label: 'Applied', count: applications.filter((a: any) => a.status === 'applied').length, color: '#7C3AED', status: 'applied' },
+                    { label: 'Screening', count: applications.filter((a: any) => a.status === 'under_review').length, color: '#3B82F6', status: 'under_review' },
+                    { label: 'Interview', count: applications.filter((a: any) => a.status === 'scheduled').length, color: '#10B981', status: 'scheduled' },
+                    { label: 'Offer', count: applications.filter((a: any) => a.status === 'selected').length, color: '#F59E0B', status: 'selected' },
+                  ];
+                  const maxCount = Math.max(...funnelStages.map(s => s.count), 1);
+                  return funnelStages.map((stage, idx) => (
+                    <div key={idx} style={{ cursor: 'pointer' }} onClick={() => { setAppStatusFilter(stage.status); setActiveTab('applications'); }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px', alignItems: 'center' }}>
+                        <span style={{ color: '#4B5563', fontWeight: 500 }}>{stage.label}</span>
+                        <span style={{ fontWeight: 600, color: '#1F2937' }}>{stage.count}</span>
+                      </div>
+                      <div style={{ height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.round((stage.count / maxCount) * 100)}%`, height: '100%', background: stage.color, borderRadius: '4px', transition: 'width 0.4s ease' }}></div>
+                      </div>
                     </div>
-                    <div style={{ height: '8px', background: '#F3F4F6', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${stage.width}%`, height: '100%', background: stage.color, borderRadius: '4px' }}></div>
-                    </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
+              <div style={{ marginTop: '12px', fontSize: '11px', color: '#9CA3AF', textAlign: 'right' }}>Click a stage to view applications</div>
             </div>
 
             {/* Recruiter Tip */}
@@ -2275,33 +2176,49 @@ const RecruiterDashboard: React.FC = () => {
                 ))}
               </select>
             </div>
-            {shortlistRoleFilter !== 'all' && (
-              <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'flex-end' }}>
-                <button
-                  className="action-btn secondary"
-                  style={{ height: '40px', padding: '0 16px', fontSize: '13px', fontWeight: 500, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  onClick={() => setShortlistRoleFilter('all')}
-                >
-                  <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                  Clear Filters
-                </button>
-              </div>
-            )}
           </div>
+
+          {/* Active Filter Pills */}
+          {shortlistRoleFilter !== 'all' && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active:</span>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                background: '#EDE9FE',
+                color: '#7C3AED',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: 500,
+                border: '1px solid #C4B5FD'
+              }}>
+                Role: {shortlistRoleFilter}
+                <button
+                  onClick={() => setShortlistRoleFilter('all')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED', lineHeight: 1 }}
+                  title="Remove filter"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </span>
+              <button
+                onClick={() => setShortlistRoleFilter('all')}
+                style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: '20px', padding: '5px 12px', cursor: 'pointer', fontWeight: 500 }}
+              >
+                Clear All
+              </button>
+            </div>
+          )}
 
           {/* Results Count */}
           <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
-              Showing {filteredShortlist.length} of {shortlist.length} shortlisted candidates
+              {shortlistRoleFilter !== 'all'
+                ? `Filtered: ${filteredShortlist.length} of ${shortlist.length} candidates`
+                : `Showing all ${shortlist.length} shortlisted candidates`}
             </span>
-            {shortlistRoleFilter !== 'all' && (
-              <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)' }}>
-                role filter active
-              </span>
-            )}
           </div>
         </div>
 
@@ -3195,8 +3112,6 @@ const RecruiterDashboard: React.FC = () => {
                   <button 
                     className="ra-btn ra-btn-message" 
                     onClick={() => {
-                      console.log('Candidate data:', selectedApp.candidate);
-                      console.log('user_id:', selectedApp.candidate.user_id);
                       if (selectedApp.candidate.user_id) {
                         handleStartDirectMessage(selectedApp.candidate.user_id);
                       } else {
@@ -4836,9 +4751,21 @@ const RecruiterDashboard: React.FC = () => {
           </button>
 
           <button 
+            className={`talentgraph-tab ${activeTab === 'meetings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('meetings')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Meetings
+          </button>
+
+          <button 
             className="talentgraph-tab talentgraph-tab-create"
             onClick={() => {
-              console.log('[NAV] Post Job clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
               navigate('/recruiter/job-postings');
             }}
           >
@@ -4956,6 +4883,9 @@ const RecruiterDashboard: React.FC = () => {
           </div>
           <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
             <ChatWindow />
+          </div>
+          <div style={{ display: activeTab === 'meetings' ? 'block' : 'none' }}>
+            {activeTab === 'meetings' && <MeetingSchedulerTab role="recruiter" />}
           </div>
         </div>
       </div>

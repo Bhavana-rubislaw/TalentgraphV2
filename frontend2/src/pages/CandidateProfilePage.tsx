@@ -24,6 +24,8 @@ const Icons = {
   alertTriangle: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   calendar: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
   home: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  chevDown: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  download: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
 };
 
 /* ── Interfaces ── */
@@ -74,6 +76,8 @@ const CandidateProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['personal', 'social', 'summary']));
+  const toggleSection = (id: string) => setOpenSections(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   // Cert upload form
   const [certName, setCertName] = useState('');
@@ -192,90 +196,126 @@ const CandidateProfilePage: React.FC = () => {
   };
 
   /* ================================================================
-     RENDER — PROFILE READ VIEW
+     RENDER — PROFILE READ VIEW (Accordion sections)
      ================================================================ */
   const renderProfileView = () => (
-    <div className="cp-form-container">
+    <>
       {/* Personal Info */}
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title">{Icons.user} Personal Information</h3>
-        <div className="cp-profile-grid">
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Full Name</span>
-            <span className="cp-profile-value">{profile.name || <span className="empty">Not provided</span>}</span>
+      <div className={`cp-profile-card ${openSections.has('personal') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('personal')}>
+          <span className="cp-profile-card-header-icon">{Icons.user}</span>
+          <span className="cp-profile-card-header-text">Personal Information</span>
+          <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+        </button>
+        {openSections.has('personal') && (
+          <div className="cp-profile-card-body">
+            <div className="cp-profile-view-grid">
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Full Name</span>
+                <span className="cp-profile-view-value">{profile.name || <span className="empty">Not provided</span>}</span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Email</span>
+                <span className="cp-profile-view-value">
+                  {profile.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : <span className="empty">Not provided</span>}
+                </span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Phone</span>
+                <span className="cp-profile-view-value">{profile.phone || <span className="empty">Not provided</span>}</span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Residential Address</span>
+                <span className="cp-profile-view-value">{profile.residential_address || <span className="empty">Not provided</span>}</span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">State</span>
+                <span className="cp-profile-view-value">{profile.location_state || <span className="empty">—</span>}</span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">County</span>
+                <span className="cp-profile-view-value">{profile.location_county || <span className="empty">—</span>}</span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Zipcode</span>
+                <span className="cp-profile-view-value">{profile.location_zipcode || <span className="empty">—</span>}</span>
+              </div>
+            </div>
           </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Email</span>
-            <span className="cp-profile-value">
-              {profile.email ? <a href={`mailto:${profile.email}`}>{profile.email}</a> : <span className="empty">Not provided</span>}
-            </span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Phone</span>
-            <span className="cp-profile-value">{profile.phone || <span className="empty">Not provided</span>}</span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Address</span>
-            <span className="cp-profile-value">
-              {profile.residential_address || <span className="empty">Not provided</span>}
-            </span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">State</span>
-            <span className="cp-profile-value">{profile.location_state || <span className="empty">—</span>}</span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">County</span>
-            <span className="cp-profile-value">{profile.location_county || <span className="empty">—</span>}</span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Zipcode</span>
-            <span className="cp-profile-value">{profile.location_zipcode || <span className="empty">—</span>}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Social Links */}
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title">{Icons.link} Social Links & Portfolio</h3>
-        <div className="cp-profile-grid">
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">LinkedIn</span>
-            <span className="cp-profile-value">
-              {profile.linkedin_url
-                ? <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer">{profile.linkedin_url}</a>
-                : <span className="empty">Not added</span>}
-            </span>
+      <div className={`cp-profile-card ${openSections.has('social') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('social')}>
+          <span className="cp-profile-card-header-icon">{Icons.link}</span>
+          <span className="cp-profile-card-header-text">Social Links & Portfolio</span>
+          <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+        </button>
+        {openSections.has('social') && (
+          <div className="cp-profile-card-body">
+            <div className="cp-profile-view-grid">
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">LinkedIn</span>
+                <span className="cp-profile-view-value">
+                  {profile.linkedin_url
+                    ? <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer">{profile.linkedin_url}</a>
+                    : <span className="empty">Not added</span>}
+                </span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">GitHub</span>
+                <span className="cp-profile-view-value">
+                  {profile.github_url
+                    ? <a href={profile.github_url} target="_blank" rel="noopener noreferrer">{profile.github_url}</a>
+                    : <span className="empty">Not added</span>}
+                </span>
+              </div>
+              <div className="cp-profile-view-field">
+                <span className="cp-profile-view-label">Portfolio</span>
+                <span className="cp-profile-view-value">
+                  {profile.portfolio_url
+                    ? <a href={profile.portfolio_url} target="_blank" rel="noopener noreferrer">{profile.portfolio_url}</a>
+                    : <span className="empty">Not added</span>}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">GitHub</span>
-            <span className="cp-profile-value">
-              {profile.github_url
-                ? <a href={profile.github_url} target="_blank" rel="noopener noreferrer">{profile.github_url}</a>
-                : <span className="empty">Not added</span>}
-            </span>
-          </div>
-          <div className="cp-profile-field">
-            <span className="cp-profile-label">Portfolio</span>
-            <span className="cp-profile-value">
-              {profile.portfolio_url
-                ? <a href={profile.portfolio_url} target="_blank" rel="noopener noreferrer">{profile.portfolio_url}</a>
-                : <span className="empty">Not added</span>}
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Summary */}
-      {profile.profile_summary && (
-        <div className="cp-form-section">
-          <h3 className="cp-form-section-title">{Icons.fileText} Profile Summary</h3>
-          <p style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--cp-text-secondary)', margin: 0, whiteSpace: 'pre-wrap' }}>
-            {profile.profile_summary}
-          </p>
-        </div>
-      )}
-    </div>
+      {/* Profile Summary */}
+      <div className={`cp-profile-card ${openSections.has('summary') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('summary')}>
+          <span className="cp-profile-card-header-icon">{Icons.fileText}</span>
+          <span className="cp-profile-card-header-text">Profile Summary</span>
+          <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+        </button>
+        {openSections.has('summary') && (
+          <div className="cp-profile-card-body">
+            {profile.profile_summary ? (
+              <p className="cp-profile-summary-text">{profile.profile_summary}</p>
+            ) : (
+              <p style={{ fontSize: 14, color: 'var(--cp-text-tertiary)', fontStyle: 'italic', paddingTop: 16 }}>No profile summary added yet.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Documents (collapsed by default) */}
+      <div className={`cp-profile-card ${openSections.has('documents') ? 'open' : ''}`}>
+        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('documents')}>
+          <span className="cp-profile-card-header-icon">{Icons.fileText}</span>
+          <span className="cp-profile-card-header-text">Preferences</span>
+          <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
+        </button>
+        {openSections.has('documents') && (
+          <div className="cp-profile-card-body">
+            <NotificationPreferences />
+          </div>
+        )}
+      </div>
+    </>
   );
 
   /* ================================================================
@@ -383,141 +423,100 @@ const CandidateProfilePage: React.FC = () => {
   );
 
   /* ================================================================
-     RENDER — RESUMES SECTION
+     RENDER — RESUME SIDEBAR WIDGET
      ================================================================ */
-  const renderResumes = () => (
-    <div className="cp-form-container" style={{ marginTop: 20 }}>
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title" style={{ marginBottom: 16 }}>
-          {Icons.fileText} Resumes <span className="cp-count-badge">{resumes.length}</span>
-        </h3>
-
-        {/* Upload */}
-        <div className="cp-file-upload" style={{ position: 'relative', marginBottom: 16 }}>
+  const renderResumeSidebar = () => (
+    <div className="cp-sidebar-widget">
+      <div className="cp-sidebar-widget-title">
+        <span className="cp-sidebar-widget-icon">{Icons.fileText}</span>
+        Resume Management
+      </div>
+      <div className="cp-sidebar-widget-body">
+        <div className="cp-sidebar-upload-btn" style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
           <input
             type="file"
             accept=".pdf,.doc,.docx"
             onChange={handleResumeUpload}
-            id="resume-upload"
-            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+            style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
           />
-          {Icons.upload}
-          <span>Upload Resume (PDF, DOC, DOCX)</span>
+          {Icons.upload} Upload Resume
         </div>
-
-        {/* List */}
         {resumes.length > 0 ? (
-          <div className="cp-doc-list">
-            {resumes.map(r => (
-              <div key={r.id} className="cp-doc-item">
-                <div className="cp-doc-icon resume">{Icons.fileText}</div>
-                <div className="cp-doc-info">
-                  <div className="cp-doc-name">{r.filename}</div>
-                  <div className="cp-doc-date">
-                    Uploaded {new Date(r.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </div>
-                </div>
-                <div className="cp-doc-actions">
-                  <button className="cp-btn cp-btn-danger-outline cp-btn-sm"
-                    onClick={() => setDeleteTarget({ type: 'resume', id: r.id, name: r.filename })}>
-                    {Icons.trash}
-                  </button>
+          resumes.map(r => (
+            <div key={r.id} className="cp-file-item">
+              <span className="cp-file-icon">{Icons.fileText}</span>
+              <div className="cp-file-info">
+                <div className="cp-file-name">{r.filename}</div>
+                <div className="cp-file-date">
+                  {new Date(r.uploaded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="cp-file-actions">
+                <button className="cp-icon-btn" title="Delete" onClick={() => setDeleteTarget({ type: 'resume', id: r.id, name: r.filename })}>
+                  {Icons.trash}
+                </button>
+              </div>
+            </div>
+          ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--cp-text-tertiary)', fontSize: 14 }}>
-            No resumes uploaded yet. Upload your first resume above.
-          </div>
+          <p style={{ fontSize: 13, color: 'var(--cp-text-tertiary)', textAlign: 'center', padding: '12px 0' }}>No resumes uploaded yet.</p>
         )}
       </div>
     </div>
   );
 
   /* ================================================================
-     RENDER — CERTIFICATIONS SECTION
+     RENDER — CERTIFICATIONS SIDEBAR WIDGET
      ================================================================ */
-  const renderCertifications = () => (
-    <div className="cp-form-container" style={{ marginTop: 20 }}>
-      <div className="cp-form-section">
-        <h3 className="cp-form-section-title" style={{ marginBottom: 16 }}>
-          {Icons.award} Certifications <span className="cp-count-badge">{certifications.length}</span>
-        </h3>
-
-        {/* Upload with mini-form */}
+  const renderCertSidebar = () => (
+    <div className="cp-sidebar-widget">
+      <div className="cp-sidebar-widget-title">
+        <span className="cp-sidebar-widget-icon">{Icons.award}</span>
+        Certifications
+      </div>
+      <div className="cp-sidebar-widget-body">
         {!showCertForm ? (
-          <button className="cp-btn cp-btn-outline cp-btn-sm" style={{ marginBottom: 16 }}
-            onClick={() => setShowCertForm(true)}>
+          <button className="cp-sidebar-upload-btn" onClick={() => setShowCertForm(true)}>
             {Icons.upload} Upload Certification
           </button>
         ) : (
-          <div style={{ background: 'var(--cp-bg)', borderRadius: 'var(--cp-radius-md)', padding: 20, marginBottom: 16, border: '1px solid var(--cp-border)' }}>
-            <div className="cp-form-grid-2">
-              <div className="cp-form-group">
-                <label className="required">Certification Name</label>
-                <input type="text" value={certName} onChange={(e) => setCertName(e.target.value)}
-                  placeholder="e.g., Oracle Cloud Infrastructure 2024" />
-              </div>
-              <div className="cp-form-group">
-                <label>Issuer (optional)</label>
-                <input type="text" value={certIssuer} onChange={(e) => setCertIssuer(e.target.value)}
-                  placeholder="e.g., Oracle, AWS, Microsoft" />
-              </div>
+          <div style={{ marginBottom: 14, padding: 14, background: 'var(--cp-bg)', borderRadius: 10, border: '1px solid var(--cp-border)' }}>
+            <div className="cp-form-group">
+              <label className="required">Certification Name</label>
+              <input type="text" value={certName} onChange={(e) => setCertName(e.target.value)} placeholder="e.g., Oracle Cloud 2024" style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid var(--cp-border)', borderRadius: 6, fontFamily: 'inherit' }} />
             </div>
-
-            <div className="cp-file-upload" style={{ position: 'relative', marginBottom: 14 }}>
-              <input
-                type="file"
-                ref={certFileRef}
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setCertFile(e.target.files?.[0] || null)}
-                style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-              />
-              {Icons.upload}
-              <span>{certFile ? certFile.name : 'Select certification file (PDF, JPG, PNG)'}</span>
+            <div className="cp-form-group">
+              <label>Issuer (optional)</label>
+              <input type="text" value={certIssuer} onChange={(e) => setCertIssuer(e.target.value)} placeholder="e.g., Oracle, AWS" style={{ width: '100%', padding: '8px 10px', fontSize: 13, border: '1px solid var(--cp-border)', borderRadius: 6, fontFamily: 'inherit' }} />
             </div>
-
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="cp-btn cp-btn-outline cp-btn-sm" type="button"
-                onClick={() => { setShowCertForm(false); setCertName(''); setCertIssuer(''); setCertFile(null); }}>
-                Cancel
-              </button>
-              <button className="cp-btn cp-btn-primary cp-btn-sm" type="button"
-                onClick={handleCertSubmit} disabled={!certFile || !certName.trim()}>
-                Upload
-              </button>
+            <div style={{ position: 'relative', marginBottom: 10, padding: '8px 10px', border: '1px dashed var(--cp-border)', borderRadius: 6, fontSize: 13, color: 'var(--cp-text-tertiary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="file" ref={certFileRef} accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setCertFile(e.target.files?.[0] || null)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+              {Icons.upload} {certFile ? certFile.name : 'Select file (PDF, JPG, PNG)'}
+            </div>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+              <button className="cp-btn cp-btn-outline cp-btn-sm" type="button" onClick={() => { setShowCertForm(false); setCertName(''); setCertIssuer(''); setCertFile(null); }}>Cancel</button>
+              <button className="cp-btn cp-btn-primary cp-btn-sm" type="button" onClick={handleCertSubmit} disabled={!certFile || !certName.trim()}>Upload</button>
             </div>
           </div>
         )}
-
-        {/* List */}
         {certifications.length > 0 ? (
-          <div className="cp-doc-list">
-            {certifications.map(c => (
-              <div key={c.id} className="cp-doc-item">
-                <div className="cp-doc-icon cert">{Icons.award}</div>
-                <div className="cp-doc-info">
-                  <div className="cp-doc-name">{c.name}</div>
-                  <div className="cp-doc-date">
-                    {c.issuer && <span>{c.issuer}</span>}
-                    {c.issued_date && <span> · Issued {new Date(c.issued_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
-                    {c.expiry_date && <span> · Expires {new Date(c.expiry_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
-                  </div>
-                </div>
-                <div className="cp-doc-actions">
-                  <button className="cp-btn cp-btn-danger-outline cp-btn-sm"
-                    onClick={() => setDeleteTarget({ type: 'cert', id: c.id, name: c.name })}>
-                    {Icons.trash}
-                  </button>
+          certifications.map(c => (
+            <div key={c.id} className="cp-cert-item">
+              <span className="cp-cert-check-icon">{Icons.check}</span>
+              <div className="cp-cert-info">
+                <div className="cp-cert-name">{c.name}</div>
+                <div className="cp-cert-meta">
+                  {c.issuer && <span>{c.issuer}</span>}
+                  {c.issued_date && <span>{c.issuer ? ' · ' : ''}Issued {new Date(c.issued_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>}
                 </div>
               </div>
-            ))}
-          </div>
+              <button className="cp-icon-btn danger" title="Delete" style={{ flexShrink: 0 }} onClick={() => setDeleteTarget({ type: 'cert', id: c.id, name: c.name })}>
+                {Icons.trash}
+              </button>
+            </div>
+          ))
         ) : (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--cp-text-tertiary)', fontSize: 14 }}>
-            No certifications added yet. Upload your certifications to stand out.
-          </div>
+          <p style={{ fontSize: 13, color: 'var(--cp-text-tertiary)', textAlign: 'center', padding: '12px 0' }}>No certifications added yet.</p>
         )}
       </div>
     </div>
@@ -549,53 +548,47 @@ const CandidateProfilePage: React.FC = () => {
      ================================================================ */
   return (
     <div className="cp-page">
-      {/* Header */}
-      <div className="cp-header">
-        <div className="cp-header-inner">
-          <div className="cp-header-left">
-            <h1 className="cp-header-title">My Profile</h1>
-            <p className="cp-header-subtitle">
-              {isEditing
-                ? (hasProfile ? 'Update your personal information' : 'Set up your candidate profile to get started')
-                : 'Your personal information and documents'}
-            </p>
-          </div>
-          <div className="cp-header-actions">
-            {hasProfile && !isEditing && (
-              <button className="cp-btn cp-btn-primary" onClick={() => setIsEditing(true)}>
-                {Icons.edit} Edit Profile
-              </button>
-            )}
-            <button className="cp-btn cp-btn-outline" onClick={() => navigate('/candidate/job-preferences')}>
-              {Icons.briefcase} Job Preferences
-            </button>
-            <button className="cp-btn cp-btn-outline" onClick={() => navigate('/candidate-dashboard')}>
-              {Icons.layout} Dashboard
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
       {loading ? (
         renderSkeleton()
       ) : (
         <div className="cp-content">
-          {/* Profile read or edit view */}
-          {isEditing ? renderProfileForm() : renderProfileView()}
+          {/* Breadcrumb */}
+          <nav className="cp-breadcrumb">
+            <a onClick={() => navigate('/candidate-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+            <span className="cp-breadcrumb-sep">›</span>
+            <span className="cp-breadcrumb-current">Profile</span>
+          </nav>
 
-          {/* Documents — only after profile created */}
-          {hasProfile && (
-            <>
-              {renderResumes()}
-              {renderCertifications()}
-              
-              {/* Notification Preferences */}
-              <div style={{ marginTop: 32 }}>
-                <NotificationPreferences />
+          {/* Page Title */}
+          <div className="cp-page-title-block">
+            <h1 className="cp-page-h1">My Profile</h1>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {hasProfile && !isEditing && (
+                <button className="cp-btn cp-btn-primary" onClick={() => setIsEditing(true)}>
+                  {Icons.edit} Edit Profile
+                </button>
+              )}
+              <button className="cp-btn cp-btn-outline" onClick={() => navigate('/candidate/job-preferences')}>
+                {Icons.briefcase} Job Preferences
+              </button>
+            </div>
+          </div>
+
+          {/* Two-column layout */}
+          <div className="cp-page-layout">
+            {/* Left: accordion profile sections */}
+            <div className="cp-main-col">
+              {isEditing ? renderProfileForm() : renderProfileView()}
+            </div>
+
+            {/* Right: sidebar widgets */}
+            {hasProfile && (
+              <div className="cp-sidebar-col">
+                {renderResumeSidebar()}
+                {renderCertSidebar()}
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       )}
 

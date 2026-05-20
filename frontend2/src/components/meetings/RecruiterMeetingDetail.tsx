@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Recruiter Meeting Detail Modal
  * Comprehensive view for recruiters to manage interviews
  */
@@ -62,175 +62,124 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
     response_note: '',
   });
 
-  const statusColors: Record<string, string> = {
-    scheduled: 'bg-green-100 text-green-800',
-    reschedule_requested: 'bg-yellow-100 text-yellow-800',
-    cancelled: 'bg-red-100 text-red-800',
-    completed: 'bg-blue-100 text-blue-800',
+  const statusStyle: Record<string, { background: string; color: string }> = {
+    scheduled:             { background: '#DCFCE7', color: '#15803D' },
+    reschedule_requested:  { background: '#FEF9C3', color: '#B45309' },
+    cancelled:             { background: '#FEE2E2', color: '#B91C1C' },
+    completed:             { background: '#DBEAFE', color: '#1D4ED8' },
+  };
+
+  const currentUserRole = localStorage.getItem('role') || '';
+  const isAdminOrHR = currentUserRole === 'admin' || currentUserRole === 'hr';
+
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+    });
+  };
+
+  const parsePreferredTimes = () => {
+    if (!meeting.reschedule_request_preferred_times) return [];
+    try { return JSON.parse(meeting.reschedule_request_preferred_times); }
+    catch { return []; }
   };
 
   const handleCancel = async () => {
-    if (!cancelReason.trim()) {
-      alert('Please provide a cancellation reason');
-      return;
-    }
-
+    if (!cancelReason.trim()) { alert('Please provide a cancellation reason'); return; }
     try {
       const response = await fetch(`/api/meetings/${meeting.id}/cancel`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ cancellation_reason: cancelReason }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel meeting');
-      }
-
+      if (!response.ok) throw new Error('Failed to cancel meeting');
       alert('Meeting cancelled successfully');
       setShowCancelModal(false);
       onUpdate();
-    } catch (error) {
-      alert('Error cancelling meeting: ' + error);
-    }
+    } catch (error) { alert('Error cancelling meeting: ' + error); }
   };
 
   const handleReschedule = async () => {
-    if (!rescheduleData.scheduled_start || !rescheduleData.scheduled_end) {
-      alert('Please select new date and time');
-      return;
-    }
-
+    if (!rescheduleData.scheduled_start || !rescheduleData.scheduled_end) { alert('Please select new date and time'); return; }
     try {
       const response = await fetch(`/api/meetings/${meeting.id}/reschedule`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(rescheduleData),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to reschedule meeting');
-      }
-
+      if (!response.ok) throw new Error('Failed to reschedule meeting');
       alert('Meeting rescheduled successfully');
       setShowRescheduleModal(false);
       onUpdate();
-    } catch (error) {
-      alert('Error rescheduling meeting: ' + error);
-    }
+    } catch (error) { alert('Error rescheduling meeting: ' + error); }
   };
 
   const handleRespondToRequest = async () => {
     try {
       const response = await fetch(`/api/meetings/${meeting.id}/respond-reschedule`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify(responseData),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to respond to reschedule request');
-      }
-
+      if (!response.ok) throw new Error('Failed to respond to reschedule request');
       alert(responseData.approved ? 'Reschedule approved' : 'Reschedule declined');
       setShowRespondModal(false);
       onUpdate();
-    } catch (error) {
-      alert('Error responding to request: ' + error);
-    }
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
-  };
-
-  const parsePreferredTimes = () => {
-    if (!meeting.reschedule_request_preferred_times) return [];
-    try {
-      return JSON.parse(meeting.reschedule_request_preferred_times);
-    } catch {
-      return [];
-    }
+    } catch (error) { alert('Error responding to request: ' + error); }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)', border: '1px solid #E4E7EC', maxWidth: '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div style={{ position: 'sticky', top: 0, background: 'white', borderBottom: '1px solid #E4E7EC', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '16px 16px 0 0' }}>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{meeting.title}</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Interview with {candidateName}
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1D2939', margin: 0 }}>{meeting.title}</h2>
+            <p style={{ fontSize: '13px', color: '#667085', marginTop: '4px', marginBottom: 0 }}>
+              Interview with <strong>{candidateName}</strong>
               {applicationStatus && (
-                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                <span style={{ marginLeft: '8px', padding: '2px 8px', background: '#DBEAFE', color: '#1D4ED8', fontSize: '11px', borderRadius: '10px', fontWeight: 600 }}>
                   {applicationStatus}
                 </span>
               )}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button onClick={onClose} style={{ background: 'none', border: '1px solid #E4E7EC', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4 space-y-6">
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Status Badge */}
           <div>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusColors[meeting.status]}`}>
-              {meeting.status.replace('_', ' ').toUpperCase()}
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, ...(statusStyle[meeting.status] || { background: '#F3F4F6', color: '#374151' }) }}>
+              {meeting.status.replace(/_/g, ' ').toUpperCase()}
             </span>
           </div>
 
           {/* Reschedule Request Alert */}
           {meeting.status === 'reschedule_requested' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <div className="text-2xl">🔄</div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-yellow-900">Reschedule Requested</h4>
-                  <p className="text-sm text-yellow-800 mt-1">
-                    {candidateName} requested to reschedule this interview
-                  </p>
-                  <p className="text-sm text-yellow-700 mt-2">
-                    <strong>Reason:</strong> {meeting.reschedule_request_reason}
-                  </p>
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '22px' }}>ðŸ”„</span>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ fontWeight: 700, color: '#78350F', margin: '0 0 4px' }}>Reschedule Requested</h4>
+                  <p style={{ fontSize: '13px', color: '#92400E', margin: '0 0 6px' }}>{candidateName} requested to reschedule this interview</p>
+                  <p style={{ fontSize: '13px', color: '#78350F', margin: '0 0 8px' }}><strong>Reason:</strong> {meeting.reschedule_request_reason}</p>
                   {parsePreferredTimes().length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium text-yellow-900">Preferred times:</p>
-                      <ul className="list-disc list-inside text-sm text-yellow-700 ml-2">
+                    <div style={{ marginBottom: '8px' }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, color: '#78350F', margin: '0 0 4px' }}>Preferred times:</p>
+                      <ul style={{ paddingLeft: '18px', margin: 0 }}>
                         {parsePreferredTimes().map((time: string, idx: number) => (
-                          <li key={idx}>{formatDateTime(time)}</li>
+                          <li key={idx} style={{ fontSize: '13px', color: '#92400E' }}>{formatDateTime(time)}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  <button
-                    onClick={() => setShowRespondModal(true)}
-                    className="mt-3 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition"
-                  >
+                  <button onClick={() => setShowRespondModal(true)}
+                    style={{ padding: '8px 16px', background: '#D97706', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                     Review and Respond
                   </button>
                 </div>
@@ -238,94 +187,94 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
             </div>
           )}
 
-          {/* Meeting Details */}
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          {/* Meeting Details Card */}
+          <div style={{ background: '#F5F6FA', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <p className="text-sm text-gray-600">Date & Time</p>
-              <p className="font-semibold text-gray-900">{formatDateTime(meeting.scheduled_start)}</p>
+              <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Date &amp; Time</p>
+              <p style={{ fontWeight: 600, color: '#1D2939', margin: 0 }}>{formatDateTime(meeting.scheduled_start)}</p>
             </div>
-            
             <div>
-              <p className="text-sm text-gray-600">Duration</p>
-              <p className="font-semibold text-gray-900">{meeting.duration_minutes} minutes</p>
+              <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Duration</p>
+              <p style={{ fontWeight: 600, color: '#1D2939', margin: 0 }}>{meeting.duration_minutes} minutes</p>
             </div>
-
             {meeting.video_meeting_url && (
               <div>
-                <p className="text-sm text-gray-600">Meeting Link</p>
-                <a
-                  href={meeting.video_meeting_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline font-medium"
-                >
+                <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Meeting Link</p>
+                <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer"
+                  style={{ color: '#7C3AED', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>
                   {meeting.video_meeting_url}
                 </a>
               </div>
             )}
-
             {meeting.location && (
               <div>
-                <p className="text-sm text-gray-600">Location</p>
-                <p className="font-semibold text-gray-900">{meeting.location}</p>
+                <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Location</p>
+                <p style={{ fontWeight: 600, color: '#1D2939', margin: 0 }}>{meeting.location}</p>
               </div>
             )}
-
             {meeting.description && (
               <div>
-                <p className="text-sm text-gray-600">Description</p>
-                <p className="text-gray-900">{meeting.description}</p>
+                <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Description</p>
+                <p style={{ color: '#1D2939', margin: 0 }}>{meeting.description}</p>
               </div>
             )}
           </div>
 
           {/* Action Buttons */}
           {meeting.status === 'scheduled' && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowRescheduleModal(true)}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-              >
-                📅 Reschedule
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowRescheduleModal(true)}
+                style={{ flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                ðŸ“… Reschedule
               </button>
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="flex-1 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium"
-              >
-                ❌ Cancel Interview
+              <button onClick={() => setShowCancelModal(true)}
+                style={{ flex: 1, padding: '10px 16px', background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                âŒ Cancel Interview
               </button>
             </div>
           )}
 
+          {/* Admin Control Center */}
+          {isAdminOrHR && (
+            <div style={{ padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #F3F0FF)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#5B21B6', margin: 0 }}>Admin Control Center</h3>
+                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#7C3AED', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button onClick={() => setShowRescheduleModal(true)}
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: 'white', color: '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Force Reschedule
+                </button>
+                <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: 'white', color: '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Manage Participants
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Timeline */}
-          <div className="border-t border-gray-200 pt-6">
+          <div style={{ borderTop: '1px solid #E4E7EC', paddingTop: '20px' }}>
             <MeetingTimeline meetingId={meeting.id} />
           </div>
         </div>
 
         {/* Cancel Modal */}
         {showCancelModal && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold mb-4">Cancel Interview</h3>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 16px' }}>Cancel Interview</h3>
+              <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Please provide a reason for cancellation..."
-                className="w-full border border-gray-300 rounded-lg p-3 mb-4 min-h-[100px]"
-                required
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowCancelModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
+                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '100px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowCancelModal(false)}
+                  style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                   Nevermind
                 </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                >
+                <button onClick={handleCancel}
+                  style={{ flex: 1, padding: '10px', background: '#EF4444', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   Confirm Cancel
                 </button>
               </div>
@@ -335,55 +284,36 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
         {/* Reschedule Modal */}
         {showRescheduleModal && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold mb-4">Reschedule Interview</h3>
-              <div className="space-y-4">
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 16px' }}>Reschedule Interview</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New Start Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={rescheduleData.scheduled_start}
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New Start Time</label>
+                  <input type="datetime-local" value={rescheduleData.scheduled_start}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_start: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg p-2"
-                  />
+                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New End Time
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={rescheduleData.scheduled_end}
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New End Time</label>
+                  <input type="datetime-local" value={rescheduleData.scheduled_end}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_end: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg p-2"
-                  />
+                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reason (optional)
-                  </label>
-                  <textarea
-                    value={rescheduleData.reason}
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>Reason (optional)</label>
+                  <textarea value={rescheduleData.reason}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg p-2"
-                    rows={2}
-                  />
+                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
                 </div>
               </div>
-              <div className="flex gap-3 mt-4">
-                <button
-                  onClick={() => setShowRescheduleModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowRescheduleModal(false)}
+                  style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button
-                  onClick={handleReschedule}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
+                <button onClick={handleReschedule}
+                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   Reschedule
                 </button>
               </div>
@@ -393,89 +323,48 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
         {/* Respond to Request Modal */}
         {showRespondModal && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold mb-4">Respond to Reschedule Request</h3>
-              
-              <div className="mb-4 flex gap-2">
-                <button
-                  onClick={() => setResponseData({ ...responseData, approved: true })}
-                  className={`flex-1 px-4 py-2 rounded-lg transition ${
-                    responseData.approved
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  ✅ Approve
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 16px' }}>Respond to Reschedule Request</h3>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <button onClick={() => setResponseData({ ...responseData, approved: true })}
+                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: responseData.approved ? '#059669' : '#F3F4F6', color: responseData.approved ? 'white' : '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                  âœ… Approve
                 </button>
-                <button
-                  onClick={() => setResponseData({ ...responseData, approved: false })}
-                  className={`flex-1 px-4 py-2 rounded-lg transition ${
-                    !responseData.approved
-                      ? 'bg-red-600 text-white'
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  ❌ Decline
+                <button onClick={() => setResponseData({ ...responseData, approved: false })}
+                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', background: !responseData.approved ? '#EF4444' : '#F3F4F6', color: !responseData.approved ? 'white' : '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                  âŒ Decline
                 </button>
               </div>
-
               {responseData.approved && (
-                <div className="space-y-3 mb-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      New Start Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={responseData.scheduled_start}
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New Start Time *</label>
+                    <input type="datetime-local" value={responseData.scheduled_start}
                       onChange={(e) => setResponseData({ ...responseData, scheduled_start: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-2"
-                      required
-                    />
+                      style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      New End Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={responseData.scheduled_end}
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New End Time *</label>
+                    <input type="datetime-local" value={responseData.scheduled_end}
                       onChange={(e) => setResponseData({ ...responseData, scheduled_end: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-2"
-                      required
-                    />
+                      style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
                   </div>
                 </div>
               )}
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Note to Candidate (optional)
-                </label>
-                <textarea
-                  value={responseData.response_note}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>Note to Candidate (optional)</label>
+                <textarea value={responseData.response_note}
                   onChange={(e) => setResponseData({ ...responseData, response_note: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg p-2"
-                  rows={2}
-                />
+                  style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
               </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowRespondModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowRespondModal(false)}
+                  style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                   Cancel
                 </button>
-                <button
-                  onClick={handleRespondToRequest}
-                  className={`flex-1 px-4 py-2 rounded-lg text-white ${
-                    responseData.approved
-                      ? 'bg-green-600 hover:bg-green-700'
-                      : 'bg-red-600 hover:bg-red-700'
-                  }`}
-                >
+                <button onClick={handleRespondToRequest}
+                  style={{ flex: 1, padding: '10px', background: responseData.approved ? '#059669' : '#EF4444', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   Send Response
                 </button>
               </div>
@@ -486,5 +375,6 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
     </div>
   );
 };
+
 
 export default RecruiterMeetingDetail;

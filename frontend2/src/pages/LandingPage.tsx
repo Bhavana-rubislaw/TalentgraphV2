@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/Landing.css';
 
 const LandingPage: React.FC = () => {
-  console.log('[COMPONENT MOUNT] LandingPage loaded');
   const navigate = useNavigate();
 
   return (
@@ -39,7 +38,6 @@ const LandingPage: React.FC = () => {
             <button 
               className="btn-cta btn-candidate"
               onClick={() => { 
-                console.log('[NAVIGATION] Candidate SignIn'); 
                 navigate('/signin?type=candidate'); 
               }}
             >
@@ -51,7 +49,6 @@ const LandingPage: React.FC = () => {
               className="signin-link"
               onClick={(e) => {
                 e.preventDefault();
-                console.log('[NAVIGATION] Candidate Signup');
                 navigate('/signup?type=candidate');
               }}
             >
@@ -77,7 +74,6 @@ const LandingPage: React.FC = () => {
             <button 
               className="btn-cta btn-company"
               onClick={() => { 
-                console.log('[NAVIGATION] Company SignIn'); 
                 navigate('/signin?type=company'); 
               }}
             >
@@ -89,7 +85,6 @@ const LandingPage: React.FC = () => {
               className="signin-link"
               onClick={(e) => {
                 e.preventDefault();
-                console.log('[NAVIGATION] Company Signup');
                 navigate('/signup?type=company');
               }}
             >

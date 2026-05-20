@@ -7,3 +7,4 @@ export { AvailabilitySlotCard } from './AvailabilitySlotCard';
 export { AvailabilitySelectorModal } from './AvailabilitySelectorModal';
 export { CreateMeetingModal } from './CreateMeetingModal';
 export { MeetingDetailsModal } from './MeetingDetailsModal';
+export { MeetingSchedulerTab } from './MeetingSchedulerTab';
