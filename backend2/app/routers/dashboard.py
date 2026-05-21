@@ -667,14 +667,69 @@ def get_recruiter_recommendations(
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
     
-    # Get matching candidates (by product vendor/type/role in their job profiles)
-    query = select(JobProfile).where(
-        and_(
-            JobProfile.product_vendor == job_posting.product_vendor,
-            JobProfile.product_type == job_posting.product_type
-        )
+    # ── Tiered matching: score all profiles, keep those above minimum threshold ──
+    # Tier 1 (best): exact vendor + type match
+    # Tier 2: vendor-only match
+    # Tier 3: role keyword overlap or experience-based
+    # All profiles are evaluated; only those scoring >= 30 are returned.
+    all_profiles = session.exec(select(JobProfile)).all()
+
+    def _score_profile(profile: JobProfile) -> int:
+        """Fast scoring without DB queries for the bulk scan."""
+        score = 0
+        job_vendor = (job_posting.product_vendor or "").strip().lower()
+        job_type   = (job_posting.product_type   or "").strip().lower()
+        job_role   = (job_posting.job_role        or "").strip().lower()
+
+        pv = (profile.product_vendor or "").strip().lower()
+        pt = (profile.product_type   or "").strip().lower()
+        pr = (profile.job_role        or "").strip().lower()
+
+        # Vendor match (35 pts)
+        if job_vendor and pv == job_vendor:
+            score += 35
+            # Bonus: type match within same vendor (15 pts)
+            if job_type and pt == job_type:
+                score += 15
+        elif job_vendor and (pv in job_vendor or job_vendor in pv):
+            score += 15  # partial vendor match
+
+        # Role match (25 pts)
+        if job_role and pr:
+            if pr == job_role:
+                score += 25
+            else:
+                # Keyword overlap
+                job_words = set(job_role.split())
+                pr_words  = set(pr.split())
+                overlap   = job_words & pr_words
+                if overlap:
+                    score += int(25 * len(overlap) / max(len(job_words), 1))
+
+        # Experience bonus (up to 15 pts)
+        if profile.years_of_experience and profile.years_of_experience >= 2:
+            score += min(15, profile.years_of_experience)
+
+        # Salary overlap (10 pts)
+        try:
+            if (profile.salary_min is not None and job_posting.salary_max is not None
+                    and float(profile.salary_min) <= float(job_posting.salary_max) * 1.2):
+                score += 10
+        except (TypeError, ValueError):
+            pass
+
+        return min(score, 100)
+
+    scored = [(profile, _score_profile(profile)) for profile in all_profiles]
+    # Sort best-first; keep profiles scoring >= 30
+    scored.sort(key=lambda x: x[1], reverse=True)
+    matching_profiles = [p for p, s in scored if s >= 30]
+    logger.info(
+        "[RECOMMENDATIONS] job=%s: %d/%d profiles scored >=30 (tiered matching)",
+        job_posting_id, len(matching_profiles), len(all_profiles)
     )
-    matching_profiles = session.exec(query).all()
+    # Map profile_id -> computed score for use in response
+    score_lookup: dict = {p.id: s for p, s in scored if s >= 30}
     
     # Get analytics counts
     shortlisted_count = session.exec(
@@ -817,7 +872,7 @@ def get_recruiter_recommendations(
                 "skills": skills_list,
                 "location_preferences": location_prefs
             },
-            "match_percentage": match.match_percentage if match else 80.0,
+            "match_percentage": float(match.match_percentage) if (match and match.match_percentage) else float(score_lookup.get(profile.id, 50)),
             "already_actioned": existing_swipe is not None,
             "action_taken": existing_swipe.action if existing_swipe else None,
             "has_applied": application is not None,

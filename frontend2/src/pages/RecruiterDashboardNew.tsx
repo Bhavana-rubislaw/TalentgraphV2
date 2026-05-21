@@ -158,6 +158,9 @@ const RecruiterDashboard: React.FC = () => {
   const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
   const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
   const [recommendationQuickFilter, setRecommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
+  const [recommendationWorkTypeFilter, setRecommendationWorkTypeFilter] = useState<string>('all');
+  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+  const [allMeetings, setAllMeetings] = useState<any[]>([]);
 
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
@@ -195,6 +198,7 @@ const RecruiterDashboard: React.FC = () => {
     fetchShortlist();
     fetchApplications();
     fetchMatches();
+    fetchUpcomingInterviews();
   }, []);
 
   // Close card menu when clicking outside
@@ -251,6 +255,26 @@ const RecruiterDashboard: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
+
+  const fetchUpcomingInterviews = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const [upcomingRes, allRes] = await Promise.all([
+        fetch(`${API_BASE}/meetings/list?upcoming_only=true`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${API_BASE}/meetings/list`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ]);
+      if (upcomingRes.ok) {
+        const data = await upcomingRes.json();
+        setUpcomingInterviews(data.slice(0, 5));
+      }
+      if (allRes.ok) {
+        const data = await allRes.json();
+        setAllMeetings(data);
+      }
+    } catch (err) {
+      // silently ignore
+    }
+  };
 
   const fetchJobPostings = async () => {
     try {
@@ -703,6 +727,11 @@ const RecruiterDashboard: React.FC = () => {
         r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
       );
     }
+    if (recommendationWorkTypeFilter !== 'all') {
+      visibleRecs = visibleRecs.filter((r: any) =>
+        (r.job_profile?.worktype || '').toLowerCase() === recommendationWorkTypeFilter.toLowerCase()
+      );
+    }
     const hasActiveRecFilters = recommendationRoleFilter !== 'all' || recommendationQuickFilter !== 'all';
 
     return (
@@ -752,181 +781,31 @@ const RecruiterDashboard: React.FC = () => {
             </select>
           </div>
 
-          {/* KPI Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                Total Matches
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{totalMatches}</div>
-                <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>+12% this week</div>
-              </div>
-            </div>
-
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                Avg Match Score
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{avgMatchScore}%</div>
-                <div style={{ fontSize: '12px', color: '#6B7280' }}>High quality pool</div>
-              </div>
-            </div>
-
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                Open to Offers
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{Math.round((openToOffers / totalMatches) * 100)}%</div>
-                <div style={{ fontSize: '12px', color: '#10B981', fontWeight: 600 }}>actively looking</div>
-              </div>
-            </div>
-
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                New Today
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: '#1F2937' }}>{newToday}</div>
-                <div style={{ fontSize: '12px', color: '#6B7280' }}>3 with 5+ match</div>
-              </div>
-            </div>
+          {/* Work Type Filter */}
+          <div style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.6px', whiteSpace: 'nowrap' }}>Work Type</span>
+            <select
+              value={recommendationWorkTypeFilter}
+              onChange={(e) => setRecommendationWorkTypeFilter(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                border: '1px solid #D1D5DB',
+                borderRadius: '6px',
+                fontSize: '13px',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#374151',
+                minWidth: '130px'
+              }}
+            >
+              <option value="all">All Work Types</option>
+              <option value="Remote">Remote</option>
+              <option value="Onsite">Onsite</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
           </div>
 
-          {/* Filters and Sorting */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => { setRecommendationRoleFilter('all'); setRecommendationQuickFilter('all'); }}
-                style={{
-                  padding: '8px 16px',
-                  border: (!hasActiveRecFilters) ? 'none' : '1px solid #E5E7EB',
-                  background: (!hasActiveRecFilters) ? '#7C3AED' : 'white',
-                  color: (!hasActiveRecFilters) ? 'white' : '#374151',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500
-                }}
-              >
-                All {totalMatches}
-              </button>
-              <button
-                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'top_picks' ? 'all' : 'top_picks')}
-                style={{
-                  padding: '8px 16px',
-                  border: recommendationQuickFilter === 'top_picks' ? 'none' : '1px solid #E5E7EB',
-                  background: recommendationQuickFilter === 'top_picks' ? '#7C3AED' : 'white',
-                  color: recommendationQuickFilter === 'top_picks' ? 'white' : '#374151',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500
-                }}
-              >
-                Top Picks {topPicksCount}
-              </button>
-              <button
-                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'recently_active' ? 'all' : 'recently_active')}
-                style={{
-                  padding: '8px 16px',
-                  border: recommendationQuickFilter === 'recently_active' ? 'none' : '1px solid #E5E7EB',
-                  background: recommendationQuickFilter === 'recently_active' ? '#7C3AED' : 'white',
-                  color: recommendationQuickFilter === 'recently_active' ? 'white' : '#374151',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500
-                }}
-              >
-                Recently Active {newToday}
-              </button>
-              <button
-                onClick={() => setRecommendationQuickFilter(recommendationQuickFilter === 'open_to_offers' ? 'all' : 'open_to_offers')}
-                style={{
-                  padding: '8px 16px',
-                  border: recommendationQuickFilter === 'open_to_offers' ? 'none' : '1px solid #E5E7EB',
-                  background: recommendationQuickFilter === 'open_to_offers' ? '#7C3AED' : 'white',
-                  color: recommendationQuickFilter === 'open_to_offers' ? 'white' : '#374151',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500
-                }}
-              >
-                Open to Offers {openToOffers}
-              </button>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '13px', color: '#6B7280' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }}>
-                  <line x1="4" y1="21" x2="4" y2="14"/>
-                  <line x1="4" y1="10" x2="4" y2="3"/>
-                  <line x1="12" y1="21" x2="12" y2="12"/>
-                  <line x1="12" y1="8" x2="12" y2="3"/>
-                  <line x1="20" y1="21" x2="20" y2="16"/>
-                  <line x1="20" y1="12" x2="20" y2="3"/>
-                  <line x1="1" y1="14" x2="7" y2="14"/>
-                  <line x1="9" y1="8" x2="15" y2="8"/>
-                  <line x1="17" y1="16" x2="23" y2="16"/>
-                </svg>
-                Sorted by:
-              </span>
-              <select
-                style={{
-                  padding: '6px 10px',
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  background: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                <option>AI match score</option>
-                <option>Most recent</option>
-                <option>Experience level</option>
-              </select>
-            </div>
-          </div>
 
-          {/* Active Filter Pills */}
-          {hasActiveRecFilters && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active:</span>
-              {recommendationQuickFilter !== 'all' && (
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  padding: '5px 12px', background: '#EDE9FE', color: '#7C3AED',
-                  borderRadius: '20px', fontSize: '13px', fontWeight: 500, border: '1px solid #C4B5FD'
-                }}>
-                  {recommendationQuickFilter === 'top_picks' ? 'Top Picks' : recommendationQuickFilter === 'recently_active' ? 'Recently Active' : 'Open to Offers'}
-                  <button onClick={() => setRecommendationQuickFilter('all')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </span>
-              )}
-              {recommendationRoleFilter !== 'all' && (
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '6px',
-                  padding: '5px 12px', background: '#EDE9FE', color: '#7C3AED',
-                  borderRadius: '20px', fontSize: '13px', fontWeight: 500, border: '1px solid #C4B5FD'
-                }}>
-                  Role: {recommendationRoleFilter}
-                  <button onClick={() => setRecommendationRoleFilter('all')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </span>
-              )}
-              <button onClick={() => { setRecommendationRoleFilter('all'); setRecommendationQuickFilter('all'); }}
-                style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: '20px', padding: '5px 12px', cursor: 'pointer', fontWeight: 500 }}>
-                Clear All
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Main Content: Swipe Card + Sidebar */}
@@ -1370,81 +1249,7 @@ const RecruiterDashboard: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Skill Tags */}
-                      {skillTags.length > 0 && (
-                        <div className="ai-skill-tags">
-                          {skillTags.map((skill, idx) => (
-                            <span key={idx} className="ai-skill-tag">{skill}</span>
-                          ))}
-                        </div>
-                      )}
 
-                      {/* Profile Quality & Quick Actions */}
-                      <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        padding: '12px',
-                        background: '#F9FAFB',
-                        borderRadius: '8px',
-                        marginTop: '16px',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                          <div style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #10B981, #059669)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: 'white'
-                          }}>
-                            {Math.round(
-                              ((jobProfile.profile_name ? 20 : 0) +
-                              (jobProfile.years_of_experience ? 20 : 0) +
-                              (skillTags.length > 0 ? 20 : 0) +
-                              (jobProfile.salary_min ? 20 : 0) +
-                              (candidate.email ? 20 : 0)) / 100 * 100
-                            )}%
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '11px', fontWeight: 600, color: '#374151' }}>
-                              Profile Completeness
-                            </div>
-                            <div style={{ fontSize: '10px', color: '#6B7280' }}>
-                              {candidate.email && candidate.phone ? 'Contactable' : 'Limited contact info'}
-                            </div>
-                          </div>
-                        </div>
-                        {candidate.email && (
-                          <a
-                            href={`mailto:${candidate.email}`}
-                            style={{
-                              padding: '6px 12px',
-                              background: 'white',
-                              border: '1px solid #E5E7EB',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              color: '#374151',
-                              textDecoration: 'none',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
-                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                              <polyline points="22,6 12,13 2,6"/>
-                            </svg>
-                            Email
-                          </a>
-                        )}
-                      </div>
 
                       {/* Action Buttons */}
                       <div className="ai-action-buttons">
@@ -1581,10 +1386,11 @@ const RecruiterDashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {(() => {
                   const funnelStages = [
-                    { label: 'Applied', count: applications.filter((a: any) => a.status === 'applied').length, color: '#7C3AED', status: 'applied' },
-                    { label: 'Screening', count: applications.filter((a: any) => a.status === 'under_review').length, color: '#3B82F6', status: 'under_review' },
-                    { label: 'Interview', count: applications.filter((a: any) => a.status === 'scheduled').length, color: '#10B981', status: 'scheduled' },
-                    { label: 'Offer', count: applications.filter((a: any) => a.status === 'selected').length, color: '#F59E0B', status: 'selected' },
+                    { label: 'Applied',      count: applications.filter((a: any) => a.status === 'applied').length,      color: '#6366F1', status: 'applied' },
+                    { label: 'Interview',    count: applications.filter((a: any) => a.status === 'scheduled').length,    color: '#10B981', status: 'scheduled' },
+                    { label: 'Shortlisted',  count: applications.filter((a: any) => a.status === 'shortlisted').length,  color: '#8B5CF6', status: 'shortlisted' },
+                    { label: 'Selected',     count: applications.filter((a: any) => a.status === 'selected').length,     color: '#F59E0B', status: 'selected' },
+                    { label: 'Rejected',     count: applications.filter((a: any) => a.status === 'rejected').length,     color: '#EF4444', status: 'rejected' },
                   ];
                   const maxCount = Math.max(...funnelStages.map(s => s.count), 1);
                   return funnelStages.map((stage, idx) => (
@@ -1602,6 +1408,117 @@ const RecruiterDashboard: React.FC = () => {
               </div>
               <div style={{ marginTop: '12px', fontSize: '11px', color: '#9CA3AF', textAlign: 'right' }}>Click a stage to view applications</div>
             </div>
+
+            {/* Upcoming Interviews */}
+            {(() => {
+              const now = new Date();
+              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              const weekStart = new Date(todayStart);
+              weekStart.setDate(todayStart.getDate() - todayStart.getDay());
+              const upcomingList = allMeetings
+                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
+                .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
+                .slice(0, 5);
+              const pastList = allMeetings
+                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
+                .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
+                .slice(0, 3);
+              const pastThisWeek = allMeetings.filter((m: any) => {
+                const d = m.scheduled_start ? new Date(m.scheduled_start) : null;
+                return d && d >= weekStart && d < todayStart;
+              }).length;
+              const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+              const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
+              const avatarBg = ['#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+              const getMeetingTypeLabel = (m: any): string => {
+                if (m.video_provider) {
+                  const p = m.video_provider.toLowerCase();
+                  if (p === 'zoom') return 'Zoom';
+                  if (p === 'teams' || p === 'microsoft_teams') return 'Teams';
+                  if (p === 'meet' || p === 'google_meet') return 'Meet';
+                  return m.video_provider.charAt(0).toUpperCase() + m.video_provider.slice(1);
+                }
+                if (m.video_meeting_url) {
+                  if (m.video_meeting_url.includes('zoom.us')) return 'Zoom';
+                  if (m.video_meeting_url.includes('meet.google')) return 'Meet';
+                  if (m.video_meeting_url.includes('teams.microsoft')) return 'Teams';
+                  return 'Video';
+                }
+                if (m.location && m.location !== 'Virtual') return m.location;
+                return 'Video';
+              };
+              const getInitials = (name: string) =>
+                name ? name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+              const renderCard = (m: any, dimmed: boolean) => (
+                <div key={m.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '3px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', lineHeight: '1.35', flex: 1 }}>{m.title || 'Interview'}</span>
+                    <span style={{ color: '#9CA3AF', fontSize: '18px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋮</span>
+                  </div>
+                  {m.description && (
+                    <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', lineHeight: '1.3' }}>{m.description}</div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' as const, gap: '6px', marginBottom: '9px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      {fmtDate(m.scheduled_start)}
+                    </span>
+                    <span style={{ color: '#D1D5DB' }}>·</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {fmtTime(m.scheduled_start)}
+                    </span>
+                    <span style={{ color: '#D1D5DB' }}>·</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                      {getMeetingTypeLabel(m)}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor[m.status] || '#6B7280', display: 'inline-block', flexShrink: 0 }} />
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: statusColor[m.status] || '#6B7280', textTransform: 'capitalize' as const }}>{m.status}</span>
+                    </div>
+                    {m.participants && m.participants.length > 0 && (
+                      <div style={{ display: 'flex' }}>
+                        {m.participants.slice(0, 3).map((p: any, pi: number) => (
+                          <div key={pi} title={p.participant_name || p.name || ''} style={{ width: '24px', height: '24px', borderRadius: '50%', background: avatarBg[pi % avatarBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: 'white', border: '2px solid white', marginLeft: pi > 0 ? '-6px' : '0' }}>
+                            {getInitials(p.participant_name || p.name || p.full_name || '?')}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+              return (
+                <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '14px', padding: '16px', marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Upcoming Interviews</span>
+                    </div>
+                    <button onClick={() => setActiveTab('meetings')} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>View All →</button>
+                  </div>
+                  {upcomingList.length === 0 && pastList.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
+                  )}
+                  {upcomingList.map((m: any) => renderCard(m, false))}
+                  {pastList.length > 0 && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 10px 0' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Recent Past</span>
+                        {pastThisWeek > 0 && (
+                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: '10px' }}>{pastThisWeek} this week</span>
+                        )}
+                      </div>
+                      {pastList.map((m: any) => renderCard(m, true))}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Recruiter Tip */}
             <div style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: '12px', padding: '16px', border: '1px solid #FCD34D' }}>
@@ -5199,6 +5116,62 @@ const RecruiterDashboard: React.FC = () => {
                 <span className="kpi-badge kpi-badge-orange">mutual</span>
               </div>
               <p className="kpi-subtitle">Both parties interested</p>
+            </div>
+          </div>
+
+          {/* ── Hiring Pipeline ── */}
+          <div style={{ padding: '16px 0 4px 0', marginTop: '8px', borderTop: '1px solid #F3F4F6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" width="14" height="14">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                <h3 style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', margin: 0, letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                  Hiring Pipeline
+                </h3>
+              </div>
+              <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Click a stage to view applications</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
+              {([
+                { label: 'Applied',      status: 'applied',      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
+                { label: 'Scheduled',    status: 'scheduled',    color: '#0EA5E9', bg: '#E0F2FE', border: '#BAE6FD' },
+                { label: 'Under Review', status: 'under_review', color: '#F59E0B', bg: '#FEF3C7', border: '#FDE68A' },
+                { label: 'Shortlisted',  status: 'shortlisted',  color: '#8B5CF6', bg: '#EDE9FE', border: '#DDD6FE' },
+                { label: 'Selected',     status: 'selected',     color: '#10B981', bg: '#D1FAE5', border: '#A7F3D0' },
+                { label: 'Rejected',     status: 'rejected',     color: '#EF4444', bg: '#FEE2E2', border: '#FECACA' },
+              ] as { label: string; status: string; color: string; bg: string; border: string }[]).map(stage => {
+                const count = applications.filter((a: any) => a.status === stage.status).length;
+                const total = applications.length || 1;
+                const pct = Math.max(count > 0 ? 8 : 0, Math.round((count / total) * 100));
+                return (
+                  <button
+                    key={stage.status}
+                    onClick={() => { setActiveTab('applications'); setAppStatusFilter(stage.status); }}
+                    style={{
+                      background: stage.bg,
+                      border: `1px solid ${stage.border}`,
+                      borderRadius: '10px',
+                      padding: '12px 10px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '5px',
+                    }}
+                    title={`View ${stage.label} applications`}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: stage.color, lineHeight: 1 }}>{count}</div>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stage.label}</div>
+                    <div style={{ height: '4px', background: 'rgba(0,0,0,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: stage.color, borderRadius: '2px', transition: 'width 0.4s ease' }} />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

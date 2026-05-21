@@ -289,6 +289,7 @@ const CandidateDashboard: React.FC = () => {
 
   // ── Upcoming Interviews ──────────────────────────────────
   const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
+  const [allMeetings, setAllMeetings] = useState<any[]>([]);
 
   // ── Candidate filter states ──────────────────────────────────
   const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
@@ -524,34 +525,16 @@ const CandidateDashboard: React.FC = () => {
 
   const fetchUpcomingInterviews = async () => {
     try {
-      const response = await apiClient.getMeetings({
-        upcoming_only: true,
-        status: 'scheduled'
-      });
-      const meetings = response.data || [];
-      // Transform backend meeting data to our format
-      const interviews = meetings.map((meeting: any) => {
-        const startDate = new Date(meeting.scheduled_start);
-        const endDate = new Date(meeting.scheduled_end);
-        const duration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)); // minutes
-        
-        return {
-          id: meeting.id,
-          company: meeting.company_name || 'Company',
-          position: meeting.job_title || meeting.title || 'Position',
-          date: meeting.scheduled_start,
-          time: startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-          duration: `${duration} min`,
-          type: meeting.meeting_type === 'video_call' ? 'Video' : meeting.meeting_type === 'phone' ? 'Phone' : 'In-Person',
-          meetingLink: meeting.meeting_link || meeting.video_link || '#'
-        };
-      });
-      setUpcomingInterviews(interviews);
+      const allRes = await apiClient.getMeetings({});
+      const allMeetingsData = allRes.data || [];
+      setAllMeetings(allMeetingsData);
+      // derive upcoming list for badge count
+      const now = new Date();
+      setUpcomingInterviews(allMeetingsData.filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled'));
     } catch (error: any) {
       console.error('[INTERVIEWS] Error fetching:', error);
-      console.error('[INTERVIEWS] Error details:', error?.response?.data);
-      // If endpoint returns error, use empty array
       setUpcomingInterviews([]);
+      setAllMeetings([]);
     }
   };
 
@@ -942,6 +925,82 @@ const CandidateDashboard: React.FC = () => {
 
     return (
       <>
+        {/* ── Job Preferences Selector — mirrors Recruiter's job posting selector ── */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div>
+              <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '2px' }}>
+                AI Job Recommendations
+              </h2>
+              <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                Showing jobs matched to your selected job preference profile
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/candidate/job-preferences')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '7px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
+                background: 'white', border: '1px solid #D1D5DB', color: '#374151', cursor: 'pointer'
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              Manage Preferences
+            </button>
+          </div>
+
+          {/* Profile Dropdown */}
+          <select
+            className="job-select-modern"
+            style={{ width: '100%', padding: '10px 14px', fontSize: '14px', marginBottom: '10px' }}
+            value={selectedProfileId || ''}
+            onChange={(e) => setSelectedProfileId(parseInt(e.target.value))}
+          >
+            <option value="" disabled>Choose a job preference profile...</option>
+            {jobProfiles.map((profile: any) => (
+              <option key={profile.id} value={profile.id}>
+                {profile.profile_name}
+                {profile.product_vendor ? ` • ${profile.product_vendor}` : ''}
+                {profile.product_type ? ` — ${profile.product_type}` : ''}
+                {profile.worktype ? ` • ${typeof profile.worktype === 'object' ? profile.worktype.value ?? profile.worktype : profile.worktype}` : ''}
+              </option>
+            ))}
+          </select>
+
+          {/* Selected profile's key preferences as filter tags */}
+          {(() => {
+            const sp = jobProfiles.find((p: any) => p.id === selectedProfileId);
+            if (!sp) return null;
+            const rawWorktype = sp.worktype;
+            const worktypeLabel = rawWorktype
+              ? (typeof rawWorktype === 'object' ? rawWorktype.value ?? String(rawWorktype) : String(rawWorktype))
+              : null;
+            const tags: Array<{ label: string; color: string; bg: string; border: string }> = [];
+            if (sp.product_vendor)   tags.push({ label: sp.product_vendor,   color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' });
+            if (sp.product_type)     tags.push({ label: sp.product_type,     color: '#047857', bg: '#D1FAE5', border: '#A7F3D0' });
+            if (sp.job_role)         tags.push({ label: sp.job_role,         color: '#7C3AED', bg: '#EDE9FE', border: '#DDD6FE' });
+            if (worktypeLabel)       tags.push({ label: worktypeLabel,       color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' });
+            if (sp.seniority_level)  tags.push({ label: sp.seniority_level,  color: '#0F766E', bg: '#CCFBF1', border: '#99F6E4' });
+            if (sp.employment_type)  tags.push({ label: typeof sp.employment_type === 'object' ? sp.employment_type.value ?? sp.employment_type : sp.employment_type, color: '#BE185D', bg: '#FCE7F3', border: '#FBCFE8' });
+            if (tags.length === 0) return null;
+            return (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', alignSelf: 'center' }}>Filtering by:</span>
+                {tags.map((tag, i) => (
+                  <span key={i} style={{
+                    padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 500,
+                    background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`
+                  }}>
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
@@ -1449,69 +1508,115 @@ const CandidateDashboard: React.FC = () => {
               </div>
 
               {/* Upcoming Interviews Card */}
-              <div className="ai-interviews-card">
-                <div className="ai-interviews-header">
-                  <h3 className="ai-interviews-title">Upcoming Interviews</h3>
-                  {upcomingInterviews.length > 0 && (
-                    <span className="ai-interviews-badge">
-                      {upcomingInterviews.length} scheduled
-                    </span>
-                  )}
-                </div>
-                
-                {upcomingInterviews.length > 0 ? (
-                  <div className="ai-interviews-list">
-                    {upcomingInterviews.map((interview) => {
-                      const date = new Date(interview.date);
-                      const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-                      const day = date.getDate();
-                      
-                      return (
-                        <div key={interview.id} className="ai-interview-item">
-                          <div className="ai-interview-date-badge">
-                            <span className="ai-interview-month">{month}</span>
-                            <span className="ai-interview-day">{day}</span>
-                          </div>
-                          
-                          <div className="ai-interview-details">
-                            <h4 className="ai-interview-company-role">
-                              {interview.company} — {interview.position}
-                            </h4>
-                            <div className="ai-interview-meta">
-                              <span className="ai-interview-time">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <circle cx="12" cy="12" r="10"/>
-                                  <polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                                {interview.time}
-                              </span>
-                              <span className="ai-interview-duration">· {interview.duration}</span>
+              {(() => {
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                const weekStart = new Date(todayStart);
+                weekStart.setDate(todayStart.getDate() - todayStart.getDay());
+                const upcomingList = allMeetings
+                  .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
+                  .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
+                  .slice(0, 5);
+                const pastList = allMeetings
+                  .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
+                  .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
+                  .slice(0, 3);
+                const pastThisWeek = allMeetings.filter((m: any) => {
+                  const d = m.scheduled_start ? new Date(m.scheduled_start) : null;
+                  return d && d >= weekStart && d < todayStart;
+                }).length;
+                const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
+                const avatarBg = ['#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+                const getMeetingTypeLabel = (m: any): string => {
+                  if (m.video_provider) {
+                    const p = m.video_provider.toLowerCase();
+                    if (p === 'zoom') return 'Zoom';
+                    if (p === 'teams' || p === 'microsoft_teams') return 'Teams';
+                    if (p === 'meet' || p === 'google_meet') return 'Meet';
+                    return m.video_provider.charAt(0).toUpperCase() + m.video_provider.slice(1);
+                  }
+                  if (m.video_meeting_url) {
+                    if (m.video_meeting_url.includes('zoom.us')) return 'Zoom';
+                    if (m.video_meeting_url.includes('meet.google')) return 'Meet';
+                    if (m.video_meeting_url.includes('teams.microsoft')) return 'Teams';
+                    return 'Video';
+                  }
+                  if (m.location && m.location !== 'Virtual') return m.location;
+                  return 'Video';
+                };
+                const getInitials = (name: string) =>
+                  name ? name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+                const renderCard = (m: any, dimmed: boolean) => (
+                  <div key={m.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '3px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', lineHeight: '1.35', flex: 1 }}>{m.title || 'Interview'}</span>
+                      <span style={{ color: '#9CA3AF', fontSize: '18px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋮</span>
+                    </div>
+                    {m.description && (
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', lineHeight: '1.3' }}>{m.description}</div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap' as const, gap: '6px', marginBottom: '9px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        {fmtDate(m.scheduled_start)}
+                      </span>
+                      <span style={{ color: '#D1D5DB' }}>·</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        {fmtTime(m.scheduled_start)}
+                      </span>
+                      <span style={{ color: '#D1D5DB' }}>·</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#6B7280' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="11" height="11"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        {getMeetingTypeLabel(m)}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColor[m.status] || '#6B7280', display: 'inline-block', flexShrink: 0 }} />
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: statusColor[m.status] || '#6B7280', textTransform: 'capitalize' as const }}>{m.status}</span>
+                      </div>
+                      {m.participants && m.participants.length > 0 && (
+                        <div style={{ display: 'flex' }}>
+                          {m.participants.slice(0, 3).map((p: any, pi: number) => (
+                            <div key={pi} title={p.participant_name || p.name || ''} style={{ width: '24px', height: '24px', borderRadius: '50%', background: avatarBg[pi % avatarBg.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: 'white', border: '2px solid white', marginLeft: pi > 0 ? '-6px' : '0' }}>
+                              {getInitials(p.participant_name || p.name || p.full_name || '?')}
                             </div>
-                            <div className="ai-interview-type">
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <rect x="2" y="3" width="20" height="14" rx="2"/>
-                                <line x1="8" y1="21" x2="16" y2="21"/>
-                                <line x1="12" y1="17" x2="12" y2="21"/>
-                              </svg>
-                              {interview.type}
-                            </div>
-                          </div>
+                          ))}
                         </div>
-                      );
-                    })}
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="ai-interviews-empty">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/>
-                      <line x1="8" y1="2" x2="8" y2="6"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    <p>No upcoming interviews scheduled</p>
+                );
+                return (
+                  <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '14px', padding: '16px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#4B5563" strokeWidth="2" width="15" height="15"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Upcoming Interviews</span>
+                      </div>
+                      <button onClick={() => setActiveTab('meetings')} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>View All →</button>
+                    </div>
+                    {upcomingList.length === 0 && pastList.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
+                    )}
+                    {upcomingList.map((m: any) => renderCard(m, false))}
+                    {pastList.length > 0 && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 10px 0' }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Recent Past</span>
+                          {pastThisWeek > 0 && (
+                            <span style={{ fontSize: '10px', fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: '10px' }}>{pastThisWeek} this week</span>
+                          )}
+                        </div>
+                        {pastList.map((m: any) => renderCard(m, true))}
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()}
 
               {/* Pro Tip Card */}
               <div className="ai-pro-tip-card">
