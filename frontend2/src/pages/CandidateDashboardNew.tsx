@@ -326,24 +326,28 @@ const CandidateDashboard: React.FC = () => {
         }
       }
       
-      // Search filter (job title, keywords, company)
+      // Search filter — uses correct backend field names: job_title, job_description
       if (recSearchTerm) {
         const searchLower = recSearchTerm.toLowerCase();
-        const titleMatch = (jobPosting.title || '').toLowerCase().includes(searchLower);
+        const titleMatch = (jobPosting.job_title || '').toLowerCase().includes(searchLower);
         const companyMatch = (jobPosting.company_name || '').toLowerCase().includes(searchLower);
-        const descMatch = (jobPosting.description || '').toLowerCase().includes(searchLower);
-        if (!titleMatch && !companyMatch && !descMatch) return false;
+        const descMatch = (jobPosting.job_description || '').toLowerCase().includes(searchLower);
+        const vendorMatch = (jobPosting.product_vendor || '').toLowerCase().includes(searchLower);
+        if (!titleMatch && !companyMatch && !descMatch && !vendorMatch) return false;
       }
       
-      // Role filter
+      // Role filter — match against job_title and job_role
       if (recRoleFilter !== 'all') {
-        const roleMatch = (jobPosting.title || '').toLowerCase().includes(recRoleFilter.toLowerCase());
+        const jobTitle = (jobPosting.job_title || '').toLowerCase();
+        const jobRole  = (jobPosting.job_role  || '').toLowerCase();
+        const roleMatch = jobTitle.includes(recRoleFilter.toLowerCase()) || jobRole.includes(recRoleFilter.toLowerCase());
         if (!roleMatch) return false;
       }
       
-      // Work type filter
+      // Work type filter — backend field is 'worktype', not 'work_type'
       if (recWorkTypeFilter !== 'all') {
-        if (jobPosting.work_type !== recWorkTypeFilter) return false;
+        const jobWorktype = (jobPosting.worktype || '').toLowerCase();
+        if (jobWorktype !== recWorkTypeFilter.toLowerCase()) return false;
       }
       
       // Location filter
@@ -353,15 +357,15 @@ const CandidateDashboard: React.FC = () => {
         if (!jobLocation.includes(locationLower)) return false;
       }
       
-      // Status filter
+      // Status filter — backend only returns active/reposted jobs;
+      // for applied/saved, match against 'job_id' (not 'id') from applied/liked lists
       if (recStatusFilter !== 'all') {
-        if (recStatusFilter === 'active' && jobPosting.status !== 'published') return false;
         if (recStatusFilter === 'applied') {
-          const isApplied = appliedLiked.applied_jobs?.some((aj: any) => aj.id === jobPosting.id);
+          const isApplied = appliedLiked.applied_jobs?.some((aj: any) => aj.job_id === jobPosting.id);
           if (!isApplied) return false;
         }
         if (recStatusFilter === 'saved') {
-          const isLiked = appliedLiked.liked_jobs?.some((lj: any) => lj.id === jobPosting.id);
+          const isLiked = appliedLiked.liked_jobs?.some((lj: any) => lj.job_id === jobPosting.id);
           if (!isLiked) return false;
         }
       }
