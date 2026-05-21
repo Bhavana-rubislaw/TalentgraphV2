@@ -175,12 +175,18 @@ def update_extended_profile(
     if not company:
         raise HTTPException(status_code=404, detail="Company profile not found")
     
-    # Update only provided fields
-    for key, value in profile_data.dict(exclude_unset=True).items():
+    # Update user full_name if provided
+    update_data = profile_data.dict(exclude_unset=True)
+    if 'full_name' in update_data:
+        user.full_name = update_data.pop('full_name')
+        session.add(user)
+
+    # Update only provided company fields
+    for key, value in update_data.items():
         setattr(company, key, value)
-    
+
     company.updated_at = datetime.utcnow()
-    
+
     session.add(company)
     session.commit()
     session.refresh(company)

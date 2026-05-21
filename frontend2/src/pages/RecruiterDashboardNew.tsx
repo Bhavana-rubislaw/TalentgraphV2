@@ -14,6 +14,13 @@ import NotificationBellDrawer from '../components/notifications/NotificationBell
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
 import { MeetingSchedulerTab } from '../components/meetings';
+import {
+  MatchBreakdownBars,
+  TopSkillMatches,
+  AIMatchReasonBox,
+  generateRecruiterMatchReason,
+  type MatchDetails,
+} from '../components/MatchInsights';
 
 const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings'] as const;
 
@@ -43,10 +50,8 @@ const RecruiterDashboard: React.FC = () => {
   const [allJobPostings, setAllJobPostings] = useState<any[]>([]); // All jobs including frozen
 
   // ── Selected job: driven from ?job= URL param ─────────────────
-  const [selectedJobId, setSelectedJobIdInternal] = useState<number | null>(() => {
-    const j = new URLSearchParams(window.location.search).get('job');
-    return j ? parseInt(j, 10) : null;
-  });
+  // Start as null; fetchJobPostings() validates the URL param against actual jobs
+  const [selectedJobId, setSelectedJobIdInternal] = useState<number | null>(null);
 
   const setSelectedJobId = useCallback(
     (id: number | null) => {
@@ -80,7 +85,7 @@ const RecruiterDashboard: React.FC = () => {
   const [browseCandidates, setBrowseCandidates] = useState<any[]>([]);
   const [browseTotal, setBrowseTotal] = useState(0);
   const [browsePage, setBrowsePage] = useState(1);
-  const [browseLimit] = useState(20);
+  const [browseLimit] = useState(6);
   const [browseSearch, setBrowseSearch] = useState('');
   const [debouncedBrowseSearch, setDebouncedBrowseSearch] = useState('');
   const [browseRole, setBrowseRole] = useState('');
@@ -373,7 +378,6 @@ const RecruiterDashboard: React.FC = () => {
       setBrowseTotal(response.data.total || 0);
     } catch (error) {
       console.error('Failed to fetch browse candidates:', error);
-      alert('Failed to load candidates. Please try again.');
     } finally {
       setBrowseLoading(false);
     }
@@ -646,7 +650,11 @@ const RecruiterDashboard: React.FC = () => {
   };
 
   const getMatchedSkills = (rec: any) => {
-    // Return top matched skills from candidate's profile
+    // Prefer API-provided matched_skills from match_details
+    if (rec.match_details?.matched_skills?.length > 0) {
+      return rec.match_details.matched_skills.slice(0, 6).map((name: string) => ({ name, level: 3 }));
+    }
+    // Fall back to candidate job_profile skills
     const skills = rec.job_profile?.skills || [];
     return skills.slice(0, 4).map((sk: any) => ({
       name: sk.skill_name,
@@ -737,7 +745,7 @@ const RecruiterDashboard: React.FC = () => {
     return (
       <>
         {/* Header */}
-        <div style={{ marginBottom: '24px' }}>
+        <div style={{ marginBottom: '24px', padding: '24px 24px 0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
               <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '4px' }}>
@@ -939,12 +947,28 @@ const RecruiterDashboard: React.FC = () => {
                         </div>
                       )}
 
+                      {/* AI Match Reason */}
+                      <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+                        <AIMatchReasonBox
+                          variant="recruiter"
+                          reason={generateRecruiterMatchReason(
+                            (rec.match_details || {}) as MatchDetails,
+                            {
+                              productVendor: rec.job_profile?.product_vendor,
+                              topSkill: rec.match_details?.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
+                              jobTitle: rec.job_posting?.job_title || recommendations?.job_title,
+                              yearsExp: rec.job_profile?.years_of_experience,
+                              candidateName: candidate.name,
+                            }
+                          )}
+                        />
+                      </div>
+
                       {/* Match Breakdown Visualization */}
                       <div style={{
                         background: '#F9FAFB',
                         padding: '12px',
                         borderRadius: '8px',
-                        marginTop: '12px',
                         marginBottom: '16px'
                       }}>
                         <div style={{
@@ -960,113 +984,32 @@ const RecruiterDashboard: React.FC = () => {
                             Overall: {matchPercentage}%
                           </span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {/* Skills Match */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Skills</span>
+                        {rec.match_details ? (
+                          <MatchBreakdownBars details={rec.match_details as MatchDetails} compact />
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Overall</span>
                               <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${Math.min(matchPercentage + 5, 95)}%`, 
-                                  height: '100%', 
-                                  background: 'linear-gradient(90deg, #10B981, #059669)',
-                                  transition: 'width 0.3s ease'
-                                }} />
+                                <div style={{ width: `${matchPercentage}%`, height: '100%', background: '#7B5EA7', transition: 'width 0.3s ease' }} />
                               </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669', minWidth: '30px', textAlign: 'right' }}>
-                                {Math.min(matchPercentage + 5, 95)}%
-                              </span>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#7B5EA7', minWidth: '30px', textAlign: 'right' }}>{matchPercentage}%</span>
                             </div>
                           </div>
-                          {/* Experience Match */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Experience</span>
-                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${Math.min(matchPercentage, 100)}%`, 
-                                  height: '100%', 
-                                  background: 'linear-gradient(90deg, #3B82F6, #2563EB)',
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', minWidth: '30px', textAlign: 'right' }}>
-                                {Math.min(matchPercentage, 100)}%
-                              </span>
-                            </div>
-                          </div>
-                          {/* Compensation Match */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Salary</span>
-                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${overlapPct}%`, 
-                                  height: '100%', 
-                                  background: `linear-gradient(90deg, ${compColor}, ${compColor}dd)`,
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: compColor, minWidth: '30px', textAlign: 'right' }}>
-                                {Math.round(overlapPct)}%
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Skill Match Chips */}
-                      {matchedSkills.length > 0 && (
+                      {/* Top Matched Skills */}
+                      {(rec.match_details?.matched_skills?.length > 0 || matchedSkills.length > 0) && (
                         <div style={{ marginBottom: '16px' }}>
-                          <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            marginBottom: '8px' 
-                          }}>
-                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
-                              Top Skill Matches
-                            </span>
-                            <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                              {matchedSkills.length} verified
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            {matchedSkills.slice(0, 4).map((skill: any, idx: number) => (
-                              <span key={idx} style={{
-                                fontSize: '11px',
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                background: 'linear-gradient(135deg, #10B98120, #05966920)',
-                                border: '1px solid #10B981',
-                                color: '#047857',
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}>
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                {skill.name || skill.skill_name || skill}
-                                {skill.level && skill.level >= 4 && (
-                                  <span style={{ marginLeft: '2px', fontSize: '9px' }}>★</span>
-                                )}
-                              </span>
-                            ))}
-                            {skillTags.length > 4 && (
-                              <span style={{
-                                fontSize: '11px',
-                                padding: '4px 10px',
-                                borderRadius: '12px',
-                                background: '#F3F4F6',
-                                color: '#6B7280',
-                                fontWeight: 600
-                              }}>
-                                +{skillTags.length - 4} more
-                              </span>
-                            )}
-                          </div>
+                          <TopSkillMatches
+                            matchedSkills={
+                              rec.match_details?.matched_skills?.length > 0
+                                ? rec.match_details.matched_skills
+                                : matchedSkills.map((s: any) => s.name || s.skill_name || s)
+                            }
+                            maxSkills={6}
+                          />
                         </div>
                       )}
 
@@ -1205,7 +1148,7 @@ const RecruiterDashboard: React.FC = () => {
                         background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
                         padding: '16px',
                         borderRadius: '12px',
-                        marginTop: '16px',
+                        marginTop: '24px',
                         border: '1px solid #FCD34D'
                       }}>
                         <div style={{
@@ -1252,7 +1195,7 @@ const RecruiterDashboard: React.FC = () => {
 
 
                       {/* Action Buttons */}
-                      <div className="ai-action-buttons">
+                      <div className="ai-action-buttons" style={{ marginTop: '20px' }}>
                         <button 
                           className="ai-action-btn pass"
                           onClick={() => handleRecruiterPass(candidate.id, jobProfile.id)}
@@ -1301,7 +1244,7 @@ const RecruiterDashboard: React.FC = () => {
                         disabled={rec.action_taken === 'ask_to_apply'}
                         style={{
                           width: '100%',
-                          marginTop: '12px',
+                          marginTop: '20px',
                           padding: '12px',
                           background: rec.action_taken === 'ask_to_apply' ? '#10B981' : 'linear-gradient(135deg, #7C3AED, #A78BFA)',
                           border: 'none',
@@ -1386,11 +1329,11 @@ const RecruiterDashboard: React.FC = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {(() => {
                   const funnelStages = [
-                    { label: 'Applied',      count: applications.filter((a: any) => a.status === 'applied').length,      color: '#6366F1', status: 'applied' },
-                    { label: 'Interview',    count: applications.filter((a: any) => a.status === 'scheduled').length,    color: '#10B981', status: 'scheduled' },
-                    { label: 'Shortlisted',  count: applications.filter((a: any) => a.status === 'shortlisted').length,  color: '#8B5CF6', status: 'shortlisted' },
-                    { label: 'Selected',     count: applications.filter((a: any) => a.status === 'selected').length,     color: '#F59E0B', status: 'selected' },
-                    { label: 'Rejected',     count: applications.filter((a: any) => a.status === 'rejected').length,     color: '#EF4444', status: 'rejected' },
+                    { label: 'Applications', count: applications.length,                                                                                                                                       color: '#6366F1', status: 'all' },
+                    { label: 'Interview',    count: applications.filter((a: any) => ['scheduled','under_review','shortlisted','selected'].includes(a.status)).length, color: '#10B981', status: 'scheduled' },
+                    { label: 'Shortlisted',  count: applications.filter((a: any) => ['shortlisted','selected'].includes(a.status)).length,                           color: '#8B5CF6', status: 'shortlisted' },
+                    { label: 'Selected',     count: applications.filter((a: any) => a.status === 'selected').length,                                                 color: '#F59E0B', status: 'selected' },
+                    { label: 'Rejected',     count: applications.filter((a: any) => a.status === 'rejected').length,                                                 color: '#EF4444', status: 'rejected' },
                   ];
                   const maxCount = Math.max(...funnelStages.map(s => s.count), 1);
                   return funnelStages.map((stage, idx) => (
@@ -4609,29 +4552,37 @@ const RecruiterDashboard: React.FC = () => {
         )}
 
         {/* Pagination */}
-        {browseTotal > browseLimit && (
-          <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
-            <button
-              className="action-btn secondary"
-              style={{ height: '40px', padding: '0 20px', fontSize: '14px', fontWeight: 500, borderRadius: '8px' }}
-              onClick={() => setBrowsePage(prev => Math.max(1, prev - 1))}
-              disabled={browsePage === 1}
-            >
-              ← Previous
-            </button>
-            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary, #64748b)' }}>
-              Page {browsePage} of {Math.ceil(browseTotal / browseLimit)}
-            </span>
-            <button
-              className="action-btn secondary"
-              style={{ height: '40px', padding: '0 20px', fontSize: '14px', fontWeight: 500, borderRadius: '8px' }}
-              onClick={() => setBrowsePage(prev => Math.min(Math.ceil(browseTotal / browseLimit), prev + 1))}
-              disabled={browsePage >= Math.ceil(browseTotal / browseLimit)}
-            >
-              Next →
-            </button>
-          </div>
-        )}
+        {browseTotal > 0 && (() => {
+          const totalBrowsePages = Math.max(1, Math.ceil(browseTotal / browseLimit));
+          const getBrowsePageNumbers = (): (number | string)[] => {
+            if (totalBrowsePages <= 7) return Array.from({ length: totalBrowsePages }, (_, i) => i + 1);
+            const pages: (number | string)[] = [];
+            if (browsePage <= 4) { pages.push(1, 2, 3, 4, 5, '...', totalBrowsePages); }
+            else if (browsePage >= totalBrowsePages - 3) { pages.push(1, '...', totalBrowsePages - 4, totalBrowsePages - 3, totalBrowsePages - 2, totalBrowsePages - 1, totalBrowsePages); }
+            else { pages.push(1, '...', browsePage - 1, browsePage, browsePage + 1, '...', totalBrowsePages); }
+            return pages;
+          };
+          const startItem = (browsePage - 1) * browseLimit + 1;
+          const endItem = Math.min(browsePage * browseLimit, browseTotal);
+          return (
+            <div className="cp-pagination-footer" style={{ marginTop: '28px', borderRadius: 12 }}>
+              <span className="cp-pagination-info">
+                Showing {startItem}–{endItem} of {browseTotal} candidates
+              </span>
+              <div className="cp-pagination-buttons">
+                <button className="cp-pag-btn" disabled={browsePage === 1} onClick={() => setBrowsePage(p => p - 1)}>← Prev</button>
+                {getBrowsePageNumbers().map((pn, i) =>
+                  pn === '...' ? (
+                    <span key={`e${i}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
+                  ) : (
+                    <button key={pn} className={`cp-pag-btn${browsePage === pn ? ' active' : ''}`} onClick={() => setBrowsePage(pn as number)}>{pn}</button>
+                  )
+                )}
+                <button className="cp-pag-btn" disabled={browsePage >= totalBrowsePages} onClick={() => setBrowsePage(p => p + 1)}>Next →</button>
+              </div>
+            </div>
+          );
+        })()}
       </div>
       </>
     );
@@ -5037,8 +4988,8 @@ const RecruiterDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="talentgraph-main-content">
-        {/* Welcome Banner with KPI Cards */}
-        <div className="welcome-banner-modern">
+        {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
+        {activeTab === 'recommendations' && <div className="welcome-banner-modern">
           <div className="welcome-header-compact">
             <div className="welcome-avatar-compact">
               <div className="avatar-circle-compact">{userInitial}</div>
@@ -5119,65 +5070,18 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Hiring Pipeline ── */}
-          <div style={{ padding: '16px 0 4px 0', marginTop: '8px', borderTop: '1px solid #F3F4F6' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" width="14" height="14">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                </svg>
-                <h3 style={{ fontSize: '12px', fontWeight: 700, color: '#6B7280', margin: 0, letterSpacing: '0.6px', textTransform: 'uppercase' }}>
-                  Hiring Pipeline
-                </h3>
-              </div>
-              <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Click a stage to view applications</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '10px' }}>
-              {([
-                { label: 'Applied',      status: 'applied',      color: '#6366F1', bg: '#EEF2FF', border: '#C7D2FE' },
-                { label: 'Scheduled',    status: 'scheduled',    color: '#0EA5E9', bg: '#E0F2FE', border: '#BAE6FD' },
-                { label: 'Under Review', status: 'under_review', color: '#F59E0B', bg: '#FEF3C7', border: '#FDE68A' },
-                { label: 'Shortlisted',  status: 'shortlisted',  color: '#8B5CF6', bg: '#EDE9FE', border: '#DDD6FE' },
-                { label: 'Selected',     status: 'selected',     color: '#10B981', bg: '#D1FAE5', border: '#A7F3D0' },
-                { label: 'Rejected',     status: 'rejected',     color: '#EF4444', bg: '#FEE2E2', border: '#FECACA' },
-              ] as { label: string; status: string; color: string; bg: string; border: string }[]).map(stage => {
-                const count = applications.filter((a: any) => a.status === stage.status).length;
-                const total = applications.length || 1;
-                const pct = Math.max(count > 0 ? 8 : 0, Math.round((count / total) * 100));
-                return (
-                  <button
-                    key={stage.status}
-                    onClick={() => { setActiveTab('applications'); setAppStatusFilter(stage.status); }}
-                    style={{
-                      background: stage.bg,
-                      border: `1px solid ${stage.border}`,
-                      borderRadius: '10px',
-                      padding: '12px 10px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '5px',
-                    }}
-                    title={`View ${stage.label} applications`}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    <div style={{ fontSize: '24px', fontWeight: 700, color: stage.color, lineHeight: 1 }}>{count}</div>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stage.label}</div>
-                    <div style={{ height: '4px', background: 'rgba(0,0,0,0.08)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: stage.color, borderRadius: '2px', transition: 'width 0.4s ease' }} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        </div>}
 
         {/* Content Panel */}
-        <div className="content-panel-horizontal">
+        <div
+          className="content-panel-horizontal"
+          style={activeTab === 'recommendations' ? {
+            background: '#F8F9FA',
+            boxShadow: 'none',
+            borderRadius: 0,
+            padding: 0
+          } : {}}
+        >
           <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
             {renderRecommendations()}
           </div>

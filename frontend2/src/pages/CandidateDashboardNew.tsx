@@ -13,6 +13,13 @@ import '../styles/HorizontalDashboard.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import { MeetingSchedulerTab } from '../components/meetings';
+import {
+  MatchBreakdownBars,
+  TopSkillMatches,
+  AIMatchReasonBox,
+  generateCandidateMatchReason,
+  type MatchDetails,
+} from '../components/MatchInsights';
 
 const CANDIDATE_TABS = ['recommendations', 'invites', 'available', 'applied', 'matches', 'messages', 'meetings'] as const;
 
@@ -826,76 +833,10 @@ const CandidateDashboard: React.FC = () => {
       return companyName ? companyName.charAt(0).toUpperCase() : 'C';
     };
 
-    // Helper to get top matched skills from actual recommendation data
-    const getMatchedSkills = (rec: any) => {
-      const posting_skills = rec.job_posting?.posting_skills || [];
-      return posting_skills.slice(0, 4).map((sk: any) => ({
-        name: sk.skill_name,
-        percentage: sk.rating ? (sk.rating * 20) : 75  // Convert rating 1-5 to percentage
-      }));
-    };
-
-    // Helper to get skill tags
+    // Helper to get skill tags (posting skills for display)
     const getSkillTags = (rec: any) => {
       const skills = rec.job_posting?.posting_skills || [];
-      return skills.slice(0, 4).map((sk: any) => sk.skill_name);
-    };
-
-    // Generate dynamic AI match reasons based on actual match details
-    const generateMatchReason = (rec: any) => {
-      const details = rec.match_details || {};
-      const reasons: string[] = [];
-      
-      // Product/Role match
-      if (details.product_match >= 30) {
-        reasons.push(`Perfect ${rec.job_posting?.product_vendor || 'product'} match`);
-      } else if (details.product_match >= 20) {
-        reasons.push(`Good ${rec.job_posting?.product_vendor || 'product'} alignment`);
-      }
-      
-      // Skills match
-      if (details.skills_match >= 20) {
-        reasons.push('strong technical skills alignment');
-      } else if (details.skills_match >= 15) {
-        reasons.push('good skills match');
-      } else if (details.skills_match > 0) {
-        reasons.push('some relevant skills');
-      }
-      
-      // Experience match
-      if (details.experience_match >= 20) {
-        reasons.push('experience level matches perfectly');
-      } else if (details.experience_match >= 10) {
-        reasons.push('relevant experience level');
-      }
-      
-      // Location match
-      if (details.location_match >= 10) {
-        reasons.push('location preference aligned');
-      }
-      
-      // Salary match
-      if (details.salary_match >= 10) {
-        reasons.push('salary expectations in range');
-      }
-      
-      // Worktype preference
-      const worktype = rec.job_posting?.worktype;
-      if (worktype && details.location_match > 0) {
-        reasons.push(`${worktype} work arrangement`);
-      }
-      
-      // Default fallback
-      if (reasons.length === 0) {
-        return 'This role aligns with your profile and preferences.';
-      }
-      
-      // Capitalize first reason
-      if (reasons.length > 0) {
-        reasons[0] = reasons[0].charAt(0).toUpperCase() + reasons[0].slice(1);
-      }
-      
-      return reasons.join(', ') + '.';
+      return skills.slice(0, 6).map((sk: any) => sk.skill_name);
     };
 
 
@@ -929,36 +870,63 @@ const CandidateDashboard: React.FC = () => {
 
     return (
       <>
-        {/* ── Job Preferences Selector — mirrors Recruiter's job posting selector ── */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+        {/* ── Header - matches recruiter dashboard layout ── */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '2px' }}>
+              <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '4px' }}>
                 AI Job Recommendations
               </h2>
-              <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
-                Showing jobs matched to your selected job preference profile
+              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+                Curated roles matched to your profile by our AI engine • Updated live
               </p>
             </div>
-            <button
-              onClick={() => navigate('/candidate/job-preferences')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
-                background: 'white', border: '1px solid #D1D5DB', color: '#374151', cursor: 'pointer'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-              Manage Preferences
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FilterPill
+                id="rec-match-filter-header"
+                icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.586a1 1 0 0 1-.293.707l-6.414 6.414a1 1 0 0 0-.293.707V17l-4 4v-6.586a1 1 0 0 0-.293-.707L3.293 7.293A1 1 0 0 1 3 6.586V4z"/>
+                  </svg>
+                }
+                options={[
+                  { value: 'all', label: 'All Matches' },
+                  { value: '90+', label: '90%+ Match' },
+                  { value: '80-89', label: '80-89% Match' },
+                  { value: '70-79', label: '70-79% Match' },
+                  { value: '60-69', label: '60-69% Match' },
+                  { value: 'below-60', label: 'Below 60%' }
+                ]}
+                value={recommendationsMatchFilter}
+                onChange={(val) => setRecommendationsMatchFilter(val as string)}
+                ariaLabel="Filter by match score"
+              />
+              <button className="talentgraph-btn-secondary" onClick={() => fetchRecommendations()}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 4v6h6M23 20v-6h-6"/>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                Refresh
+              </button>
+              <button
+                onClick={() => navigate('/candidate/job-preferences')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '7px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
+                  background: 'white', border: '1px solid #D1D5DB', color: '#374151', cursor: 'pointer'
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Manage Preferences
+              </button>
+            </div>
           </div>
-
-          {/* Profile Dropdown */}
+          {/* Profile Selector */}
           <select
             className="job-select-modern"
-            style={{ width: '100%', padding: '10px 14px', fontSize: '14px', marginBottom: '10px' }}
+            style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
             value={selectedProfileId || ''}
             onChange={(e) => setSelectedProfileId(parseInt(e.target.value))}
           >
@@ -972,37 +940,6 @@ const CandidateDashboard: React.FC = () => {
               </option>
             ))}
           </select>
-
-          {/* Selected profile's key preferences as filter tags */}
-          {(() => {
-            const sp = jobProfiles.find((p: any) => p.id === selectedProfileId);
-            if (!sp) return null;
-            const rawWorktype = sp.worktype;
-            const worktypeLabel = rawWorktype
-              ? (typeof rawWorktype === 'object' ? rawWorktype.value ?? String(rawWorktype) : String(rawWorktype))
-              : null;
-            const tags: Array<{ label: string; color: string; bg: string; border: string }> = [];
-            if (sp.product_vendor)   tags.push({ label: sp.product_vendor,   color: '#1D4ED8', bg: '#DBEAFE', border: '#BFDBFE' });
-            if (sp.product_type)     tags.push({ label: sp.product_type,     color: '#047857', bg: '#D1FAE5', border: '#A7F3D0' });
-            if (sp.job_role)         tags.push({ label: sp.job_role,         color: '#7C3AED', bg: '#EDE9FE', border: '#DDD6FE' });
-            if (worktypeLabel)       tags.push({ label: worktypeLabel,       color: '#B45309', bg: '#FEF3C7', border: '#FDE68A' });
-            if (sp.seniority_level)  tags.push({ label: sp.seniority_level,  color: '#0F766E', bg: '#CCFBF1', border: '#99F6E4' });
-            if (sp.employment_type)  tags.push({ label: typeof sp.employment_type === 'object' ? sp.employment_type.value ?? sp.employment_type : sp.employment_type, color: '#BE185D', bg: '#FCE7F3', border: '#FBCFE8' });
-            if (tags.length === 0) return null;
-            return (
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.5px', alignSelf: 'center' }}>Filtering by:</span>
-                {tags.map((tag, i) => (
-                  <span key={i} style={{
-                    padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 500,
-                    background: tag.bg, color: tag.color, border: `1px solid ${tag.border}`
-                  }}>
-                    {tag.label}
-                  </span>
-                ))}
-              </div>
-            );
-          })()}
         </div>
 
         {loading ? (
@@ -1039,178 +976,6 @@ const CandidateDashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* KPI Banner */}
-            <div className="kpi-banner-container">
-              <div className="kpi-card kpi-card-green">
-                <div className="kpi-card-top">
-                  <span className="kpi-title">MATCH SCORE</span>
-                  <div className="kpi-icon-wrapper kpi-icon-green">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-value">
-                    {recommendations.length > 0 
-                      ? Math.round(recommendations.reduce((sum, r) => sum + (r.match_percentage || 0), 0) / recommendations.length) 
-                      : 0}%
-                  </span>
-                  <span className="kpi-badge kpi-badge-green">avg</span>
-                </div>
-                <p className="kpi-subtitle">Across all recommendations</p>
-              </div>
-
-              <div className="kpi-card kpi-card-blue">
-                <div className="kpi-card-top">
-                  <span className="kpi-title">NEW RECOMMENDATIONS</span>
-                  <div className="kpi-icon-wrapper kpi-icon-blue">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-value">{recommendations.length || 0}</span>
-                  <span className="kpi-badge kpi-badge-blue">jobs</span>
-                </div>
-                <p className="kpi-subtitle">Ready to explore</p>
-              </div>
-
-              <div className="kpi-card kpi-card-purple">
-                <div className="kpi-card-top">
-                  <span className="kpi-title">PENDING INVITES</span>
-                  <div className="kpi-icon-wrapper kpi-icon-purple">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-value">{invites.length || 0}</span>
-                  <span className="kpi-badge kpi-badge-purple">recruiters</span>
-                </div>
-                <p className="kpi-subtitle">Awaiting your response</p>
-              </div>
-
-              <div className="kpi-card kpi-card-orange">
-                <div className="kpi-card-top">
-                  <span className="kpi-title">APPLICATIONS</span>
-                  <div className="kpi-icon-wrapper kpi-icon-orange">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-value">{appliedLiked.applied_jobs?.length || 0}</span>
-                  <span className="kpi-badge kpi-badge-orange">submitted</span>
-                </div>
-                <p className="kpi-subtitle">
-                  {appliedLiked.applied_jobs?.filter((job: any) => job.application_status === 'in_review').length || 0} in active review
-                </p>
-              </div>
-            </div>
-
-            {/* Recommendations Filter Bar */}
-            <div className="rec-filter-bar">
-              {/* Search Input */}
-              <div className="rec-filter-item rec-filter-search">
-                <label className="rec-filter-label">SEARCH</label>
-                <div className="rec-search-input-wrapper">
-                  <svg className="rec-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="M21 21l-4.35-4.35"/>
-                  </svg>
-                  <input
-                    type="text"
-                    className="rec-search-input"
-                    placeholder="Job title, keywords..."
-                    value={recSearchTerm}
-                    onChange={(e) => setRecSearchTerm(e.target.value)}
-                  />
-                  {recSearchTerm && (
-                    <button
-                      className="rec-search-clear"
-                      onClick={() => setRecSearchTerm('')}
-                      aria-label="Clear search"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Role Dropdown */}
-              <div className="rec-filter-item">
-                <label className="rec-filter-label">ROLE</label>
-                <select
-                  className="rec-filter-select"
-                  value={recRoleFilter}
-                  onChange={(e) => setRecRoleFilter(e.target.value)}
-                >
-                  <option value="all">All Roles</option>
-                  <option value="designer">Designer</option>
-                  <option value="engineer">Engineer</option>
-                  <option value="developer">Developer</option>
-                  <option value="manager">Manager</option>
-                  <option value="analyst">Analyst</option>
-                </select>
-              </div>
-
-              {/* Work Type Dropdown */}
-              <div className="rec-filter-item">
-                <label className="rec-filter-label">WORK TYPE</label>
-                <select
-                  className="rec-filter-select"
-                  value={recWorkTypeFilter}
-                  onChange={(e) => setRecWorkTypeFilter(e.target.value)}
-                >
-                  <option value="all">All Types</option>
-                  <option value="full-time">Full-Time</option>
-                  <option value="part-time">Part-Time</option>
-                  <option value="contract">Contract</option>
-                  <option value="remote">Remote</option>
-                </select>
-              </div>
-
-              {/* Location Input */}
-              <div className="rec-filter-item">
-                <label className="rec-filter-label">LOCATION</label>
-                <input
-                  type="text"
-                  className="rec-filter-input"
-                  placeholder="City or State"
-                  value={recLocationFilter}
-                  onChange={(e) => setRecLocationFilter(e.target.value)}
-                />
-              </div>
-
-              {/* Status Dropdown */}
-              <div className="rec-filter-item">
-                <label className="rec-filter-label">STATUS</label>
-                <select
-                  className="rec-filter-select"
-                  value={recStatusFilter}
-                  onChange={(e) => setRecStatusFilter(e.target.value)}
-                >
-                  <option value="all">All Jobs</option>
-                  <option value="active">Active</option>
-                  <option value="applied">Applied</option>
-                  <option value="saved">Saved</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Results Count */}
-            <div className="rec-results-count">
-              Showing {filteredRecommendations.length} of {recommendations.length} jobs
-            </div>
-
             <div className="ai-recommendations-container">
             {/* Left Column - Main Content */}
             <div className="ai-recs-main">
@@ -1222,8 +987,8 @@ const CandidateDashboard: React.FC = () => {
                 const jobPosting = rec.job_posting;
                 const companyName = jobPosting.company_name || 'Company';
                 const matchPercentage = rec.match_percentage || 0;
-                const matchedSkills = getMatchedSkills(rec);
                 const skillTags = getSkillTags(rec);
+                const selectedProfile = jobProfiles.find((p: any) => p.id === selectedProfileId);
 
                 // Log match details for debugging
                 return (
@@ -1299,92 +1064,38 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* AI Match Reason */}
+                    {/* AI Match Reason + Match Breakdown */}
                     <div className="ai-match-reason">
-                      <div className="ai-match-reason-header">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                        </svg>
-                        <span className="ai-match-reason-title">AI Match Reason</span>
-                      </div>
-                      <p className="ai-match-reason-text">
-                        {generateMatchReason(rec)}
-                      </p>
-                      
+                      <AIMatchReasonBox
+                        variant="candidate"
+                        reason={generateCandidateMatchReason(
+                          (rec.match_details || {}) as MatchDetails,
+                          {
+                            productVendor: rec.job_posting?.product_vendor,
+                            topSkill: rec.match_details?.matched_skills?.[0],
+                            jobTitle: jobPosting.job_title,
+                            yearsExp: selectedProfile?.years_of_experience,
+                          }
+                        )}
+                      />
                       {/* Match Score Breakdown */}
                       {rec.match_details && (
-                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {rec.match_details.product_match > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Role Match</span>
-                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${(rec.match_details.product_match / 35) * 100}%`, 
-                                  height: '100%', 
-                                  background: '#7B5EA7',
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#7B5EA7', minWidth: '30px', textAlign: 'right' }}>
-                                {rec.match_details.product_match}%
-                              </span>
-                            </div>
-                          )}
-                          {rec.match_details.skills_match > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Skills</span>
-                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${(rec.match_details.skills_match / 25) * 100}%`, 
-                                  height: '100%', 
-                                  background: '#10B981',
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669', minWidth: '30px', textAlign: 'right' }}>
-                                {rec.match_details.skills_match}%
-                              </span>
-                            </div>
-                          )}
-                          {rec.match_details.experience_match > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Experience</span>
-                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${(rec.match_details.experience_match / 20) * 100}%`, 
-                                  height: '100%', 
-                                  background: '#3B82F6',
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563EB', minWidth: '30px', textAlign: 'right' }}>
-                                {rec.match_details.experience_match}%
-                              </span>
-                            </div>
-                          )}
-                          {(rec.match_details.salary_match > 0 || rec.match_details.location_match > 0) && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '80px' }}>Preferences</span>
-                              <div style={{ flex: 1, height: '4px', background: '#E5E7EB', borderRadius: '2px', overflow: 'hidden' }}>
-                                <div style={{ 
-                                  width: `${((rec.match_details.salary_match + rec.match_details.location_match) / 20) * 100}%`, 
-                                  height: '100%', 
-                                  background: '#F59E0B',
-                                  transition: 'width 0.3s ease'
-                                }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#D97706', minWidth: '30px', textAlign: 'right' }}>
-                                {rec.match_details.salary_match + rec.match_details.location_match}%
-                              </span>
-                            </div>
-                          )}
+                        <div style={{ marginTop: '12px' }}>
+                          <MatchBreakdownBars details={rec.match_details as MatchDetails} compact />
                         </div>
                       )}
                     </div>
 
+                    {/* Top Matched Skills */}
+                    {rec.match_details?.matched_skills?.length > 0 && (
+                      <div style={{ marginBottom: '12px' }}>
+                        <TopSkillMatches matchedSkills={rec.match_details.matched_skills} maxSkills={6} />
+                      </div>
+                    )}
+
                     {/* Skill Tags */}
                     <div className="ai-skill-tags">
-                      {skillTags.map((skill, idx) => (
+                      {skillTags.map((skill: string, idx: number) => (
                         <span key={idx} className="ai-skill-tag">{skill}</span>
                       ))}
                     </div>
@@ -1691,48 +1402,38 @@ const CandidateDashboard: React.FC = () => {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                   AI Match Analysis
                 </div>
-                <div className="cal-drawer-field">
+
+                {/* Overall score row */}
+                <div className="cal-drawer-field" style={{ marginBottom: '12px' }}>
                   <span className="cal-drawer-field-label">Overall Match</span>
-                  <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 600, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
+                  <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 700, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
                 </div>
+
+                {/* AI Match Reason */}
+                <AIMatchReasonBox
+                  variant="candidate"
+                  reason={generateCandidateMatchReason(
+                    (viewRecommendationJob.match_details || {}) as MatchDetails,
+                    {
+                      productVendor: viewRecommendationJob.job_posting?.product_vendor,
+                      topSkill: viewRecommendationJob.match_details?.matched_skills?.[0],
+                      jobTitle: viewRecommendationJob.job_posting?.job_title,
+                      yearsExp: jobProfiles.find((p: any) => p.id === selectedProfileId)?.years_of_experience,
+                    }
+                  )}
+                />
+
+                {/* Breakdown bars */}
                 {viewRecommendationJob.match_details && (
-                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {viewRecommendationJob.match_details.product_match > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Role Match</span>
-                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ width: `${(viewRecommendationJob.match_details.product_match / 35) * 100}%`, height: '100%', background: '#7B5EA7' }} />
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#7B5EA7', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.product_match}%</span>
-                      </div>
-                    )}
-                    {viewRecommendationJob.match_details.skills_match > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Skills</span>
-                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ width: `${(viewRecommendationJob.match_details.skills_match / 25) * 100}%`, height: '100%', background: '#10B981' }} />
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#059669', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.skills_match}%</span>
-                      </div>
-                    )}
-                    {viewRecommendationJob.match_details.experience_match > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Experience</span>
-                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ width: `${(viewRecommendationJob.match_details.experience_match / 20) * 100}%`, height: '100%', background: '#3B82F6' }} />
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#2563EB', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.experience_match}%</span>
-                      </div>
-                    )}
-                    {(viewRecommendationJob.match_details.salary_match > 0 || viewRecommendationJob.match_details.location_match > 0) && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6B7280', minWidth: '90px' }}>Preferences</span>
-                        <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ width: `${((viewRecommendationJob.match_details.salary_match + viewRecommendationJob.match_details.location_match) / 20) * 100}%`, height: '100%', background: '#F59E0B' }} />
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#D97706', minWidth: '35px', textAlign: 'right' }}>{viewRecommendationJob.match_details.salary_match + viewRecommendationJob.match_details.location_match}%</span>
-                      </div>
-                    )}
+                  <div style={{ marginTop: '14px' }}>
+                    <MatchBreakdownBars details={viewRecommendationJob.match_details as MatchDetails} />
+                  </div>
+                )}
+
+                {/* Top Matched Skills */}
+                {viewRecommendationJob.match_details?.matched_skills?.length > 0 && (
+                  <div style={{ marginTop: '14px' }}>
+                    <TopSkillMatches matchedSkills={viewRecommendationJob.match_details.matched_skills} maxSkills={8} />
                   </div>
                 )}
               </div>
@@ -5888,40 +5589,88 @@ const CandidateDashboard: React.FC = () => {
           <span className="talentgraph-breadcrumb-current">{getTabDisplayName(activeTab)}</span>
         </div>
 
-        {/* Page Header */}
+
+
+        {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
         {activeTab === 'recommendations' && (
-          <div className="talentgraph-page-header">
-            <div className="talentgraph-page-header-left">
-              <h1 className="talentgraph-page-title">AI Recommendations</h1>
-              <p className="talentgraph-page-subtitle">Curated roles matched to your profile by our AI engine</p>
+          <div className="welcome-banner-modern">
+            <div className="welcome-header-compact">
+              <div className="welcome-avatar-compact">
+                <div className="avatar-circle-compact">{userInitial}</div>
+              </div>
+              <div className="welcome-text-compact">
+                <h1 className="welcome-title-compact">Welcome back, {userName}</h1>
+                <p className="welcome-subtitle-compact">Explore AI-matched opportunities • {jobProfiles.length} job {jobProfiles.length === 1 ? 'profile' : 'profiles'} active</p>
+              </div>
             </div>
-            <div className="talentgraph-page-header-right">
-              <FilterPill
-                id="rec-match-filter-header"
-                icon={
+            <div className="kpi-banner-container">
+              <div className="kpi-card kpi-card-green">
+              <div className="kpi-card-top">
+                <span className="kpi-title">MATCH SCORE</span>
+                <div className="kpi-icon-wrapper kpi-icon-green">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.586a1 1 0 0 1-.293.707l-6.414 6.414a1 1 0 0 0-.293.707V17l-4 4v-6.586a1 1 0 0 0-.293-.707L3.293 7.293A1 1 0 0 1 3 6.586V4z"/>
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
-                }
-                options={[
-                  { value: 'all', label: 'All Matches' },
-                  { value: '90+', label: '90%+ Match' },
-                  { value: '80-89', label: '80-89% Match' },
-                  { value: '70-79', label: '70-79% Match' },
-                  { value: '60-69', label: '60-69% Match' },
-                  { value: 'below-60', label: 'Below 60%' }
-                ]}
-                value={recommendationsMatchFilter}
-                onChange={(val) => setRecommendationsMatchFilter(val as string)}
-                ariaLabel="Filter by match score"
-              />
-              <button className="talentgraph-btn-secondary" onClick={() => fetchRecommendations()}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 4v6h6M23 20v-6h-6"/>
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                </svg>
-                Refresh
-              </button>
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">
+                  {recommendations.length > 0
+                    ? Math.round(recommendations.reduce((sum: number, r: any) => sum + (r.match_percentage || 0), 0) / recommendations.length)
+                    : 0}%
+                </span>
+                <span className="kpi-badge kpi-badge-green">avg</span>
+              </div>
+              <p className="kpi-subtitle">Across all recommendations</p>
+            </div>
+            <div className="kpi-card kpi-card-blue">
+              <div className="kpi-card-top">
+                <span className="kpi-title">NEW RECOMMENDATIONS</span>
+                <div className="kpi-icon-wrapper kpi-icon-blue">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">{recommendations.length || 0}</span>
+                <span className="kpi-badge kpi-badge-blue">jobs</span>
+              </div>
+              <p className="kpi-subtitle">Ready to explore</p>
+            </div>
+            <div className="kpi-card kpi-card-purple">
+              <div className="kpi-card-top">
+                <span className="kpi-title">PENDING INVITES</span>
+                <div className="kpi-icon-wrapper kpi-icon-purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">{invites.length || 0}</span>
+                <span className="kpi-badge kpi-badge-purple">recruiters</span>
+              </div>
+              <p className="kpi-subtitle">Awaiting your response</p>
+            </div>
+            <div className="kpi-card kpi-card-orange">
+              <div className="kpi-card-top">
+                <span className="kpi-title">APPLICATIONS</span>
+                <div className="kpi-icon-wrapper kpi-icon-orange">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="kpi-value-row">
+                <span className="kpi-value">{appliedLiked.applied_jobs?.length || 0}</span>
+                <span className="kpi-badge kpi-badge-orange">submitted</span>
+              </div>
+              <p className="kpi-subtitle">
+                {appliedLiked.applied_jobs?.filter((job: any) => job.application_status === 'in_review').length || 0} in active review
+              </p>
+            </div>
             </div>
           </div>
         )}

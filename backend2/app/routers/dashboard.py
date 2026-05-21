@@ -115,7 +115,8 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
         "skills_match": 0,
         "experience_match": 0,
         "salary_match": 0,
-        "location_match": 0
+        "location_match": 0,
+        "matched_skills": []
     }
 
     def _n(v) -> str:
@@ -202,6 +203,7 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
                 for cand_skill in candidate_skill_names:
                     if skill_lower in cand_skill or cand_skill in skill_lower:
                         must_matched += 1
+                        details["matched_skills"].append(req_skill)
                         break
 
             nice_matched = 0
@@ -210,6 +212,7 @@ def calculate_job_match_score(job_posting: JobPosting, job_profile: JobProfile, 
                 for cand_skill in candidate_skill_names:
                     if skill_lower in cand_skill or cand_skill in skill_lower:
                         nice_matched += 1
+                        details["matched_skills"].append(req_skill)
                         break
 
             must_score = (must_matched / len(must_have)) * 0.8 if must_have else 0
@@ -769,7 +772,7 @@ def get_recruiter_recommendations(
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
+        return {"job_posting_id": job_posting_id, "job_title": "", "analytics": {"shortlisted_count": 0, "required_count": 0, "interview_count": 0, "offered_count": 0}, "recommendations": []}
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
@@ -987,6 +990,7 @@ def get_recruiter_recommendations(
                 "location_preferences": location_prefs
             },
             "match_percentage": float(match.match_percentage) if (match and match.match_percentage) else float(score_lookup.get(profile.id, 50)),
+            "match_details": calculate_job_match_score(job_posting, profile, session)["details"],
             "already_actioned": existing_swipe is not None,
             "action_taken": existing_swipe.action if existing_swipe else None,
             "has_applied": application is not None,
@@ -1029,7 +1033,7 @@ def get_recruiter_shortlist(
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
+        return []
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
@@ -1220,7 +1224,7 @@ def get_recruiter_applications(
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
+        return []
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
@@ -1521,7 +1525,7 @@ def get_recruiter_matches(
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
+        return []
     
     # Get all company IDs with the same company name
     company_ids = list(session.exec(
@@ -1755,13 +1759,13 @@ def browse_all_candidates(
         raise HTTPException(status_code=403, detail="Recruiters only")
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Get all company IDs with the same company name for action checking
-    company_ids = list(session.exec(
-        select(Company.id).where(Company.company_name == company.company_name)
-    ).all())
+
+    # Get all company IDs with the same company name for action checking (empty if no profile yet)
+    company_ids = []
+    if company:
+        company_ids = list(session.exec(
+            select(Company.id).where(Company.company_name == company.company_name)
+        ).all())
     
     # Base query: all candidates
     query = select(Candidate)

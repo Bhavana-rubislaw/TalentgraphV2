@@ -147,21 +147,19 @@ def get_job_postings(
     
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     
-    if company:
-        company_ids = session.exec(
-            select(Company.id).where(Company.company_name == company.company_name)
-        ).all()
-        query = select(JobPosting).where(JobPosting.company_id.in_(company_ids))
-    else:
-        query = select(JobPosting).where(
-            JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
-        )
-    
-    if active_only and company:
+    if not company:
+        return []
+
+    company_ids = session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all()
+    query = select(JobPosting).where(JobPosting.company_id.in_(company_ids))
+
+    if active_only:
         query = query.where(
             JobPosting.status.in_([JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED])
         )
-    
+
     postings = session.exec(query).all()
     
     # Load skills for each posting

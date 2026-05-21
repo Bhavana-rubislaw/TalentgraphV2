@@ -223,11 +223,9 @@ const App: React.FC = () => {
               path="/recruiter-dashboard"
               element={
                 <RecruiterProtectedRoute>
-                  <RecruiterDashboardGuard>
-                    <ErrorBoundary>
-                      <RecruiterDashboard />
-                    </ErrorBoundary>
-                  </RecruiterDashboardGuard>
+                  <ErrorBoundary>
+                    <RecruiterDashboard />
+                  </ErrorBoundary>
                 </RecruiterProtectedRoute>
               }
             />

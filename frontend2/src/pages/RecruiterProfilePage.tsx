@@ -27,6 +27,13 @@ interface RecruiterProfile {
   phone: string;
   company_name?: string;
   company_role?: string;
+  company_website?: string;
+  company_location?: string;
+  department?: string;
+  phone_number?: string;
+  linkedin_profile?: string;
+  hiring_focus?: string;
+  company_description?: string;
 }
 
 interface TeamMember {
@@ -40,11 +47,11 @@ interface TeamMember {
 }
 
 const EMPTY_PROFILE: RecruiterProfile = {
-  name: '', 
-  email: '', 
-  phone: '', 
-  company_name: '', 
-  company_role: ''
+  name: '', email: '', phone: '',
+  company_name: '', company_role: '',
+  company_website: '', company_location: '', department: '',
+  phone_number: '', linkedin_profile: '', hiring_focus: '',
+  company_description: ''
 };
 
 /* ================================================================
@@ -82,15 +89,26 @@ const RecruiterProfilePage: React.FC = () => {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.getCurrentUser();
-      const userData = response.data.user || response.data;
-      
+      const [userResp, companyResp] = await Promise.all([
+        apiClient.getCurrentUser(),
+        apiClient.getCompanyProfile().catch(() => null)
+      ]);
+      const userData = userResp.data.user || userResp.data;
+      const companyData = companyResp?.data || {};
+
       setProfile({
         name: userData.full_name || userData.name || '',
         email: userData.email || '',
-        phone: userData.phone || '',
-        company_name: userData.company_name || '',
-        company_role: userData.role || ''
+        phone: companyData.phone_number || userData.phone || '',
+        company_name: companyData.company_name || userData.company_name || '',
+        company_role: companyData.employee_type || userData.role || '',
+        company_website: companyData.company_website || '',
+        company_location: companyData.company_location || '',
+        department: companyData.department || '',
+        phone_number: companyData.phone_number || '',
+        linkedin_profile: companyData.linkedin_profile || '',
+        hiring_focus: companyData.hiring_focus || '',
+        company_description: companyData.company_description || '',
       });
       setHasProfile(true);
     } catch (error: any) {
@@ -128,10 +146,21 @@ const RecruiterProfilePage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Note: You'll need to implement recruiter profile update endpoint
+      await apiClient.updateExtendedCompanyProfile({
+        full_name: profile.name,
+        company_name: profile.company_name,
+        company_website: profile.company_website,
+        company_location: profile.company_location,
+        department: profile.department,
+        phone_number: profile.phone_number || profile.phone,
+        linkedin_profile: profile.linkedin_profile,
+        hiring_focus: profile.hiring_focus,
+        company_description: profile.company_description,
+      });
       showToast('Profile updated successfully');
       setHasProfile(true);
       setIsEditing(false);
+      setEditingSection(null);
     } catch (error: any) {
       showToast(error.response?.data?.detail || 'Failed to save profile', 'error');
     }
@@ -218,7 +247,7 @@ const RecruiterProfilePage: React.FC = () => {
         {openSections.has('company') && (
           <div className="cp-profile-card-body">
             {editingSection === 'company' ? (
-              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); setEditingSection(null); }}>
+              <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }}>
                 <div className="cp-form-grid-2">
                   <div className="cp-form-group">
                     <label>Company Name</label>
@@ -227,6 +256,30 @@ const RecruiterProfilePage: React.FC = () => {
                   <div className="cp-form-group">
                     <label>Your Role</label>
                     <input type="text" name="company_role" value={profile.company_role} onChange={handleInputChange} placeholder="e.g., Recruiter, HR Manager" />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>Company Website</label>
+                    <input type="url" name="company_website" value={profile.company_website} onChange={handleInputChange} placeholder="https://yourcompany.com" />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>Company Location</label>
+                    <input type="text" name="company_location" value={profile.company_location} onChange={handleInputChange} placeholder="City, State or Country" />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>Department</label>
+                    <input type="text" name="department" value={profile.department} onChange={handleInputChange} placeholder="e.g., Human Resources" />
+                  </div>
+                  <div className="cp-form-group">
+                    <label>LinkedIn Profile</label>
+                    <input type="url" name="linkedin_profile" value={profile.linkedin_profile} onChange={handleInputChange} placeholder="https://linkedin.com/company/..." />
+                  </div>
+                  <div className="cp-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Hiring Focus</label>
+                    <input type="text" name="hiring_focus" value={profile.hiring_focus} onChange={handleInputChange} placeholder="e.g., Software Engineers, Product Managers" />
+                  </div>
+                  <div className="cp-form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label>Company Description</label>
+                    <textarea name="company_description" value={profile.company_description} onChange={(e) => setProfile(prev => ({ ...prev, company_description: e.target.value }))} placeholder="Brief description of your company..." rows={3} style={{ resize: 'vertical' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
@@ -243,6 +296,34 @@ const RecruiterProfilePage: React.FC = () => {
                 <div className="cp-profile-view-field">
                   <span className="cp-profile-view-label">Role</span>
                   <span className="cp-profile-view-value">{profile.company_role || userRole || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Company Website</span>
+                  <span className="cp-profile-view-value">
+                    {profile.company_website ? <a href={profile.company_website} target="_blank" rel="noopener noreferrer">{profile.company_website}</a> : <span className="empty">Not provided</span>}
+                  </span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Location</span>
+                  <span className="cp-profile-view-value">{profile.company_location || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">Department</span>
+                  <span className="cp-profile-view-value">{profile.department || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field">
+                  <span className="cp-profile-view-label">LinkedIn</span>
+                  <span className="cp-profile-view-value">
+                    {profile.linkedin_profile ? <a href={profile.linkedin_profile} target="_blank" rel="noopener noreferrer">{profile.linkedin_profile}</a> : <span className="empty">Not provided</span>}
+                  </span>
+                </div>
+                <div className="cp-profile-view-field" style={{ gridColumn: '1 / -1' }}>
+                  <span className="cp-profile-view-label">Hiring Focus</span>
+                  <span className="cp-profile-view-value">{profile.hiring_focus || <span className="empty">Not provided</span>}</span>
+                </div>
+                <div className="cp-profile-view-field" style={{ gridColumn: '1 / -1' }}>
+                  <span className="cp-profile-view-label">Company Description</span>
+                  <span className="cp-profile-view-value" style={{ whiteSpace: 'pre-wrap' }}>{profile.company_description || <span className="empty">Not provided</span>}</span>
                 </div>
               </div>
             )}

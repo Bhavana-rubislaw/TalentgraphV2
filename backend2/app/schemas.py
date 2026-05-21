@@ -192,7 +192,7 @@ class CandidateBase(BaseModel):
 
 
 class CandidateCreate(CandidateBase):
-    pass
+    profile_summary: Optional[str] = None
 
 
 class CandidateRead(CandidateBase):
@@ -296,6 +296,7 @@ class CompanyProfileSetup(BaseModel):
 
 class CompanyProfileUpdate(BaseModel):
     """Schema for updating company profile"""
+    full_name: Optional[str] = None
     company_name: Optional[str] = None
     company_website: Optional[str] = None
     company_location: Optional[str] = None
