@@ -18,6 +18,7 @@ import {
   MatchBreakdownBars,
   TopSkillMatches,
   AIMatchReasonBox,
+  WhyThisMatch,
   generateRecruiterMatchReason,
   type MatchDetails,
 } from '../components/MatchInsights';
@@ -848,6 +849,24 @@ const RecruiterDashboard: React.FC = () => {
                   const matchedSkills = getMatchedSkills(rec);
                   const skillTags = getSkillTags(rec);
 
+                  // Build display match details — use real scores when available, else estimate from overall %
+                  const rawDetails = rec.match_details || {};
+                  const hasRealBreakdown = (rawDetails.product_match || 0) + (rawDetails.skills_match || 0) +
+                    (rawDetails.experience_match || 0) + (rawDetails.salary_match || 0) + (rawDetails.location_match || 0) > 0;
+                  // Only include a category in the fallback if the posting actually has that data
+                  const jobHasSalary = (rec.job_posting?.salary_max || 0) > 0;
+                  const jobHasProduct = !!(rec.job_posting?.product_vendor || jobProfile?.product_vendor);
+                  const displayDetails: MatchDetails = hasRealBreakdown
+                    ? rawDetails as MatchDetails
+                    : {
+                        product_match: jobHasProduct ? Math.round(matchPercentage * 0.40) : 0,
+                        skills_match: Math.round(matchPercentage * 0.30),
+                        experience_match: Math.round(matchPercentage * 0.15),
+                        salary_match: jobHasSalary ? Math.round(matchPercentage * 0.10) : 0,
+                        location_match: Math.round(matchPercentage * 0.05),
+                        matched_skills: rawDetails.matched_skills || [],
+                      };
+
                   // Calculate compensation overlap
                   const jobSalaryMin = rec.job_posting?.salary_min || 0;
                   const jobSalaryMax = rec.job_posting?.salary_max || 0;
@@ -952,10 +971,10 @@ const RecruiterDashboard: React.FC = () => {
                         <AIMatchReasonBox
                           variant="recruiter"
                           reason={generateRecruiterMatchReason(
-                            (rec.match_details || {}) as MatchDetails,
+                            displayDetails,
                             {
                               productVendor: rec.job_profile?.product_vendor,
-                              topSkill: rec.match_details?.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
+                              topSkill: displayDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
                               jobTitle: rec.job_posting?.job_title || recommendations?.job_title,
                               yearsExp: rec.job_profile?.years_of_experience,
                               candidateName: candidate.name,
@@ -964,48 +983,18 @@ const RecruiterDashboard: React.FC = () => {
                         />
                       </div>
 
-                      {/* Match Breakdown Visualization */}
-                      <div style={{
-                        background: '#F9FAFB',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        marginBottom: '16px'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          marginBottom: '8px'
-                        }}>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
-                            Match Breakdown
-                          </span>
-                          <span style={{ fontSize: '11px', color: '#6B7280' }}>
-                            Overall: {matchPercentage}%
-                          </span>
-                        </div>
-                        {rec.match_details ? (
-                          <MatchBreakdownBars details={rec.match_details as MatchDetails} compact />
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '11px', color: '#6B7280', minWidth: '60px' }}>Overall</span>
-                              <div style={{ flex: 1, height: '6px', background: '#E5E7EB', borderRadius: '3px', overflow: 'hidden' }}>
-                                <div style={{ width: `${matchPercentage}%`, height: '100%', background: '#7B5EA7', transition: 'width 0.3s ease' }} />
-                              </div>
-                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#7B5EA7', minWidth: '30px', textAlign: 'right' }}>{matchPercentage}%</span>
-                            </div>
-                          </div>
-                        )}
+                      {/* Match Breakdown */}
+                      <div style={{ marginTop: '4px', marginBottom: '16px' }}>
+                        <MatchBreakdownBars details={displayDetails} compact />
                       </div>
 
                       {/* Top Matched Skills */}
-                      {(rec.match_details?.matched_skills?.length > 0 || matchedSkills.length > 0) && (
+                      {(displayDetails.matched_skills?.length > 0 || matchedSkills.length > 0) && (
                         <div style={{ marginBottom: '16px' }}>
                           <TopSkillMatches
                             matchedSkills={
-                              rec.match_details?.matched_skills?.length > 0
-                                ? rec.match_details.matched_skills
+                              displayDetails.matched_skills?.length > 0
+                                ? displayDetails.matched_skills
                                 : matchedSkills.map((s: any) => s.name || s.skill_name || s)
                             }
                             maxSkills={6}
@@ -1013,37 +1002,19 @@ const RecruiterDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Match Drivers — Why this match? */}
+                      {/* Why this match? */}
                       {(() => {
                         const drivers: string[] = [];
-                        const skills = (rec.job_profile?.skills || []) as any[];
-                        if (skills.length > 0) drivers.push(`Skill match: ${skills[0].skill_name || skills[0].name || skills[0]}`);
+                        const matchedSkill = displayDetails.matched_skills?.[0] || (rec.job_profile?.skills as any[])?.[0]?.skill_name;
+                        if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
                         const yoe = rec.job_profile?.years_of_experience;
-                        if (yoe && yoe >= 2) drivers.push(`${yoe}+ years of experience`);
-                        const loc = rec.candidate?.location_state;
+                        if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
+                        const loc = (candidate as any).location_state;
                         if (loc) drivers.push(`Located in ${loc}`);
-                        const wt = rec.job_profile?.worktype;
-                        if (wt && drivers.length < 3) drivers.push(`Preferred: ${wt}`);
-                        const emp = rec.job_profile?.employment_type;
-                        if (emp && drivers.length < 3) drivers.push(`${emp} role`);
-                        const top3 = drivers.slice(0, 3);
-                        if (top3.length === 0) return null;
-                        return (
-                          <div style={{ marginBottom: '16px', padding: '12px', background: 'linear-gradient(135deg, #EDE9FE, #F5F3FF)', borderRadius: '10px', border: '1px solid #DDD6FE' }}>
-                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#5B21B6', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                              Why this match?
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                              {top3.map((d, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#4C1D95' }}>
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" width="14" height="14"><path d="M20 6L9 17l-5-5"/></svg>
-                                  {d}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
+                        const vendor = rec.job_profile?.product_vendor;
+                        if (vendor && (displayDetails.product_match ?? 0) > 0 && drivers.length < 3) drivers.push(`Product: ${vendor}`);
+                        if ((displayDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
+                        return <WhyThisMatch drivers={drivers} />;
                       })()}
 
                       {/* Candidate Details Grid */}
@@ -1483,6 +1454,22 @@ const RecruiterDashboard: React.FC = () => {
         {/* Recommendation Candidate Profile Drawer */}
         {viewRecommendationProfile && (() => {
           const rec = viewRecommendationProfile;
+          const drawerMatchPct = rec.match_percentage || 0;
+          const drawerRaw = rec.match_details || {};
+          const drawerHasReal = (drawerRaw.product_match || 0) + (drawerRaw.skills_match || 0) +
+            (drawerRaw.experience_match || 0) + (drawerRaw.salary_match || 0) + (drawerRaw.location_match || 0) > 0;
+          const drawerJobHasSalary = (rec.job_posting?.salary_max || 0) > 0;
+          const drawerJobHasProduct = !!(rec.job_posting?.product_vendor || rec.job_profile?.product_vendor);
+          const drawerDetails: MatchDetails = drawerHasReal
+            ? drawerRaw as MatchDetails
+            : {
+                product_match: drawerJobHasProduct ? Math.round(drawerMatchPct * 0.40) : 0,
+                skills_match: Math.round(drawerMatchPct * 0.30),
+                experience_match: Math.round(drawerMatchPct * 0.15),
+                salary_match: drawerJobHasSalary ? Math.round(drawerMatchPct * 0.10) : 0,
+                location_match: Math.round(drawerMatchPct * 0.05),
+                matched_skills: drawerRaw.matched_skills || [],
+              };
         return (
           <div className="vp-overlay" onClick={(e) => { if (e.target === e.currentTarget) setViewRecommendationProfile(null); }}>
             <div className="vp-modal" onClick={(e) => e.stopPropagation()}>
@@ -1588,6 +1575,67 @@ const RecruiterDashboard: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* AI Match Analysis Section */}
+                <div className="vp-section">
+                  <h3 className="vp-section-title">
+                    <svg className="vp-section-icon" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                    AI Match Analysis
+                  </h3>
+
+                  {/* Match Reason */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <AIMatchReasonBox
+                      variant="recruiter"
+                      reason={generateRecruiterMatchReason(
+                        drawerDetails,
+                        {
+                          productVendor: rec.job_profile?.product_vendor,
+                          topSkill: drawerDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
+                          jobTitle: rec.job_posting?.job_title || recommendations?.job_title,
+                          yearsExp: rec.job_profile?.years_of_experience,
+                          candidateName: rec.candidate?.name,
+                        }
+                      )}
+                    />
+                  </div>
+
+                  {/* Breakdown Bars */}
+                  <div style={{ marginBottom: '14px' }}>
+                    <MatchBreakdownBars details={drawerDetails} />
+                  </div>
+
+                  {/* Top Matched Skills */}
+                  {(drawerDetails.matched_skills?.length > 0 || rec.job_profile?.skills?.length > 0) && (
+                    <div style={{ marginBottom: '14px' }}>
+                      <TopSkillMatches
+                        matchedSkills={
+                          drawerDetails.matched_skills?.length > 0
+                            ? drawerDetails.matched_skills
+                            : (rec.job_profile?.skills || []).map((s: any) => s.skill_name || s)
+                        }
+                        maxSkills={8}
+                      />
+                    </div>
+                  )}
+
+                  {/* Why this match? */}
+                  {(() => {
+                    const drivers: string[] = [];
+                    const matchedSkill = drawerDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name;
+                    if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
+                    const yoe = rec.job_profile?.years_of_experience;
+                    if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
+                    const loc = rec.candidate?.location_state;
+                    if (loc) drivers.push(`Located in ${loc}`);
+                    const vendor = rec.job_profile?.product_vendor;
+                    if (vendor && (drawerDetails.product_match ?? 0) > 0 && drivers.length < 3) drivers.push(`Product: ${vendor}`);
+                    if ((drawerDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
+                    return <WhyThisMatch drivers={drivers} />;
+                  })()}
+                </div>
 
                 {/* Education & Authorization Section */}
                 {(rec.job_profile.highest_education || rec.job_profile.security_clearance) && (

@@ -990,7 +990,7 @@ def get_recruiter_recommendations(
                 "location_preferences": location_prefs
             },
             "match_percentage": float(match.match_percentage) if (match and match.match_percentage) else float(score_lookup.get(profile.id, 50)),
-            "match_details": calculate_job_match_score(job_posting, profile, session)["details"],
+            "match_details": calculate_job_match_score(job_posting, profile, session).get("details") or {},
             "already_actioned": existing_swipe is not None,
             "action_taken": existing_swipe.action if existing_swipe else None,
             "has_applied": application is not None,

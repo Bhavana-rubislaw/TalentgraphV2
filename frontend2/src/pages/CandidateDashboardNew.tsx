@@ -17,6 +17,7 @@ import {
   MatchBreakdownBars,
   TopSkillMatches,
   AIMatchReasonBox,
+  WhyThisMatch,
   generateCandidateMatchReason,
   type MatchDetails,
 } from '../components/MatchInsights';
@@ -990,6 +991,24 @@ const CandidateDashboard: React.FC = () => {
                 const skillTags = getSkillTags(rec);
                 const selectedProfile = jobProfiles.find((p: any) => p.id === selectedProfileId);
 
+                // Build display match details — use real scores when available, else estimate from overall %
+                const rawDetails = rec.match_details || {};
+                const hasRealBreakdown = (rawDetails.product_match || 0) + (rawDetails.skills_match || 0) +
+                  (rawDetails.experience_match || 0) + (rawDetails.salary_match || 0) + (rawDetails.location_match || 0) > 0;
+                // Only include a category in the fallback if the job actually has that data
+                const jobHasSalary = (rec.job_posting?.salary_max || 0) > 0;
+                const jobHasProduct = !!(rec.job_posting?.product_vendor);
+                const displayDetails: MatchDetails = hasRealBreakdown
+                  ? rawDetails as MatchDetails
+                  : {
+                      product_match: jobHasProduct ? Math.round(matchPercentage * 0.40) : 0,
+                      skills_match: Math.round(matchPercentage * 0.30),
+                      experience_match: Math.round(matchPercentage * 0.15),
+                      salary_match: jobHasSalary ? Math.round(matchPercentage * 0.10) : 0,
+                      location_match: Math.round(matchPercentage * 0.05),
+                      matched_skills: rawDetails.matched_skills || [],
+                    };
+
                 // Log match details for debugging
                 return (
                   <div 
@@ -1069,29 +1088,48 @@ const CandidateDashboard: React.FC = () => {
                       <AIMatchReasonBox
                         variant="candidate"
                         reason={generateCandidateMatchReason(
-                          (rec.match_details || {}) as MatchDetails,
+                          displayDetails,
                           {
                             productVendor: rec.job_posting?.product_vendor,
-                            topSkill: rec.match_details?.matched_skills?.[0],
+                            topSkill: displayDetails.matched_skills?.[0],
                             jobTitle: jobPosting.job_title,
                             yearsExp: selectedProfile?.years_of_experience,
                           }
                         )}
                       />
                       {/* Match Score Breakdown */}
-                      {rec.match_details && (
-                        <div style={{ marginTop: '12px' }}>
-                          <MatchBreakdownBars details={rec.match_details as MatchDetails} compact />
-                        </div>
-                      )}
+                      <div style={{ marginTop: '12px' }}>
+                        <MatchBreakdownBars details={displayDetails} compact />
+                      </div>
                     </div>
 
                     {/* Top Matched Skills */}
-                    {rec.match_details?.matched_skills?.length > 0 && (
+                    {((displayDetails.matched_skills?.length ?? 0) > 0 || skillTags.length > 0) && (
                       <div style={{ marginBottom: '12px' }}>
-                        <TopSkillMatches matchedSkills={rec.match_details.matched_skills} maxSkills={6} />
+                        <TopSkillMatches
+                          matchedSkills={
+                            (displayDetails.matched_skills?.length ?? 0) > 0
+                              ? displayDetails.matched_skills!
+                              : skillTags
+                          }
+                          maxSkills={6}
+                        />
                       </div>
                     )}
+
+                    {/* Why this match? */}
+                    {(() => {
+                      const drivers: string[] = [];
+                      const matchedSkill = displayDetails.matched_skills?.[0];
+                      if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
+                      const vendor = rec.job_posting?.product_vendor;
+                      if (vendor && (displayDetails.product_match ?? 0) > 0) drivers.push(`Product expertise: ${vendor}`);
+                      const yoe = selectedProfile?.years_of_experience;
+                      if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
+                      if ((displayDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
+                      if ((displayDetails.location_match ?? 0) > 0 && drivers.length < 3) drivers.push('Location preference matched');
+                      return <WhyThisMatch drivers={drivers} />;
+                    })()}
 
                     {/* Skill Tags */}
                     <div className="ai-skill-tags">
@@ -1409,33 +1447,67 @@ const CandidateDashboard: React.FC = () => {
                   <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 700, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
                 </div>
 
-                {/* AI Match Reason */}
-                <AIMatchReasonBox
-                  variant="candidate"
-                  reason={generateCandidateMatchReason(
-                    (viewRecommendationJob.match_details || {}) as MatchDetails,
-                    {
-                      productVendor: viewRecommendationJob.job_posting?.product_vendor,
-                      topSkill: viewRecommendationJob.match_details?.matched_skills?.[0],
-                      jobTitle: viewRecommendationJob.job_posting?.job_title,
-                      yearsExp: jobProfiles.find((p: any) => p.id === selectedProfileId)?.years_of_experience,
-                    }
-                  )}
-                />
+                {(() => {
+                  const drawerMatchPct = viewRecommendationJob.match_percentage || 0;
+                  const drawerRaw = viewRecommendationJob.match_details || {};
+                  const drawerHasReal = (drawerRaw.product_match || 0) + (drawerRaw.skills_match || 0) +
+                    (drawerRaw.experience_match || 0) + (drawerRaw.salary_match || 0) + (drawerRaw.location_match || 0) > 0;
+                  const drawerHasSalary = (viewRecommendationJob.job_posting?.salary_max || 0) > 0;
+                  const drawerHasProduct = !!(viewRecommendationJob.job_posting?.product_vendor);
+                  const drawerDetails: MatchDetails = drawerHasReal
+                    ? drawerRaw as MatchDetails
+                    : {
+                        product_match: drawerHasProduct ? Math.round(drawerMatchPct * 0.40) : 0,
+                        skills_match: Math.round(drawerMatchPct * 0.30),
+                        experience_match: Math.round(drawerMatchPct * 0.15),
+                        salary_match: drawerHasSalary ? Math.round(drawerMatchPct * 0.10) : 0,
+                        location_match: Math.round(drawerMatchPct * 0.05),
+                        matched_skills: drawerRaw.matched_skills || [],
+                      };
+                  return (
+                    <>
+                      {/* AI Match Reason */}
+                      <AIMatchReasonBox
+                        variant="candidate"
+                        reason={generateCandidateMatchReason(
+                          drawerDetails,
+                          {
+                            productVendor: viewRecommendationJob.job_posting?.product_vendor,
+                            topSkill: drawerDetails.matched_skills?.[0],
+                            jobTitle: viewRecommendationJob.job_posting?.job_title,
+                            yearsExp: jobProfiles.find((p: any) => p.id === selectedProfileId)?.years_of_experience,
+                          }
+                        )}
+                      />
 
-                {/* Breakdown bars */}
-                {viewRecommendationJob.match_details && (
-                  <div style={{ marginTop: '14px' }}>
-                    <MatchBreakdownBars details={viewRecommendationJob.match_details as MatchDetails} />
-                  </div>
-                )}
+                      {/* Breakdown bars */}
+                      <div style={{ marginTop: '14px' }}>
+                        <MatchBreakdownBars details={drawerDetails} />
+                      </div>
 
-                {/* Top Matched Skills */}
-                {viewRecommendationJob.match_details?.matched_skills?.length > 0 && (
-                  <div style={{ marginTop: '14px' }}>
-                    <TopSkillMatches matchedSkills={viewRecommendationJob.match_details.matched_skills} maxSkills={8} />
-                  </div>
-                )}
+                      {/* Top Matched Skills */}
+                      {(drawerDetails.matched_skills?.length ?? 0) > 0 && (
+                        <div style={{ marginTop: '14px' }}>
+                          <TopSkillMatches matchedSkills={drawerDetails.matched_skills!} maxSkills={8} />
+                        </div>
+                      )}
+
+                      {/* Why this match? */}
+                      {(() => {
+                        const drivers: string[] = [];
+                        const matchedSkill = drawerDetails.matched_skills?.[0];
+                        if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
+                        const vendor = viewRecommendationJob.job_posting?.product_vendor;
+                        if (vendor && (drawerDetails.product_match ?? 0) > 0) drivers.push(`Product expertise: ${vendor}`);
+                        const yoe = jobProfiles.find((p: any) => p.id === selectedProfileId)?.years_of_experience;
+                        if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
+                        if ((drawerDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
+                        if ((drawerDetails.location_match ?? 0) > 0 && drivers.length < 3) drivers.push('Location preference matched');
+                        return <WhyThisMatch drivers={drivers} />;
+                      })()}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Compensation Section */}
