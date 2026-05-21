@@ -3202,7 +3202,10 @@ body {
 
 .vp-overlay {
   position: fixed;
-  inset: 0;
+  top: 72px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9000;
   display: flex;
   align-items: flex-start;
@@ -3221,7 +3224,7 @@ body {
   position: relative;
   width: 640px;
   max-width: 92vw;
-  height: 100vh;
+  height: calc(100vh - 72px);
   background: #fff;
   box-shadow: -8px 0 40px rgba(0, 0, 0, 0.15);
   display: flex;

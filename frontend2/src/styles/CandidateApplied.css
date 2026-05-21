@@ -314,7 +314,10 @@
 /* ── Side Drawer ── */
 .cal-drawer-overlay {
   position: fixed;
-  inset: 0;
+  top: 72px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9000;
   display: flex;
   justify-content: flex-end;
@@ -331,7 +334,7 @@
 .cal-drawer {
   width: 560px;
   max-width: 92vw;
-  height: 100vh;
+  height: calc(100vh - 72px);
   background: #fff;
   display: flex;
   flex-direction: column;

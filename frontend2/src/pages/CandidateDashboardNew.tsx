@@ -1814,6 +1814,76 @@ const CandidateDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Invitation Details */}
+              <div className="cal-drawer-section">
+                <div className="cal-drawer-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                  Invitation Details
+                </div>
+                <div className="cal-drawer-meta-grid">
+                  {viewInviteJob.invited_at && (
+                    <div className="cal-drawer-field">
+                      <span className="cal-drawer-field-label">Date Invited</span>
+                      <span className="cal-drawer-field-value">{new Date(viewInviteJob.invited_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                  )}
+                  {viewInviteJob.recruiter_name && (
+                    <div className="cal-drawer-field">
+                      <span className="cal-drawer-field-label">Invited By</span>
+                      <span className="cal-drawer-field-value">{viewInviteJob.recruiter_name}</span>
+                    </div>
+                  )}
+                </div>
+                {viewInviteJob.message && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#f8f9ff', borderRadius: '8px', borderLeft: '3px solid #7c3aed' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#7c3aed', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter's Message</div>
+                    <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>{viewInviteJob.message}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Match Insights (if match data available) */}
+              {viewInviteJob.match_percentage && (() => {
+                const inviteDetails = viewInviteJob.match_details || {};
+                const inviteDisplayDetails: MatchDetails = {
+                  product_match: inviteDetails.product_match ?? 0,
+                  skills_match: inviteDetails.skills_match ?? 0,
+                  experience_match: inviteDetails.experience_match ?? 0,
+                  salary_match: inviteDetails.salary_match ?? 0,
+                  location_match: inviteDetails.location_match ?? 0,
+                  matched_skills: inviteDetails.matched_skills ?? [],
+                };
+                const inviteMatchReason = generateCandidateMatchReason(inviteDisplayDetails, {
+                  productVendor: jp.product_vendor,
+                  topSkill: inviteDisplayDetails.matched_skills?.[0],
+                  jobTitle: jp.job_title,
+                });
+                return (
+                  <div className="cal-drawer-section">
+                    <div className="cal-drawer-section-title">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                      AI Match Insights
+                    </div>
+                    <AIMatchReasonBox variant="candidate" reason={inviteMatchReason} />
+                    <div style={{ marginTop: '12px' }}>
+                      <MatchBreakdownBars details={inviteDisplayDetails} compact />
+                    </div>
+                    {inviteDisplayDetails.matched_skills && inviteDisplayDetails.matched_skills.length > 0 && (
+                      <TopSkillMatches matchedSkills={inviteDisplayDetails.matched_skills} maxSkills={6} />
+                    )}
+                    {(() => {
+                      const drivers: string[] = [];
+                      if (inviteDisplayDetails.matched_skills?.[0]) drivers.push(`Skill: ${inviteDisplayDetails.matched_skills[0]}`);
+                      if (jp.product_vendor && inviteDisplayDetails.product_match > 0) drivers.push(`Product: ${jp.product_vendor}`);
+                      if (inviteDisplayDetails.salary_match > 0) drivers.push('Salary aligned');
+                      if (inviteDisplayDetails.location_match > 0) drivers.push('Location matched');
+                      if (drivers.length > 0) return <WhyThisMatch drivers={drivers} />;
+                      return null;
+                    })()}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Footer */}
@@ -3387,6 +3457,17 @@ const CandidateDashboard: React.FC = () => {
 
             <div className="cal-drawer-footer">
               <button
+                className="cal-btn cal-btn-secondary"
+                onClick={() => { handleSwipeLike(viewAvailableJob.id); setViewAvailableJob(null); }}
+                title="Save this job to your liked list"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                Save Job
+              </button>
+              <button
                 className={`cal-btn ${viewAvailableJob.already_applied ? 'cal-btn-secondary' : 'cal-btn-primary'}`}
                 onClick={() => { 
                   handleApply(viewAvailableJob.id); 
@@ -4115,6 +4196,64 @@ const CandidateDashboard: React.FC = () => {
 
             {/* Body */}
             <div className="cal-drawer-body">
+              {/* Application Status — only shown for applied jobs */}
+              {type === 'applied' && (
+                <div className="cal-drawer-section">
+                  <div className="cal-drawer-section-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Application Status
+                  </div>
+                  <div className="cal-drawer-meta-grid">
+                    {(job.application_status || job.status) && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Current Stage</span>
+                        <span className="cal-drawer-field-value">
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '3px 10px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            background: (() => {
+                              const s = (job.application_status || job.status || '').toLowerCase();
+                              if (s.includes('offer')) return '#dcfce7';
+                              if (s.includes('interview')) return '#dbeafe';
+                              if (s.includes('review') || s.includes('screening')) return '#fef9c3';
+                              if (s.includes('reject') || s.includes('decline')) return '#fee2e2';
+                              return '#f1f5f9';
+                            })(),
+                            color: (() => {
+                              const s = (job.application_status || job.status || '').toLowerCase();
+                              if (s.includes('offer')) return '#166534';
+                              if (s.includes('interview')) return '#1d4ed8';
+                              if (s.includes('review') || s.includes('screening')) return '#854d0e';
+                              if (s.includes('reject') || s.includes('decline')) return '#991b1b';
+                              return '#475569';
+                            })(),
+                          }}>
+                            {(job.application_status || job.status || 'Submitted').replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                          </span>
+                        </span>
+                      </div>
+                    )}
+                    {job.applied_at && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Date Applied</span>
+                        <span className="cal-drawer-field-value">{new Date(job.applied_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                    {job.application_id && (
+                      <div className="cal-drawer-field">
+                        <span className="cal-drawer-field-label">Application ID</span>
+                        <span className="cal-drawer-field-value">#{job.application_id}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Overview grid */}
               <div className="cal-drawer-section">
                 <div className="cal-drawer-section-title">
@@ -4241,24 +4380,37 @@ const CandidateDashboard: React.FC = () => {
 
             {/* Footer */}
             <div className="cal-drawer-footer">
-              <button
-                className={`cal-btn cal-btn-primary${isApplying || withdrawingJobId === job.job_id ? ' loading' : ''}`}
-                onClick={() => handleApply(job.job_id)}
-                disabled={isApplying || withdrawingJobId === job.job_id}
-              >
-                {isApplying ? (
-                  'Applying…'
-                ) : withdrawingJobId === job.job_id ? (
-                  'Withdrawing…'
-                ) : isApplied ? (
-                  <>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
-                    Already Applied
-                  </>
-                ) : (
-                  'Apply Now'
-                )}
-              </button>
+              {type === 'applied' && job.application_id && (
+                <button
+                  className="cal-btn cal-btn-secondary"
+                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
+                  onClick={() => { handleWithdrawApplication(job.application_id, job.job_id); setDrawerJob(null); }}
+                  disabled={withdrawingJobId === job.job_id}
+                  title="Withdraw this application"
+                >
+                  {withdrawingJobId === job.job_id ? 'Withdrawing…' : 'Withdraw Application'}
+                </button>
+              )}
+              {type !== 'applied' && (
+                <button
+                  className={`cal-btn cal-btn-primary${isApplying || withdrawingJobId === job.job_id ? ' loading' : ''}`}
+                  onClick={() => handleApply(job.job_id)}
+                  disabled={isApplying || withdrawingJobId === job.job_id}
+                >
+                  {isApplying ? (
+                    'Applying…'
+                  ) : withdrawingJobId === job.job_id ? (
+                    'Withdrawing…'
+                  ) : isApplied ? (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M20 6L9 17l-5-5"/></svg>
+                      Already Applied
+                    </>
+                  ) : (
+                    'Apply Now'
+                  )}
+                </button>
+              )}
               <button className="cal-btn cal-btn-secondary" onClick={() => setDrawerJob(null)}>Close</button>
             </div>
           </div>
@@ -5318,9 +5470,88 @@ const CandidateDashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* Match Details */}
+              <div className="cal-drawer-section">
+                <div className="cal-drawer-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  Match Details
+                </div>
+                <div style={{ padding: '12px', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', borderRadius: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '28px', fontWeight: 700, color: '#7c3aed' }}>{viewMatchJob.match_percentage}%</span>
+                    <span style={{ fontSize: '14px', color: '#6d28d9', fontWeight: 500 }}>Mutual Match</span>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                    You liked this job, and the company expressed interest in your profile — a mutual match!
+                  </p>
+                </div>
+                {viewMatchJob.matched_at && (
+                  <div className="cal-drawer-field">
+                    <span className="cal-drawer-field-label">Matched On</span>
+                    <span className="cal-drawer-field-value">{new Date(viewMatchJob.matched_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* AI Match Insights */}
+              {(() => {
+                const matchDetails = viewMatchJob.match_details || {};
+                const displayDetails: MatchDetails = {
+                  product_match: matchDetails.product_match ?? 0,
+                  skills_match: matchDetails.skills_match ?? 0,
+                  experience_match: matchDetails.experience_match ?? 0,
+                  salary_match: matchDetails.salary_match ?? 0,
+                  location_match: matchDetails.location_match ?? 0,
+                  matched_skills: matchDetails.matched_skills ?? [],
+                };
+                const hasAnyScore = displayDetails.product_match > 0 || displayDetails.skills_match > 0 ||
+                  displayDetails.experience_match > 0 || displayDetails.salary_match > 0 || displayDetails.location_match > 0;
+                if (!hasAnyScore && !viewMatchJob.match_percentage) return null;
+                const matchReason = generateCandidateMatchReason(displayDetails, {
+                  productVendor: viewMatchJob.job_posting?.product_vendor,
+                  topSkill: displayDetails.matched_skills?.[0],
+                  jobTitle: viewMatchJob.job_posting?.job_title,
+                });
+                return (
+                  <div className="cal-drawer-section">
+                    <div className="cal-drawer-section-title">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                      AI Match Insights
+                    </div>
+                    <AIMatchReasonBox variant="candidate" reason={matchReason} />
+                    <div style={{ marginTop: '12px' }}>
+                      <MatchBreakdownBars details={displayDetails} />
+                    </div>
+                    {displayDetails.matched_skills && displayDetails.matched_skills.length > 0 && (
+                      <TopSkillMatches matchedSkills={displayDetails.matched_skills} maxSkills={8} />
+                    )}
+                    {(() => {
+                      const drivers: string[] = [];
+                      if (displayDetails.matched_skills?.[0]) drivers.push(`Skill: ${displayDetails.matched_skills[0]}`);
+                      if (viewMatchJob.job_posting?.product_vendor && displayDetails.product_match > 0) drivers.push(`Product: ${viewMatchJob.job_posting.product_vendor}`);
+                      if (displayDetails.salary_match > 0) drivers.push('Salary aligned');
+                      if (displayDetails.location_match > 0) drivers.push('Location matched');
+                      if (drivers.length > 0) return <WhyThisMatch drivers={drivers} />;
+                      return null;
+                    })()}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="cal-drawer-footer">
+              <button
+                className="cal-btn cal-btn-secondary"
+                onClick={() => { setViewMatchJob(null); setActiveTab('messages'); }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="Message the recruiter for this job"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Message Recruiter
+              </button>
               <button
                 className="cal-btn cal-btn-primary"
                 onClick={() => { handleApplyFromMatch(viewMatchJob.job_posting.id, viewMatchJob.job_profile_id); setViewMatchJob(null); }}

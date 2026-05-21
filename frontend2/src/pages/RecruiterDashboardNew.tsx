@@ -73,6 +73,7 @@ const RecruiterDashboard: React.FC = () => {
   const [recommendations, setRecommendations] = useState<any>(null);
   const [shortlist, setShortlist] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
   const [matches, setMatches] = useState<any[]>([]);
   const [viewProfileMatch, setViewProfileMatch] = useState<any | null>(null);
   const [viewShortlistItem, setViewShortlistItem] = useState<any | null>(null);
@@ -348,11 +349,14 @@ const RecruiterDashboard: React.FC = () => {
   };
 
   const fetchApplications = async () => {
+    setApplicationsLoading(true);
     try {
       const response = await apiClient.getRecruiterApplications();
       setApplications(response.data);
     } catch (error) {
       console.error('Failed to fetch applications:', error);
+    } finally {
+      setApplicationsLoading(false);
     }
   };
 
@@ -2594,6 +2598,76 @@ const RecruiterDashboard: React.FC = () => {
                     <div className="vp-field"><span className="vp-field-label">Location</span><span className="vp-field-value">{c.location_county ? `${c.location_county}, ` : ''}{c.location_state || <em className="vp-empty">—</em>}</span></div>
                   </div>
                 </div>
+
+                {/* Shortlist Details */}
+                {(itm.shortlisted_at || itm.job_posting) && (
+                  <div className="vp-section">
+                    <div className="vp-section-title">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                      Shortlist Details
+                    </div>
+                    <div className="vp-grid">
+                      {itm.shortlisted_at && (
+                        <div className="vp-field">
+                          <span className="vp-field-label">Shortlisted On</span>
+                          <span className="vp-field-value">{new Date(itm.shortlisted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                      )}
+                      {itm.job_posting?.job_title && (
+                        <div className="vp-field">
+                          <span className="vp-field-label">For Position</span>
+                          <span className="vp-field-value">{itm.job_posting.job_title}</span>
+                        </div>
+                      )}
+                    </div>
+                    {itm.notes && (
+                      <div style={{ marginTop: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', borderLeft: '3px solid #7c3aed' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#7c3aed', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter Notes</div>
+                        <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{itm.notes}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="vp-footer">
+                <div className="vp-actions">
+                  <button
+                    className="action-btn secondary"
+                    onClick={() => { handleStartMessage(c.user_id || c.id); setViewShortlistItem(null); }}
+                    title="Message this candidate"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    Message
+                  </button>
+                  {itm.application_id && (
+                    <button
+                      className="action-btn primary"
+                      onClick={() => {
+                        const appForSchedule = applications.find((a: any) => a.application_id === itm.application_id);
+                        if (appForSchedule) {
+                          setSelectedAppForSchedule(appForSchedule);
+                          setIsScheduleInterviewModalOpen(true);
+                          setViewShortlistItem(null);
+                        }
+                      }}
+                      title="Schedule an interview with this candidate"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                      Schedule Interview
+                    </button>
+                  )}
+                  <button
+                    className="action-btn secondary"
+                    onClick={() => { setViewShortlistItem(null); }}
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2764,7 +2838,26 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
+  // Auto-select the first application when data finishes loading and nothing is selected yet
+  useEffect(() => {
+    if (!applicationsLoading && filteredApplications.length > 0 && selectedAppId === null) {
+      setSelectedAppId(filteredApplications[0].application_id);
+    }
+  }, [applicationsLoading, filteredApplications, selectedAppId]);
+
   const renderApplications = () => {
+    if (applicationsLoading) {
+      return (
+        <div className="ra-empty">
+          <div className="ra-empty-icon" style={{ animation: 'spin 1s linear infinite', opacity: 0.4 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          </div>
+          <h3 style={{ color: '#9ca3af' }}>Loading applications…</h3>
+        </div>
+      );
+    }
     if (applications.length === 0) {
       return (
         <div className="ra-empty">
@@ -4139,6 +4232,75 @@ const RecruiterDashboard: React.FC = () => {
                       <div className="vp-field"><span className="vp-field-label">Location</span><span className="vp-field-value">{c.location_county ? `${c.location_county}, ` : ''}{c.location_state || <em className="vp-empty">—</em>}</span></div>
                     </div>
                   </div>
+
+                  {/* Match Details */}
+                  <div className="vp-section">
+                    <div className="vp-section-title">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                      Match Details
+                    </div>
+                    <div style={{ padding: '12px', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', borderRadius: '10px', marginBottom: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '28px', fontWeight: 700, color: '#7c3aed' }}>{m.match_percentage}%</span>
+                        <span style={{ fontSize: '14px', color: '#6d28d9', fontWeight: 500 }}>Mutual Match</span>
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                        You liked this candidate, and they liked your job posting — a mutual match!
+                      </p>
+                    </div>
+                    {m.matched_at && (
+                      <div className="vp-field">
+                        <span className="vp-field-label">Matched On</span>
+                        <span className="vp-field-value">{new Date(m.matched_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                    {m.job_posting?.job_title && (
+                      <div className="vp-field" style={{ marginTop: '8px' }}>
+                        <span className="vp-field-label">Matched For</span>
+                        <span className="vp-field-value">{m.job_posting.job_title}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="vp-footer">
+                  <div className="vp-actions">
+                    <button
+                      className="action-btn secondary"
+                      onClick={() => { handleStartMessage(c.user_id || c.id); setViewProfileMatch(null); }}
+                      title="Message this candidate"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Message
+                    </button>
+                    {m.application_id && (
+                      <button
+                        className="action-btn primary"
+                        onClick={() => {
+                          const appForSchedule = applications.find((a: any) => a.application_id === m.application_id);
+                          if (appForSchedule) {
+                            setSelectedAppForSchedule(appForSchedule);
+                            setIsScheduleInterviewModalOpen(true);
+                            setViewProfileMatch(null);
+                          }
+                        }}
+                        title="Schedule an interview"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Schedule Interview
+                      </button>
+                    )}
+                    <button
+                      className="action-btn secondary"
+                      onClick={() => setViewProfileMatch(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5275,10 +5437,10 @@ const RecruiterDashboard: React.FC = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="vp-actions" style={{ display: 'flex', gap: '12px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)' }}>
+              <div className="vp-actions" style={{ display: 'flex', gap: '12px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color, #e2e8f0)', flexWrap: 'wrap' }}>
                 <button
                   className={`action-btn ${viewCandidateProfile.already_liked ? 'liked' : 'secondary'}`}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, minWidth: '120px' }}
                   onClick={() => {
                     if (!viewCandidateProfile.already_liked && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
                       handleRecruiterLike(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
@@ -5290,11 +5452,11 @@ const RecruiterDashboard: React.FC = () => {
                   <svg viewBox="0 0 24 24" fill={viewCandidateProfile.already_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
-                  <span style={{ marginLeft: '8px' }}>{viewCandidateProfile.already_liked ? 'Liked' : 'Like Candidate'}</span>
+                  <span style={{ marginLeft: '8px' }}>{viewCandidateProfile.already_liked ? 'Liked' : 'Like'}</span>
                 </button>
                 <button
                   className={`action-btn ${viewCandidateProfile.already_invited ? 'success' : 'primary'}`}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, minWidth: '120px' }}
                   onClick={() => {
                     if (!viewCandidateProfile.already_invited && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
                       handleAskToApply(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
@@ -5304,7 +5466,18 @@ const RecruiterDashboard: React.FC = () => {
                   disabled={viewCandidateProfile.already_invited}
                   title={viewCandidateProfile.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
                 >
-                  {viewCandidateProfile.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
+                  {viewCandidateProfile.already_invited ? '✓ Invited' : 'Ask to Apply'}
+                </button>
+                <button
+                  className="action-btn secondary"
+                  style={{ flex: 1, minWidth: '120px' }}
+                  onClick={() => { handleStartMessage(viewCandidateProfile.user_id || viewCandidateProfile.candidate_id); setViewCandidateProfile(null); }}
+                  title="Message this candidate"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <span style={{ marginLeft: '8px' }}>Message</span>
                 </button>
               </div>
             </div>
