@@ -204,7 +204,7 @@ class LifecycleService:
             logger.warning(f"Job {job_id} not found")
             return 0
         
-        if job.status != JobPostingStatus.ACTIVE:
+        if job.status not in [JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]:
             logger.warning(f"Job {job_id} is not active")
             return 0
         

@@ -224,6 +224,18 @@
   background: var(--jpb-primary-light);
 }
 
+.jpb-btn-ghost {
+  background: transparent;
+  color: var(--jpb-text-secondary);
+  border: none;
+  padding: 9px 12px;
+}
+
+.jpb-btn-ghost:hover {
+  background: var(--jpb-surface-2);
+  color: var(--jpb-primary);
+}
+
 .jpb-btn-spinner {
   width: 14px;
   height: 14px;
@@ -244,8 +256,8 @@
 /* ============ SIDEBAR (Postings List) ============ */
 
 .jpb-sidebar {
-  width: 320px;
-  min-width: 320px;
+  width: 260px;
+  min-width: 260px;
   background: var(--jpb-surface);
   border-right: 1px solid var(--jpb-border);
   display: flex;
@@ -343,7 +355,9 @@
 
 .jpb-posting-card.active {
   background: var(--jpb-primary-light);
-  border-color: rgba(123, 94, 167, 0.25);
+  border-color: rgba(108, 92, 231, 0.3);
+  border-left: 3px solid var(--jpb-primary);
+  padding-left: 13px;
 }
 
 .jpb-posting-card-top {

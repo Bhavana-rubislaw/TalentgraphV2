@@ -43,12 +43,26 @@ interface JobPreference {
   profile_summary: string | null;
   created_at: string | null;
   updated_at: string | null;
+  status: string;          // active | edited | deleted
+  deleted_at: string | null;
 }
 
 const WORKTYPE_COLORS: Record<string, string> = {
   remote:   'badge-blue',
   onsite:   'badge-orange',
   hybrid:   'badge-purple',
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  active:  'badge-green',
+  edited:  'badge-orange',
+  deleted: 'badge-red',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active:  'Active',
+  edited:  'Edited',
+  deleted: 'Deleted',
 };
 
 const SENIORITY_COLORS: Record<string, string> = {
@@ -208,6 +222,7 @@ const JobPreferencesPage: React.FC = () => {
   const [empTypeFilter, setEmpTypeFilter]   = useState('');
   const [visaFilter, setVisaFilter]         = useState('');
   const [seniorityFilter, setSeniorityFilter] = useState('');
+  const [statusFilter, setStatusFilter]     = useState('');
   const [offset, setOffset]               = useState(0);
   const LIMIT = 50;
 
@@ -222,12 +237,13 @@ const JobPreferencesPage: React.FC = () => {
     if (empTypeFilter)  params.employment_type  = empTypeFilter;
     if (visaFilter)     params.visa_status      = visaFilter;
     if (seniorityFilter) params.seniority_level = seniorityFilter;
+    if (statusFilter)   params.status           = statusFilter;
 
     listJobPreferences(params)
       .then((res) => { setProfiles(res.data.profiles); setTotal(res.data.total); })
       .catch((err) => { setError(err?.response?.data?.detail || 'Failed to load job preferences.'); })
       .finally(() => setLoading(false));
-  }, [search, worktypeFilter, empTypeFilter, visaFilter, seniorityFilter, offset]);
+  }, [search, worktypeFilter, empTypeFilter, visaFilter, seniorityFilter, statusFilter, offset]);
 
   useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
 
@@ -293,6 +309,17 @@ const JobPreferencesPage: React.FC = () => {
           <option value="">All Seniority</option>
           {SENIORITY.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
+
+        <select
+          className="filter-select"
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); }}
+        >
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="edited">Edited</option>
+          <option value="deleted">Deleted</option>
+        </select>
       </div>
 
       {/* Table */}
@@ -302,6 +329,7 @@ const JobPreferencesPage: React.FC = () => {
             <tr>
               <th>Candidate</th>
               <th>Profile Name</th>
+              <th>Status</th>
               <th>Technology</th>
               <th>Seniority</th>
               <th>Work Type</th>
@@ -316,7 +344,7 @@ const JobPreferencesPage: React.FC = () => {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={11} className="table-empty">Loading…</td>
+                <td colSpan={12} className="table-empty">Loading…</td>
               </tr>
             )}
             {!loading && profiles.length === 0 && (
@@ -343,6 +371,17 @@ const JobPreferencesPage: React.FC = () => {
                     <span className="profile-name">{p.profile_name}</span>
                     {titles.length > 0 && (
                       <div className="sub-text">{titles.slice(0, 2).join(', ')}{titles.length > 2 ? '…' : ''}</div>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`badge ${STATUS_COLORS[p.status] || 'badge-gray'}`}>
+                      {STATUS_LABELS[p.status] || p.status}
+                    </span>
+                    {p.status === 'deleted' && p.deleted_at && (
+                      <div className="sub-text">{new Date(p.deleted_at).toLocaleDateString()}</div>
+                    )}
+                    {p.status === 'edited' && p.updated_at && (
+                      <div className="sub-text">Updated {new Date(p.updated_at).toLocaleDateString()}</div>
                     )}
                   </td>
                   <td>

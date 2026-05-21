@@ -522,6 +522,24 @@ def update_job_posting_status(
             route=f"/recruiter/job-postings",
             route_context={"job_id": job_id, "job_title": job_posting.job_title}
         )
+        # Send email to recruiter
+        try:
+            from app.services.email_service import EmailService
+            import logging as _logging
+            _logger = _logging.getLogger(__name__)
+            if user.email:
+                email_svc = EmailService()
+                email_svc.send_email(
+                    to_email=user.email,
+                    subject=f"Job Posting Frozen: {job_posting.job_title}",
+                    html_content=f"""<p>Hi {user.full_name or user.email},</p>
+<p>Your job posting <strong>{job_posting.job_title}</strong> has been <strong>frozen</strong> and is no longer visible to candidates.</p>
+<p>You can reactivate it at any time from the Job Postings dashboard.</p>
+<p>- TalentGraph</p>""",
+                    plain_content=f"Your job posting '{job_posting.job_title}' has been frozen. You can reactivate it anytime."
+                )
+        except Exception as _e:
+            _logger.warning(f"[JOB FREEZE EMAIL] Could not send email for job {job_id}: {_e}")
     
     elif action == "reactivate":
         # Prevent actions on cancelled jobs
@@ -566,6 +584,18 @@ def update_job_posting_status(
             import logging
             logger = logging.getLogger(__name__)
             lifecycle = LifecycleService()
+            # Send reactivate email to recruiter
+            if user.email:
+                from app.services.email_service import EmailService
+                email_svc = EmailService()
+                email_svc.send_email(
+                    to_email=user.email,
+                    subject=f"Job Posting Reactivated: {job_posting.job_title}",
+                    html_content=f"""<p>Hi {user.full_name or user.email},</p>
+<p>Your job posting <strong>{job_posting.job_title}</strong> has been <strong>reactivated</strong> and is now accepting applications{applicant_msg}.</p>
+<p>- TalentGraph</p>""",
+                    plain_content=f"Your job posting '{job_posting.job_title}' has been reactivated and is now accepting applications{applicant_msg}."
+                )
             lifecycle.notify_reopened_jobs(session, job_id)
             logger.info(f"[JOB REOPEN] Sent notifications for job {job_id}")
         except Exception as e:
@@ -635,11 +665,29 @@ def update_job_posting_status(
             route=f"/recruiter/job-postings",
             route_context={"job_id": job_id, "job_title": job_posting.job_title, "reason": request.cancellation_reason}
         )
+        # Send email to recruiter
+        try:
+            from app.services.email_service import EmailService
+            import logging as _logging
+            _logger = _logging.getLogger(__name__)
+            if user.email:
+                email_svc = EmailService()
+                email_svc.send_email(
+                    to_email=user.email,
+                    subject=f"Job Posting Cancelled: {job_posting.job_title}",
+                    html_content=f"""<p>Hi {user.full_name or user.email},</p>
+<p>Your job posting <strong>{job_posting.job_title}</strong> has been <strong>permanently cancelled</strong>.</p>
+<p><strong>Reason:</strong> {request.cancellation_reason}</p>
+<p>- TalentGraph</p>""",
+                    plain_content=f"Your job posting '{job_posting.job_title}' has been cancelled. Reason: {request.cancellation_reason}"
+                )
+        except Exception as _e:
+            _logger.warning(f"[JOB CANCEL EMAIL] Could not send email for job {job_id}: {_e}")
     
     else:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, repost, cancel"
+            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, cancel"
         )
     
     job_posting.updated_at = now

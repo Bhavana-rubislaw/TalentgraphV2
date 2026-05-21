@@ -7,6 +7,7 @@ Resume parsing endpoint added for job preferences auto-fill
 import logging
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from sqlmodel import Session, select
+from sqlalchemy import text
 from typing import List, Optional
 from pathlib import Path
 import shutil
@@ -221,8 +222,12 @@ def get_job_profiles(
     candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
-    
-    return candidate.job_profiles
+
+    return session.exec(
+        select(JobProfile)
+        .where(JobProfile.candidate_id == candidate.id)
+        .where(JobProfile.is_deleted == False)  # noqa: E712
+    ).all()
 
 
 @router.get("/skill-catalogs", response_model=dict)
@@ -289,14 +294,30 @@ def delete_job_profile(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    # Explicitly fetch candidate to avoid lazy-loading issues
+    candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
     job_profile = session.get(JobProfile, job_profile_id)
-    if not job_profile or job_profile.candidate.user_id != user.id:
+    if not job_profile or job_profile.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Job profile not found")
-    
-    session.delete(job_profile)
-    session.commit()
-    
+
+    # Soft-delete: mark as deleted so the record stays visible in admin dashboard
+    session.expunge_all()
+
+    try:
+        from datetime import datetime
+        session.execute(
+            text("UPDATE jobprofile SET is_deleted = TRUE, deleted_at = :now WHERE id = :id"),
+            {"id": job_profile_id, "now": datetime.utcnow()}
+        )
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
     return {"message": "Job profile deleted"}
 
 

@@ -236,6 +236,41 @@ class ProductRole(SQLModel, table=True):
     )
 
 
+# ============ ROLE-SPECIFIC SKILL TAXONOMY MODELS ============
+
+class TaxonomySkill(SQLModel, table=True):
+    """
+    Standardized skills linked to the product taxonomy.
+    Skills are categorized as technical, functional, or soft.
+    """
+    __tablename__ = "taxonomy_skill"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    category: str = Field(index=True)  # 'technical', 'functional', 'soft'
+    description: Optional[str] = None
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    role_links: List["RoleSkillLink"] = Relationship(back_populates="skill")
+
+
+class RoleSkillLink(SQLModel, table=True):
+    """
+    Many-to-many association between ProductRole and TaxonomySkill.
+    Marks whether a skill is required for that role.
+    """
+    __tablename__ = "role_skill_link"
+
+    role_id: int = Field(foreign_key="product_role.id", primary_key=True)
+    skill_id: int = Field(foreign_key="taxonomy_skill.id", primary_key=True)
+    is_required: bool = Field(default=False)  # True → suggested as 'Required' in UI
+
+    # Relationships
+    skill: TaxonomySkill = Relationship(back_populates="role_links")
+
+
 # ============ USER MODELS ============
 
 class User(SQLModel, table=True):
@@ -456,6 +491,9 @@ class JobProfile(SQLModel, table=True):
     website_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    # ── Soft-delete ──
+    is_deleted: bool = Field(default=False)
+    deleted_at: Optional[datetime] = None
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="job_profiles")

@@ -61,6 +61,7 @@ export const listJobPreferences = (params: {
   employment_type?: string;
   visa_status?: string;
   seniority_level?: string;
+  status?: string;
   limit?: number;
   offset?: number;
 }) => api.get('/api/admin/job-preferences', { params });

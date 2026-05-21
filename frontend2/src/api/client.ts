@@ -190,7 +190,7 @@ export const apiClient = {
     api.post(`/job-postings/${id}/toggle-active`),
 
   // Job Posting Lifecycle Management
-  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost' | 'cancel', cancellation_reason?: string) =>
+  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'cancel', cancellation_reason?: string) =>
     api.post(`/job-postings/${id}/status`, { action, cancellation_reason }),
 
   getSkillCatalogs: () =>
@@ -625,6 +625,10 @@ export const apiClient = {
     api.get(`/product-taxonomy/product-types/${typeId}/roles`, { 
       params: { search } 
     }),
+
+  // Get role-specific skill taxonomy
+  getRoleSkills: (roleId: number) =>
+    api.get(`/product-taxonomy/roles/${roleId}/skills`),
 
   // Global search across taxonomy
   searchTaxonomy: (query: string, limit?: number) =>

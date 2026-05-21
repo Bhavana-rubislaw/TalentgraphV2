@@ -414,17 +414,9 @@ body {
 .purple-section-wrapper {
   position: relative;
   z-index: 1;
-  background: linear-gradient(
-    135deg,
-    rgba(123, 94, 167, 0.14),
-    rgba(156, 122, 230, 0.14)
-  );
-  border-radius: 20px;
-  padding: 24px;
+  background: transparent;
+  padding: 0;
   margin-bottom: 24px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(123, 94, 167, 0.06);
-  border: 2px solid rgba(123, 94, 167, 0.25);
 }
 
 .purple-section-wrapper .jobs-grid-modern,

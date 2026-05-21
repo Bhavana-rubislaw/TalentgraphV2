@@ -3080,11 +3080,14 @@
 .cp-posting-card {
   background: var(--cp-surface);
   border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-lg);
+  border-radius: 20px;
   box-shadow: var(--cp-shadow-sm);
   overflow: hidden;
   transition: box-shadow var(--cp-transition), border-color var(--cp-transition);
   cursor: pointer;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
 }
 .cp-posting-card:hover {
   box-shadow: var(--cp-shadow-md);
@@ -3099,8 +3102,68 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 18px 18px 0;
-  gap: 8px;
+  padding: 22px 22px 0;
+  gap: 10px;
+  position: relative;
+}
+
+/* ── 3-dot card menu ─────────────────────────────────────── */
+.cp-card-menu-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+  margin-top: -2px;
+}
+.cp-card-menu-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+.cp-card-menu-popover {
+  position: absolute;
+  top: 32px;
+  right: 22px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 150px;
+  z-index: 500;
+  overflow: hidden;
+  padding: 4px 0;
+}
+.cp-card-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  transition: background 0.12s;
+}
+.cp-card-menu-item:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+.cp-card-menu-item.danger {
+  color: #dc2626;
+}
+.cp-card-menu-item.danger:hover {
+  background: #fef2f2;
 }
 
 .cp-posting-card-title {
@@ -3140,11 +3203,12 @@
 .cp-posting-card-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   font-size: 12px;
   color: var(--cp-text-secondary);
   margin-bottom: 6px;
   flex-wrap: wrap;
+  padding: 10px 22px 12px;
 }
 .cp-posting-card-meta svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--cp-text-tertiary); }
 
@@ -3164,6 +3228,7 @@
   flex-wrap: wrap;
   gap: 5px;
   margin-bottom: 8px;
+  padding: 12px 22px 0;
 }
 .cp-posting-card-skill-tag {
   font-size: 11px;
@@ -3176,12 +3241,13 @@
 .cp-posting-card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 18px;
+  justify-content: flex-end;
+  padding: 14px 22px;
   border-top: 1px solid var(--cp-border);
   background: #fafbfc;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .cp-posting-card-apps {
@@ -3219,10 +3285,14 @@
   color: var(--cp-text-primary);
   background: #f0f1f4;
 }
-.cp-posting-action-btn.freeze:hover { border-color: #6b7280; color: #374151; }
-.cp-posting-action-btn.unfreeze:hover { border-color: #10b981; color: #10b981; background: #d1fae5; }
-.cp-posting-action-btn.repost:hover { border-color: #8b5cf6; color: #8b5cf6; background: #ede9fe; }
-.cp-posting-action-btn.cancel:hover { border-color: var(--cp-danger); color: var(--cp-danger); background: var(--cp-danger-light); }
+.cp-posting-action-btn.freeze { border-color: #93c5fd; color: #1d4ed8; background: #eff6ff; }
+.cp-posting-action-btn.freeze:hover { border-color: #3b82f6; color: #1e3a8a; background: #dbeafe; }
+.cp-posting-action-btn.unfreeze { border-color: #6ee7b7; color: #065f46; background: #ecfdf5; }
+.cp-posting-action-btn.unfreeze:hover { border-color: #10b981; color: #064e3b; background: #d1fae5; }
+.cp-posting-action-btn.repost { border-color: #c4b5fd; color: #5b21b6; background: #f5f3ff; }
+.cp-posting-action-btn.repost:hover { border-color: #8b5cf6; color: #4c1d95; background: #ede9fe; }
+.cp-posting-action-btn.cancel { border-color: #fca5a5; color: #b91c1c; background: #fff1f2; }
+.cp-posting-action-btn.cancel:hover { border-color: var(--cp-danger); color: #991b1b; background: #fee2e2; }
 .cp-posting-action-btn svg { width: 13px; height: 13px; }
 
 /* Progress bar at top of page */
@@ -3462,7 +3532,7 @@
 .cp-main-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  gap: 24px;
   padding-bottom: 8px;
 }
 

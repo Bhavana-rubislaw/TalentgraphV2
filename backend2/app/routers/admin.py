@@ -510,6 +510,9 @@ class JobPreferenceSummary(BaseModel):
     profile_summary: Optional[str]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+    # Status
+    status: str          # active | edited | deleted
+    deleted_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -529,6 +532,7 @@ def list_job_preferences(
     employment_type: Optional[str] = Query(None),
     visa_status: Optional[str] = Query(None),
     seniority_level: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Filter by status: active, edited, deleted"),
     limit: int = Query(50, le=200),
     offset: int = Query(0, ge=0),
     session: Session = Depends(get_session),
@@ -558,6 +562,13 @@ def list_job_preferences(
         query = query.where(JobProfile.visa_status == visa_status)
     if seniority_level:
         query = query.where(JobProfile.seniority_level == seniority_level)
+
+    # Status filter (computed after fetching, or pre-filter on is_deleted)
+    if status == 'deleted':
+        query = query.where(JobProfile.is_deleted == True)  # noqa: E712
+    elif status in ('active', 'edited'):
+        query = query.where(JobProfile.is_deleted == False)  # noqa: E712
+    # else: no filter → show all
 
     total_q = select(func.count()).select_from(query.subquery())
     total = session.exec(total_q).one()
@@ -597,6 +608,18 @@ def list_job_preferences(
             for lp in loc_prefs_raw
         ]
 
+        # Compute status
+        if jp.is_deleted:
+            jp_status = "deleted"
+        elif jp.updated_at and jp.created_at and (jp.updated_at - jp.created_at).total_seconds() > 60:
+            jp_status = "edited"
+        else:
+            jp_status = "active"
+
+        # Skip if status filter is 'active' or 'edited' and computed status doesn't match
+        if status in ('active', 'edited') and jp_status != status:
+            continue
+
         profiles.append(
             JobPreferenceSummary(
                 id=jp.id,
@@ -633,6 +656,8 @@ def list_job_preferences(
                 profile_summary=jp.profile_summary,
                 created_at=jp.created_at,
                 updated_at=jp.updated_at,
+                status=jp_status,
+                deleted_at=jp.deleted_at,
             )
         )
 

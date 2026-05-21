@@ -9,6 +9,7 @@ import '../styles/PremiumModals.css';
 import '../styles/RecruiterApplications.css';
 import '../styles/HorizontalDashboard.css';
 import '../styles/AIRecommendations.css';
+import '../styles/CandidatePages.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
@@ -143,6 +144,16 @@ const RecruiterDashboard: React.FC = () => {
   const [emailTemplate, setEmailTemplate] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
+  // ── Job Postings tab state ─────────────────────────────────────
+  const [jpSearch, setJpSearch] = useState('');
+  const [jpStatusFilter, setJpStatusFilter] = useState('all');
+  const [jpCurrentPage, setJpCurrentPage] = useState(1);
+  const [jpShowCancelModal, setJpShowCancelModal] = useState(false);
+  const [jpCancelReason, setJpCancelReason] = useState('');
+  const [jpSelectedId, setJpSelectedId] = useState<number | null>(null);
+  const [jpCardMenuOpenId, setJpCardMenuOpenId] = useState<number | null>(null);
+  const JP_PAGE_SIZE = 9;
+
   // ── Filter states ─────────────────────────────────────────────
   const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
   const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
@@ -185,6 +196,14 @@ const RecruiterDashboard: React.FC = () => {
     fetchApplications();
     fetchMatches();
   }, []);
+
+  // Close card menu when clicking outside
+  useEffect(() => {
+    if (jpCardMenuOpenId === null) return;
+    const handler = () => setJpCardMenuOpenId(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [jpCardMenuOpenId]);
 
   useEffect(() => {
     if (selectedJobId) {
@@ -2222,248 +2241,251 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="candidates-grid-modern" style={{ gap: '20px' }}>
-        {filteredShortlist.map((item: any, index) => (
-          <div 
-            key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} 
-            className="candidate-card-modern"
-            style={{
-              border: '1px solid var(--border-color, #e2e8f0)',
-              borderRadius: '12px',
-              padding: '24px',
-              background: 'white',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              transition: 'all 0.2s ease',
-              cursor: 'pointer',
-              position: 'relative'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            {/* Status Badge */}
-            <div style={{ position: 'absolute', top: '18px', right: '18px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {item.already_invited && (
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  padding: '5px 12px',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  background: '#dcfce7',
-                  color: '#166534'
-                }}>
-                  <svg style={{ width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Invited
-                </span>
-              )}
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '5px 12px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 500,
-                background: '#dbeafe',
-                color: '#1e40af'
-              }}>
-                <svg style={{ width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-                Shortlisted
-              </span>
-            </div>
-
-            {/* Card Header with Avatar and Basic Info */}
-            <div style={{ display: 'flex', gap: '16px', marginBottom: '20px', alignItems: 'flex-start' }}>
-              <div style={{ 
-                width: '64px', 
-                height: '64px', 
-                borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        <style>{`
+          @media (max-width: 1400px) {
+            .shortlist-grid { grid-template-columns: repeat(3, 1fr) !important; }
+          }
+          @media (max-width: 1200px) {
+            .shortlist-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          }
+          @media (max-width: 768px) {
+            .shortlist-grid { grid-template-columns: 1fr !important; }
+          }
+        `}</style>
+        <div className="shortlist-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', padding: '0' }}>
+        {filteredShortlist.map((item: any, index) => {
+          const candidateInitial = item.candidate.name?.charAt(0).toUpperCase() || 'C';
+          return (
+            <div
+              key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`}
+              style={{
+                background: 'white',
+                border: '1px solid #E2E4EC',
+                borderRadius: '16px',
+                padding: '24px',
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(123, 94, 167, 0.06)',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                position: 'relative'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = '#A78BDB';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = '#E2E4EC';
+              }}
+            >
+              {/* Shortlisted Badge - Top Right */}
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                padding: '6px 12px',
+                background: item.already_invited
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '20px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: '6px',
                 color: 'white',
-                fontSize: '24px',
-                fontWeight: 600,
-                flexShrink: 0,
+                fontSize: '12px',
+                fontWeight: '600',
                 boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
               }}>
-                {item.candidate.name.charAt(0).toUpperCase()}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>{item.already_invited ? 'Invited' : 'Shortlisted'}</span>
               </div>
-              <div style={{ flex: 1, minWidth: 0, paddingRight: '60px' }}>
-                <h3 style={{ fontSize: '17px', fontWeight: 600, color: 'var(--text-primary, #1e293b)', marginBottom: '6px', lineHeight: 1.3 }}>
+
+              {/* Header: Candidate Avatar */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#7c3aed',
+                  marginBottom: '8px'
+                }}>
+                  {candidateInitial}
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
                   {item.candidate.name}
-                </h3>
-                {item.job_posting?.job_title && (
-                  <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--primary, #667eea)', marginBottom: '8px', lineHeight: 1.4 }}>
-                    {item.job_posting.job_title}
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '14px', color: 'var(--text-muted, #94a3b8)' }}>
-                  {item.candidate.location_state && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                        <circle cx="12" cy="10" r="3"/>
-                      </svg>
-                      {item.candidate.location_state}
-                    </span>
-                  )}
-                  {item.job_profile?.years_of_experience && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                      </svg>
-                      {item.job_profile.years_of_experience} years
-                    </span>
-                  )}
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                      <line x1="16" y1="2" x2="16" y2="6"/>
-                      <line x1="8" y1="2" x2="8" y2="6"/>
-                      <line x1="3" y1="10" x2="21" y2="10"/>
-                    </svg>
-                    {new Date(item.shortlisted_at).toLocaleDateString()}
+                </div>
+                <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                  Shortlisted {new Date(item.shortlisted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </div>
+              </div>
+
+              {/* Target Role / Job Title */}
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '6px',
+                lineHeight: '1.3',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical'
+              }}>
+                {item.job_posting?.job_title || item.job_profile?.profile_name || 'Open Role'}
+              </h3>
+
+              {/* Job Role / Category */}
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '20px',
+                fontWeight: '500'
+              }}>
+                {item.job_profile?.job_role || item.job_profile?.product_type || 'Professional'}
+              </p>
+
+              {/* Details Grid (2x2) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '12px',
+                marginBottom: '20px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid #f3f4f6'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {item.candidate.location_state || 'Remote'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {item.job_profile?.years_of_experience ? `${item.job_profile.years_of_experience} yrs exp` : 'N/A'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {item.job_posting?.seniority_level || item.job_profile?.seniority_level || 'Any level'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {item.match_percentage != null ? `${item.match_percentage}% match` : 'Shortlisted'}
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Contact Information */}
-            <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-              <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '10px' }}>Contact</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '14px', color: 'var(--text-secondary, #64748b)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  {item.candidate.email}
-                </div>
-                {item.candidate.phone && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg style={{ width: '15px', height: '15px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    {item.candidate.phone}
-                  </div>
-                )}
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
+                <button
+                  onClick={() => setViewShortlistItem(item)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    border: '1.5px solid #e5e7eb',
+                    background: 'white',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                    e.currentTarget.style.background = '#f9fafb';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                    e.currentTarget.style.background = 'white';
+                  }}
+                >
+                  Details
+                </button>
+                <button
+                  onClick={() => {
+                    if (!item.already_invited) {
+                      handleAskToApply(item.candidate.id, item.job_profile?.id);
+                    }
+                  }}
+                  disabled={item.already_invited}
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    border: 'none',
+                    background: item.already_invited
+                      ? '#10b981'
+                      : '#111827',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: 'white',
+                    cursor: item.already_invited ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!item.already_invited) {
+                      e.currentTarget.style.background = '#1f2937';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!item.already_invited) {
+                      e.currentTarget.style.background = '#111827';
+                    }
+                  }}
+                >
+                  {item.already_invited ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                      Invited
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                      </svg>
+                      Invite
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-
-            {/* Enhanced CTA Buttons */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-              <button
-                className="btn-primary"
-                style={{ 
-                  flex: 1, 
-                  minWidth: '140px',
-                  height: '42px',
-                  padding: '0 20px',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  color: 'white',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setViewShortlistItem(item);
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 8px rgba(102, 126, 234, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
-                }}
-              >
-                View Details
-              </button>
-              <button
-                className={`action-btn ${item.already_invited ? 'success' : 'success'}`}
-                style={{ 
-                  padding: '0 16px',
-                  height: '42px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  justifyContent: 'center',
-                  opacity: item.already_invited ? 0.6 : 1,
-                  cursor: item.already_invited ? 'not-allowed' : 'pointer',
-                  background: item.already_invited ? '#10b981' : undefined,
-                  color: item.already_invited ? 'white' : undefined
-                }}
-                onClick={() => {
-                  if (!item.already_invited) {
-                    handleAskToApply(item.candidate.id, item.job_profile?.id);
-                  }
-                }}
-                disabled={item.already_invited}
-                title={item.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
-              >
-                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                {item.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
-              </button>
-              </div>
-              <button
-                className="action-btn message"
-                style={{ 
-                  padding: '0 16px',
-                  height: '42px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  justifyContent: 'center'
-                }}
-                onClick={() => {
-                  if (item.candidate.user_id) {
-                    handleStartDirectMessage(item.candidate.user_id);
-                  } else {
-                    alert('Cannot message this candidate: User ID not available');
-                  }
-                }}
-                aria-label={`Message ${item.candidate.name}`}
-                title="Start conversation with candidate"
-              >
-                <svg style={{ width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Message
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── View Details Modal (Shortlist) ── */}
@@ -2862,8 +2884,7 @@ const RecruiterDashboard: React.FC = () => {
     };
 
     return (
-      <div className="purple-section-wrapper">
-      <div className="ra-wrapper">
+      <div className="ra-wrapper" style={{ background: 'transparent', padding: '0', gap: '16px' }}>
         {/* ─── Toolbar: Search + Filters + Sort ─── */}
         <div className="ra-toolbar">
           <div className="ra-search-box">
@@ -3042,20 +3063,16 @@ const RecruiterDashboard: React.FC = () => {
                       <div className="ra-card-avatar">{app.candidate.name.charAt(0)}</div>
                       <div className="ra-card-info">
                         <div className="ra-card-name">{app.candidate.name}</div>
-                        <div className="ra-card-role">Applied for {app.job_posting.title}</div>
+                        <div className="ra-card-role">Applied for {app.job_posting.title || app.job_posting.job_title}</div>
                       </div>
                     </div>
+                    {(app.job_posting?.product_vendor || app.job_profile?.profile_name) && (
+                      <div className="ra-card-vendor-row">
+                        {[app.job_posting?.product_vendor, app.job_profile?.profile_name].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
                     <div className="ra-card-meta">
-                      {app.job_profile.profile_name && (
-                        <span className="ra-card-profile-name" style={{ fontSize: '11px', color: '#94a3b8' }}>
-                          {app.job_profile.profile_name}
-                        </span>
-                      )}
                       <span className={`ra-status-chip ${app.status}`}>{app.status}</span>
-                      <span className="ra-card-posting">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-                        {app.job_posting.job_title}
-                      </span>
                       <span className="ra-card-date">{timeAgo(app.applied_at)}</span>
                     </div>
                   </div>
@@ -3746,7 +3763,6 @@ const RecruiterDashboard: React.FC = () => {
           </div>
         )}
       </div>
-      </div>
     );
   };
 
@@ -3772,88 +3788,199 @@ const RecruiterDashboard: React.FC = () => {
     return (
       <>
       <div className="purple-section-wrapper">
-      <div className="jobs-grid-modern">
-        {matches.map((match: any, index) => (
-          <div key={`match-${match.match_id}-${index}`} className="job-card-modern match-card">
-            {/* Mutual Match Banner */}
-            <div className="job-header-modern match-header">
-              <div className="match-badge-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <style>{`
+        @media (max-width: 1400px) {
+          .recruiter-matches-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        @media (max-width: 1200px) {
+          .recruiter-matches-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 768px) {
+          .recruiter-matches-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+      <div className="recruiter-matches-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '20px',
+        padding: '0'
+      }}>
+        {matches.map((match: any, index) => {
+          const candidateInitial = match.candidate.name?.charAt(0).toUpperCase() || 'C';
+          return (
+            <div key={`match-${match.match_id}-${index}`} style={{
+              background: 'white',
+              border: '1px solid #E2E4EC',
+              borderRadius: '16px',
+              padding: '24px',
+              transition: 'all 0.2s',
+              boxShadow: '0 2px 8px rgba(123, 94, 167, 0.06)',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.borderColor = '#A78BDB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.borderColor = '#E2E4EC';
+            }}>
+              {/* Mutual Match Badge - Top Right */}
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                padding: '6px 12px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'white',
+                fontSize: '12px',
+                fontWeight: '600',
+                boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                <span>Mutual Match - {match.match_percentage}%</span>
+                <span>{match.match_percentage}%</span>
               </div>
-            </div>
 
-            {/* Card Header: Candidate name + position */}
-            <div className="job-header-modern">
-              <div className="job-title-section">
-                <h3 className="job-title-modern">{match.candidate.name}</h3>
-                <div className="job-company">{match.job_posting.job_title} · {match.job_profile.profile_name}</div>
-              </div>
-              <div className="match-date">
-                <small>Matched {new Date(match.matched_at).toLocaleDateString()}</small>
-              </div>
-            </div>
-
-            {/* Card Body */}
-            <div className="job-content-modern">
-              <div className="job-info-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Position Details</h4>
-                  <div className="info-items">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                      </svg>
-                      <span className="info-value">{match.job_posting.job_title}</span>
-                    </div>
-                    {match.job_posting.location && (
-                      <div className="info-item">
-                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        <span className="info-value">{match.job_posting.location}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Header: Candidate Avatar */}
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  fontWeight: '700',
+                  color: '#7c3aed',
+                  marginBottom: '8px'
+                }}>
+                  {candidateInitial}
+                </div>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
+                  {match.candidate.name}
+                </div>
+                <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                  Matched {new Date(match.matched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               </div>
 
-              <div className="job-compensation-section">
-                <div className="info-group">
-                  <h4 className="info-group-title">Contact Information</h4>
-                  <div className="contact-info">
-                    <div className="info-item">
-                      <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                      </svg>
-                      <span className="info-value">{match.candidate.email}</span>
-                    </div>
-                    {match.candidate.phone && (
-                      <div className="info-item">
-                        <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                        </svg>
-                        <span className="info-value">{match.candidate.phone}</span>
-                      </div>
-                    )}
-                  </div>
+              {/* Job Title */}
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '700',
+                color: '#111827',
+                marginBottom: '6px',
+                lineHeight: '1.3',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical'
+              }}>
+                {match.job_posting.job_title}
+              </h3>
+
+              {/* Job Role / Category */}
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                marginBottom: '20px',
+                fontWeight: '500'
+              }}>
+                {match.job_profile?.job_role || match.job_profile?.profile_name || 'Professional'}
+              </p>
+
+              {/* Details Grid (2x2) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '12px',
+                marginBottom: '20px',
+                paddingBottom: '20px',
+                borderBottom: '1px solid #f3f4f6'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {match.job_posting.location || 'Remote'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {match.job_profile?.years_of_experience ? `${match.job_profile.years_of_experience} yrs exp` : match.job_posting.seniority_level || 'N/A'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+                    {match.candidate.email}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    {match.candidate.phone || 'No phone'}
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* Card Actions */}
-            <div className="job-actions-modern">
-              <div className="action-buttons-grid">
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
                 <button
                   onClick={() => setViewProfileMatch(match)}
-                  className="action-btn light"
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: '2px solid #E2E4EC',
+                    background: 'white',
+                    color: '#111827',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#f9fafb';
+                    e.currentTarget.style.borderColor = '#7c3aed';
+                    e.currentTarget.style.color = '#7c3aed';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'white';
+                    e.currentTarget.style.borderColor = '#E2E4EC';
+                    e.currentTarget.style.color = '#111827';
+                  }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
@@ -3867,38 +3994,42 @@ const RecruiterDashboard: React.FC = () => {
                       alert('Cannot message this candidate: User ID not available');
                     }
                   }}
-                  className="action-btn primary"
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#111827',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(17, 24, 39, 0.4)';
+                    e.currentTarget.style.background = '#1f2937';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.background = '#111827';
+                  }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                   </svg>
                   Message
                 </button>
-                <a
-                  href={`mailto:${match.candidate.email}`}
-                  className="action-btn secondary"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                  </svg>
-                  Email
-                </a>
-                {match.candidate.phone && (
-                  <a
-                    href={`tel:${match.candidate.phone}`}
-                    className="action-btn success"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    Call
-                  </a>
-                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
         {/* ── View Profile Modal ── */}
@@ -4589,6 +4720,216 @@ const RecruiterDashboard: React.FC = () => {
     );
   };
 
+  const renderJobPostings = () => {
+    const worktypeLabel = (wt: string) => ({ remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' }[wt] || (wt ? wt.charAt(0).toUpperCase() + wt.slice(1) : ''));
+    const fmtSalary = (min: number, max: number, cur: string) => {
+      const fmt = (v: number) => v >= 1000 ? `${Math.round(v / 1000)}k` : v.toLocaleString();
+      return `${(cur || 'USD').toUpperCase()} ${fmt(min)} – ${fmt(max)}`;
+    };
+    const getJpPageNumbers = (): (number | string)[] => {
+      if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+      const pages: (number | string)[] = [];
+      if (jpCurrentPage <= 4) { pages.push(1, 2, 3, 4, 5, '...', totalPages); }
+      else if (jpCurrentPage >= totalPages - 3) { pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages); }
+      else { pages.push(1, '...', jpCurrentPage - 1, jpCurrentPage, jpCurrentPage + 1, '...', totalPages); }
+      return pages;
+    };
+
+    const filtered = allJobPostings.filter(p => {
+      const matchSearch = !jpSearch || (p.job_title || p.title || '').toLowerCase().includes(jpSearch.toLowerCase());
+      const matchStatus = jpStatusFilter === 'all' || (p.status || '').toLowerCase() === jpStatusFilter;
+      return matchSearch && matchStatus;
+    });
+    const totalPages = Math.ceil(filtered.length / JP_PAGE_SIZE);
+    const paginated = filtered.slice((jpCurrentPage - 1) * JP_PAGE_SIZE, jpCurrentPage * JP_PAGE_SIZE);
+
+    const handleStatusAction = async (id: number, action: 'freeze' | 'reactivate' | 'cancel', reason?: string) => {
+      try {
+        await apiClient.updateJobPostingStatus(id, action, reason);
+        await fetchJobPostings();
+        const labels: Record<string, string> = { freeze: 'frozen', reactivate: 'reactivated', cancel: 'cancelled' };
+        setToast(`Job ${labels[action] || action} successfully.`);
+      } catch {
+        setToast('Action failed. Please try again.');
+      }
+    };
+
+    const IconPin = () => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+      </svg>
+    );
+    const IconBuilding = () => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 22V12h6v10"/><path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01"/>
+      </svg>
+    );
+    const IconSalary = () => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
+        <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    );
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, margin: '-32px', padding: 0, fontFamily: 'var(--cp-font, Inter, sans-serif)' }}>
+        {/* Header: breadcrumb + title + filter bar */}
+        <div style={{ padding: '28px 32px 0' }}>
+          <nav className="cp-breadcrumb" style={{ marginBottom: 8 }}>
+            <span style={{ cursor: 'pointer', color: '#6b7280', fontSize: 13 }} onClick={() => setActiveTab('recommendations')}>Dashboard</span>
+            <span style={{ color: '#d1d5db', fontSize: 12, margin: '0 6px' }}>›</span>
+            <span style={{ color: '#111827', fontWeight: 500, fontSize: 13 }}>Job Postings</span>
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>Job Postings</h1>
+            <button className="jpb-btn jpb-btn-primary" onClick={() => navigate('/recruiter/job-postings')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Posting
+            </button>
+          </div>
+          <div className="cp-filter-bar" style={{ marginBottom: 0, paddingBottom: 16, borderBottom: '1px solid #f3f4f6' }}>
+            <div className="cp-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search postings..." value={jpSearch} onChange={e => { setJpSearch(e.target.value); setJpCurrentPage(1); }} />
+            </div>
+            <div className="cp-filter-chips">
+              {(['all', 'active', 'reposted', 'frozen', 'cancelled'] as const).map(s => (
+                <button key={s} className={`cp-filter-chip${jpStatusFilter === s ? ' active' : ''}`} onClick={() => { setJpStatusFilter(s); setJpCurrentPage(1); }}>
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card grid */}
+        <div style={{ padding: '20px 32px', flex: 1 }}>
+          {paginated.length === 0 ? (
+            <div className="cp-empty-state">
+              <svg className="cp-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+              <h3 className="cp-empty-title">No job postings found</h3>
+              <p className="cp-empty-text">Create your first job posting to start hiring.</p>
+              <button className="jpb-btn jpb-btn-primary" onClick={() => navigate('/recruiter/job-postings')}>+ Create First Posting</button>
+            </div>
+          ) : (
+            <div className="cp-main-grid">
+              {paginated.map(p => {
+                const nStatus = (p.status || 'active').toLowerCase();
+                const skills: any[] = Array.isArray(p.posting_skills) ? p.posting_skills : [];
+                const dept = [p.product_vendor, p.product_type].filter(Boolean).join(' · ');
+                return (
+                  <div className="cp-posting-card" key={p.id} style={{ cursor: 'default' }}>
+                    <div className="cp-posting-card-top">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="cp-posting-card-title">{p.job_title || p.title}</div>
+                        {dept && <div className="cp-posting-card-dept" style={{ marginTop: 2 }}>{dept}</div>}
+                      </div>
+                      <span className={`cp-posting-status ${nStatus}`} style={{ flexShrink: 0 }}>{(p.status || 'active').toUpperCase()}</span>
+                      <button
+                        className="cp-card-menu-btn"
+                        onClick={e => { e.stopPropagation(); setJpCardMenuOpenId(jpCardMenuOpenId === p.id ? null : p.id); }}
+                        title="More actions"
+                      >⋯</button>
+                      {jpCardMenuOpenId === p.id && (
+                        <div className="cp-card-menu-popover">
+                          <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); navigate('/recruiter/job-postings?duplicate=' + p.id); }}>Duplicate</button>
+                          {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
+                            <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); handleStatusAction(p.id, 'freeze'); }}>Freeze</button>
+                          )}
+                          {nStatus === 'frozen' && (
+                            <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); handleStatusAction(p.id, 'reactivate'); }}>Unfreeze</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {skills.length > 0 && (
+                      <div className="cp-posting-card-skill-tags">
+                        {skills.slice(0, 4).map((s: any, i: number) => <span key={i} className="cp-posting-card-skill-tag">{s.skill_name || s}</span>)}
+                        {skills.length > 4 && <span className="cp-posting-card-skill-tag">+{skills.length - 4}</span>}
+                      </div>
+                    )}
+                    <div className="cp-posting-card-meta">
+                      {p.location && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconPin />{p.location}
+                        </span>
+                      )}
+                      {p.worktype && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconBuilding />{worktypeLabel(p.worktype)}
+                        </span>
+                      )}
+                      {p.salary_min > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <IconSalary />{fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="cp-posting-card-footer">
+                      <div className="cp-posting-card-action-btns">
+                        <button className="cp-posting-action-btn" onClick={() => navigate('/recruiter/job-postings')}>Edit</button>
+                        {nStatus !== 'cancelled' && (
+                          <button className="cp-posting-action-btn cancel" onClick={() => { setJpSelectedId(p.id); setJpShowCancelModal(true); }}>Cancel</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 0 && (
+          <div className="cp-pagination-footer" style={{ margin: '0 32px 28px', borderRadius: 12 }}>
+            <span className="cp-pagination-info">
+              Showing {filtered.length === 0 ? 0 : (jpCurrentPage - 1) * JP_PAGE_SIZE + 1}–{Math.min(jpCurrentPage * JP_PAGE_SIZE, filtered.length)} of {filtered.length}
+            </span>
+            <div className="cp-pagination-buttons">
+              <button className="cp-pag-btn" disabled={jpCurrentPage === 1} onClick={() => setJpCurrentPage(p => p - 1)}>← Prev</button>
+              {totalPages > 1 && getJpPageNumbers().map((pn, i) =>
+                pn === '...' ? (
+                  <span key={`e${i}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
+                ) : (
+                  <button key={pn} className={`cp-pag-btn${jpCurrentPage === pn ? ' active' : ''}`} onClick={() => setJpCurrentPage(pn as number)}>{pn}</button>
+                )
+              )}
+              <button className="cp-pag-btn" disabled={jpCurrentPage === totalPages || totalPages === 0} onClick={() => setJpCurrentPage(p => p + 1)}>Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel modal */}
+        {jpShowCancelModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setJpShowCancelModal(false)}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700 }}>Cancel Job Posting</h3>
+              <select value={jpCancelReason} onChange={e => setJpCancelReason(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14 }}>
+                <option value="">Select reason...</option>
+                <option value="position_filled">Position Filled</option>
+                <option value="budget_cut">Budget Cut</option>
+                <option value="requirements_changed">Requirements Changed</option>
+                <option value="other">Other</option>
+              </select>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button className="jpb-btn jpb-btn-outline" onClick={() => { setJpShowCancelModal(false); setJpCancelReason(''); setJpSelectedId(null); }}>Back</button>
+                <button className="jpb-btn jpb-btn-danger" disabled={!jpCancelReason}
+                  onClick={async () => {
+                    if (jpSelectedId) await handleStatusAction(jpSelectedId, 'cancel', jpCancelReason);
+                    setJpShowCancelModal(false);
+                    setJpCancelReason('');
+                    setJpSelectedId(null);
+                  }}
+                >Confirm Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="horizontal-dashboard">
       {/* Top Navigation Bar */}
@@ -4765,9 +5106,7 @@ const RecruiterDashboard: React.FC = () => {
 
           <button 
             className="talentgraph-tab talentgraph-tab-create"
-            onClick={() => {
-              navigate('/recruiter/job-postings');
-            }}
+            onClick={() => navigate('/recruiter/job-postings')}
           >
             <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>

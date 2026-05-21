@@ -136,6 +136,8 @@ const JobPostingBuilder: React.FC = () => {
   // State
   const [postings, setPostings] = useState<JobPosting[]>([]);
   const [catalogs, setCatalogs] = useState<Catalogs>({ technical_skills: [], soft_skills: [], certifications: [] });
+  const [globalCatalogs, setGlobalCatalogs] = useState<Catalogs>({ technical_skills: [], soft_skills: [], certifications: [] });
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [formData, setFormData] = useState<JobPostingFormData>({ ...EMPTY_FORM });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -143,7 +145,7 @@ const JobPostingBuilder: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [listSearch, setListSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'reposted' | 'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'cancelled'>('all');
   const [showPreview, setShowPreview] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPostingId, setSelectedPostingId] = useState<number | null>(null);
@@ -154,6 +156,7 @@ const JobPostingBuilder: React.FC = () => {
   const [customReason, setCustomReason] = useState<string>('');
   const PAGE_SIZE_POSTINGS = 9;
   const [currentPostPage, setCurrentPostPage] = useState(1);
+  const [cardMenuOpenId, setCardMenuOpenId] = useState<number | null>(null);
 
   // Skills state
   const [skillSearchTech, setSkillSearchTech] = useState('');
@@ -190,19 +193,69 @@ const JobPostingBuilder: React.FC = () => {
     try {
       const res = await apiClient.getSkillCatalogs();
       setCatalogs(res.data);
+      setGlobalCatalogs(res.data);
     } catch (err) {
       console.error('Failed to fetch catalogs:', err);
     }
   }, []);
 
+  // Fetch role-specific skills when selected role changes
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setCatalogs(globalCatalogs);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.getRoleSkills(selectedRoleId);
+        if (cancelled) return;
+        const roleSkills: Array<{ name: string; category: string }> = res.data.skills;
+        if (roleSkills.length === 0) {
+          // No role-specific skills — fall back to global catalog
+          setCatalogs(globalCatalogs);
+          return;
+        }
+        setCatalogs({
+          technical_skills: roleSkills
+            .filter(s => s.category === 'technical' || s.category === 'functional')
+            .map(s => s.name),
+          soft_skills: roleSkills
+            .filter(s => s.category === 'soft')
+            .map(s => s.name),
+          certifications: globalCatalogs.certifications,
+        });
+      } catch {
+        if (!cancelled) setCatalogs(globalCatalogs);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoleId]);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([fetchPostings(), fetchCatalogs()]);
+      const [postRes] = await Promise.all([
+        apiClient.getJobPostings(false),
+        fetchCatalogs()
+      ]);
+      const fetchedPostings: JobPosting[] = postRes.data || [];
+      setPostings(fetchedPostings);
+      // Check for ?duplicate= URL param — pre-fill form as a copy
+      const params = new URLSearchParams(window.location.search);
+      const dupId = params.get('duplicate');
+      if (dupId) {
+        const source = fetchedPostings.find((p: JobPosting) => p.id === parseInt(dupId, 10));
+        if (source) {
+          handleDuplicatePosting(source);
+          setShowForm(true);
+        }
+      }
       setLoading(false);
     };
     init();
-  }, [fetchPostings, fetchCatalogs]);
+  }, [fetchCatalogs]);
 
   // Click-outside for dropdowns
   useEffect(() => {
@@ -220,6 +273,14 @@ const JobPostingBuilder: React.FC = () => {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // Toast auto-dismiss
+  useEffect(() => {
+    if (cardMenuOpenId === null) return;
+    const handler = () => setCardMenuOpenId(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [cardMenuOpenId]);
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -379,6 +440,16 @@ const JobPostingBuilder: React.FC = () => {
     setIsDirty(false);
     setErrors({});
     setShowForm(true);
+    // Resolve role ID from name so role-specific skills load automatically
+    if (posting.job_role) {
+      apiClient.searchTaxonomy(posting.job_role, 10).then(res => {
+        const match = (res.data.roles as Array<{ id: number; name: string }>)
+          .find(r => r.name === posting.job_role);
+        if (match) setSelectedRoleId(match.id);
+      }).catch(() => { /* fallback: global catalog */ });
+    } else {
+      setSelectedRoleId(null);
+    }
   };
 
   const handleDuplicatePosting = (posting: JobPosting) => {
@@ -422,18 +493,16 @@ const JobPostingBuilder: React.FC = () => {
   };
 
   const handleNewPosting = () => {
-    if (isDirty) {
-      if (!window.confirm('You have unsaved changes. Discard and start new?')) return;
-    }
     setFormData({ ...EMPTY_FORM });
     savedFormRef.current = JSON.stringify(EMPTY_FORM);
     setEditingId(null);
+    setSelectedRoleId(null);
     setIsDirty(false);
     setErrors({});
     setShowForm(true);
   };
 
-  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate' | 'repost', e: React.MouseEvent) => {
+  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate', e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
     try {
       const response = await apiClient.updateJobPostingStatus(jobId, action);
@@ -642,7 +711,7 @@ const JobPostingBuilder: React.FC = () => {
               <input type="text" placeholder="Search postings..." value={listSearch} onChange={e => setListSearch(e.target.value)} />
             </div>
             <div className="cp-filter-chips">
-              {(['all','active','frozen','reposted','cancelled'] as const).map(s => (
+              {(['all','active','frozen','cancelled'] as const).map(s => (
                 <button key={s} className={`cp-filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => setStatusFilter(s)}>
                   {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
@@ -673,6 +742,19 @@ const JobPostingBuilder: React.FC = () => {
                         <div className="cp-posting-card-dept">{p.product_vendor}{p.product_type ? ` · ${p.product_type}` : ''}</div>
                       </div>
                       <span className={`cp-posting-status ${nStatus}`}>{p.status || 'active'}</span>
+                      <button
+                        className="cp-card-menu-btn"
+                        onClick={e => { e.stopPropagation(); setCardMenuOpenId(cardMenuOpenId === p.id ? null : p.id); }}
+                        title="More actions"
+                      >⋯</button>
+                      {cardMenuOpenId === p.id && (
+                        <div className="cp-card-menu-popover">
+                          <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleDuplicatePosting(p); setShowForm(true); }}>Duplicate</button>
+                          {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
+                            <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleJobLifecycleAction(p.id, 'freeze', e); }}>Freeze</button>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {skills.length > 0 && (
                       <div className="cp-posting-card-skill-tags">
@@ -681,25 +763,26 @@ const JobPostingBuilder: React.FC = () => {
                       </div>
                     )}
                     <div className="cp-posting-card-meta">
-                      {p.location && <span>📍 {p.location}</span>}
-                      <span>🏠 {worktypeLabel(p.worktype)}</span>
-                      {p.salary_min > 0 && <span>💰 {fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}</span>}
+                      {p.location && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {p.location}
+                        </span>
+                      )}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 22V12h6v10"/><path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01"/></svg>
+                        {worktypeLabel(p.worktype)}
+                      </span>
+                      {p.salary_min > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                          {fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}
+                        </span>
+                      )}
                     </div>
                     <div className="cp-posting-card-footer">
-                      <span className="cp-posting-card-apps">
-                        {p.created_at && `Posted ${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                      </span>
                       <div className="cp-posting-card-action-btns">
                         <button className="cp-posting-action-btn" onClick={(e) => { e.stopPropagation(); loadPosting(p); }}>Edit</button>
-                        {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
-                          <button className="cp-posting-action-btn freeze" onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}>Freeze</button>
-                        )}
-                        {nStatus === 'frozen' && (
-                          <>
-                            <button className="cp-posting-action-btn unfreeze" onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}>Unfreeze</button>
-                            <button className="cp-posting-action-btn repost" onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}>Repost</button>
-                          </>
-                        )}
                         {nStatus !== 'cancelled' && (
                           <button className="cp-posting-action-btn cancel" onClick={(e) => { e.stopPropagation(); setShowCancelModal(p.id); }}>Cancel</button>
                         )}
@@ -798,7 +881,7 @@ const JobPostingBuilder: React.FC = () => {
         </div>
         <div className="jpb-topbar-right">
           {isDirty && <span className="jpb-unsaved-badge">Unsaved changes</span>}
-          <button className="jpb-btn jpb-btn-outline" onClick={handleNewPosting}>
+          <button className="jpb-btn jpb-btn-ghost" onClick={handleNewPosting}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Posting
           </button>
@@ -1142,9 +1225,9 @@ const JobPostingBuilder: React.FC = () => {
                       selectedVendor={formData.product_vendor}
                       selectedProductType={formData.product_type}
                       selectedRole={formData.job_role}
-                      onVendorChange={(name) => setFormData(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' }))}
-                      onProductTypeChange={(name) => setFormData(prev => ({ ...prev, product_type: name, job_role: '' }))}
-                      onRoleChange={(name) => setFormData(prev => ({ ...prev, job_role: name }))}
+                      onVendorChange={(name) => { setSelectedRoleId(null); setFormData(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' })); }}
+                      onProductTypeChange={(name) => { setSelectedRoleId(null); setFormData(prev => ({ ...prev, product_type: name, job_role: '' })); }}
+                      onRoleChange={(name, roleId) => { setSelectedRoleId(roleId || null); setFormData(prev => ({ ...prev, job_role: name })); }}
                       required={true}
                       errors={{
                         vendor: errors.product_vendor,

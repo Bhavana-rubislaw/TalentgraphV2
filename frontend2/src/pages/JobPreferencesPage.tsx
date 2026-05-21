@@ -134,6 +134,9 @@ const JobPreferencesPage: React.FC = () => {
   const [certifications, setCertifications] = useState<CertOption[]>([]);
   const [techCatalog, setTechCatalog] = useState<string[]>([]);
   const [softCatalog, setSoftCatalog] = useState<string[]>([]);
+  const [globalTechCatalog, setGlobalTechCatalog] = useState<string[]>([]);
+  const [globalSoftCatalog, setGlobalSoftCatalog] = useState<string[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 
   // Accordion
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['role', 'work', 'location', 'comp', 'skills', 'exp', 'auth', 'edu', 'resume', 'socials', 'summary']));
@@ -179,6 +182,41 @@ const JobPreferencesPage: React.FC = () => {
 
   useEffect(() => { setCurrentPage(1); }, [searchQuery, filterWork]);
 
+  // Fetch role-specific skills when the selected role changes
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setTechCatalog(globalTechCatalog);
+      setSoftCatalog(globalSoftCatalog);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.getRoleSkills(selectedRoleId);
+        if (cancelled) return;
+        const roleSkills: Array<{ name: string; category: string }> = res.data.skills;
+        if (roleSkills.length === 0) {
+          setTechCatalog(globalTechCatalog);
+          setSoftCatalog(globalSoftCatalog);
+          return;
+        }
+        setTechCatalog(roleSkills
+          .filter(s => s.category === 'technical' || s.category === 'functional')
+          .map(s => s.name));
+        setSoftCatalog(roleSkills
+          .filter(s => s.category === 'soft')
+          .map(s => s.name));
+      } catch {
+        if (!cancelled) {
+          setTechCatalog(globalTechCatalog);
+          setSoftCatalog(globalSoftCatalog);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoleId]);
+
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -193,6 +231,8 @@ const JobPreferencesPage: React.FC = () => {
       setCertifications(certRes.data);
       setTechCatalog(catRes.data.technical_skills || []);
       setSoftCatalog(catRes.data.soft_skills || []);
+      setGlobalTechCatalog(catRes.data.technical_skills || []);
+      setGlobalSoftCatalog(catRes.data.soft_skills || []);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
@@ -305,6 +345,15 @@ const JobPreferencesPage: React.FC = () => {
     setEditingId(p.id);
     setShowForm(true);
     setOpenMenuId(null);
+    // Resolve role ID from name so role-specific skills load automatically
+    setSelectedRoleId(null);
+    if (p.job_role) {
+      apiClient.searchTaxonomy(p.job_role, 10).then((res: any) => {
+        const match = (res.data.roles as Array<{ id: number; name: string }>)
+          .find((r: { id: number; name: string }) => r.name === p.job_role);
+        if (match) setSelectedRoleId(match.id);
+      }).catch(() => { /* fallback: global catalog */ });
+    }
   };
 
   const confirmDelete = async () => {
@@ -319,7 +368,7 @@ const JobPreferencesPage: React.FC = () => {
     setDeleteTarget(null);
   };
 
-  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setShowForm(true); setParsedFields(new Set()); setPreParseForm(null); };
+  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setSelectedRoleId(null); setShowForm(true); setParsedFields(new Set()); setPreParseForm(null); };
 
   /* ── Resume Parsing ── */
   const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -698,9 +747,9 @@ const JobPreferencesPage: React.FC = () => {
                 selectedVendor={form.product_vendor}
                 selectedProductType={form.product_type}
                 selectedRole={form.job_role}
-                onVendorChange={(name) => setForm(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' }))}
-                onProductTypeChange={(name) => setForm(prev => ({ ...prev, product_type: name, job_role: '' }))}
-                onRoleChange={(name) => setForm(prev => ({ ...prev, job_role: name }))}
+                onVendorChange={(name) => { setSelectedRoleId(null); setForm(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' })); }}
+                onProductTypeChange={(name) => { setSelectedRoleId(null); setForm(prev => ({ ...prev, product_type: name, job_role: '' })); }}
+                onRoleChange={(name, roleId) => { setSelectedRoleId(roleId || null); setForm(prev => ({ ...prev, job_role: name })); }}
                 required={true}
               />
               

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { apiClient } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -223,6 +223,25 @@ const CandidateDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const [profileMenuPos, setProfileMenuPos] = useState({ top: 0, right: 0 });
+
+  useEffect(() => {
+    if (!showProfileMenu) return;
+    // Compute position from the trigger button wrapper
+    if (profileMenuRef.current) {
+      const rect = profileMenuRef.current.getBoundingClientRect();
+      setProfileMenuPos({ top: rect.bottom + 8, right: window.innerWidth - rect.right });
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      const inTrigger = profileMenuRef.current?.contains(e.target as Node);
+      const inDropdown = profileDropdownRef.current?.contains(e.target as Node);
+      if (!inTrigger && !inDropdown) setShowProfileMenu(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileMenu]);
   const [recCardIndex, setRecCardIndex] = useState(0);
   const [jobListTab, setJobListTab] = useState<'liked' | 'applied'>('liked');
   const [drawerJob, setDrawerJob] = useState<any | null>(null);
@@ -5614,6 +5633,7 @@ const CandidateDashboard: React.FC = () => {
 
           <NotificationBellDrawer role="candidate" />
 
+          <div ref={profileMenuRef}>
           <button className="talentgraph-user-btn" onClick={() => setShowProfileMenu(!showProfileMenu)}>
             <div className="talentgraph-user-avatar">{userInitial}</div>
             <div className="talentgraph-user-info">
@@ -5621,9 +5641,14 @@ const CandidateDashboard: React.FC = () => {
               <div className="talentgraph-user-role">Candidate</div>
             </div>
           </button>
+          </div>
 
-          {showProfileMenu && (
-            <div className="profile-menu" style={{ position: 'absolute', top: '60px', right: '32px', zIndex: 1000 }}>
+          {showProfileMenu && ReactDOM.createPortal(
+            <div
+              ref={profileDropdownRef}
+              className="profile-menu"
+              style={{ position: 'fixed', top: `${profileMenuPos.top}px`, right: `${profileMenuPos.right}px`, zIndex: 10001 }}
+            >
               <button onClick={() => { setShowProfileMenu(false); navigate('/candidate/profile'); }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -5647,7 +5672,8 @@ const CandidateDashboard: React.FC = () => {
                 </svg>
                 Logout
               </button>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       </div>
@@ -5761,13 +5787,6 @@ const CandidateDashboard: React.FC = () => {
               <p className="talentgraph-page-subtitle">Curated roles matched to your profile by our AI engine</p>
             </div>
             <div className="talentgraph-page-header-right">
-              <button className="talentgraph-btn-secondary" onClick={() => fetchRecommendations()}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 4v6h6M23 20v-6h-6"/>
-                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                </svg>
-                Refresh
-              </button>
               <FilterPill
                 id="rec-match-filter-header"
                 icon={
@@ -5787,6 +5806,13 @@ const CandidateDashboard: React.FC = () => {
                 onChange={(val) => setRecommendationsMatchFilter(val as string)}
                 ariaLabel="Filter by match score"
               />
+              <button className="talentgraph-btn-secondary" onClick={() => fetchRecommendations()}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 4v6h6M23 20v-6h-6"/>
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                </svg>
+                Refresh
+              </button>
             </div>
           </div>
         )}

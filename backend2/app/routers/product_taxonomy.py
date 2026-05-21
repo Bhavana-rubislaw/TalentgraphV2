@@ -9,6 +9,7 @@ Endpoints:
 - GET /vendors - List all vendors (searchable)
 - GET /vendors/{vendor_id}/product-types - Get product types for a vendor
 - GET /product-types/{type_id}/roles - Get roles for a product type
+- GET /roles/{role_id}/skills - Get role-specific skill taxonomy
 - POST /vendors/custom - Create custom vendor
 - POST /product-types/custom - Create custom product type
 - POST /roles/custom - Create custom role
@@ -19,7 +20,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, or_, func
 from app.database import get_session
-from app.models import ProductVendor, ProductType, ProductRole, User
+from app.models import ProductVendor, ProductType, ProductRole, User, TaxonomySkill, RoleSkillLink
 from app.security import get_current_user
 from pydantic import BaseModel
 
@@ -106,6 +107,27 @@ class TaxonomySearchResult(BaseModel):
     vendors: List[VendorResponse]
     product_types: List[ProductTypeResponse]
     roles: List[RoleResponse]
+
+
+class TaxonomySkillResponse(BaseModel):
+    id: int
+    name: str
+    category: str  # 'technical', 'functional', 'soft'
+    description: Optional[str]
+    is_required: bool  # True if this skill is required for the role
+
+    class Config:
+        from_attributes = True
+
+
+class RoleSkillsResponse(BaseModel):
+    role_id: int
+    role_name: str
+    skills: List[TaxonomySkillResponse]
+    is_fallback: bool = False  # True when returning global catalog as fallback
+
+    class Config:
+        from_attributes = True
 
 
 # ============ ENDPOINTS ============
@@ -317,6 +339,49 @@ def search_taxonomy(
         vendors=[VendorResponse.model_validate(v) for v in vendors],
         product_types=[ProductTypeResponse.model_validate(pt) for pt in product_types],
         roles=[RoleResponse.model_validate(r) for r in roles]
+    )
+
+
+@router.get("/roles/{role_id}/skills", response_model=RoleSkillsResponse)
+def get_skills_for_role(
+    role_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Get role-specific skill taxonomy for a given ProductRole.
+
+    Returns skills that are linked to the role via RoleSkillLink.
+    If no role-specific skills exist the endpoint returns an empty list
+    (the frontend is responsible for falling back to the global catalog).
+    """
+    role = session.get(ProductRole, role_id)
+    if not role or not role.is_active:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    links = session.exec(
+        select(RoleSkillLink, TaxonomySkill)
+        .join(TaxonomySkill, RoleSkillLink.skill_id == TaxonomySkill.id)
+        .where(RoleSkillLink.role_id == role_id)
+        .where(TaxonomySkill.is_active == True)
+        .order_by(RoleSkillLink.is_required.desc(), TaxonomySkill.name)
+    ).all()
+
+    skills = [
+        TaxonomySkillResponse(
+            id=skill.id,
+            name=skill.name,
+            category=skill.category,
+            description=skill.description,
+            is_required=link.is_required,
+        )
+        for link, skill in links
+    ]
+
+    return RoleSkillsResponse(
+        role_id=role_id,
+        role_name=role.name,
+        skills=skills,
+        is_fallback=False,
     )
 
 
