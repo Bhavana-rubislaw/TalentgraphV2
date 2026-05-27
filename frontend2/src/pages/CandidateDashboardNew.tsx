@@ -298,6 +298,7 @@ const CandidateDashboard: React.FC = () => {
   // ── Upcoming Interviews ──────────────────────────────────
   const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
   const [allMeetings, setAllMeetings] = useState<any[]>([]);
+  const [upcomingInterviewPage, setUpcomingInterviewPage] = useState(0);
 
   // ── Candidate filter states ──────────────────────────────────
   const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
@@ -735,9 +736,15 @@ const CandidateDashboard: React.FC = () => {
       fetchAppliedLiked();
       
     } catch (error: any) {
+      const httpStatus = error?.response?.status;
       const msg = error?.response?.data?.detail;
-      console.error('[APPLICATION WITHDRAW ERROR]', error?.response?.status, msg);
-      alert(typeof msg === 'string' ? msg : 'Failed to withdraw application. Please try again.');
+      console.error('[APPLICATION WITHDRAW ERROR]', httpStatus ?? 'network error', msg ?? error?.message);
+      if (!httpStatus) {
+        // Network/CORS error — backend may have still processed it; refresh to show actual state
+        fetchAppliedLiked();
+      } else {
+        alert(typeof msg === 'string' ? msg : 'Failed to withdraw application. Please try again.');
+      }
     } finally {
       setWithdrawingJobId(null);
     }
@@ -1156,9 +1163,9 @@ const CandidateDashboard: React.FC = () => {
                         disabled={rec.already_swiped && rec.swipe_action === 'like'}
                       >
                         <svg viewBox="0 0 24 24" fill={rec.already_swiped && rec.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                          <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z"/>
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                         </svg>
-                        {rec.already_swiped && rec.swipe_action === 'like' ? 'Saved' : 'Save'}
+                        {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked' : 'Like'}
                       </button>
                       <button 
                         className="ai-action-btn apply"
@@ -1268,8 +1275,11 @@ const CandidateDashboard: React.FC = () => {
                 weekStart.setDate(todayStart.getDate() - todayStart.getDay());
                 const upcomingList = allMeetings
                   .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
-                  .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
-                  .slice(0, 5);
+                  .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
+                const UPCOMING_PAGE_SIZE = 2;
+                const totalUpcomingPages = Math.ceil(upcomingList.length / UPCOMING_PAGE_SIZE);
+                const safeUpcomingPage = upcomingList.length === 0 ? 0 : Math.min(upcomingInterviewPage, totalUpcomingPages - 1);
+                const upcomingPageItems = upcomingList.slice(safeUpcomingPage * UPCOMING_PAGE_SIZE, safeUpcomingPage * UPCOMING_PAGE_SIZE + UPCOMING_PAGE_SIZE);
                 const pastList = allMeetings
                   .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
                   .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
@@ -1355,7 +1365,33 @@ const CandidateDashboard: React.FC = () => {
                     {upcomingList.length === 0 && pastList.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
                     )}
-                    {upcomingList.map((m: any) => renderCard(m, false))}
+                    {upcomingPageItems.map((m: any) => renderCard(m, false))}
+                    {/* Pagination footer — only shown when there are more than 2 upcoming interviews */}
+                    {totalUpcomingPages > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '6px 0 2px 0' }}>
+                        <button
+                          onClick={() => setUpcomingInterviewPage(p => Math.max(0, p - 1))}
+                          disabled={safeUpcomingPage === 0}
+                          style={{ background: 'none', border: 'none', cursor: safeUpcomingPage === 0 ? 'default' : 'pointer', color: safeUpcomingPage === 0 ? '#D1D5DB' : '#6B7280', fontSize: '16px', lineHeight: 1, padding: '0 4px' }}
+                          aria-label="Previous"
+                        >‹</button>
+                        <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                          {Array.from({ length: totalUpcomingPages }, (_, i) => (
+                            <span
+                              key={i}
+                              onClick={() => setUpcomingInterviewPage(i)}
+                              style={{ width: i === safeUpcomingPage ? 18 : 6, height: 6, borderRadius: 3, background: i === safeUpcomingPage ? '#7C3AED' : '#D1D5DB', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block' }}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setUpcomingInterviewPage(p => Math.min(totalUpcomingPages - 1, p + 1))}
+                          disabled={safeUpcomingPage === totalUpcomingPages - 1}
+                          style={{ background: 'none', border: 'none', cursor: safeUpcomingPage === totalUpcomingPages - 1 ? 'default' : 'pointer', color: safeUpcomingPage === totalUpcomingPages - 1 ? '#D1D5DB' : '#6B7280', fontSize: '16px', lineHeight: 1, padding: '0 4px' }}
+                          aria-label="Next"
+                        >›</button>
+                      </div>
+                    )}
                     {pastList.length > 0 && (
                       <>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 10px 0' }}>
@@ -3459,13 +3495,13 @@ const CandidateDashboard: React.FC = () => {
               <button
                 className="cal-btn cal-btn-secondary"
                 onClick={() => { handleSwipeLike(viewAvailableJob.id); setViewAvailableJob(null); }}
-                title="Save this job to your liked list"
+                title="Like this job"
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                Save Job
+                Like Job
               </button>
               <button
                 className={`cal-btn ${viewAvailableJob.already_applied ? 'cal-btn-secondary' : 'cal-btn-primary'}`}
@@ -5736,14 +5772,6 @@ const CandidateDashboard: React.FC = () => {
         </div>
 
         <div className="talentgraph-topnav-right">
-          <button className="talentgraph-help-btn" title="Help">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 18, height: 18 }}>
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </button>
-
           <NotificationBellDrawer role="candidate" />
 
           <div ref={profileMenuRef}>

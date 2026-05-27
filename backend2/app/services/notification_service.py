@@ -252,6 +252,20 @@ class NotificationService:
                 message_preview=data.get("message_preview", ""),
                 action_url=data.get("action_url", "")
             )
+        elif event_type == "conversation_started":
+            return templates.message_received_email(
+                recipient_name=data.get("recipient_name", ""),
+                sender_name=data.get("sender_name", ""),
+                message_preview=data.get("message_preview", ""),
+                action_url=data.get("action_url", "")
+            )
+        elif event_type == "recruiter_message_received":
+            return templates.message_received_email(
+                recipient_name=data.get("recipient_name", ""),
+                sender_name=data.get("sender_name", ""),
+                message_preview=data.get("message_preview", ""),
+                action_url=data.get("action_url", "")
+            )
         elif event_type == "application_received":
             return templates.application_received_email(
                 recruiter_name=data.get("recruiter_name", ""),

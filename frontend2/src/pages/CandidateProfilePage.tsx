@@ -491,7 +491,7 @@ const CandidateProfilePage: React.FC = () => {
             </div>
             <div style={{ position: 'relative', marginBottom: 10, padding: '8px 10px', border: '1px dashed var(--cp-border)', borderRadius: 6, fontSize: 13, color: 'var(--cp-text-tertiary)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <input type="file" ref={certFileRef} accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setCertFile(e.target.files?.[0] || null)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
-              {Icons.upload} {certFile ? certFile.name : 'Select file (PDF, JPG, PNG)'}
+              <span style={{ display: 'inline-flex', width: 13, height: 13, flexShrink: 0 }}>{Icons.upload}</span> {certFile ? certFile.name : 'Select file (PDF, JPG, PNG)'}
             </div>
             <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
               <button className="cp-btn cp-btn-outline cp-btn-sm" type="button" onClick={() => { setShowCertForm(false); setCertName(''); setCertIssuer(''); setCertFile(null); }}>Cancel</button>

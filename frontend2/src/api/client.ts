@@ -269,10 +269,12 @@ export const apiClient = {
   
   scheduleInterview: (applicationId: number, payload: {
     date: string;
-    time: string;
+    start_time?: string;       // HH:MM 24-hr (preferred)
+    end_time?: string;         // HH:MM 24-hr (preferred)
+    time?: string;             // legacy single-time field (deprecated)
     timezone: string;
-    meeting_provider?: string;  // Optional - "zoom", "google_meet", or "microsoft_teams"
-    meeting_link?: string;  // Optional - for manual links
+    meeting_provider?: string; // 'zoom' | 'google_meet' | 'microsoft_teams'
+    meeting_link?: string;     // manual link (used when meeting_provider is omitted)
     notes_for_candidate?: string;
     email_subject?: string;
   }) =>
@@ -352,6 +354,8 @@ export const apiClient = {
     api.get('/notification-preferences'),
   getDefaultNotificationPreferences: () =>
     api.get('/notification-preferences/defaults'),
+  getNotificationRegistry: () =>
+    api.get('/notification-preferences/registry'),
   createOrUpdateNotificationPreference: (preference: {
     event_type: string;
     in_app_enabled: boolean;

@@ -218,20 +218,26 @@ def start_conversation(
     # Notify candidate that recruiter started a conversation
     try:
         recruiter_name = user.full_name or user.email
-        NotificationService.create_notification(
+        action_url = f"/candidate-dashboard?tab=messages&conversation={conversation.id}"
+        NotificationService.send_notification(
             session=session,
-            user_email=candidate_user.email,
+            user_id=data.candidate_user_id,
             event_type="conversation_started",
-            data={
-                "title": "New conversation",
-                "message": f"{recruiter_name} started a conversation with you",
-                "route": f"/candidate-dashboard?tab=messages&conversation={conversation.id}",
-                "route_context": {
-                    "conversation_id": conversation.id,
-                    "recruiter_user_id": user.id,
-                    "recruiter_name": recruiter_name
-                }
+            title="New conversation started",
+            message=f"{recruiter_name} started a conversation with you",
+            payload={
+                "conversation_id": conversation.id,
+                "recruiter_user_id": user.id,
+                "recruiter_name": recruiter_name,
+                "route": action_url,
             },
+            email_data={
+                "recipient_name": candidate_user.full_name or candidate_user.email,
+                "sender_name": recruiter_name,
+                "message_preview": f"{recruiter_name} started a conversation with you.",
+                "action_url": action_url,
+            },
+            notification_type="message",
             commit=True
         )
         logger.info(f"Notification sent to candidate {data.candidate_user_id} for new conversation {conversation.id}")
@@ -395,31 +401,39 @@ def send_message(
     try:
         receiver = session.get(User, receiver_id)
         if receiver:
-            # Determine routing based on receiver role
+            # Determine event type and routing based on receiver role
             if receiver.role == UserRole.CANDIDATE:
+                event_type = "message_received"
                 route = f"/candidate-dashboard?tab=messages&conversation={conversation_id}"
             else:
+                event_type = "recruiter_message_received"
                 route = f"/recruiter-dashboard?tab=messages&conversation={conversation_id}"
-            
+
             # Create preview (first 80 chars of message)
             message_preview = data.content.strip()[:80]
             if len(data.content.strip()) > 80:
                 message_preview += "..."
-            
-            NotificationService.create_notification(
+
+            sender_name = user.full_name or user.email
+            NotificationService.send_notification(
                 session=session,
-                user_email=receiver.email,
-                event_type="new_message_received",
-                data={
-                    "title": f"New message from {user.full_name or user.email}",
-                    "message": message_preview,
+                user_id=receiver_id,
+                event_type=event_type,
+                title=f"New message from {sender_name}",
+                message=message_preview,
+                payload={
+                    "conversation_id": conversation_id,
+                    "sender_user_id": user.id,
+                    "sender_name": sender_name,
                     "route": route,
-                    "route_context": {
-                        "conversation_id": conversation_id,
-                        "sender_user_id": user.id,
-                        "sender_name": user.full_name or user.email
-                    }
                 },
+                email_data={
+                    "recipient_name": receiver.full_name or receiver.email,
+                    "sender_name": sender_name,
+                    "message_preview": message_preview,
+                    "action_url": route,
+                },
+                notification_type="message",
                 commit=True
             )
             logger.info(f"Notification sent to user {receiver_id} for message {message.id}")

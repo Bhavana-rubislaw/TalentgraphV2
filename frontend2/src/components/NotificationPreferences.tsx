@@ -33,7 +33,7 @@ interface EventTypeMetadata {
   category: 'applications' | 'matches' | 'interviews' | 'messages' | 'jobs';
 }
 
-/* ── Event Type Metadata ── */
+/* ── Event Type Metadata (icons + fallback labels for offline/cache) ── */
 const EVENT_METADATA: Record<string, EventTypeMetadata> = {
   // Candidate Events
   application_status: {
@@ -78,6 +78,12 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
     icon: '💬',
     category: 'messages'
   },
+  conversation_started: {
+    label: 'Conversation Started',
+    description: 'When a recruiter starts a conversation with you',
+    icon: '💬',
+    category: 'messages'
+  },
   job_recommendation: {
     label: 'Job Recommendations',
     description: 'When new matching jobs are posted',
@@ -92,11 +98,29 @@ const EVENT_METADATA: Record<string, EventTypeMetadata> = {
     icon: '📄',
     category: 'applications'
   },
+  candidate_match: {
+    label: 'Candidate Match',
+    description: 'When a new candidate matches your job posting',
+    icon: '🎯',
+    category: 'matches'
+  },
+  recruiter_interview_scheduled: {
+    label: 'Interview Scheduled',
+    description: 'When an interview is scheduled with a candidate',
+    icon: '📅',
+    category: 'interviews'
+  },
   interview_confirmed: {
     label: 'Interview Confirmations',
     description: 'When candidates confirm appointments',
     icon: '✅',
     category: 'interviews'
+  },
+  recruiter_message_received: {
+    label: 'New Messages',
+    description: 'When you receive new messages from candidates',
+    icon: '💬',
+    category: 'messages'
   },
   job_update: {
     label: 'Job Posting Updates',
@@ -119,6 +143,8 @@ const CATEGORY_LABELS: Record<string, string> = {
    ================================================================ */
 const NotificationPreferences: React.FC = () => {
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
+  // Merged metadata: backend registry labels/descriptions overriding local fallbacks
+  const [eventMetadata, setEventMetadata] = useState<Record<string, EventTypeMetadata>>(EVENT_METADATA);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -126,7 +152,31 @@ const NotificationPreferences: React.FC = () => {
 
   useEffect(() => {
     fetchPreferences();
+    fetchRegistry();
   }, []);
+
+  const fetchRegistry = async () => {
+    try {
+      const response = await apiClient.getNotificationRegistry();
+      const registryItems: Array<{ event_type: string; label: string; description: string; category: string; priority: string }> = response.data;
+      // Merge backend registry into local metadata, preserving local icons
+      setEventMetadata(prev => {
+        const merged = { ...prev };
+        for (const item of registryItems) {
+          merged[item.event_type] = {
+            label: item.label,
+            description: item.description,
+            icon: prev[item.event_type]?.icon ?? '🔔',
+            category: (item.category as EventTypeMetadata['category']) ?? 'jobs',
+          };
+        }
+        return merged;
+      });
+    } catch (error) {
+      // Registry fetch failing is non-fatal; local EVENT_METADATA is the fallback
+      console.warn('[PREFERENCES] Registry fetch failed, using local metadata fallback:', error);
+    }
+  };
 
   const fetchPreferences = async () => {
     setLoading(true);
@@ -193,7 +243,7 @@ const NotificationPreferences: React.FC = () => {
 
   // Group preferences by category
   const groupedPreferences = preferences.reduce((acc, pref) => {
-    const metadata = EVENT_METADATA[pref.event_type];
+    const metadata = eventMetadata[pref.event_type];
     const category = metadata?.category || 'other';
     if (!acc[category]) acc[category] = [];
     acc[category].push(pref);
@@ -260,7 +310,7 @@ const NotificationPreferences: React.FC = () => {
             {/* Grid of Notification Cards */}
             <div className="notif-items-grid">
               {prefs.map(pref => {
-                const metadata = EVENT_METADATA[pref.event_type];
+                const metadata = eventMetadata[pref.event_type];
                 if (!metadata) return null;
 
                 return (

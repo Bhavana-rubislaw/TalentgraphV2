@@ -238,7 +238,7 @@ export const MatchBreakdownTable: React.FC<MatchBreakdownTableProps> = ({ detail
 // ── TopSkillMatches ───────────────────────────────────────────────────────────
 
 interface TopSkillMatchesProps {
-  matchedSkills: string[];
+  matchedSkills: (string | { skill: string; category?: string } | any)[];
   maxSkills?: number;
   label?: string;
 }
@@ -250,8 +250,13 @@ export const TopSkillMatches: React.FC<TopSkillMatchesProps> = ({
 }) => {
   if (!matchedSkills || matchedSkills.length === 0) return null;
 
-  const displayed = matchedSkills.slice(0, maxSkills);
-  const remaining = matchedSkills.length - displayed.length;
+  // Normalise: items may be plain strings or objects {skill, category}
+  const normalised: string[] = matchedSkills.map((s) =>
+    typeof s === 'string' ? s : (s?.skill ?? s?.name ?? JSON.stringify(s))
+  );
+
+  const displayed = normalised.slice(0, maxSkills);
+  const remaining = normalised.length - displayed.length;
 
   return (
     <div>

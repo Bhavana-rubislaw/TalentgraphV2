@@ -40,17 +40,54 @@ CANDIDATE_EVENTS = [
     {"event_type": "interview_scheduled", "priority": "urgent"},
     {"event_type": "interview_reminder", "priority": "urgent"},
     {"event_type": "message_received", "priority": "normal"},
+    {"event_type": "conversation_started", "priority": "normal"},
     {"event_type": "job_recommendation", "priority": "normal"}
 ]
 
 RECRUITER_EVENTS = [
     {"event_type": "application_received", "priority": "normal"},
-    {"event_type": "match_found", "priority": "normal"},
-    {"event_type": "interview_scheduled", "priority": "urgent"},
+    {"event_type": "candidate_match", "priority": "normal"},
+    {"event_type": "recruiter_interview_scheduled", "priority": "urgent"},
     {"event_type": "interview_confirmed", "priority": "urgent"},
-    {"event_type": "message_received", "priority": "normal"},
+    {"event_type": "recruiter_message_received", "priority": "normal"},
     {"event_type": "job_update", "priority": "normal"}
 ]
+
+
+@router.get("/registry")
+def get_notification_registry(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Returns all notification event types from the registry with their metadata.
+    Frontend uses this endpoint to keep the settings UI in sync with the backend
+    without hardcoding event type lists.
+    """
+    from app.core.notification_registry import NOTIFICATION_REGISTRY
+
+    user_role = current_user.get("role", "").lower()
+
+    if user_role == "candidate":
+        relevant_types = {e["event_type"] for e in CANDIDATE_EVENTS}
+    elif user_role in ["recruiter", "hr", "admin"]:
+        relevant_types = {e["event_type"] for e in RECRUITER_EVENTS}
+    else:
+        relevant_types = set(NOTIFICATION_REGISTRY.keys())
+
+    result = []
+    for event_type, spec in NOTIFICATION_REGISTRY.items():
+        if event_type not in relevant_types:
+            continue
+        result.append({
+            "event_type": spec.event_type,
+            "label": spec.display_name,
+            "description": spec.description,
+            "category": spec.category.value,
+            "priority": spec.priority.value,
+            "default_channels": [ch.value for ch in spec.default_channels],
+        })
+
+    return result
 
 
 @router.get("", response_model=List[NotificationPreferenceRead])
@@ -77,6 +114,9 @@ def get_user_preferences(
         if not preferences:
             logger.info(f"Creating default preferences for user {user_id} ({user_role})")
             preferences = _create_default_preferences(session, user_id, user_role)
+        else:
+            # Backfill any new event types missing for existing users
+            preferences = _backfill_missing_preferences(session, user_id, user_role, preferences)
         
         return preferences
         
@@ -363,3 +403,54 @@ def _create_default_preferences(
         session.refresh(pref)
     
     return preferences
+
+
+def _backfill_missing_preferences(
+    session: Session,
+    user_id: int,
+    user_role: str,
+    existing_preferences: List[NotificationPreferences]
+) -> List[NotificationPreferences]:
+    """
+    For existing users, add any new event types from the defaults list
+    that are not yet present in their preferences.
+    This ensures users get new notification types without losing their settings.
+    """
+    user_role = user_role.lower()
+
+    if user_role == "candidate":
+        expected_events = CANDIDATE_EVENTS
+    elif user_role in ["recruiter", "hr", "admin"]:
+        expected_events = RECRUITER_EVENTS
+    else:
+        return existing_preferences
+
+    existing_types = {pref.event_type for pref in existing_preferences}
+    missing_events = [e for e in expected_events if e["event_type"] not in existing_types]
+
+    if not missing_events:
+        return existing_preferences
+
+    new_prefs = []
+    for event in missing_events:
+        pref = NotificationPreferences(
+            user_id=user_id,
+            event_type=event["event_type"],
+            in_app_enabled=True,
+            email_enabled=True,
+            in_app_frequency="realtime",
+            email_frequency="realtime",
+            priority=event["priority"]
+        )
+        session.add(pref)
+        new_prefs.append(pref)
+
+    session.commit()
+    for pref in new_prefs:
+        session.refresh(pref)
+
+    logger.info(
+        f"Backfilled {len(new_prefs)} missing preference(s) for user {user_id}: "
+        + ", ".join(e["event_type"] for e in missing_events)
+    )
+    return list(existing_preferences) + new_prefs

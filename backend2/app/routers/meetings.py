@@ -495,6 +495,11 @@ async def update_meeting(
         if not meeting:
             raise HTTPException(status_code=404, detail="Meeting not found")
         
+        # Candidates cannot edit meeting details
+        current_user_obj = session.get(User, current_user["user_id"])
+        if current_user_obj and current_user_obj.role == "candidate":
+            raise HTTPException(status_code=403, detail="Candidates cannot edit meeting details")
+        
         if meeting.organizer_user_id != current_user["user_id"]:
             raise HTTPException(status_code=403, detail="Only organizer can update meeting")
         
@@ -646,6 +651,14 @@ async def update_meeting(
         
         # Update other fields - Use model_dump instead of dict for Pydantic v2
         update_dict = update_data.model_dump(exclude_unset=True, exclude={'participants'})
+
+        # Track whether meaningful fields (time, details) changed before applying them
+        time_or_detail_changed = any(
+            k in update_dict
+            for k in ('scheduled_start', 'scheduled_end', 'duration_minutes',
+                      'timezone', 'title', 'description', 'video_meeting_url', 'location')
+        )
+
         for key, value in update_dict.items():
             setattr(meeting, key, value)
         
@@ -671,6 +684,34 @@ async def update_meeting(
                     event_type="meeting_updated",
                     route=f"/meetings/{meeting.id}"
                 )
+
+        # Send rescheduled/updated email to existing participants when meaningful fields changed
+        if time_or_detail_changed:
+            email_service = MeetingEmailService()
+            current_user_obj = session.get(User, current_user["user_id"])
+            for participant in meeting.participants:
+                if participant.user_id != current_user["user_id"]:
+                    recipient = session.get(User, participant.user_id)
+                    if recipient:
+                        try:
+                            confirm_token = MeetingService.generate_action_token(
+                                session, meeting.id, recipient.id, "confirm"
+                            )
+                            cancel_token = MeetingService.generate_action_token(
+                                session, meeting.id, recipient.id, "cancel"
+                            )
+                            email_service.send_meeting_updated_email(
+                                session=session,
+                                meeting=meeting,
+                                recipient_user=recipient,
+                                editor_user=current_user_obj,
+                                confirm_token=confirm_token,
+                                cancel_token=cancel_token,
+                            )
+                        except Exception as email_err:
+                            logger.warning(
+                                f"Could not send updated-meeting email to {recipient.email}: {email_err}"
+                            )
         
         return MeetingRead.from_orm_with_participants(meeting)
     
@@ -710,6 +751,10 @@ async def cancel_meeting(
     current_user_obj = session.get(User, current_user["user_id"])
     if not current_user_obj:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Candidates cannot cancel meetings
+    if current_user_obj.role == "candidate":
+        raise HTTPException(status_code=403, detail="Candidates cannot cancel meetings")
     
     # Verify canceller identity if name and email are provided
     if cancel_data.canceller_name or cancel_data.canceller_email:

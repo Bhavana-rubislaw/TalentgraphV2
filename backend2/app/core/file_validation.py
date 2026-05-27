@@ -4,7 +4,6 @@ Provides comprehensive validation for file uploads to prevent security vulnerabi
 """
 
 import os
-import magic
 import hashlib
 import logging
 from pathlib import Path
@@ -12,6 +11,15 @@ from typing import Optional, List, Tuple
 from fastapi import UploadFile, HTTPException
 
 logger = logging.getLogger(__name__)
+
+# python-magic requires libmagic native library; on Windows use python-magic-bin
+try:
+    import magic as _magic
+    _MAGIC_AVAILABLE = True
+except (ImportError, OSError):
+    _magic = None  # type: ignore
+    _MAGIC_AVAILABLE = False
+    logger.warning("[FILE_VALIDATION] python-magic/libmagic not available — MIME detection via magic bytes disabled")
 
 
 class FileValidator:
@@ -156,23 +164,26 @@ class FileValidator:
             
             # Use python-magic to verify actual file type
             try:
-                detected_type = magic.from_buffer(content, mime=True)
-                logger.info(f"[FILE_VALIDATION] Detected MIME type: {detected_type}")
-                
-                # Verify detected type matches declared type
-                declared_type = file.content_type or ""
-                if detected_type != declared_type:
-                    # Some leniency for common mismatches
-                    allowed_mismatches = {
-                        ('application/octet-stream', 'application/pdf'),
-                        ('text/plain', 'application/pdf'),
-                    }
-                    if (declared_type, detected_type) not in allowed_mismatches:
-                        logger.warning(
-                            f"[FILE_VALIDATION] MIME type mismatch: "
-                            f"declared={declared_type}, detected={detected_type}"
-                        )
-                        # Don't reject, just log for now (can be strict in production)
+                if _MAGIC_AVAILABLE:
+                    detected_type = _magic.from_buffer(content, mime=True)
+                    logger.info(f"[FILE_VALIDATION] Detected MIME type: {detected_type}")
+                    
+                    # Verify detected type matches declared type
+                    declared_type = file.content_type or ""
+                    if detected_type != declared_type:
+                        # Some leniency for common mismatches
+                        allowed_mismatches = {
+                            ('application/octet-stream', 'application/pdf'),
+                            ('text/plain', 'application/pdf'),
+                        }
+                        if (declared_type, detected_type) not in allowed_mismatches:
+                            logger.warning(
+                                f"[FILE_VALIDATION] MIME type mismatch: "
+                                f"declared={declared_type}, detected={detected_type}"
+                            )
+                            # Don't reject, just log for now (can be strict in production)
+                else:
+                    logger.info("[FILE_VALIDATION] Skipping magic-byte MIME check (libmagic not available)")
             except Exception as e:
                 logger.warning(f"[FILE_VALIDATION] Magic byte detection failed: {str(e)}")
                 # Continue if python-magic is not available

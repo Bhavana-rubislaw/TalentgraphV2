@@ -164,38 +164,24 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
     setSubmitError(null);
     
     try {
-      // Build ISO datetimes for the meeting
-      const [startHour, startMin] = formData.interviewStartTime.split(':').map(Number);
-      const [endHour, endMin] = formData.interviewEndTime.split(':').map(Number);
-      
-      const startDate = new Date(`${formData.interviewDate}T${formData.interviewStartTime}:00`);
-      const endDate = new Date(`${formData.interviewDate}T${formData.interviewEndTime}:00`);
-      const durationMinutes = (endHour * 60 + endMin) - (startHour * 60 + startMin);
-      
-      const participants: Array<{ name: string; email: string; is_required?: boolean }> = [];
-      if (formData.candidateEmail.trim()) {
-        participants.push({
-          name: application.candidate?.name || 'Candidate',
-          email: formData.candidateEmail.trim(),
-          is_required: true
-        });
-      }
-      
-      const payload: Parameters<typeof apiClient.createMeeting>[0] = {
-        title: formData.subject.trim() || `Interview - ${application.job_posting?.job_title || 'Position'}`,
-        description: formData.notes.trim() || undefined,
-        meeting_type: 'interview',
-        scheduled_start: startDate.toISOString(),
-        scheduled_end: endDate.toISOString(),
-        duration_minutes: durationMinutes,
+      // Format date as "May 25, 2026" — the schedule-interview endpoint uses dateutil parsing
+      const dateObj = new Date(formData.interviewDate + 'T00:00:00');
+      const formattedDate = dateObj.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      });
+
+      const payload = {
+        date: formattedDate,
+        start_time: formData.interviewStartTime,  // HH:MM (24-hr from time input)
+        end_time: formData.interviewEndTime,       // HH:MM (24-hr from time input)
         timezone: formData.timezone,
-        participants,
-        application_id: application.id,
-        video_provider: formData.meetingProvider !== 'manual' ? formData.meetingProvider : undefined,
-        video_meeting_url: formData.meetingProvider === 'manual' ? formData.meetingLink.trim() : undefined,
+        meeting_provider: formData.meetingProvider !== 'manual' ? formData.meetingProvider : undefined,
+        meeting_link: formData.meetingProvider === 'manual' ? formData.meetingLink.trim() || undefined : undefined,
+        notes_for_candidate: formData.notes.trim() || undefined,
+        email_subject: formData.subject.trim() || undefined,
       };
-      
-      const response = await apiClient.createMeeting(payload);
+
+      const response = await apiClient.scheduleInterview(application.id, payload);
       setResponseData(response.data);
       setSubmitSuccess(true);
       

@@ -266,21 +266,6 @@ export const CandidateMeetingDetail: React.FC<CandidateMeetingDetailProps> = ({
               >
                 ✅ Confirm Attendance
               </button>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setShowRescheduleModal(true)}
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition font-medium"
-                >
-                  🔄 Request Reschedule
-                </button>
-                <button
-                  onClick={() => setShowCancelModal(true)}
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition font-medium"
-                >
-                  ❌ Cancel Interview
-                </button>
-              </div>
             </div>
           )}
 

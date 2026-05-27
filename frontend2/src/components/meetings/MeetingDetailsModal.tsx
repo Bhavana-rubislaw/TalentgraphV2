@@ -29,6 +29,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
   const [forceRescheduleData, setForceRescheduleData] = useState({ date: '', startTime: '', reason: '' });
   
   const currentUserRole = localStorage.getItem('role') || '';
+  const isCandidate = currentUserRole.toLowerCase() === 'candidate';
   const isAdminOrHR = currentUserRole === 'admin' || currentUserRole === 'hr';
   
   const [cancellationReason, setCancellationReason] = useState('');
@@ -705,7 +706,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3 style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: '0.7px' }}>Participants</h3>
-              {meeting.status === 'scheduled' && (
+              {meeting.status === 'scheduled' && !isCandidate && (
                 <button onClick={() => setShowEditParticipants(true)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', color: '#6d28d9', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                   Edit
                 </button>
@@ -765,14 +766,18 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 style={{ padding: '10px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 📅 Open in Calendar
               </button>
-              <button onClick={() => setShowRescheduleModal(true)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                ↺ Reschedule
-              </button>
-              <button onClick={() => setShowCancelModal(true)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                ✕ Cancel Meeting
-              </button>
+              {!isCandidate && (
+                <>
+                  <button onClick={() => setShowRescheduleModal(true)}
+                    style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    ↺ Reschedule
+                  </button>
+                  <button onClick={() => setShowCancelModal(true)}
+                    style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                    ✕ Cancel Meeting
+                  </button>
+                </>
+              )}
             </div>
           )}
           {/* Admin Control Center */}

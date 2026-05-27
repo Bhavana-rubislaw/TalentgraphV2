@@ -330,9 +330,25 @@ const JobPreferencesPage: React.FC = () => {
     const allSkills = (p.skills || []).map((s: any) => ({
       skill_name: s.skill_name, skill_category: s.skill_category, proficiency_level: s.proficiency_level
     }));
+    // Coerce any null string fields to '' to avoid React controlled-component warnings
+    const sanitiseStr = (v: any) => (v === null || v === undefined ? '' : String(v));
     setForm({
       ...EMPTY,
       ...p,
+      // String fields that may come back as null from API
+      seniority_level: sanitiseStr(p.seniority_level),
+      travel_willingness: sanitiseStr(p.travel_willingness),
+      shift_preference: sanitiseStr(p.shift_preference),
+      remote_acceptance: sanitiseStr(p.remote_acceptance),
+      relocation_willingness: sanitiseStr(p.relocation_willingness),
+      negotiability: sanitiseStr(p.negotiability),
+      notice_period: sanitiseStr(p.notice_period),
+      visa_status: sanitiseStr(p.visa_status),
+      security_clearance: sanitiseStr(p.security_clearance),
+      highest_education: sanitiseStr(p.highest_education),
+      salary_currency: sanitiseStr(p.salary_currency) || 'USD',
+      // start_date_preference is free text (e.g. "2 weeks", "Immediately")
+      start_date_preference: sanitiseStr(p.start_date_preference),
       skills: allSkills,
       location_preferences: (p.location_preferences || []).map((l: any) => ({ city: l.city, state: l.state, country: l.country })),
       certification_ids: p.certification_ids || '[]',
@@ -939,7 +955,7 @@ const JobPreferencesPage: React.FC = () => {
                 </div>
                 <div className="cp-form-group">
                   <label>Start Date Preference</label>
-                  <input type="date" name="start_date_preference" value={form.start_date_preference} onChange={inp} />
+                  <input type="text" name="start_date_preference" value={form.start_date_preference} onChange={inp} placeholder="e.g. Immediately, 2 weeks, 1 month" />
                 </div>
               </div>
               <div className="cp-form-group">

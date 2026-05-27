@@ -158,6 +158,17 @@ CANDIDATE_NOTIFICATIONS = {
         dedup_window_minutes=60,
         description="Personalized job recommendation"
     ),
+
+    "conversation_started": NotificationSpec(
+        event_type="conversation_started",
+        display_name="Conversation Started",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.MESSAGES,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/candidate/messages",
+        dedup_window_minutes=5,
+        description="A recruiter has started a conversation with you"
+    ),
 }
 
 

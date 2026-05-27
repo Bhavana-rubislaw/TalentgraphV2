@@ -2639,7 +2639,7 @@
   margin-bottom: 14px;
 }
 .cp-sidebar-upload-btn:hover { background: var(--cp-accent-hover); }
-.cp-sidebar-upload-btn svg { width: 15px; height: 15px; }
+.cp-sidebar-upload-btn svg { width: 13px; height: 13px; }
 .cp-sidebar-upload-btn label { cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
 /* ── File Item in Sidebar ── */

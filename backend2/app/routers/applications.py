@@ -44,10 +44,10 @@ VALID_STATUSES = ["applied", "scheduled", "under_review", "shortlisted", "select
 
 # Status transition rules - maps current_status -> allowed_next_statuses
 STATUS_TRANSITIONS = {
-    "applied": ["scheduled", "under_review", "shortlisted", "rejected"],  # Can skip scheduling if needed
+    "applied": ["scheduled", "under_review", "shortlisted", "rejected"],
     "scheduled": ["under_review", "shortlisted", "selected", "rejected"],
-    "under_review": ["shortlisted", "selected", "rejected"],
-    "shortlisted": ["selected", "rejected"],
+    "under_review": ["scheduled", "shortlisted", "selected", "rejected"],  # can schedule after review
+    "shortlisted": ["scheduled", "selected", "rejected"],  # can still schedule after shortlisting
     "selected": [],  # Terminal state
     "rejected": []   # Terminal state
 }
@@ -481,6 +481,17 @@ def withdraw_application(
     if not application or application.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Application not found")
     
+    # Nullify application_id on any meetings that reference this application.
+    # Must flush BEFORE session.delete() so the FK constraint is satisfied
+    # (SQLAlchemy's unit-of-work would otherwise try the DELETE first).
+    linked_meetings = session.exec(
+        select(Meeting).where(Meeting.application_id == application_id)
+    ).all()
+    for m in linked_meetings:
+        m.application_id = None
+        session.add(m)
+    session.flush()  # push UPDATEs to DB before the DELETE
+
     before_snap = snap_application(application)
     log_activity_event(
         session,
