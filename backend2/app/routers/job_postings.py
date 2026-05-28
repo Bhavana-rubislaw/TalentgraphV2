@@ -16,6 +16,8 @@ from app.schemas import (
 from app.security import (
     get_current_user,
     require_company_role,
+    require_recruiter_role,
+    require_hr_role,
     get_user_company_id,
     verify_company_owns_job
 )
@@ -89,10 +91,10 @@ def get_skill_catalogs():
 @router.post("", response_model=dict)
 def create_job_posting(
     job_data: JobPostingCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_recruiter_role),
     session: Session = Depends(get_session)
 ):
-    """Create a new job posting with skills (Recruiter only)"""
+    """Create a new job posting with skills (Recruiter or Admin only)"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -205,10 +207,10 @@ def get_job_posting(
 def update_job_posting(
     job_id: int,
     job_data: JobPostingCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_recruiter_role),
     session: Session = Depends(get_session)
 ):
-    """Update a job posting with skills (Recruiter only)"""
+    """Update a job posting with skills (Recruiter or Admin only)"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -458,12 +460,12 @@ def delete_skill_from_posting(
 def update_job_posting_status(
     job_id: int,
     request: JobPostingStatusUpdateRequest,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_hr_role),
     session: Session = Depends(get_session)
 ):
     """
-    Update job posting lifecycle status (freeze, reactivate, repost)
-    
+    Update job posting lifecycle status (freeze, reactivate, repost) — HR or Admin only.
+
     Actions:
     - freeze: Temporarily close job, stop accepting applications, preserve historical data
     - reactivate: Reopen frozen job and notify previous applicants

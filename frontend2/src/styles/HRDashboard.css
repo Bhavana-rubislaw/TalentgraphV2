@@ -1,0 +1,594 @@
+/* ============================================================
+   HR DASHBOARD — Tab content styles
+   Matches the visual language of RecruiterDashboardNew &
+   CandidateDashboardNew (HorizontalDashboard + PremiumCards).
+   ============================================================ */
+
+/* ─── Shared tab-content shell ──────────────────────────────── */
+.hr-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ─── Page-level header row ─────────────────────────────────── */
+.hr-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.hr-panel-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 4px;
+  letter-spacing: -0.3px;
+}
+
+.hr-panel-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ─── Section heading pill ──────────────────────────────────── */
+.hr-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hr-section-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  padding: 4px 0;
+  border-bottom: 2px solid #f3f4f6;
+  margin-bottom: 4px;
+}
+
+.hr-section-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+.hr-section-pill.pending  { background: #fef3c7; color: #b45309; }
+.hr-section-pill.active   { background: #d1fae5; color: #065f46; }
+.hr-section-pill.frozen   { background: #ede9fe; color: #6d28d9; }
+.hr-section-pill.closed   { background: #f1f5f9; color: #475569; }
+
+/* ─── Job Card ───────────────────────────────────────────────── */
+.hr-job-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.hr-job-card:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08);
+}
+
+.hr-job-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.hr-job-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hr-job-card-meta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hr-job-card-meta-sep {
+  color: #d1d5db;
+}
+
+.hr-job-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ─── Status badge ───────────────────────────────────────────── */
+.hr-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.hr-status-badge.draft     { background: #fef3c722; color: #f59e0b; border: 1px solid #fde68a; }
+.hr-status-badge.active    { background: #d1fae522; color: #10b981; border: 1px solid #a7f3d0; }
+.hr-status-badge.frozen    { background: #ede9fe22; color: #6366f1; border: 1px solid #c4b5fd; }
+.hr-status-badge.cancelled { background: #fee2e222; color: #ef4444; border: 1px solid #fca5a5; }
+.hr-status-badge.closed    { background: #f1f5f9;   color: #6b7280; border: 1px solid #e2e8f0; }
+
+/* ─── Action buttons inside job cards ───────────────────────── */
+.hr-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: #ffffff;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.hr-action-btn.activate  { color: #10b981; border-color: #a7f3d0; }
+.hr-action-btn.activate:hover  { background: #d1fae5; }
+
+.hr-action-btn.freeze    { color: #6366f1; border-color: #c4b5fd; }
+.hr-action-btn.freeze:hover    { background: #ede9fe; }
+
+.hr-action-btn.reactivate { color: #10b981; border-color: #a7f3d0; }
+.hr-action-btn.reactivate:hover { background: #d1fae5; }
+
+.hr-action-btn.cancel    { color: #ef4444; border-color: #fca5a5; }
+.hr-action-btn.cancel:hover    { background: #fee2e2; }
+
+.hr-action-btn.remove    { color: #dc2626; border-color: #fca5a5; }
+.hr-action-btn.remove:hover    { background: #fee2e2; }
+
+/* ─── KPI Grid ───────────────────────────────────────────────── */
+.hr-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.hr-kpi-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+.hr-kpi-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.hr-kpi-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+}
+
+.hr-kpi-value {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.hr-kpi-card .hr-kpi-stripe {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+/* ─── Analytics panels ───────────────────────────────────────── */
+.hr-analytics-panel {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 24px;
+}
+
+.hr-analytics-panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 16px;
+}
+
+/* Job status breakdown chips */
+.hr-status-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hr-status-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+.hr-status-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.hr-status-chip-name {
+  font-size: 13px;
+  color: #374151;
+  text-transform: capitalize;
+}
+
+.hr-status-chip-count {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Funnel rates */
+.hr-funnel-rates {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.hr-funnel-rate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+  flex: 1;
+}
+
+.hr-funnel-rate-label {
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.hr-funnel-bar-track {
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hr-funnel-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hr-funnel-rate-pct {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* ─── Team list ──────────────────────────────────────────────── */
+.hr-team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hr-team-member {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.hr-team-member:hover {
+  border-color: #c4b5fd;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.06);
+}
+
+.hr-member-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+
+.hr-member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.hr-member-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hr-member-email {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hr-member-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.hr-role-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.hr-role-badge.hr        { background: #ede9fe; color: #7c3aed; }
+.hr-role-badge.recruiter { background: #dbeafe; color: #2563eb; }
+.hr-role-badge.admin     { background: #fef3c7; color: #b45309; }
+.hr-role-badge.default   { background: #f1f5f9; color: #475569; }
+
+.hr-inactive-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* ─── Applications overview ──────────────────────────────────── */
+.hr-app-status-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hr-app-status-chip {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 20px;
+  text-align: center;
+  min-width: 100px;
+  transition: box-shadow 0.15s;
+}
+
+.hr-app-status-chip:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.hr-app-status-count {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.hr-app-status-name {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: capitalize;
+  margin-top: 4px;
+}
+
+.hr-app-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hr-app-row {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hr-app-row:hover {
+  border-color: #e0d9f9;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.hr-app-candidate {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.hr-app-job {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.hr-app-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.hr-app-badge.selected    { background: #d1fae5; color: #065f46; }
+.hr-app-badge.rejected    { background: #fee2e2; color: #991b1b; }
+.hr-app-badge.shortlisted { background: #dbeafe; color: #1d4ed8; }
+.hr-app-badge.scheduled   { background: #ede9fe; color: #6d28d9; }
+.hr-app-badge.default     { background: #f1f5f9; color: #475569; }
+
+/* ─── Loading / empty states ─────────────────────────────────── */
+.hr-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: #9ca3af;
+  font-size: 14px;
+  gap: 10px;
+}
+
+.hr-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: hr-spin 0.7s linear infinite;
+}
+
+@keyframes hr-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hr-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.hr-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.hr-empty-text {
+  font-size: 14px;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ─── Range select ───────────────────────────────────────────── */
+.hr-range-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #374151;
+  background: #ffffff;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.hr-range-select:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* ─── HR badge in topnav ─────────────────────────────────────── */
+.hr-nav-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  color: #7c3aed;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Refresh button ─────────────────────────────────────────── */
+.hr-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.hr-refresh-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* ─── More-results note ──────────────────────────────────────── */
+.hr-more-note {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  padding: 12px 0 0;
+}

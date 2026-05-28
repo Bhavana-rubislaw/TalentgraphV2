@@ -602,6 +602,20 @@ export const apiClient = {
   }) =>
     api.post('/analytics/events', data),
 
+  // Role-scoped analytics endpoints
+  getRecruiterAnalytics: (rangeDays: number = 30) =>
+    api.get('/analytics/recruiter', { params: { range_days: rangeDays } }),
+
+  getHRAnalytics: (rangeDays: number = 30) =>
+    api.get('/analytics/hr', { params: { range_days: rangeDays } }),
+
+  // Team management (HR only)
+  getCompanyTeam: () =>
+    api.get('/company/team'),
+
+  removeTeamMember: (memberUserId: number) =>
+    api.delete(`/company/team/${memberUserId}`),
+
   // ── Product Taxonomy (Vendor/Product/Role) ─────────────────────────────────
   
   // Get all vendors

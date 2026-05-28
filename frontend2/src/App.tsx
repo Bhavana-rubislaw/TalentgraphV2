@@ -10,6 +10,7 @@ import CompanyProfileSetupPage from './pages/CompanyProfileSetupPage';
 import JobPreferencesPage from './pages/JobPreferencesPage';
 import CandidateDashboard from './pages/CandidateDashboardNew';
 import RecruiterDashboard from './pages/RecruiterDashboardNew';
+import HRDashboard from './pages/HRDashboard';
 import JobPostingForm from './pages/JobPostingForm';
 import JobPostingBuilder from './pages/JobPostingBuilder';
 import { MeetingsPage } from './pages/MeetingsPage';
@@ -19,7 +20,11 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './index.css';
 
 // ── Role constants ────────────────────────────────────────────────
-const RECRUITER_ROLES = ['admin', 'recruiter', 'hr'];
+const COMPANY_RECRUITER_ROLES = ['recruiter'];
+const COMPANY_HR_ROLES = ['hr'];
+const COMPANY_ADMIN_ROLES = ['admin'];
+// Combined sets for guards that accept any company-side role
+const RECRUITER_ROLES = [...COMPANY_RECRUITER_ROLES, ...COMPANY_HR_ROLES, ...COMPANY_ADMIN_ROLES];
 const CANDIDATE_ROLES = ['candidate'];
 
 // ── Protected Route ───────────────────────────────────────────────
@@ -44,7 +49,10 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles: string
     if (CANDIDATE_ROLES.includes(userRole)) {
       return <Navigate to="/candidate-dashboard" replace />;
     }
-    if (RECRUITER_ROLES.includes(userRole)) {
+    if (COMPANY_HR_ROLES.includes(userRole)) {
+      return <Navigate to="/hr/dashboard" replace />;
+    }
+    if (COMPANY_RECRUITER_ROLES.includes(userRole) || COMPANY_ADMIN_ROLES.includes(userRole)) {
       return <Navigate to="/recruiter-dashboard" replace />;
     }
     return <Navigate to="/" replace />;
@@ -69,6 +77,35 @@ const RecruiterProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ chil
   }
 
   if (!RECRUITER_ROLES.includes(userRole)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // HR users should use the HR dashboard
+  if (COMPANY_HR_ROLES.includes(userRole)) {
+    return <Navigate to="/hr/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// ── HR Protected Route ──────────────────
+const HRProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, bootStatus } = useAuth();
+
+  if (bootStatus === 'loading') return null;
+
+  const token = localStorage.getItem('token');
+  const userRole = (user?.role || localStorage.getItem('role') || '').toLowerCase().trim();
+
+  if (!token) {
+    return <Navigate to="/signin" replace />;
+  }
+
+  // HR role or admin can access HR dashboard
+  if (!COMPANY_HR_ROLES.includes(userRole) && !COMPANY_ADMIN_ROLES.includes(userRole)) {
+    if (COMPANY_RECRUITER_ROLES.includes(userRole)) {
+      return <Navigate to="/recruiter-dashboard" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 
@@ -157,6 +194,22 @@ const RecruiterDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ chil
   return <>{children}</>;
 };
 
+// ── Dashboard Guard (HR - must complete) ──────────────────
+// Enforces profile completion before HR dashboard access
+const HRDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, bootStatus } = useAuth();
+
+  if (bootStatus === 'loading') return null;
+
+  const isProfileComplete = user?.is_profile_complete ?? 
+    (localStorage.getItem('is_profile_complete') === 'true');
+  if (!isProfileComplete) {
+    return <Navigate to="/company-profile-setup" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // ── Boot spinner while /auth/me is in flight ──────────────────────
 const BootGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { bootStatus } = useAuth();
@@ -227,6 +280,31 @@ const App: React.FC = () => {
                     <RecruiterDashboard />
                   </ErrorBoundary>
                 </RecruiterProtectedRoute>
+              }
+            />
+            {/* Canonical recruiter path (alias) */}
+            <Route
+              path="/recruiter/dashboard"
+              element={
+                <RecruiterProtectedRoute>
+                  <ErrorBoundary>
+                    <RecruiterDashboard />
+                  </ErrorBoundary>
+                </RecruiterProtectedRoute>
+              }
+            />
+
+            {/* HR Dashboard */}
+            <Route
+              path="/hr/dashboard"
+              element={
+                <HRProtectedRoute>
+                  <HRDashboardGuard>
+                    <ErrorBoundary>
+                      <HRDashboard />
+                    </ErrorBoundary>
+                  </HRDashboardGuard>
+                </HRProtectedRoute>
               }
             />
             <Route
@@ -336,10 +414,23 @@ const App: React.FC = () => {
             <Route
               path="/recruiter/messages"
               element={
-                <ProtectedRoute allowedRoles={RECRUITER_ROLES}>
+                <ProtectedRoute allowedRoles={[...COMPANY_RECRUITER_ROLES, ...COMPANY_ADMIN_ROLES]}>
                   <ErrorBoundary>
                     <Navigate
                       to={`/recruiter-dashboard?tab=messages${window.location.search.includes('c=') ? '&' + window.location.search.slice(1) : ''}`}
+                      replace
+                    />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/hr/messages"
+              element={
+                <ProtectedRoute allowedRoles={[...COMPANY_HR_ROLES, ...COMPANY_ADMIN_ROLES]}>
+                  <ErrorBoundary>
+                    <Navigate
+                      to={`/hr/dashboard?tab=messages${window.location.search.includes('c=') ? '&' + window.location.search.slice(1) : ''}`}
                       replace
                     />
                   </ErrorBoundary>

@@ -9,7 +9,7 @@ from datetime import datetime
 from app.database import get_session
 from app.models import Company, User
 from app.schemas import CompanyRead, CompanyCreate, CompanyProfileSetup, CompanyProfileUpdate
-from app.security import get_current_user
+from app.security import get_current_user, require_hr_role
 from app.core.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -192,3 +192,76 @@ def update_extended_profile(
     session.refresh(company)
     
     return {"message": "Company profile updated", "company_id": company.id}
+
+
+# ─── Team Management (HR or Admin only) ─────────────────────────────────────
+
+from pydantic import BaseModel
+from typing import Optional
+
+
+@router.get("/team", response_model=list)
+def list_team_members(
+    current_user: dict = Depends(require_hr_role),
+    session: Session = Depends(get_session)
+):
+    """List all team members for the current HR user's company. HR or Admin only."""
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with this user")
+
+    # Find all users associated with this company by company_name
+    company_users = session.exec(
+        select(User, Company)
+        .join(Company, Company.user_id == User.id)
+        .where(Company.company_name == company.company_name)
+    ).all()
+
+    return [
+        {
+            "user_id": u.id,
+            "email": u.email,
+            "full_name": u.full_name,
+            "role": u.role,
+            "is_active": u.is_active,
+        }
+        for u, _c in company_users
+    ]
+
+
+@router.delete("/team/{member_user_id}", response_model=dict)
+def remove_team_member(
+    member_user_id: int,
+    current_user: dict = Depends(require_hr_role),
+    session: Session = Depends(get_session)
+):
+    """Deactivate a team member. HR or Admin only. Cannot remove yourself."""
+    requesting_user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not requesting_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if requesting_user.id == member_user_id:
+        raise HTTPException(status_code=400, detail="You cannot remove yourself from the team")
+
+    # Verify same company
+    requesting_company = session.exec(select(Company).where(Company.user_id == requesting_user.id)).first()
+    if not requesting_company:
+        raise HTTPException(status_code=403, detail="No company associated with this user")
+
+    target_company = session.exec(select(Company).where(Company.user_id == member_user_id)).first()
+    if not target_company or target_company.company_name != requesting_company.company_name:
+        raise HTTPException(status_code=403, detail="Target user does not belong to your company")
+
+    target_user = session.get(User, member_user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Team member not found")
+
+    target_user.is_active = False
+    session.add(target_user)
+    session.commit()
+
+    return {"message": f"Team member {target_user.email} has been deactivated"}

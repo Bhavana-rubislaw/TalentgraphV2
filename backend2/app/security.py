@@ -151,6 +151,9 @@ async def get_current_user_id(current_user: dict = Depends(get_current_user)) ->
 
 COMPANY_ROLES = {"recruiter", "hr", "admin"}
 CANDIDATE_ROLE = "candidate"
+RECRUITER_ROLE = "recruiter"
+HR_ROLE = "hr"
+ADMIN_ROLE = "admin"
 
 
 def require_candidate_role(current_user: dict = Depends(get_current_user)) -> dict:
@@ -165,12 +168,38 @@ def require_candidate_role(current_user: dict = Depends(get_current_user)) -> di
 
 
 def require_company_role(current_user: dict = Depends(get_current_user)) -> dict:
-    """Enforce company-side role access (recruiter/hr/admin)."""
+    """Enforce company-side role access (recruiter/hr/admin). Alias for require_any_company_role."""
     role = current_user.get("role", "").lower()
     if role not in COMPANY_ROLES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Company role required (recruiter/hr/admin), got: {role}"
+        )
+    return current_user
+
+
+# Explicit alias for clarity in new code
+require_any_company_role = require_company_role
+
+
+def require_recruiter_role(current_user: dict = Depends(get_current_user)) -> dict:
+    """Enforce recruiter-only access (recruiter or admin)."""
+    role = current_user.get("role", "").lower()
+    if role != RECRUITER_ROLE and role != ADMIN_ROLE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Recruiter or Admin role required, got: {role}"
+        )
+    return current_user
+
+
+def require_hr_role(current_user: dict = Depends(get_current_user)) -> dict:
+    """Enforce HR-only access (hr or admin)."""
+    role = current_user.get("role", "").lower()
+    if role != HR_ROLE and role != ADMIN_ROLE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"HR or Admin role required, got: {role}"
         )
     return current_user
 

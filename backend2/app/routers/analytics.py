@@ -30,7 +30,7 @@ from app.models import (
     AnalyticsEventType, JobPosting, Company, User, Application,
     Swipe, Meeting, MeetingStatus, MeetingType, JobPostingStatus
 )
-from app.security import get_current_user
+from app.security import get_current_user, require_recruiter_role, require_hr_role
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
 
 logger = logging.getLogger(__name__)
@@ -522,5 +522,156 @@ async def track_event(
     logger.info(f"Tracked event {event_type_enum.value} for company {company_id}")
     
     return {"status": "tracked", "event_id": event.id}
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ROLE-SCOPED ANALYTICS ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════════════
+
+@router.get("/recruiter", summary="Recruiter personal sourcing metrics")
+async def get_recruiter_analytics(
+    range_days: int = Query(30, ge=1, le=365),
+    current_user: dict = Depends(require_recruiter_role),
+    session: Session = Depends(get_session)
+):
+    """
+    Personal sourcing metrics for the authenticated recruiter.
+    Accessible to Recruiter or Admin roles only.
+    """
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=range_days)
+
+    # Jobs posted by this user
+    jobs = session.exec(
+        select(JobPosting).where(JobPosting.company_id == company.id)
+    ).all()
+    job_ids = [j.id for j in jobs]
+
+    # Applications across those jobs in date range
+    applications = session.exec(
+        select(Application).where(
+            Application.job_posting_id.in_(job_ids),
+            Application.applied_at >= start_date,
+        )
+    ).all() if job_ids else []
+
+    # Swipes on those jobs
+    swipes = session.exec(
+        select(Swipe).where(
+            Swipe.job_posting_id.in_(job_ids),
+            Swipe.created_at >= start_date,
+        )
+    ).all() if job_ids else []
+
+    total_likes = sum(1 for s in swipes if s.direction == "like")
+    total_passes = sum(1 for s in swipes if s.direction == "pass")
+
+    status_counts: Dict[str, int] = {}
+    for app in applications:
+        key = (app.status or "applied").lower()
+        status_counts[key] = status_counts.get(key, 0) + 1
+
+    return {
+        "role": "recruiter",
+        "period_days": range_days,
+        "total_active_jobs": len([j for j in jobs if (j.status or "").lower() == "active"]),
+        "total_applications_received": len(applications),
+        "candidate_likes": total_likes,
+        "candidate_passes": total_passes,
+        "application_status_breakdown": status_counts,
+    }
+
+
+@router.get("/hr", summary="Company-wide hiring funnel metrics for HR")
+async def get_hr_analytics(
+    range_days: int = Query(30, ge=1, le=365),
+    current_user: dict = Depends(require_hr_role),
+    session: Session = Depends(get_session)
+):
+    """
+    Company-wide hiring funnel and team metrics for HR oversight.
+    Accessible to HR or Admin roles only.
+    """
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+    if not company:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=range_days)
+    company_id = company.id
+
+    # All jobs for the company
+    jobs = session.exec(select(JobPosting).where(JobPosting.company_id == company_id)).all()
+    job_ids = [j.id for j in jobs]
+
+    # All applications for the company in range
+    applications = session.exec(
+        select(Application).where(
+            Application.job_posting_id.in_(job_ids),
+            Application.applied_at >= start_date,
+        )
+    ).all() if job_ids else []
+
+    # Job status breakdown
+    job_status_counts: Dict[str, int] = {}
+    for j in jobs:
+        key = (j.status or "draft").lower()
+        job_status_counts[key] = job_status_counts.get(key, 0) + 1
+
+    # Application funnel
+    funnel: Dict[str, int] = {}
+    for app in applications:
+        key = (app.status or "applied").lower()
+        funnel[key] = funnel.get(key, 0) + 1
+
+    total_apps = len(applications)
+    scheduled = funnel.get("scheduled", 0)
+    shortlisted = funnel.get("shortlisted", 0)
+    selected = funnel.get("selected", 0)
+
+    # Pending approval: jobs in draft status
+    pending_approval = job_status_counts.get("draft", 0)
+
+    # Scheduled meetings in date range
+    meetings_count = 0
+    if job_ids:
+        app_ids = [a.id for a in applications]
+        if app_ids:
+            meetings = session.exec(
+                select(Meeting).where(
+                    Meeting.application_id.in_(app_ids),
+                    Meeting.created_at >= start_date,
+                )
+            ).all()
+            meetings_count = len(meetings)
+
+    return {
+        "role": "hr",
+        "period_days": range_days,
+        "total_jobs": len(jobs),
+        "job_status_breakdown": job_status_counts,
+        "jobs_pending_approval": pending_approval,
+        "hiring_funnel": {
+            "total_applications": total_apps,
+            "scheduled_interviews": scheduled,
+            "shortlisted": shortlisted,
+            "selected": selected,
+            "interview_rate_pct": round(scheduled / total_apps * 100, 1) if total_apps else 0,
+            "selection_rate_pct": round(selected / total_apps * 100, 1) if total_apps else 0,
+        },
+        "meetings_scheduled": meetings_count,
+    }
 
 
