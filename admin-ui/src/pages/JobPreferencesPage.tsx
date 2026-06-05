@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { listJobPreferences } from '../api/client';
+import { listJobPreferences, bulkJobPrefAction } from '../api/client';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface LocationPref {
   city?: string;
@@ -216,6 +217,7 @@ const JobPreferencesPage: React.FC = () => {
   const [total, setTotal]       = useState(0);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
+  const [success, setSuccess]   = useState('');
 
   const [search, setSearch]               = useState('');
   const [worktypeFilter, setWorktypeFilter] = useState('');
@@ -224,13 +226,21 @@ const JobPreferencesPage: React.FC = () => {
   const [seniorityFilter, setSeniorityFilter] = useState('');
   const [statusFilter, setStatusFilter]     = useState('');
   const [offset, setOffset]               = useState(0);
-  const LIMIT = 50;
+  const LIMIT = 10;
 
   const [selectedProfile, setSelectedProfile] = useState<JobPreference | null>(null);
+
+  // Bulk selection
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [confirmBulkAction, setConfirmBulkAction] = useState<string | null>(null);
+
+  const flash = (msg: string) => { setSuccess(msg); setTimeout(() => setSuccess(''), 4000); };
 
   const fetchProfiles = useCallback(() => {
     setLoading(true);
     setError('');
+    setSelected(new Set());
     const params: Record<string, any> = { limit: LIMIT, offset };
     if (search)         params.search          = search;
     if (worktypeFilter) params.worktype         = worktypeFilter;
@@ -250,6 +260,37 @@ const JobPreferencesPage: React.FC = () => {
   const totalPages = Math.ceil(total / LIMIT);
   const currentPage = Math.floor(offset / LIMIT) + 1;
 
+  // ── Bulk helpers
+  const allPageIds = profiles.map((p) => p.id);
+  const allSelected = allPageIds.length > 0 && allPageIds.every((id) => selected.has(id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelected(new Set());
+    else setSelected(new Set(allPageIds));
+  };
+
+  const toggleSelect = (id: number) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelected(next);
+  };
+
+  const executeBulkAction = async (action: string) => {
+    setBulkLoading(true);
+    try {
+      const res = await bulkJobPrefAction(Array.from(selected), action);
+      const { succeeded, failed } = res.data;
+      flash(`Bulk ${action}: ${succeeded} succeeded, ${failed} failed.`);
+      setSelected(new Set());
+      fetchProfiles();
+    } catch {
+      setError(`Bulk ${action} failed.`);
+    } finally {
+      setBulkLoading(false);
+      setConfirmBulkAction(null);
+    }
+  };
+
   return (
     <div className="page-container">
       {/* Header */}
@@ -264,6 +305,25 @@ const JobPreferencesPage: React.FC = () => {
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
+
+      {/* Bulk action bar */}
+      {selected.size > 0 && (
+        <div className="bulk-action-bar">
+          <span className="bulk-count">{selected.size} selected</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-sm btn-danger" onClick={() => setConfirmBulkAction('delete')} disabled={bulkLoading}>
+              Delete
+            </button>
+            <button className="btn btn-sm btn-secondary" onClick={() => setConfirmBulkAction('restore')} disabled={bulkLoading}>
+              Restore
+            </button>
+            <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="filter-bar">
@@ -327,6 +387,14 @@ const JobPreferencesPage: React.FC = () => {
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 40 }}>
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  style={{ cursor: 'pointer' }}
+                />
+              </th>
               <th>Candidate</th>
               <th>Profile Name</th>
               <th>Status</th>
@@ -344,18 +412,26 @@ const JobPreferencesPage: React.FC = () => {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={12} className="table-empty">Loading…</td>
+                <td colSpan={13} className="table-empty">Loading…</td>
               </tr>
             )}
             {!loading && profiles.length === 0 && (
               <tr>
-                <td colSpan={11} className="table-empty">No job preferences found.</td>
+                <td colSpan={13} className="table-empty">No job preferences found.</td>
               </tr>
             )}
             {!loading && profiles.map((p) => {
               const titles = tryParseJson(p.preferred_job_titles);
               return (
-                <tr key={p.id}>
+                <tr key={p.id} style={{ background: selected.has(p.id) ? 'var(--selected-bg, #f0f4ff)' : undefined }}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </td>
                   <td>
                     <div className="user-cell">
                       <div className="user-avatar">
@@ -453,6 +529,19 @@ const JobPreferencesPage: React.FC = () => {
       {/* Detail Modal */}
       {selectedProfile && (
         <DetailModal profile={selectedProfile} onClose={() => setSelectedProfile(null)} />
+      )}
+
+      {/* Bulk confirm dialog */}
+      {confirmBulkAction && (
+        <ConfirmDialog
+          title={`Bulk ${confirmBulkAction.charAt(0).toUpperCase() + confirmBulkAction.slice(1)} ${selected.size} Profiles`}
+          message={`Are you sure you want to ${confirmBulkAction} ${selected.size} selected profile${selected.size !== 1 ? 's' : ''}?`}
+          confirmLabel={`${confirmBulkAction.charAt(0).toUpperCase() + confirmBulkAction.slice(1)} All`}
+          variant="warning"
+          onConfirm={() => executeBulkAction(confirmBulkAction)}
+          onCancel={() => setConfirmBulkAction(null)}
+          loading={bulkLoading}
+        />
       )}
     </div>
   );

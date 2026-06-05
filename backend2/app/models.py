@@ -502,12 +502,37 @@ class JobProfile(SQLModel, table=True):
     matches: List["Match"] = Relationship(back_populates="job_profile")
 
 
+# ============ ORGANIZATION MODEL ============
+
+COMPANY_SIZE_VALUES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001+"]
+
+
+class Organization(SQLModel, table=True):
+    """
+    Organization-level entity representing a unique company.
+    Multiple Company (member) rows can belong to one Organization.
+    """
+    __tablename__ = "organization"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    industry: Optional[str] = None
+    company_size: Optional[str] = None  # controlled values: COMPANY_SIZE_VALUES
+    website: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ============ COMPANY MODELS ============
 
 class Company(SQLModel, table=True):
     """Company/Recruiter profile"""
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
+    organization_id: Optional[int] = Field(default=None, foreign_key="organization.id", index=True)
     company_name: str
     company_email: str = Field(index=True)
     employee_type: str  # Admin, HR, Recruiter/Manager
@@ -810,6 +835,40 @@ class ActivityEvent(SQLModel, table=True):
 
     # Deduplication (unique constraint enforced at DB level via migration)
     dedupe_key: Optional[str] = Field(default=None)
+
+
+# ============ USER INVITATION MODEL ============
+
+class InvitationStatus(str, Enum):
+    """Invitation lifecycle status"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class UserInvitation(SQLModel, table=True):
+    """
+    Admin-issued invitation for a new user to join the platform.
+    Security requirements:
+    - Only token_hash is stored (never the raw token)
+    - Tokens are cryptographically secure random bytes
+    - Single-use (status updated to accepted on use)
+    - Have an expiry time
+    """
+    __tablename__ = "user_invitation"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True)
+    full_name: str
+    role: UserRole
+    organization_id: Optional[int] = Field(default=None, foreign_key="organization.id", index=True)
+    token_hash: str = Field(index=True, unique=True)  # SHA-256 of the raw token
+    invited_by_user_id: int = Field(foreign_key="user.id", index=True)
+    status: str = Field(default=InvitationStatus.PENDING.value, index=True)
+    expires_at: datetime
+    accepted_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class SystemLog(SQLModel, table=True):

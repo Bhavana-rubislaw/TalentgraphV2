@@ -18,7 +18,6 @@ from pathlib import Path
 # Load environment variables from .env file (look in backend2 root directory)
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
-
 # Configure enhanced logging system
 setup_logging()
 logger = get_logger(__name__)
@@ -184,6 +183,7 @@ from app.routers import (
     messages, meetings, calendar, analytics, logs, notification_preferences,
     onboarding, product_taxonomy, admin
 )
+from app.routers.admin_extended import router as admin_extended_router, accept_router as invitations_router
 
 log_change(
     logger, 
@@ -212,7 +212,9 @@ app.include_router(calendar.router)  # Calendar & video provider OAuth integrati
 app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
 app.include_router(logs.router)  # Comprehensive logging system
 app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences
+app.include_router(admin_extended_router)    # Admin portal — extended features (Phase 2-7)
 app.include_router(admin.router)             # Admin portal management APIs
+app.include_router(invitations_router)       # Public invitation acceptance
 
 log_change(
     logger,

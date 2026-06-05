@@ -5,10 +5,12 @@ All endpoints require ADMIN role. Provides platform-level management:
   - Platform overview stats
   - User management (list / status / role / delete)
   - Job posting management (list all / update status)
+  - Platform-wide analytics
 """
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from typing import List, Optional
+from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func, or_
@@ -20,6 +22,7 @@ from ..models import (
     Meeting, ProductVendor, ProductType, ProductRole,
     JobProfile, LocationPreference,
     UserRole, JobPostingStatus,
+    AnalyticsRollupDaily, AnalyticsEvent, AnalyticsEventType,
 )
 from ..security import get_current_user
 from ..core.logging_config import get_logger, log_change
@@ -663,4 +666,389 @@ def list_job_preferences(
 
     return JobPreferenceListResponse(
         profiles=profiles, total=total, limit=limit, offset=offset
+    )
+
+
+# ─────────────────────────────────────────────────────────────
+# PLATFORM ANALYTICS  –  admin-only, platform-wide
+# ─────────────────────────────────────────────────────────────
+
+# ── Response schemas ─────────────────────────────────────────
+
+class AnalyticsSummary(BaseModel):
+    total_signups: int
+    total_views: int
+    total_applications: int
+    total_interviews: int
+    total_hires: int
+    average_time_to_hire_days: Optional[float]
+
+
+class UserSignupPoint(BaseModel):
+    date: str          # "YYYY-MM-DD"
+    total: int
+    candidates: int
+    recruiters: int
+    hr: int
+    admins: int
+
+
+class FunnelStage(BaseModel):
+    stage: str
+    count: int
+    conversion_from_previous: float
+    conversion_from_views: float
+
+
+class JobsCreatedPoint(BaseModel):
+    week_start: str    # "YYYY-MM-DD"
+    created: int
+
+
+class JobStatusBreakdown(BaseModel):
+    status: str
+    count: int
+
+
+class TopCompany(BaseModel):
+    company_id: int
+    company_name: str
+    jobs_created: int
+    applications: int
+    interviews: int
+    hires: int
+    activity_score: int
+
+
+class AdminAnalyticsResponse(BaseModel):
+    range_days: int
+    start_date: str
+    end_date: str
+    summary: AnalyticsSummary
+    user_signups: List[UserSignupPoint]
+    application_funnel: List[FunnelStage]
+    jobs_created: List[JobsCreatedPoint]
+    job_status_breakdown: List[JobStatusBreakdown]
+    top_companies: List[TopCompany]
+
+
+# ── Helpers ──────────────────────────────────────────────────
+
+def _safe_pct(numerator: int, denominator: int) -> float:
+    """Return percentage rounded to 2 dp; 0.0 when denominator is zero."""
+    if denominator == 0:
+        return 0.0
+    return round(numerator / denominator * 100, 2)
+
+
+def _date_range(start: date, end: date) -> List[date]:
+    """Return every calendar date from start through end (inclusive)."""
+    days = []
+    current = start
+    while current <= end:
+        days.append(current)
+        current += timedelta(days=1)
+    return days
+
+
+def _week_starts(start: date, end: date) -> List[date]:
+    """Return the Monday of each ISO week that overlaps [start, end]."""
+    # Back up start to previous Monday
+    monday = start - timedelta(days=start.weekday())
+    weeks = []
+    current = monday
+    while current <= end:
+        weeks.append(current)
+        current += timedelta(weeks=1)
+    return weeks
+
+
+# ── Endpoint ─────────────────────────────────────────────────
+
+ALLOWED_RANGE_DAYS = {7, 30, 90}
+
+
+@router.get("/analytics", response_model=AdminAnalyticsResponse)
+def get_admin_analytics(
+    range_days: int = Query(30, description="Number of days to look back: 7, 30, or 90"),
+    session: Session = Depends(get_session),
+    current_user: dict = Depends(require_admin),
+):
+    """
+    Return platform-wide analytics for the Admin Portal.
+    Only range_days values of 7, 30, or 90 are accepted.
+
+    Job status classification:
+      Active  = JobPostingStatus.ACTIVE  + JobPostingStatus.REPOSTED
+      Closed  = JobPostingStatus.FROZEN  + JobPostingStatus.CANCELLED
+    """
+    if range_days not in ALLOWED_RANGE_DAYS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"range_days must be one of {sorted(ALLOWED_RANGE_DAYS)}",
+        )
+
+    now_utc = datetime.now(timezone.utc)
+    end_dt = now_utc
+    start_dt = now_utc - timedelta(days=range_days)
+    start_d = start_dt.date()
+    end_d = end_dt.date()
+
+    # ── 1. User signups ──────────────────────────────────────
+    signup_rows = session.exec(
+        select(
+            func.date(User.created_at).label("day"),
+            User.role,
+            func.count(User.id).label("cnt"),
+        )
+        .where(User.created_at >= start_dt)
+        .group_by(func.date(User.created_at), User.role)
+    ).all()
+
+    # Accumulate into dict keyed by date string
+    signup_map: dict[str, dict] = {
+        d.isoformat(): {"total": 0, "candidates": 0, "recruiters": 0, "hr": 0, "admins": 0}
+        for d in _date_range(start_d, end_d)
+    }
+    for row in signup_rows:
+        day_str = str(row.day)[:10]   # ensure "YYYY-MM-DD"
+        if day_str not in signup_map:
+            continue
+        role_val = row.role.value if hasattr(row.role, "value") else str(row.role)
+        signup_map[day_str]["total"] += row.cnt
+        if role_val == UserRole.CANDIDATE.value:
+            signup_map[day_str]["candidates"] += row.cnt
+        elif role_val == UserRole.RECRUITER.value:
+            signup_map[day_str]["recruiters"] += row.cnt
+        elif role_val == UserRole.HR.value:
+            signup_map[day_str]["hr"] += row.cnt
+        elif role_val == UserRole.ADMIN.value:
+            signup_map[day_str]["admins"] += row.cnt
+
+    user_signups = [
+        UserSignupPoint(
+            date=day_str,
+            total=v["total"],
+            candidates=v["candidates"],
+            recruiters=v["recruiters"],
+            hr=v["hr"],
+            admins=v["admins"],
+        )
+        for day_str, v in sorted(signup_map.items())
+    ]
+
+    total_signups = sum(p.total for p in user_signups)
+
+    # ── 2. Application funnel from AnalyticsRollupDaily ───────
+    rollup_totals = session.exec(
+        select(
+            func.coalesce(func.sum(AnalyticsRollupDaily.jobs_viewed), 0).label("views"),
+            func.coalesce(func.sum(AnalyticsRollupDaily.applications_submitted), 0).label("applied"),
+            func.coalesce(func.sum(AnalyticsRollupDaily.interviews_scheduled), 0).label("interviewed"),
+            func.coalesce(func.sum(AnalyticsRollupDaily.hires), 0).label("hired"),
+        )
+        .where(AnalyticsRollupDaily.rollup_date >= start_d)
+        .where(AnalyticsRollupDaily.rollup_date <= end_d)
+    ).one()
+
+    views = int(rollup_totals.views or 0)
+    applied = int(rollup_totals.applied or 0)
+    interviewed = int(rollup_totals.interviewed or 0)
+    hired = int(rollup_totals.hired or 0)
+
+    application_funnel = [
+        FunnelStage(
+            stage="Views",
+            count=views,
+            conversion_from_previous=100.0,
+            conversion_from_views=100.0,
+        ),
+        FunnelStage(
+            stage="Applied",
+            count=applied,
+            conversion_from_previous=_safe_pct(applied, views),
+            conversion_from_views=_safe_pct(applied, views),
+        ),
+        FunnelStage(
+            stage="Interviewed",
+            count=interviewed,
+            conversion_from_previous=_safe_pct(interviewed, applied),
+            conversion_from_views=_safe_pct(interviewed, views),
+        ),
+        FunnelStage(
+            stage="Hired",
+            count=hired,
+            conversion_from_previous=_safe_pct(hired, interviewed),
+            conversion_from_views=_safe_pct(hired, views),
+        ),
+    ]
+
+    # ── 3. Jobs created per week ──────────────────────────────
+    job_rows = session.exec(
+        select(JobPosting.created_at)
+        .where(JobPosting.created_at >= start_dt)
+    ).all()
+
+    week_map: dict[str, int] = {
+        w.isoformat(): 0 for w in _week_starts(start_d, end_d)
+    }
+    for created_at in job_rows:
+        if created_at is None:
+            continue
+        d = created_at.date() if isinstance(created_at, datetime) else created_at
+        monday = d - timedelta(days=d.weekday())
+        # Assign to the latest week_start <= monday that's in our map
+        key = monday.isoformat()
+        if key in week_map:
+            week_map[key] += 1
+        else:
+            # Find the first week start in map that covers this date
+            for wk in sorted(week_map.keys(), reverse=True):
+                if wk <= key:
+                    week_map[wk] += 1
+                    break
+
+    jobs_created = [
+        JobsCreatedPoint(week_start=wk, created=cnt)
+        for wk, cnt in sorted(week_map.items())
+    ]
+
+    # ── 4. Active vs Closed jobs (platform-wide, not date-filtered) ─
+    # Active  = ACTIVE + REPOSTED
+    # Closed  = FROZEN + CANCELLED
+    active_statuses = {JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED}
+    closed_statuses = {JobPostingStatus.FROZEN, JobPostingStatus.CANCELLED}
+
+    active_count = session.exec(
+        select(func.count(JobPosting.id)).where(JobPosting.status.in_(active_statuses))
+    ).one()
+    closed_count = session.exec(
+        select(func.count(JobPosting.id)).where(JobPosting.status.in_(closed_statuses))
+    ).one()
+
+    job_status_breakdown = [
+        JobStatusBreakdown(status="Active", count=int(active_count or 0)),
+        JobStatusBreakdown(status="Closed", count=int(closed_count or 0)),
+    ]
+
+    # ── 5. Top companies by activity in the selected range ────
+    # Count jobs created per company in range
+    jobs_per_company = session.exec(
+        select(
+            JobPosting.company_id,
+            func.count(JobPosting.id).label("jobs_cnt"),
+        )
+        .where(JobPosting.created_at >= start_dt)
+        .group_by(JobPosting.company_id)
+    ).all()
+
+    # Count rollup metrics per company in range
+    rollup_per_company = session.exec(
+        select(
+            AnalyticsRollupDaily.company_id,
+            func.coalesce(func.sum(AnalyticsRollupDaily.applications_submitted), 0).label("apps"),
+            func.coalesce(func.sum(AnalyticsRollupDaily.interviews_scheduled), 0).label("interviews"),
+            func.coalesce(func.sum(AnalyticsRollupDaily.hires), 0).label("hires"),
+        )
+        .where(AnalyticsRollupDaily.rollup_date >= start_d)
+        .where(AnalyticsRollupDaily.rollup_date <= end_d)
+        .group_by(AnalyticsRollupDaily.company_id)
+    ).all()
+
+    # Merge into a dict keyed by company_id
+    company_metrics: dict[int, dict] = defaultdict(
+        lambda: {"jobs_created": 0, "applications": 0, "interviews": 0, "hires": 0}
+    )
+    for row in jobs_per_company:
+        company_metrics[row.company_id]["jobs_created"] = int(row.jobs_cnt or 0)
+    for row in rollup_per_company:
+        company_metrics[row.company_id]["applications"] = int(row.apps or 0)
+        company_metrics[row.company_id]["interviews"] = int(row.interviews or 0)
+        company_metrics[row.company_id]["hires"] = int(row.hires or 0)
+
+    # activity_score = jobs_created + applications + interviews + hires
+    scored = sorted(
+        company_metrics.items(),
+        key=lambda kv: kv[1]["jobs_created"] + kv[1]["applications"] + kv[1]["interviews"] + kv[1]["hires"],
+        reverse=True,
+    )[:10]
+
+    # Bulk-fetch company names to avoid N+1
+    company_ids = [cid for cid, _ in scored]
+    companies_map: dict[int, str] = {}
+    if company_ids:
+        companies = session.exec(
+            select(Company).where(Company.id.in_(company_ids))
+        ).all()
+        companies_map = {c.id: c.company_name for c in companies}
+
+    top_companies = [
+        TopCompany(
+            company_id=cid,
+            company_name=companies_map.get(cid, f"Company #{cid}"),
+            jobs_created=m["jobs_created"],
+            applications=m["applications"],
+            interviews=m["interviews"],
+            hires=m["hires"],
+            activity_score=m["jobs_created"] + m["applications"] + m["interviews"] + m["hires"],
+        )
+        for cid, m in scored
+    ]
+
+    # ── 6. Average time-to-hire ───────────────────────────────
+    # Join CANDIDATE_HIRED events (within range) → Application.applied_at
+    # Ignore events without application_id and negative durations.
+    hire_events = session.exec(
+        select(AnalyticsEvent.application_id, AnalyticsEvent.event_time)
+        .where(AnalyticsEvent.event_type == AnalyticsEventType.CANDIDATE_HIRED)
+        .where(AnalyticsEvent.application_id.is_not(None))
+        .where(AnalyticsEvent.event_time >= start_dt)
+    ).all()
+
+    durations: list[float] = []
+    if hire_events:
+        app_ids = [row.application_id for row in hire_events]
+        applications = session.exec(
+            select(Application.id, Application.applied_at)
+            .where(Application.id.in_(app_ids))
+        ).all()
+        applied_map = {row.id: row.applied_at for row in applications}
+
+        for row in hire_events:
+            applied_at = applied_map.get(row.application_id)
+            if applied_at is None:
+                continue
+            # Make both timezone-aware for subtraction
+            hire_time = row.event_time
+            apply_time = applied_at
+            if hire_time.tzinfo is None:
+                hire_time = hire_time.replace(tzinfo=timezone.utc)
+            if apply_time.tzinfo is None:
+                apply_time = apply_time.replace(tzinfo=timezone.utc)
+            delta_days = (hire_time - apply_time).total_seconds() / 86400.0
+            if delta_days >= 0:
+                durations.append(delta_days)
+
+    avg_time_to_hire = round(sum(durations) / len(durations), 1) if durations else None
+
+    # ── Summary ──────────────────────────────────────────────
+    summary = AnalyticsSummary(
+        total_signups=total_signups,
+        total_views=views,
+        total_applications=applied,
+        total_interviews=interviewed,
+        total_hires=hired,
+        average_time_to_hire_days=avg_time_to_hire,
+    )
+
+    return AdminAnalyticsResponse(
+        range_days=range_days,
+        start_date=start_d.isoformat(),
+        end_date=end_d.isoformat(),
+        summary=summary,
+        user_signups=user_signups,
+        application_funnel=application_funnel,
+        jobs_created=jobs_created,
+        job_status_breakdown=job_status_breakdown,
+        top_companies=top_companies,
     )

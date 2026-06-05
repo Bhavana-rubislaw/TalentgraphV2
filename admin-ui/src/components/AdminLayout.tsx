@@ -3,21 +3,25 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   IconGrid, IconUsers, IconBriefcase, IconTarget,
-  IconHierarchy, IconList, IconLogOut,
+  IconHierarchy, IconList, IconLogOut, IconBarChart,
+  IconBuildings, IconInbox, IconActivity,
 } from './Icons';
 
 const NAV = [
   {
     section: 'Overview',
     items: [
-      { path: '/dashboard',       label: 'Dashboard',       Icon: IconGrid },
+      { path: '/dashboard',   label: 'Dashboard',          Icon: IconGrid },
+      { path: '/analytics',   label: 'Analytics & Reports', Icon: IconBarChart },
     ],
   },
   {
     section: 'Management',
     items: [
       { path: '/users',           label: 'Users',           Icon: IconUsers },
+      { path: '/companies',       label: 'Companies',       Icon: IconBuildings },
       { path: '/job-postings',    label: 'Job Postings',    Icon: IconBriefcase },
+      { path: '/applications',    label: 'Applications',    Icon: IconActivity },
       { path: '/job-preferences', label: 'Job Preferences', Icon: IconTarget },
       { path: '/taxonomy',        label: 'Taxonomy',        Icon: IconHierarchy },
     ],
@@ -25,17 +29,22 @@ const NAV = [
   {
     section: 'System',
     items: [
-      { path: '/logs', label: 'System Logs', Icon: IconList },
+      { path: '/email-logs', label: 'Email Logs',   Icon: IconInbox },
+      { path: '/logs',       label: 'System Logs',  Icon: IconList },
     ],
   },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard':       'Dashboard',
+  '/analytics':       'Analytics & Reports',
   '/users':           'User Management',
+  '/companies':       'Companies',
   '/job-postings':    'Job Postings',
+  '/applications':    'Applications',
   '/job-preferences': 'Job Preferences',
   '/taxonomy':        'Product Taxonomy',
+  '/email-logs':      'Email Logs',
   '/logs':            'System Logs',
 };
 

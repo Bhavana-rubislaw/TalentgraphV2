@@ -288,3 +288,54 @@ export const IconX = ({ size = 20, color = 'currentColor', style }: IconProps) =
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
+export const IconDownload = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+
+export const IconSend = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+export const IconBuildings = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+    <path d="M10 6h4" /><path d="M10 10h4" /><path d="M10 14h4" /><path d="M10 18h4" />
+  </svg>
+);
+
+export const IconInbox = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+  </svg>
+);
+
+export const IconFilter = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+  </svg>
+);
+
+export const IconChevronRight = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+export const IconInfo = ({ size = 20, color = 'currentColor', style }: IconProps) => (
+  <svg viewBox="0 0 24 24" style={{ ...base(size, color), ...style }}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);

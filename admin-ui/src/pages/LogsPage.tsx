@@ -63,7 +63,7 @@ const LogsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [timePreset, setTimePreset] = useState(1440); // default: last 24 hrs
   const [offset, setOffset] = useState(0);
-  const LIMIT = 100;
+  const LIMIT = 10;
 
   const fetchStats = useCallback(() => {
     getLogStats()
