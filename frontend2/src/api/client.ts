@@ -234,6 +234,44 @@ export const apiClient = {
   // Team Management
   getTeamMembers: () =>
     api.get('/dashboard/team-members'),
+  
+  inviteTeamMember: (email: string, role: string, companyName: string) =>
+    api.post('/company/team/invite', { email, role, company_name: companyName }),
+  
+  updateTeamMemberRole: (memberId: number, newRole: string) =>
+    api.put(`/company/team/members/${memberId}/role`, { new_role: newRole }),
+  
+  removeTeamMember: (memberId: number) =>
+    api.delete(`/company/team/members/${memberId}`),
+  
+  // Subscriptions
+  getSubscriptionPlans: () =>
+    api.get('/subscriptions/plans'),
+  
+  getSubscriptionPlan: (planId: number) =>
+    api.get(`/subscriptions/plans/${planId}`),
+  
+  getCompanySubscription: () =>
+    api.get('/subscriptions/my'),
+  
+  purchaseSubscription: (planId: number) =>
+    api.post('/subscriptions/purchase', { plan_id: planId }),
+  
+  cancelSubscription: () =>
+    api.post('/subscriptions/cancel', {}),
+  
+  // Credits
+  getCreditBalance: () =>
+    api.get('/subscriptions/credits/balance'),
+  
+  getCreditTransactions: () =>
+    api.get('/subscriptions/credits/transactions'),
+  
+  purchaseCredits: (amount: number) =>
+    api.post('/subscriptions/credits/purchase', { amount }),
+  
+  deductCredits: (amount: number, description: string = 'Job posting') =>
+    api.post('/subscriptions/credits/deduct', { amount, description }),
 };
 
 export default api;

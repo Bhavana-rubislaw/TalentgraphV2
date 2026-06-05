@@ -303,3 +303,93 @@ class ApplicationRead(BaseModel):
     job_posting_id: int
     status: str
     applied_at: datetime
+
+
+
+# ============ SUBSCRIPTION & BILLING SCHEMAS ============
+
+class SubscriptionPlanBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
+    currency: str = "USD"
+    credits_included: int = 0
+    job_post_limit: int = 0
+    team_member_limit: int = 1
+    is_active: bool = True
+
+
+class SubscriptionPlanCreate(SubscriptionPlanBase):
+    pass
+
+
+class SubscriptionPlanRead(SubscriptionPlanBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+class CompanySubscriptionBase(BaseModel):
+    plan_id: int
+    start_date: datetime
+    end_date: datetime
+    status: str = "active"
+    auto_renew: bool = True
+
+
+class CompanySubscriptionCreate(BaseModel):
+    plan_id: int
+    auto_renew: bool = True
+
+
+class CompanySubscriptionRead(CompanySubscriptionBase):
+    id: int
+    company_id: int
+    created_at: datetime
+    updated_at: datetime
+    plan: SubscriptionPlanRead
+
+
+class CreditTransactionBase(BaseModel):
+    type: str  # purchase, usage, bonus, refund
+    amount: int
+    description: Optional[str] = None
+
+
+class CreditTransactionCreate(CreditTransactionBase):
+    pass
+
+
+class CreditTransactionRead(CreditTransactionBase):
+    id: int
+    company_id: int
+    transaction_date: datetime
+
+
+class CompanyCreditsRead(BaseModel):
+    current_credits: int
+    plan_id: Optional[int] = None
+    plan_name: Optional[str] = None
+    credits_included: Optional[int] = None
+    subscription_status: Optional[str] = None
+
+
+class TeamMemberRead(BaseModel):
+    id: int
+    user_id: int
+    email: str
+    full_name: str
+    employee_type: str
+    role: str
+    jobs_posted: int = 0
+
+
+class TeamInviteCreate(BaseModel):
+    email: str
+    role: str  # admin, hr, recruiter
+    company_name: str
+
+
+class TeamInviteResponse(BaseModel):
+    message: str
+    invite_token: str

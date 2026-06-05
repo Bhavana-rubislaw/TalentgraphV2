@@ -1,0 +1,181 @@
+.subscription-manager {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.subscription-manager h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.subscription-manager.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error-message {
+  background-color: #fee;
+  color: #c33;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c33;
+}
+
+.current-subscription {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border: 1px solid #e0e0e0;
+}
+
+.current-subscription h3 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.subscription-details {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.subscription-details p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.subscription-details strong {
+  color: #333;
+}
+
+.btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-cancel:hover {
+  background-color: #c82333;
+}
+
+.no-subscription {
+  background: #e8f4f8;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+  border-left: 4px solid #0066cc;
+  color: #0066cc;
+}
+
+.plans-grid {
+  margin-top: 30px;
+}
+
+.plans-grid h3 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 18px;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.plan-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #0066cc;
+}
+
+.plan-card h4 {
+  color: #333;
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.plan-card .description {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 15px;
+}
+
+.price .amount {
+  font-size: 32px;
+  font-weight: bold;
+  color: #0066cc;
+}
+
+.price .currency {
+  color: #666;
+  margin-left: 5px;
+  font-size: 14px;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.features li {
+  color: #666;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.features li:last-child {
+  border-bottom: none;
+}
+
+.btn-subscribe {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s;
+  margin-top: auto;
+}
+
+.btn-subscribe:hover:not(:disabled) {
+  background-color: #0052a3;
+}
+
+.btn-subscribe:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

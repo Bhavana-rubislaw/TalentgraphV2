@@ -216,6 +216,9 @@ class Company(SQLModel, table=True):
     company_name: str
     company_email: str = Field(index=True)
     employee_type: str  # Admin, HR, Recruiter/Manager
+    current_credits: int = Field(default=0)  # Current credit balance
+    parent_company_id: Optional[int] = Field(default=None, foreign_key="company.id")  # For team members
+    is_primary_account: bool = Field(default=False)  # Indicates if this is the primary company account
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -224,6 +227,8 @@ class Company(SQLModel, table=True):
     job_postings: List["JobPosting"] = Relationship(back_populates="company")
     matches: List["Match"] = Relationship(back_populates="company")
     swipes: List["Swipe"] = Relationship(back_populates="company")
+    subscription: Optional["CompanySubscription"] = Relationship(back_populates="company")
+    credit_transactions: List["CreditTransaction"] = Relationship(back_populates="company")
 
 
 class JobPostingSkill(SQLModel, table=True):
@@ -328,3 +333,54 @@ class Application(SQLModel, table=True):
     # Relationships
     candidate: Candidate = Relationship(back_populates="applications")
     job_posting: JobPosting = Relationship(back_populates="applications")
+
+
+
+# ============ SUBSCRIPTION & BILLING MODELS ============
+
+class SubscriptionPlan(SQLModel, table=True):
+    """Subscription plans available for companies"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True)
+    description: Optional[str] = None
+    price: float  # Monthly/Annual price
+    currency: str = Field(default="USD")
+    credits_included: int = Field(default=0)
+    job_post_limit: int = Field(default=0)  # 0 = unlimited
+    team_member_limit: int = Field(default=1)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    subscriptions: List["CompanySubscription"] = Relationship(back_populates="plan")
+
+
+class CompanySubscription(SQLModel, table=True):
+    """Subscription details for a company"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", unique=True)
+    plan_id: int = Field(foreign_key="subscriptionplan.id")
+    start_date: datetime = Field(default_factory=datetime.utcnow)
+    end_date: datetime
+    status: str = Field(default="active")  # active, cancelled, expired
+    auto_renew: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    company: Company = Relationship(back_populates="subscription")
+    plan: SubscriptionPlan = Relationship(back_populates="subscriptions")
+
+
+class CreditTransaction(SQLModel, table=True):
+    """Credit transaction history for companies"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    type: str  # purchase, usage, bonus, refund
+    amount: int  # Positive for adding, negative for deducting
+    description: Optional[str] = None
+    transaction_date: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    company: Company = Relationship(back_populates="credit_transactions")

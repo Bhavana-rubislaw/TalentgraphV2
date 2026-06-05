@@ -88,7 +88,7 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications
+from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, subscriptions, team
 
 logger.info("[STARTUP] Registering routers...")
 app.include_router(auth.router)
@@ -100,6 +100,8 @@ app.include_router(recommendations.router)
 app.include_router(swipes.router)
 app.include_router(dashboard.router)
 app.include_router(applications.router)
+app.include_router(subscriptions.router)
+app.include_router(team.router)
 logger.info("[STARTUP] All routers registered successfully")
 
 
