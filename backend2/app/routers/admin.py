@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from ..database import get_session
 from ..models import (
     User, Candidate, Company, JobPosting, Application,
-    Meeting, ProductVendor, ProductType, ProductRole,
+    Meeting, MeetingStatus, Swipe, ProductVendor, ProductType, ProductRole,
     JobProfile, LocationPreference,
     UserRole, JobPostingStatus,
     AnalyticsRollupDaily, AnalyticsEvent, AnalyticsEventType,
@@ -793,6 +793,9 @@ def get_admin_analytics(
     start_dt = now_utc - timedelta(days=range_days)
     start_d = start_dt.date()
     end_d = end_dt.date()
+    # Naive versions for columns stored as timestamp without time zone
+    start_dt_naive = start_dt.replace(tzinfo=None)
+    end_dt_naive = end_dt.replace(tzinfo=None)
 
     # ── 1. User signups ──────────────────────────────────────
     signup_rows = session.exec(
@@ -839,22 +842,35 @@ def get_admin_analytics(
 
     total_signups = sum(p.total for p in user_signups)
 
-    # ── 2. Application funnel from AnalyticsRollupDaily ───────
-    rollup_totals = session.exec(
-        select(
-            func.coalesce(func.sum(AnalyticsRollupDaily.jobs_viewed), 0).label("views"),
-            func.coalesce(func.sum(AnalyticsRollupDaily.applications_submitted), 0).label("applied"),
-            func.coalesce(func.sum(AnalyticsRollupDaily.interviews_scheduled), 0).label("interviewed"),
-            func.coalesce(func.sum(AnalyticsRollupDaily.hires), 0).label("hired"),
-        )
-        .where(AnalyticsRollupDaily.rollup_date >= start_d)
-        .where(AnalyticsRollupDaily.rollup_date <= end_d)
-    ).one()
+    # ── 2. Application funnel – direct queries from real tables ─
+    # Views: candidate swipes (like / ask_to_apply) in the period
+    views = int(session.exec(
+        select(func.count(Swipe.id))
+        .where(Swipe.created_at >= start_dt_naive)
+        .where(Swipe.created_at <= end_dt_naive)
+    ).one() or 0)
 
-    views = int(rollup_totals.views or 0)
-    applied = int(rollup_totals.applied or 0)
-    interviewed = int(rollup_totals.interviewed or 0)
-    hired = int(rollup_totals.hired or 0)
+    # Applied: applications submitted in the period
+    applied = int(session.exec(
+        select(func.count(Application.id))
+        .where(Application.applied_at >= start_dt_naive)
+        .where(Application.applied_at <= end_dt_naive)
+    ).one() or 0)
+
+    # Interviewed: non-cancelled meetings scheduled in the period
+    interviewed = int(session.exec(
+        select(func.count(Meeting.id))
+        .where(Meeting.scheduled_start >= start_dt_naive)
+        .where(Meeting.scheduled_start <= end_dt_naive)
+        .where(Meeting.status != MeetingStatus.CANCELLED)
+    ).one() or 0)
+
+    # Hired: applications moved to 'selected' status in the period
+    hired = int(session.exec(
+        select(func.count(Application.id))
+        .where(Application.status.in_(["selected", "hired"]))
+        .where(Application.last_status_updated_at >= start_dt_naive)
+    ).one() or 0)
 
     application_funnel = [
         FunnelStage(
@@ -886,7 +902,7 @@ def get_admin_analytics(
     # ── 3. Jobs created per week ──────────────────────────────
     job_rows = session.exec(
         select(JobPosting.created_at)
-        .where(JobPosting.created_at >= start_dt)
+        .where(JobPosting.created_at >= start_dt_naive)
     ).all()
 
     week_map: dict[str, int] = {
@@ -938,21 +954,45 @@ def get_admin_analytics(
             JobPosting.company_id,
             func.count(JobPosting.id).label("jobs_cnt"),
         )
-        .where(JobPosting.created_at >= start_dt)
+        .where(JobPosting.created_at >= start_dt_naive)
         .group_by(JobPosting.company_id)
     ).all()
 
-    # Count rollup metrics per company in range
-    rollup_per_company = session.exec(
+    # Count applications per company in range (via job posting)
+    apps_per_company = session.exec(
         select(
-            AnalyticsRollupDaily.company_id,
-            func.coalesce(func.sum(AnalyticsRollupDaily.applications_submitted), 0).label("apps"),
-            func.coalesce(func.sum(AnalyticsRollupDaily.interviews_scheduled), 0).label("interviews"),
-            func.coalesce(func.sum(AnalyticsRollupDaily.hires), 0).label("hires"),
+            JobPosting.company_id,
+            func.count(Application.id).label("apps"),
         )
-        .where(AnalyticsRollupDaily.rollup_date >= start_d)
-        .where(AnalyticsRollupDaily.rollup_date <= end_d)
-        .group_by(AnalyticsRollupDaily.company_id)
+        .join(Application, Application.job_posting_id == JobPosting.id)
+        .where(Application.applied_at >= start_dt_naive)
+        .where(Application.applied_at <= end_dt_naive)
+        .group_by(JobPosting.company_id)
+    ).all()
+
+    # Count interviews per company in range (via job posting)
+    interviews_per_company = session.exec(
+        select(
+            JobPosting.company_id,
+            func.count(Meeting.id).label("interviews"),
+        )
+        .join(Meeting, Meeting.job_posting_id == JobPosting.id)
+        .where(Meeting.scheduled_start >= start_dt_naive)
+        .where(Meeting.scheduled_start <= end_dt_naive)
+        .where(Meeting.status != MeetingStatus.CANCELLED)
+        .group_by(JobPosting.company_id)
+    ).all()
+
+    # Count hires per company (selected/hired status, updated in range)
+    hires_per_company = session.exec(
+        select(
+            JobPosting.company_id,
+            func.count(Application.id).label("hires"),
+        )
+        .join(Application, Application.job_posting_id == JobPosting.id)
+        .where(Application.status.in_(["selected", "hired"]))
+        .where(Application.last_status_updated_at >= start_dt_naive)
+        .group_by(JobPosting.company_id)
     ).all()
 
     # Merge into a dict keyed by company_id
@@ -961,9 +1001,11 @@ def get_admin_analytics(
     )
     for row in jobs_per_company:
         company_metrics[row.company_id]["jobs_created"] = int(row.jobs_cnt or 0)
-    for row in rollup_per_company:
+    for row in apps_per_company:
         company_metrics[row.company_id]["applications"] = int(row.apps or 0)
+    for row in interviews_per_company:
         company_metrics[row.company_id]["interviews"] = int(row.interviews or 0)
+    for row in hires_per_company:
         company_metrics[row.company_id]["hires"] = int(row.hires or 0)
 
     # activity_score = jobs_created + applications + interviews + hires
