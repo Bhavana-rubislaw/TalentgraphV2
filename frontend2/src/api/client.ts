@@ -477,6 +477,12 @@ export const apiClient = {
   cancelMeeting: (meetingId: number, cancellation_reason: string) =>
     api.post(`/meetings/${meetingId}/cancel`, { cancellation_reason }),
 
+  markMeetingComplete: (meetingId: number, notes?: string) =>
+    api.post(`/meetings/${meetingId}/complete`, { notes: notes ?? null }),
+
+  markMeetingNoShow: (meetingId: number, notes?: string) =>
+    api.post(`/meetings/${meetingId}/no-show`, { notes: notes ?? null }),
+
   rescheduleMeeting: (meetingId: number, data: {
     scheduled_start: string;
     scheduled_end: string;
@@ -613,8 +619,9 @@ export const apiClient = {
   getCompanyTeam: () =>
     api.get('/company/team'),
 
-  removeTeamMember: (memberUserId: number) =>
+  removeTeamMemberHR: (memberUserId: number) =>
     api.delete(`/company/team/${memberUserId}`),
+
 
   // ── Product Taxonomy (Vendor/Product/Role) ─────────────────────────────────
   
@@ -671,6 +678,65 @@ export const apiClient = {
       name, 
       description 
     }),
+
+  // ── Team Management v2 (company-scoped) ────────────────────────────────────
+
+  /** List members via new team router */
+  getTeamMembersV2: () =>
+    api.get('/company/team/members'),
+
+  /** Invite a new team member (Admin/HR) */
+  inviteTeamMember: (data: { email: string; role: string }) =>
+    api.post('/company/team/invite', data),
+
+  /** Validate an invite token (public) */
+  validateInvite: (token: string) =>
+    api.get('/company/team/validate-invite', { params: { token } }),
+
+  /** Accept an invite and create an account (public) */
+  acceptInvite: (data: { token: string; full_name: string; password: string }) =>
+    api.post('/company/team/accept-invite', data),
+
+  /** List pending invitations */
+  getPendingInvites: () =>
+    api.get('/company/team/pending-invites'),
+
+  /** Revoke a pending invitation */
+  revokeInvite: (inviteId: number) =>
+    api.delete(`/company/team/invites/${inviteId}`),
+
+  /** Update a member's role (Admin only) */
+  updateMemberRole: (userId: number, role: string) =>
+    api.put(`/company/team/members/${userId}/role`, { role }),
+
+  /** Remove (deactivate) a team member (Admin only) */
+  removeTeamMember: (userId: number) =>
+    api.delete(`/company/team/members/${userId}`),
+
+  // ── Subscriptions ───────────────────────────────────────────────────────────
+
+  getSubscriptionPlans: () =>
+    api.get('/subscriptions/plans'),
+
+  getMySubscription: () =>
+    api.get('/subscriptions/my'),
+
+  purchaseSubscription: (data: { plan_id: number; auto_renew?: boolean }) =>
+    api.post('/subscriptions/purchase', data),
+
+  cancelSubscription: () =>
+    api.post('/subscriptions/cancel'),
+
+  // ── Credits ─────────────────────────────────────────────────────────────────
+
+  getCreditBalance: () =>
+    api.get('/credits/balance'),
+
+  purchaseCredits: (data: { amount: number; description?: string }) =>
+    api.post('/credits/purchase', data),
+
+  getCreditTransactions: (limit?: number, offset?: number) =>
+    api.get('/credits/transactions', { params: { limit, offset } }),
 };
 
 export default api;

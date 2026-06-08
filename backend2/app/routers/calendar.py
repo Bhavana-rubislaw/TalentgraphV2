@@ -62,7 +62,7 @@ async def google_authorize(
         f"&scope={' '.join(scopes)}"
         f"&access_type=offline"
         f"&prompt=consent"
-        f"&state={current_user.id}"  # Include user ID in state for security
+        f"&state={current_user["id"]}"  # Include user ID in state for security
     )
     
     return {
@@ -191,7 +191,7 @@ async def microsoft_authorize(
         f"&response_type=code"
         f"&scope={' '.join(scopes)}"
         f"&response_mode=query"
-        f"&state={current_user.id}"
+        f"&state={current_user["id"]}"
     )
     
     return {
@@ -301,7 +301,7 @@ async def list_calendar_accounts(
     """List all connected calendar accounts for current user"""
     
     accounts = session.exec(
-        select(CalendarAccount).where(CalendarAccount.user_id == current_user.id)
+        select(CalendarAccount).where(CalendarAccount.user_id == current_user["id"])
     ).all()
     
     return accounts
@@ -318,7 +318,7 @@ async def toggle_sync(
     
     account = session.get(CalendarAccount, account_id)
     
-    if not account or account.user_id != current_user.id:
+    if not account or account.user_id != current_user["id"]:
         raise HTTPException(status_code=404, detail="Calendar account not found")
     
     account.sync_enabled = enabled
@@ -340,13 +340,13 @@ async def set_primary_account(
     
     account = session.get(CalendarAccount, account_id)
     
-    if not account or account.user_id != current_user.id:
+    if not account or account.user_id != current_user["id"]:
         raise HTTPException(status_code=404, detail="Calendar account not found")
     
     # Unset any other primary accounts
     other_accounts = session.exec(
         select(CalendarAccount).where(
-            CalendarAccount.user_id == current_user.id,
+            CalendarAccount.user_id == current_user["id"],
             CalendarAccount.id != account_id
         )
     ).all()
@@ -374,7 +374,7 @@ async def disconnect_calendar(
     
     account = session.get(CalendarAccount, account_id)
     
-    if not account or account.user_id != current_user.id:
+    if not account or account.user_id != current_user["id"]:
         raise HTTPException(status_code=404, detail="Calendar account not found")
     
     session.delete(account)
@@ -396,7 +396,7 @@ async def create_video_provider_account(
     # Check if account already exists
     existing = session.exec(
         select(VideoProviderAccount).where(
-            VideoProviderAccount.user_id == current_user.id,
+            VideoProviderAccount.user_id == current_user["id"],
             VideoProviderAccount.provider == data.provider
         )
     ).first()
@@ -408,7 +408,7 @@ async def create_video_provider_account(
         )
     
     account = VideoProviderAccount(
-        user_id=current_user.id,
+        user_id=current_user["id"],
         **data.model_dump()
     )
     
@@ -427,7 +427,7 @@ async def list_video_provider_accounts(
     """List all video provider accounts for current user"""
     
     accounts = session.exec(
-        select(VideoProviderAccount).where(VideoProviderAccount.user_id == current_user.id)
+        select(VideoProviderAccount).where(VideoProviderAccount.user_id == current_user["id"])
     ).all()
     
     return accounts
@@ -447,7 +447,7 @@ async def update_video_provider_account(
     
     account = session.get(VideoProviderAccount, account_id)
     
-    if not account or account.user_id != current_user.id:
+    if not account or account.user_id != current_user["id"]:
         raise HTTPException(status_code=404, detail="Video provider account not found")
     
     if api_key is not None:
@@ -477,10 +477,11 @@ async def delete_video_provider_account(
     
     account = session.get(VideoProviderAccount, account_id)
     
-    if not account or account.user_id != current_user.id:
+    if not account or account.user_id != current_user["id"]:
         raise HTTPException(status_code=404, detail="Video provider account not found")
     
     session.delete(account)
     session.commit()
     
     return {"success": True, "message": "Video provider account removed"}
+

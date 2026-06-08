@@ -155,13 +155,40 @@ const JobPreferencesPage: React.FC = () => {
   const [locInput, setLocInput] = useState<LocationPref>({ city: '', state: '', country: '' });
 
   // Toast
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; lines?: string[]; type: 'success' | 'error' } | null>(null);
   const toastRef = useRef<any>(null);
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'error' = 'success', lines?: string[]) => {
     if (toastRef.current) clearTimeout(toastRef.current);
-    setToast({ message, type });
-    toastRef.current = setTimeout(() => setToast(null), 3500);
+    setToast({ message, type, lines });
+    toastRef.current = setTimeout(() => setToast(null), type === 'error' ? 6000 : 3500);
   };
+
+  const FIELD_LABELS: Record<string, string> = {
+    profile_name: 'Profile Name', product_vendor: 'Product / Vendor', product_type: 'Product Type',
+    job_role: 'Job Role', years_of_experience: 'Years of Experience', worktype: 'Work Type',
+    employment_type: 'Employment Type', salary_min: 'Salary Min', salary_max: 'Salary Max',
+    salary_currency: 'Currency', resume_id: 'Resume', visa_status: 'Visa Status',
+    availability_date: 'Availability Date', profile_summary: 'Summary',
+    preferred_job_titles: 'Preferred Titles', seniority_level: 'Seniority Level',
+    travel_willingness: 'Travel Willingness', shift_preference: 'Shift Preference',
+    remote_acceptance: 'Remote Preference', relocation_willingness: 'Relocation',
+    pay_type: 'Pay Type', negotiability: 'Negotiability', core_strengths: 'Core Strengths',
+    relevant_experience: 'Relevant Experience (yrs)', notice_period: 'Notice Period',
+    security_clearance: 'Security Clearance', highest_education: 'Highest Education',
+  };
+
+  const parse422Errors = (detail: any[]): string[] =>
+    detail.slice(0, 4).map((d: any) => {
+      const loc: string[] = d.loc || [];
+      const rawField = loc.filter((l: any) => l !== 'body' && typeof l === 'string').pop() || '';
+      const label = FIELD_LABELS[rawField] || rawField.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const issue = d.type === 'int_parsing' ? 'must be a number'
+        : d.type === 'missing' ? 'is required'
+        : d.type === 'string_too_short' ? 'is too short'
+        : d.type === 'enum' ? 'has an invalid value'
+        : 'has an issue';
+      return label ? `• ${label}: ${issue}` : `• ${issue}`;
+    });
 
   // Resume parsing state
   const [resumeParsing, setResumeParsing] = useState(false);
@@ -291,10 +318,21 @@ const JobPreferencesPage: React.FC = () => {
   };
 
   /* ── CRUD ── */
+  const toInt = (v: any, fallback = 0) => { const n = parseInt(String(v), 10); return isNaN(n) ? fallback : n; };
+  const toIntOrNull = (v: any) => { if (v === null || v === undefined || v === '') return null; const n = parseInt(String(v), 10); return isNaN(n) ? null : n; };
+  const buildPayload = (f: FormState) => ({
+    ...f,
+    years_of_experience: toInt(f.years_of_experience),
+    salary_min: toInt(f.salary_min),
+    salary_max: toInt(f.salary_max),
+    relevant_experience: toIntOrNull(f.relevant_experience),
+    primary_resume_id: toIntOrNull(f.primary_resume_id),
+    resume_id: toIntOrNull(f.primary_resume_id),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Merge primary_resume_id into resume_id for backward compat
-    const payload = { ...form, resume_id: form.primary_resume_id };
+    const payload = buildPayload(form);
     try {
       if (editingId) {
         await apiClient.updateJobProfile(editingId, payload);
@@ -308,12 +346,20 @@ const JobPreferencesPage: React.FC = () => {
       setForm({ ...EMPTY });
       fetchAll();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to save', 'error');
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 422 && Array.isArray(detail)) {
+        const lines = parse422Errors(detail);
+        showToast('Please fix these fields before saving:', 'error', lines);
+      } else {
+        const msg = status === 409 ? 'A preference with that name already exists.' : 'Something went wrong saving your preference.';
+        showToast(msg, 'error');
+      }
     }
   };
 
   const handleSaveAsNew = async () => {
-    const payload = { ...form, resume_id: form.primary_resume_id };
+    const payload = buildPayload(form);
     try {
       await apiClient.createJobProfile(payload);
       showToast('Saved as new preference');
@@ -322,7 +368,15 @@ const JobPreferencesPage: React.FC = () => {
       setForm({ ...EMPTY });
       fetchAll();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to save', 'error');
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 422 && Array.isArray(detail)) {
+        const lines = parse422Errors(detail);
+        showToast('Please fix these fields before saving:', 'error', lines);
+      } else {
+        const msg = status === 409 ? 'A preference with that name already exists.' : 'Something went wrong saving your preference.';
+        showToast(msg, 'error');
+      }
     }
   };
 
@@ -499,8 +553,13 @@ const JobPreferencesPage: React.FC = () => {
       console.error('[Resume Upload] Parsing error:', err);
       console.error('[Resume Upload] Error response:', err.response?.data);
       
-      const errorMessage = err.response?.data?.detail || err.message || 'Failed to parse resume';
-      showToast(`Error: ${errorMessage}`, 'error');
+      const status = err.response?.status;
+      const errorMessage = status === 422
+        ? "Couldn't read all fields from your resume — you can fill them in manually."
+        : status === 413
+        ? 'That file is too large. Try a smaller one.'
+        : "Couldn't parse the resume — try a different file.";
+      showToast(errorMessage, 'error');
     } finally {
       setResumeParsing(false);
       // Reset file input
@@ -1220,7 +1279,19 @@ const JobPreferencesPage: React.FC = () => {
       )}
 
       {/* Toast */}
-      {toast && <div className={`cp-toast ${toast.type}`}>{toast.type === 'success' ? I.check : I.alert}{toast.message}</div>}
+      {toast && (
+        <div className={`cp-toast ${toast.type}`}>
+          {toast.type === 'success' ? I.check : I.alert}
+          <div>
+            <div>{toast.message}</div>
+            {toast.lines && toast.lines.length > 0 && (
+              <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none', fontSize: '0.85em', lineHeight: '1.6' }}>
+                {toast.lines.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

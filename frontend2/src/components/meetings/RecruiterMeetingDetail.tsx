@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import MeetingTimeline from './MeetingTimeline';
+import { apiClient } from '../../api/client';
 
 interface Meeting {
   id: number;
@@ -47,6 +48,10 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
   const [showRespondModal, setShowRespondModal] = useState(false);
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showNoShowModal, setShowNoShowModal] = useState(false);
+  const [outcomeNotes, setOutcomeNotes] = useState('');
+  const [outcomeLoading, setOutcomeLoading] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [rescheduleData, setRescheduleData] = useState({
     scheduled_start: '',
@@ -67,10 +72,15 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
     reschedule_requested:  { background: '#FEF9C3', color: '#B45309' },
     cancelled:             { background: '#FEE2E2', color: '#B91C1C' },
     completed:             { background: '#DBEAFE', color: '#1D4ED8' },
+    no_show:               { background: '#FEF3C7', color: '#92400E' },
   };
 
-  const currentUserRole = localStorage.getItem('role') || '';
-  const isAdminOrHR = currentUserRole === 'admin' || currentUserRole === 'hr';
+  const currentUserRole = (localStorage.getItem('role') || '').toUpperCase();
+  const isAdminOrHR = currentUserRole === 'ADMIN' || currentUserRole === 'HR';
+  const isRecruiterOrAbove = currentUserRole === 'RECRUITER' || isAdminOrHR;
+
+  // Is meeting past its scheduled end time?
+  const meetingEnded = new Date(meeting.scheduled_end) < new Date();
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -113,6 +123,34 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
       setShowRescheduleModal(false);
       onUpdate();
     } catch (error) { alert('Error rescheduling meeting: ' + error); }
+  };
+
+  const handleMarkComplete = async () => {
+    setOutcomeLoading(true);
+    try {
+      await apiClient.markMeetingComplete(meeting.id, outcomeNotes || undefined);
+      setShowCompleteModal(false);
+      setOutcomeNotes('');
+      onUpdate();
+    } catch (error) {
+      alert('Error marking meeting complete: ' + error);
+    } finally {
+      setOutcomeLoading(false);
+    }
+  };
+
+  const handleMarkNoShow = async () => {
+    setOutcomeLoading(true);
+    try {
+      await apiClient.markMeetingNoShow(meeting.id, outcomeNotes || undefined);
+      setShowNoShowModal(false);
+      setOutcomeNotes('');
+      onUpdate();
+    } catch (error) {
+      alert('Error marking no-show: ' + error);
+    } finally {
+      setOutcomeLoading(false);
+    }
   };
 
   const handleRespondToRequest = async () => {
@@ -158,6 +196,19 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               {meeting.status.replace(/_/g, ' ').toUpperCase()}
             </span>
           </div>
+
+          {/* Awaiting Outcome Banner — past-due scheduled meeting */}
+          {meeting.status === 'scheduled' && meetingEnded && isRecruiterOrAbove && (
+            <div style={{ background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: '12px', padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '20px', flexShrink: 0 }}>⏳</span>
+              <div>
+                <h4 style={{ fontWeight: 700, color: '#92400E', margin: '0 0 4px', fontSize: '14px' }}>Awaiting Outcome</h4>
+                <p style={{ fontSize: '13px', color: '#B45309', margin: 0 }}>
+                  This interview has ended. Please mark it as <strong>Completed</strong> or <strong>No Show</strong> and update the application status.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Reschedule Request Alert */}
           {meeting.status === 'reschedule_requested' && (
@@ -222,15 +273,31 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
           {/* Action Buttons */}
           {meeting.status === 'scheduled' && (
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setShowRescheduleModal(true)}
-                style={{ flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                ðŸ“… Reschedule
-              </button>
-              <button onClick={() => setShowCancelModal(true)}
-                style={{ flex: 1, padding: '10px 16px', background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                âŒ Cancel Interview
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Outcome buttons — shown to recruiters/HR, prominently highlighted when meeting has ended */}
+              {isRecruiterOrAbove && (
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => { setOutcomeNotes(''); setShowCompleteModal(true); }}
+                    style={{ flex: 1, padding: '10px 16px', background: meetingEnded ? '#059669' : '#D1FAE5', color: meetingEnded ? 'white' : '#065F46', border: `1px solid ${meetingEnded ? '#059669' : '#6EE7B7'}`, borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                    ✅ Mark Complete
+                  </button>
+                  <button onClick={() => { setOutcomeNotes(''); setShowNoShowModal(true); }}
+                    style={{ flex: 1, padding: '10px 16px', background: meetingEnded ? '#F59E0B' : '#FEF3C7', color: meetingEnded ? 'white' : '#92400E', border: `1px solid ${meetingEnded ? '#F59E0B' : '#FCD34D'}`, borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                    👻 Mark No Show
+                  </button>
+                </div>
+              )}
+              {/* Reschedule / Cancel row */}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowRescheduleModal(true)}
+                  style={{ flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                  📅 Reschedule
+                </button>
+                <button onClick={() => setShowCancelModal(true)}
+                  style={{ flex: 1, padding: '10px 16px', background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FCA5A5', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  ❌ Cancel Interview
+                </button>
+              </div>
             </div>
           )}
 
@@ -259,6 +326,52 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
             <MeetingTimeline meetingId={meeting.id} />
           </div>
         </div>
+
+        {/* Mark Complete Modal */}
+        {showCompleteModal && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 8px' }}>✅ Mark Interview as Completed</h3>
+              <p style={{ fontSize: '13px', color: '#667085', margin: '0 0 16px' }}>The application will automatically move to <strong>Under Review</strong> status.</p>
+              <textarea value={outcomeNotes} onChange={(e) => setOutcomeNotes(e.target.value)}
+                placeholder="Optional notes about how the interview went..."
+                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowCompleteModal(false)} disabled={outcomeLoading}
+                  style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Back
+                </button>
+                <button onClick={handleMarkComplete} disabled={outcomeLoading}
+                  style={{ flex: 1, padding: '10px', background: '#059669', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: outcomeLoading ? 'wait' : 'pointer', opacity: outcomeLoading ? 0.7 : 1 }}>
+                  {outcomeLoading ? 'Saving...' : 'Confirm Complete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mark No Show Modal */}
+        {showNoShowModal && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', borderRadius: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '100%', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 8px' }}>👻 Mark as No Show</h3>
+              <p style={{ fontSize: '13px', color: '#667085', margin: '0 0 16px' }}>The candidate did not attend. The application stays in <strong>Scheduled</strong> — you can then reject or reschedule.</p>
+              <textarea value={outcomeNotes} onChange={(e) => setOutcomeNotes(e.target.value)}
+                placeholder="Optional notes about the no-show..."
+                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setShowNoShowModal(false)} disabled={outcomeLoading}
+                  style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Back
+                </button>
+                <button onClick={handleMarkNoShow} disabled={outcomeLoading}
+                  style={{ flex: 1, padding: '10px', background: '#F59E0B', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: outcomeLoading ? 'wait' : 'pointer', opacity: outcomeLoading ? 0.7 : 1 }}>
+                  {outcomeLoading ? 'Saving...' : 'Confirm No Show'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Cancel Modal */}
         {showCancelModal && (

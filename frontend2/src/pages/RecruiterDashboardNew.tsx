@@ -5302,7 +5302,7 @@ const RecruiterDashboard: React.FC = () => {
           <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
             <ChatWindow />
           </div>
-          <div style={{ display: activeTab === 'meetings' ? 'block' : 'none' }}>
+          <div style={{ display: activeTab === 'meetings' ? 'block' : 'none', paddingBottom: 0, marginBottom: 0 }}>
             {activeTab === 'meetings' && <MeetingSchedulerTab role="recruiter" />}
           </div>
         </div>

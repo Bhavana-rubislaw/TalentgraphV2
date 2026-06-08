@@ -20,7 +20,7 @@ from sqlmodel import Session, select
 
 from app.models import (
     JobPosting, Application, Meeting, Candidate,
-    User, Company, MeetingStatus, JobPostingStatus
+    User, Company, MeetingStatus, JobPostingStatus, MeetingParticipant
 )
 from app.services.email_service import EmailService
 from app.services.analytics_service import AnalyticsService, AnalyticsEventType
@@ -312,7 +312,282 @@ class LifecycleService:
         
         logger.info(f"Sent {reminders_sent} interview reminders")
         return reminders_sent
-    
+
+    # ─────────────────────────────────────────────────────────────────────
+    # POST-MEETING REMINDER LOGIC
+    # ─────────────────────────────────────────────────────────────────────
+
+    def send_post_meeting_reminders(self, session: Session, grace_minutes: int = 30) -> int:
+        """
+        Find meetings that have ended but are still SCHEDULED and haven't had a
+        post-meeting reminder sent yet. Email the organiser (recruiter/HR) and any
+        HR/recruiter participants asking them to update the application status.
+
+        Args:
+            session: Database session
+            grace_minutes: Wait this many minutes after scheduled_end before sending
+
+        Returns:
+            Number of reminders sent
+        """
+        logger.info("Checking for meetings needing post-meeting status reminders")
+
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(minutes=grace_minutes)
+
+        # Meetings that ended, still SCHEDULED, first reminder not yet sent
+        meetings = session.exec(
+            select(Meeting).where(
+                Meeting.status == MeetingStatus.SCHEDULED,
+                Meeting.scheduled_end < cutoff,
+                Meeting.post_meeting_reminder_sent == False  # noqa: E712
+            )
+        ).all()
+
+        sent_count = 0
+
+        for meeting in meetings:
+            try:
+                # Gather recruiter/HR recipients (organiser + HR/recruiter participants)
+                recipients: list[User] = []
+                organiser = session.get(User, meeting.organizer_user_id)
+                if organiser and organiser.email:
+                    recipients.append(organiser)
+
+                # Add any recruiter/HR participants who aren't the organiser
+                participants = session.exec(
+                    select(MeetingParticipant).where(
+                        MeetingParticipant.meeting_id == meeting.id,
+                        MeetingParticipant.user_id != meeting.organizer_user_id
+                    )
+                ).all()
+                for p in participants:
+                    user = session.get(User, p.user_id)
+                    if user and user.email and user.role in ("RECRUITER", "HR", "ADMIN"):
+                        if user not in recipients:
+                            recipients.append(user)
+
+                # Get linked candidate name (best-effort)
+                candidate_name = "the candidate"
+                if meeting.application_id:
+                    app = session.get(Application, meeting.application_id)
+                    if app:
+                        cand = session.get(Candidate, app.candidate_id)
+                        if cand:
+                            candidate_name = f"{cand.first_name} {cand.last_name}"
+
+                # Send email to each recipient
+                for recipient in recipients:
+                    try:
+                        self.email_service.send_email(
+                            to_email=recipient.email,
+                            subject=f"Action Required: Update Interview Status — {meeting.title}",
+                            html_content=self._generate_post_meeting_reminder_html(
+                                meeting, candidate_name, recipient, is_escalation=False
+                            ),
+                            plain_content=(
+                                f"Hi {recipient.full_name},\n\n"
+                                f"Your interview '{meeting.title}' with {candidate_name} ended "
+                                f"over {grace_minutes} minutes ago but the application status is "
+                                f"still 'scheduled'.\n\n"
+                                f"Please log in and update the application status (Under Review, "
+                                f"Shortlisted, or Rejected) so the candidate is kept informed.\n\n"
+                                f"TalentGraph Team"
+                            )
+                        )
+                        sent_count += 1
+                        logger.info(
+                            f"[POST_MEETING] Sent reminder for meeting {meeting.id} to {recipient.email}"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"[POST_MEETING] Failed to email {recipient.email} for meeting {meeting.id}: {e}"
+                        )
+
+                # Mark reminder sent
+                meeting.post_meeting_reminder_sent = True
+                meeting.post_meeting_reminder_sent_at = now
+                session.add(meeting)
+
+            except Exception as e:
+                logger.error(f"[POST_MEETING] Error processing meeting {meeting.id}: {e}", exc_info=True)
+
+        session.commit()
+        logger.info(f"[POST_MEETING] Sent {sent_count} post-meeting reminders")
+        return sent_count
+
+    def send_post_meeting_escalations(self, session: Session, escalation_hours: int = 48) -> int:
+        """
+        Escalation: meetings whose first reminder was sent >escalation_hours ago but the
+        meeting is STILL in SCHEDULED status (recruiter hasn't taken action).
+        Send a second email and notify admin.
+
+        Args:
+            session: Database session
+            escalation_hours: Hours after first reminder before escalating
+
+        Returns:
+            Number of escalations sent
+        """
+        logger.info("Checking for post-meeting escalations")
+
+        now = datetime.now(timezone.utc)
+        escalation_cutoff = now - timedelta(hours=escalation_hours)
+
+        meetings = session.exec(
+            select(Meeting).where(
+                Meeting.status == MeetingStatus.SCHEDULED,
+                Meeting.post_meeting_reminder_sent == True,  # noqa: E712
+                Meeting.post_meeting_reminder_sent_at < escalation_cutoff,
+                Meeting.post_meeting_escalation_sent == False  # noqa: E712
+            )
+        ).all()
+
+        sent_count = 0
+
+        for meeting in meetings:
+            try:
+                # Get linked candidate info
+                candidate_name = "the candidate"
+                if meeting.application_id:
+                    app = session.get(Application, meeting.application_id)
+                    if app:
+                        # Only escalate if application is STILL 'scheduled'
+                        if app.status != "scheduled":
+                            # Recruiter did update externally — suppress escalation
+                            meeting.post_meeting_escalation_sent = True
+                            session.add(meeting)
+                            continue
+                        cand = session.get(Candidate, app.candidate_id)
+                        if cand:
+                            candidate_name = f"{cand.first_name} {cand.last_name}"
+
+                organiser = session.get(User, meeting.organizer_user_id)
+                if not organiser:
+                    continue
+
+                hours_overdue = int(
+                    (now - meeting.post_meeting_reminder_sent_at.replace(tzinfo=timezone.utc)).total_seconds() / 3600
+                )
+
+                try:
+                    self.email_service.send_email(
+                        to_email=organiser.email,
+                        subject=f"URGENT: Interview Status Still Pending — {meeting.title}",
+                        html_content=self._generate_post_meeting_reminder_html(
+                            meeting, candidate_name, organiser, is_escalation=True,
+                            hours_overdue=hours_overdue
+                        ),
+                        plain_content=(
+                            f"Hi {organiser.full_name},\n\n"
+                            f"URGENT: Your interview '{meeting.title}' with {candidate_name} ended "
+                            f"over {hours_overdue} hours ago and the application status has still not "
+                            f"been updated.\n\n"
+                            f"Please log in immediately and update the status.\n\n"
+                            f"TalentGraph Team"
+                        )
+                    )
+                    sent_count += 1
+                    logger.info(
+                        f"[POST_MEETING_ESC] Sent escalation for meeting {meeting.id} to {organiser.email}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"[POST_MEETING_ESC] Failed to email {organiser.email}: {e}"
+                    )
+
+                meeting.post_meeting_escalation_sent = True
+                meeting.post_meeting_escalation_sent_at = now
+                session.add(meeting)
+
+            except Exception as e:
+                logger.error(f"[POST_MEETING_ESC] Error processing meeting {meeting.id}: {e}", exc_info=True)
+
+        session.commit()
+        logger.info(f"[POST_MEETING_ESC] Sent {sent_count} escalation emails")
+        return sent_count
+
+    def _generate_post_meeting_reminder_html(
+        self,
+        meeting: Meeting,
+        candidate_name: str,
+        recipient: User,
+        is_escalation: bool = False,
+        hours_overdue: int = 0
+    ) -> str:
+        """Generate HTML email for post-meeting status reminder"""
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
+
+        if is_escalation:
+            header_bg = "#f8d7da"
+            header_icon = "🚨"
+            header_title = f"URGENT: Interview Status Still Pending ({hours_overdue}h overdue)"
+            urgency_banner = f"""
+            <div style="background:#dc3545;color:white;padding:12px 20px;border-radius:4px;margin-bottom:16px;font-weight:bold;">
+                ⚠️ This is a second reminder. The status has not been updated for over {hours_overdue} hours.
+            </div>"""
+        else:
+            header_bg = "#fff3cd"
+            header_icon = "📋"
+            header_title = "Action Required: Update Interview Status"
+            urgency_banner = ""
+
+        meeting_time = meeting.scheduled_end.strftime("%b %d, %Y at %I:%M %p UTC") if meeting.scheduled_end else "recently"
+        meetings_url = f"{frontend_url}/meetings/{meeting.id}"
+
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+               max-width: 600px; margin: 0 auto; padding: 20px; color: #333; }}
+        .header {{ background: {header_bg}; padding: 20px; border-radius: 8px; margin-bottom: 20px; }}
+        .info-box {{ background: #f8f9fa; padding: 16px; border-left: 4px solid #007bff;
+                    margin: 20px 0; border-radius: 4px; }}
+        .actions {{ margin: 24px 0; }}
+        .btn {{ display: inline-block; padding: 12px 24px; border-radius: 6px; text-decoration: none;
+               font-weight: bold; margin: 4px; }}
+        .btn-primary {{ background: #007bff; color: white; }}
+        .btn-success {{ background: #28a745; color: white; }}
+        .btn-warning {{ background: #ffc107; color: #212529; }}
+        .footer {{ margin-top: 32px; color: #6c757d; font-size: 13px; border-top: 1px solid #dee2e6; padding-top: 16px; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2 style="margin:0">{header_icon} {header_title}</h2>
+    </div>
+
+    {urgency_banner}
+
+    <p>Hi {recipient.full_name},</p>
+
+    <p>Your interview with <strong>{candidate_name}</strong> ended on <strong>{meeting_time}</strong>,
+    but the application status is still <strong>"Scheduled"</strong>.</p>
+
+    <div class="info-box">
+        <p style="margin:0"><strong>Meeting:</strong> {meeting.title}</p>
+        <p style="margin:8px 0 0 0"><strong>Candidate:</strong> {candidate_name}</p>
+        <p style="margin:8px 0 0 0"><strong>Ended:</strong> {meeting_time}</p>
+    </div>
+
+    <p>Please update the application status so the candidate is kept informed:</p>
+
+    <div class="actions">
+        <a href="{meetings_url}" class="btn btn-primary">Open Meeting & Update Status</a>
+    </div>
+
+    <p style="color:#6c757d;font-size:14px;">
+        You can update the application to: <em>Under Review, Shortlisted, Selected, or Rejected</em>.
+        You can also mark the meeting as <em>Completed</em> or <em>No Show</em> from the meeting detail page.
+    </p>
+
+    <div class="footer">
+        <p>This is an automated reminder from TalentGraph. If you have already updated the status, please ignore this email.</p>
+    </div>
+</body>
+</html>"""
+
     def cleanup_old_events(self, session: Session, days_to_keep: int = 365) -> int:
         """
         Clean up old analytics events (after aggregation)
@@ -493,14 +768,23 @@ def run_daily_lifecycle_checks(session: Session):
 def run_hourly_reminders(session: Session):
     """
     Run hourly reminder checks
-    
+
     Should be called by reminder worker
     """
     service = LifecycleService()
-    
+
     logger.info("=== Starting Hourly Reminder Checks ===")
-    
-    # Send 24-hour interview reminders
+
+    # Send 24-hour pre-interview reminders to candidates
     reminders = service.send_interview_reminders(session, hours_before=24)
-    
-    logger.info(f"=== Hourly Reminders Complete: {reminders} sent ===")
+
+    # Send post-meeting status reminders to recruiters/HR (meetings ended > 30 min ago)
+    post_reminders = service.send_post_meeting_reminders(session, grace_minutes=30)
+
+    # Send escalations for reminders already sent > 48h ago with no action
+    escalations = service.send_post_meeting_escalations(session, escalation_hours=48)
+
+    logger.info(
+        f"=== Hourly Reminders Complete: {reminders} pre-interview, "
+        f"{post_reminders} post-meeting, {escalations} escalations ==="
+    )

@@ -547,6 +547,11 @@ class Company(SQLModel, table=True):
     company_description: Optional[str] = None
     profile_complete: bool = Field(default=False)
     
+    # ── Credits & Subscriptions ──────────────────────────────────
+    current_credits: int = Field(default=0)
+    is_primary_account: bool = Field(default=False)
+    parent_company_id: Optional[int] = Field(default=None, foreign_key="company.id", index=True)
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -871,6 +876,85 @@ class UserInvitation(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+# ============ SUBSCRIPTION & CREDITS MODELS ============
+
+class SubscriptionPlan(SQLModel, table=True):
+    """Available subscription plans (managed by system admins)."""
+    __tablename__ = "subscription_plan"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, index=True)          # e.g. "Free", "Starter", "Pro"
+    description: Optional[str] = None
+    price: float = Field(default=0.0)                   # monthly price
+    currency: str = Field(default="USD")
+    credits_included: int = Field(default=0)            # credits granted on each billing cycle
+    job_post_limit: int = Field(default=5)              # 0 = unlimited
+    team_member_limit: int = Field(default=1)           # max team members allowed
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CompanySubscription(SQLModel, table=True):
+    """Active (or historical) subscription for a primary company account."""
+    __tablename__ = "company_subscription"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    plan_id: int = Field(foreign_key="subscription_plan.id", index=True)
+    start_date: datetime
+    end_date: datetime
+    status: str = Field(default="active", index=True)   # active | cancelled | expired
+    auto_renew: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CreditTransaction(SQLModel, table=True):
+    """Append-only ledger of credit additions and deductions for a company."""
+    __tablename__ = "credit_transaction"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    type: str = Field(index=True)   # purchase | usage | bonus | refund | subscription_grant
+    amount: int                     # positive = credited, negative = debited
+    description: Optional[str] = None
+    transaction_date: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============ TEAM INVITE MODEL ============
+
+class TeamInviteStatus(str, Enum):
+    """Team invite lifecycle"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class TeamInvite(SQLModel, table=True):
+    """
+    Company-scoped team invitation created by Admin or HR.
+
+    Security:
+    - Raw token is returned once in the API response (for localhost) or emailed (production).
+    - Only the SHA-256 hash is persisted.
+    - Single-use: marked ACCEPTED on acceptance, EXPIRED after expires_at.
+    """
+    __tablename__ = "team_invite"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)       # primary company
+    invited_by_user_id: int = Field(foreign_key="user.id", index=True)
+    invitee_email: str = Field(index=True)
+    role: UserRole                                                        # HR or RECRUITER
+    token_hash: str = Field(unique=True, index=True)                     # SHA-256(raw_token)
+    status: str = Field(default=TeamInviteStatus.PENDING.value, index=True)
+    expires_at: datetime
+    accepted_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class SystemLog(SQLModel, table=True):
     """System-wide logging for debugging and monitoring.
     
@@ -1039,7 +1123,18 @@ class Meeting(SQLModel, table=True):
     reschedule_requested_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     reschedule_request_reason: Optional[str] = None
     reschedule_request_preferred_times: Optional[str] = None  # JSON array of preferred times
-    
+
+    # Post-meeting reminder tracking (sent to recruiter/HR after meeting ends)
+    post_meeting_reminder_sent: bool = Field(default=False)
+    post_meeting_reminder_sent_at: Optional[datetime] = None
+    post_meeting_escalation_sent: bool = Field(default=False)
+    post_meeting_escalation_sent_at: Optional[datetime] = None
+
+    # Outcome tracking (set when recruiter marks complete/no-show)
+    completed_at: Optional[datetime] = None
+    completed_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    completion_notes: Optional[str] = None
+
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

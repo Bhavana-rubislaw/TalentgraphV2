@@ -32,10 +32,43 @@ def get_email_scheduler() -> BackgroundScheduler:
     """Get or create the global email scheduler"""
     global email_scheduler
     if email_scheduler is None:
-        email_scheduler = BackgroundScheduler()
+        email_scheduler = BackgroundScheduler(
+            job_defaults={
+                'misfire_grace_time': 3600,  # 1-hour grace: never skip misfired email jobs
+                'coalesce': True,
+                'max_instances': 1
+            }
+        )
         email_scheduler.start()
-        logger.info("[EMAIL_WORKER] Email scheduler started")
+        # Add periodic polling fallback: process any queued emails every 2 minutes
+        from apscheduler.triggers.interval import IntervalTrigger
+        email_scheduler.add_job(
+            _poll_queued_emails,
+            trigger=IntervalTrigger(minutes=2),
+            id='email_poll_fallback',
+            replace_existing=True
+        )
+        logger.info("[EMAIL_WORKER] Email scheduler started with polling fallback")
     return email_scheduler
+
+
+def _poll_queued_emails():
+    """Periodic fallback: find any QUEUED emails that have not been attempted and send them."""
+    from sqlmodel import Session as DBSession
+    try:
+        with DBSession(engine) as session:
+            pending = session.exec(
+                select(EmailDelivery).where(
+                    EmailDelivery.status == EmailDeliveryStatus.QUEUED.value,
+                    EmailDelivery.attempts < EmailDelivery.max_attempts
+                )
+            ).all()
+            if pending:
+                logger.info(f"[EMAIL_WORKER] Poll found {len(pending)} queued email(s) — sending now")
+                for delivery in pending:
+                    send_notification_email_task(delivery.id)
+    except Exception as e:
+        logger.error(f"[EMAIL_WORKER] Poll error: {e}", exc_info=True)
 
 
 def generate_idempotency_key(

@@ -42,6 +42,7 @@ from ..models import (
     JobPostingStatus,
     JobProfile,
     Meeting,
+    MeetingParticipant,
     Organization,
     User,
     UserInvitation,
@@ -756,26 +757,27 @@ def _get_application_timeline(session: Session, application_id: int) -> List[Tim
         candidate = session.get(Candidate, app.candidate_id)
         job = session.get(JobPosting, app.job_posting_id)
         if candidate and job:
-            company = session.get(Company, job.company_id) if job else None
-            if company:
-                meetings = session.exec(
-                    select(Meeting)
-                    .where(
-                        Meeting.candidate_user_id == candidate.user_id,
-                        Meeting.job_posting_id == app.job_posting_id,
+            participant_subq = select(MeetingParticipant.meeting_id).where(
+                MeetingParticipant.user_id == candidate.user_id
+            )
+            meetings = session.exec(
+                select(Meeting)
+                .where(
+                    Meeting.id.in_(participant_subq),
+                    Meeting.job_posting_id == app.job_posting_id,
+                )
+                .order_by(Meeting.scheduled_start.asc())
+            ).all()
+            for m in meetings:
+                events.append(
+                    TimelineEvent(
+                        event_type="meeting",
+                        title=f"Meeting: {m.title}",
+                        description=f"Status: {m.status.value if hasattr(m.status, 'value') else m.status}",
+                        occurred_at=m.created_at,
+                        performed_by=None,
                     )
-                    .order_by(Meeting.scheduled_at.asc())
-                ).all()
-                for m in meetings:
-                    events.append(
-                        TimelineEvent(
-                            event_type="meeting",
-                            title=f"Meeting: {m.title}",
-                            description=f"Status: {m.status.value if hasattr(m.status, 'value') else m.status}",
-                            occurred_at=m.created_at,
-                            performed_by=None,
-                        )
-                    )
+                )
 
     # Sort all events chronologically
     events.sort(key=lambda e: e.occurred_at)

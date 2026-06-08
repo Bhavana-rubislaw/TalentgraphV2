@@ -1,0 +1,105 @@
+Jordan Alex Lee
+Senior Software Engineer | Full-Stack Developer
+
+Email: jordan.lee@email.com
+Phone: (512) 867-5309
+Location: 4821 Riverside Drive, Austin, Texas 78701
+LinkedIn: https://linkedin.com/in/jordanalexlee
+GitHub: https://github.com/jordanlee-dev
+Portfolio: https://jordanlee.dev
+
+---
+
+PROFESSIONAL SUMMARY
+Results-driven Senior Software Engineer with 8+ years of experience designing and delivering scalable full-stack applications. Proven expertise in cloud architecture, distributed systems, and leading cross-functional engineering teams. Seeking a Senior or Lead Software Engineer role in a product-driven company. Open to remote, hybrid, or on-site opportunities. Available to start with 2 weeks notice.
+
+---
+
+SKILLS
+Python, JavaScript, TypeScript, Java, Go, C#
+React, Angular, Next.js, Node.js, Django, FastAPI, Spring Boot
+PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, DynamoDB
+AWS, Azure, GCP, Docker, Kubernetes, Terraform, Jenkins, CI/CD
+Machine Learning, TensorFlow, Scikit-Learn, Pandas, NumPy
+REST API, GraphQL, Microservices, Agile, Scrum, TDD
+Git, GitHub, GitLab, Jira, Linux, Unit Testing, Integration Testing
+
+---
+
+PROFESSIONAL EXPERIENCE
+
+Senior Software Engineer
+TechScale Inc. | Austin, Texas
+2020 - Present
+- Led a team of 6 engineers to re-architect the core payments platform, reducing latency by 40%.
+- Designed and deployed microservices on AWS using Docker and Kubernetes.
+- Implemented CI/CD pipelines with Jenkins and GitHub Actions.
+- Mentored junior and mid-level developers through code reviews and 1:1s.
+- Tech: Python, FastAPI, PostgreSQL, Redis, AWS, React, TypeScript.
+
+Software Engineer II
+DataBridge Solutions | Seattle, Washington
+2018 - 2020
+- Built RESTful APIs and GraphQL services consumed by 3 mobile apps.
+- Migrated legacy monolith to microservices architecture using Spring Boot and Azure.
+- Collaborated with data science team to integrate TensorFlow ML models into production.
+- Tech: Java, Spring Boot, MySQL, Azure, Angular, Machine Learning.
+
+Junior Software Developer
+Innovate Corp | San Jose, California
+2016 - 2018
+- Developed and maintained internal HR tools using Django and PostgreSQL.
+- Wrote unit tests and integration tests achieving 85% code coverage.
+- Participated in Agile sprints and daily Scrum standups.
+- Tech: Python, Django, PostgreSQL, JavaScript, HTML, CSS.
+
+---
+
+EDUCATION
+
+Master of Science in Computer Science
+University of Texas at Austin | Austin, Texas
+2014 - 2016
+GPA: 3.8/4.0
+
+Bachelor of Science in Computer Engineering
+University of California, San Diego | San Diego, California
+2010 - 2014
+
+---
+
+CERTIFICATIONS
+
+AWS Certified Solutions Architect – Professional
+AWS Certified Developer – Associate
+Google Cloud Professional Data Engineer Certification
+Certified Kubernetes Administrator (CKA)
+PMP – Project Management Professional Certification
+
+---
+
+ADDITIONAL INFORMATION
+
+Years of Experience: 8+ years of experience in software engineering
+Travel Willingness: Occasional travel acceptable (up to 25%)
+Remote Work: Open to remote, hybrid, or on-site roles
+Relocation: Open to relocation within the United States
+Shift Preference: Standard business hours; flexible for critical deployments
+Availability: 2 weeks notice period from current employer
+Security Clearance: Not applicable
+Core Strengths: System Design, API Development, Team Leadership, Cloud Architecture, Problem Solving
+
+---
+
+PROJECTS
+
+Open-Source API Gateway (github.com/jordanlee-dev/api-gateway)
+- High-performance API gateway built with Go and Redis; 2,000+ GitHub stars.
+
+ML-Powered Resume Screener (jordanlee.dev/projects/resume-screener)
+- End-to-end NLP pipeline using Python, Scikit-Learn, and FastAPI.
+
+---
+
+REFERENCES
+Available upon request.

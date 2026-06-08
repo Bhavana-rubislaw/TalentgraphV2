@@ -41,7 +41,50 @@ async def lifespan(app: FastAPI):
             logger.warning(f"[STARTUP] Failed to start workers: {e}")
     else:
         logger.info("[STARTUP] Background workers disabled (WORKERS_ENABLED=false)")
-    
+
+    # Start email scheduler immediately at startup (ensures misfire_grace_time is applied)
+    try:
+        from app.workers.email_worker import get_email_scheduler
+        get_email_scheduler()  # Creates scheduler with polling fallback
+        logger.info("[STARTUP] Email scheduler initialized")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Email scheduler init failed: {e}")
+
+    # Recover orphaned queued emails (lost when scheduler restarts)
+    try:
+        from app.database import engine
+        from app.models import EmailDelivery, EmailDeliveryStatus
+        from app.workers.email_worker import send_notification_email_task, get_email_scheduler
+        from sqlmodel import Session, select
+        from apscheduler.triggers.date import DateTrigger
+        from datetime import datetime, timedelta
+
+        with Session(engine) as session:
+            orphaned = session.exec(
+                select(EmailDelivery).where(
+                    EmailDelivery.status == EmailDeliveryStatus.QUEUED.value,
+                    EmailDelivery.attempts < EmailDelivery.max_attempts
+                )
+            ).all()
+
+            if orphaned:
+                scheduler = get_email_scheduler()
+                for i, delivery in enumerate(orphaned):
+                    # Stagger jobs by 2s each to avoid all firing simultaneously
+                    run_at = datetime.utcnow() + timedelta(seconds=5 + i * 2)
+                    scheduler.add_job(
+                        send_notification_email_task,
+                        trigger=DateTrigger(run_date=run_at),
+                        args=[delivery.id],
+                        id=f"email_recover_{delivery.id}",
+                        replace_existing=True
+                    )
+                logger.info(f"[STARTUP] Re-queued {len(orphaned)} orphaned email(s) for delivery")
+            else:
+                logger.info("[STARTUP] No orphaned emails found")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Orphaned email recovery failed: {e}")
+
     # Run lifecycle checks immediately on startup
     lifecycle_enabled = os.getenv("LIFECYCLE_CHECK_ON_STARTUP", "true").lower() == "true"
     if lifecycle_enabled:
@@ -135,7 +178,7 @@ else:
         CORSMiddleware,
         allow_origins=origins,
         # Allow localhost variations only in development
-        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):(300[0-3]|8000|8001|5173)$",
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):(300[0-9]|8000|8001|5173)$",
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Request-ID"],
@@ -184,6 +227,9 @@ from app.routers import (
     onboarding, product_taxonomy, admin
 )
 from app.routers.admin_extended import router as admin_extended_router, accept_router as invitations_router
+from app.routers.subscriptions import router as subscriptions_router
+from app.routers.credits import router as credits_router
+from app.routers.team import router as team_router
 
 log_change(
     logger, 
@@ -215,6 +261,9 @@ app.include_router(product_taxonomy.router)  # Product taxonomy for job postings
 app.include_router(admin_extended_router)    # Admin portal — extended features (Phase 2-7)
 app.include_router(admin.router)             # Admin portal management APIs
 app.include_router(invitations_router)       # Public invitation acceptance
+app.include_router(subscriptions_router)     # Subscription plans & purchases
+app.include_router(credits_router)           # Credits balance & transactions
+app.include_router(team_router)              # Team invitations & member management
 
 log_change(
     logger,

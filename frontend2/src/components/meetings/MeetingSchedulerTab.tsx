@@ -258,7 +258,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, height: 'calc(100vh - 160px)', overflow: 'hidden' }}>
 
       {/* ── Purple banner ── */}
       <div style={{
@@ -270,6 +270,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
         justifyContent: 'space-between',
         marginBottom: '20px',
         boxShadow: '0 4px 20px rgba(124,58,237,0.3)',
+        flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
@@ -317,7 +318,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
 
       {/* ── Sub-tabs ── */}
       <div style={{
-        display: 'flex', gap: '0', borderBottom: '2px solid #e2e8f0', marginBottom: '20px',
+        display: 'flex', gap: '0', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', flexShrink: 0,
       }}>
         {([['schedule', 'Schedule'], ['upcoming', `Upcoming`]] as const).map(([key, label]) => (
           <button
@@ -355,10 +356,10 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
       </div>
 
       {/* ── Two-column body ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'stretch', flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
         {/* ── LEFT: meeting list panel ── */}
-        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
           {/* Filter chips */}
           <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -423,7 +424,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
           </div>
 
           {/* Meeting list */}
-          <div style={{ padding: '0 0 8px' }}>
+          <div className="meeting-list-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 0 0' }}>
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px' }}>📅</div>
@@ -436,7 +437,8 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                 <div style={{ fontSize: '13px' }}>Try a different filter or schedule a new meeting</div>
               </div>
             ) : (
-              Object.entries(grouped).map(([dateKey, dayMeetings]) => (
+              <>
+              {Object.entries(grouped).map(([dateKey, dayMeetings]) => (
                 <div key={dateKey}>
                   {/* Date header */}
                   <div style={{
@@ -591,13 +593,43 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                     );
                   })}
                 </div>
-              ))
+              ))}
+              {/* ── Scroll footer ── */}
+              <div style={{
+                padding: '12px 20px',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'white',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  {Object.values(grouped).flat().length} meeting{Object.values(grouped).flat().length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  onClick={() => { const el = document.querySelector('.meeting-list-scroll'); if (el) el.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    padding: '4px 10px', borderRadius: '6px',
+                    border: '1px solid #e2e8f0', background: 'white',
+                    fontSize: '11px', fontWeight: 600, color: '#64748b',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 11, height: 11 }}>
+                    <polyline points="18 15 12 9 6 15"/>
+                  </svg>
+                  Back to top
+                </button>
+              </div>
+              </>
             )}
           </div>
         </div>
 
         {/* ── RIGHT: calendar + upcoming calls ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
 
           {/* Mini calendar */}
           <MiniCalendar

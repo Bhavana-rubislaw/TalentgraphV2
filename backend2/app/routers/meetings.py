@@ -7,6 +7,7 @@ Enhanced with comprehensive cancellation, rescheduling, and tokenized email acti
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from pydantic import BaseModel
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
@@ -1876,3 +1877,170 @@ async def find_common_availability(
         "available_slots": slots,
         "total_found": len(slots)
     }
+
+
+# ============ MEETING OUTCOME ENDPOINTS ============
+
+class MeetingCompleteRequest(BaseModel):
+    notes: Optional[str] = None  # Optional recruiter notes about the meeting
+
+
+class MeetingNoShowRequest(BaseModel):
+    notes: Optional[str] = None  # Optional notes about no-show
+
+
+@router.post("/{meeting_id}/complete", response_model=MeetingRead)
+async def mark_meeting_complete(
+    meeting_id: int,
+    data: MeetingCompleteRequest,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Mark a meeting as COMPLETED (recruiter/HR only).
+    Automatically moves the linked application to 'under_review'.
+    """
+    role = current_user.get("role", "")
+    if role not in ["RECRUITER", "HR", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only recruiters and HR can mark meetings complete")
+
+    meeting = session.get(Meeting, meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    if meeting.status == MeetingStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Meeting is already marked as completed")
+
+    if meeting.status in [MeetingStatus.CANCELLED]:
+        raise HTTPException(status_code=400, detail="Cannot complete a cancelled meeting")
+
+    # Update meeting status
+    meeting.status = MeetingStatus.COMPLETED
+    meeting.completed_at = datetime.utcnow()
+    meeting.completed_by_user_id = current_user["user_id"]
+    meeting.completion_notes = data.notes
+    meeting.updated_at = datetime.utcnow()
+    # Mark that no further post-meeting reminder is needed
+    meeting.post_meeting_reminder_sent = True
+    meeting.post_meeting_reminder_sent_at = datetime.utcnow()
+    meeting.post_meeting_escalation_sent = True
+    session.add(meeting)
+    session.commit()
+
+    # Sync application status → under_review
+    if meeting.application_id:
+        MeetingService.sync_application_status(
+            session=session,
+            meeting=meeting,
+            new_meeting_status=MeetingStatus.COMPLETED,
+            actor_user_id=current_user["user_id"]
+        )
+
+    current_user_obj = session.get(User, current_user["user_id"])
+    user_name = current_user_obj.full_name if current_user_obj else "Someone"
+
+    MeetingService.create_timeline_event(
+        session=session,
+        meeting_id=meeting.id,
+        actor_user_id=current_user["user_id"],
+        event_type="meeting_completed",
+        message=f"{user_name} marked the meeting as completed",
+        metadata={"notes": data.notes}
+    )
+
+    # Notify all participants
+    MeetingService.notify_participants(
+        session=session,
+        meeting=meeting,
+        notification_type="meeting_completed",
+        title="Meeting Marked Complete",
+        message=f"Interview '{meeting.title}' has been marked as completed by {user_name}.",
+        exclude_user_id=current_user["user_id"]
+    )
+
+    meeting = session.exec(
+        select(Meeting)
+        .where(Meeting.id == meeting.id)
+        .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+    ).first()
+
+    return MeetingRead.from_orm_with_participants(meeting)
+
+
+@router.post("/{meeting_id}/no-show", response_model=MeetingRead)
+async def mark_meeting_no_show(
+    meeting_id: int,
+    data: MeetingNoShowRequest,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Mark a meeting as NO_SHOW (recruiter/HR only).
+    Application stays in 'scheduled' — recruiter must decide next action (reject / reschedule).
+    """
+    role = current_user.get("role", "")
+    if role not in ["RECRUITER", "HR", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Only recruiters and HR can mark meetings as no-show")
+
+    meeting = session.get(Meeting, meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    if meeting.status in [MeetingStatus.COMPLETED, MeetingStatus.CANCELLED]:
+        raise HTTPException(status_code=400, detail=f"Cannot mark a {meeting.status.value} meeting as no-show")
+
+    # Update meeting status
+    meeting.status = MeetingStatus.NO_SHOW
+    meeting.completed_at = datetime.utcnow()
+    meeting.completed_by_user_id = current_user["user_id"]
+    meeting.completion_notes = data.notes
+    meeting.updated_at = datetime.utcnow()
+    # Suppress further post-meeting reminders for this meeting
+    meeting.post_meeting_reminder_sent = True
+    meeting.post_meeting_reminder_sent_at = datetime.utcnow()
+    meeting.post_meeting_escalation_sent = True
+    session.add(meeting)
+    session.commit()
+
+    # sync_application_status for NO_SHOW keeps application as 'scheduled'
+    if meeting.application_id:
+        MeetingService.sync_application_status(
+            session=session,
+            meeting=meeting,
+            new_meeting_status=MeetingStatus.NO_SHOW,
+            actor_user_id=current_user["user_id"]
+        )
+
+    current_user_obj = session.get(User, current_user["user_id"])
+    user_name = current_user_obj.full_name if current_user_obj else "Someone"
+
+    MeetingService.create_timeline_event(
+        session=session,
+        meeting_id=meeting.id,
+        actor_user_id=current_user["user_id"],
+        event_type="meeting_no_show",
+        message=f"{user_name} marked the candidate as no-show",
+        metadata={"notes": data.notes}
+    )
+
+    # In-app notification to organiser (recruiter/HR) to update application status
+    try:
+        push_notification(
+            session=session,
+            user_id=meeting.organizer_user_id,
+            title="Candidate No-Show — Action Required",
+            message=f"Candidate did not attend '{meeting.title}'. Please update the application status (reject or reschedule).",
+            event_type="meeting_no_show",
+            route=f"/meetings/{meeting.id}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to push no-show notification: {e}")
+
+    meeting = session.exec(
+        select(Meeting)
+        .where(Meeting.id == meeting.id)
+        .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
+    ).first()
+
+    return MeetingRead.from_orm_with_participants(meeting)
+

@@ -15,6 +15,7 @@ import JobPostingForm from './pages/JobPostingForm';
 import JobPostingBuilder from './pages/JobPostingBuilder';
 import { MeetingsPage } from './pages/MeetingsPage';
 import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
+import AcceptInvitePage from './pages/AcceptInvitePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './index.css';
@@ -248,6 +249,8 @@ const App: React.FC = () => {
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/signin" element={<SignupPage />} />
             <Route path="/landing" element={<LandingPage />} />
+            {/* Public: accept team invitation */}
+            <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
             {/* Profile Setup Pages */}
             <Route

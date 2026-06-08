@@ -25,6 +25,7 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 from app.workers.lifecycle_worker import LifecycleWorker
 from app.workers.analytics_worker import AnalyticsWorker
 from app.workers.reminder_worker import ReminderWorker
+from app.workers.post_meeting_worker import PostMeetingWorker
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,7 @@ def start_workers():
     lifecycle_worker = LifecycleWorker()
     analytics_worker = AnalyticsWorker()
     reminder_worker = ReminderWorker()
+    post_meeting_worker = PostMeetingWorker()
     
     # ═════════════════════════════════════════════════════════════════════
     # LIFECYCLE WORKER - Daily at 2 AM UTC
@@ -119,7 +121,21 @@ def start_workers():
     )
     
     logger.info("Scheduled: reminder_worker (hourly)")
-    
+
+    # ═════════════════════════════════════════════════════════════════════
+    # POST-MEETING WORKER - Hourly (offset 30 min to avoid overlap)
+    # ═════════════════════════════════════════════════════════════════════
+
+    scheduler.add_job(
+        func=post_meeting_worker.run,
+        trigger=IntervalTrigger(hours=1, start_date=None, timezone="UTC"),
+        id='post_meeting_worker',
+        name='Post-Meeting Status Reminders',
+        replace_existing=True
+    )
+
+    logger.info("Scheduled: post_meeting_worker (hourly)")
+
     # ═════════════════════════════════════════════════════════════════════
     # START SCHEDULER
     # ═════════════════════════════════════════════════════════════════════

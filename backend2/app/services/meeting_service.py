@@ -120,7 +120,16 @@ class MeetingService:
         elif new_meeting_status == MeetingStatus.RESCHEDULED:
             # Keep as scheduled
             new_app_status = "scheduled"
-        
+
+        elif new_meeting_status == MeetingStatus.COMPLETED:
+            # Meeting completed — move to under_review, recruiter decides final outcome
+            new_app_status = "under_review"
+
+        elif new_meeting_status == MeetingStatus.NO_SHOW:
+            # Candidate no-show — keep for recruiter to decide (reject or reschedule)
+            # Don't auto-reject; recruiter must make a conscious decision
+            new_app_status = "scheduled"
+
         # Apply status change if determined
         if new_app_status and new_app_status != old_status:
             application.status = new_app_status

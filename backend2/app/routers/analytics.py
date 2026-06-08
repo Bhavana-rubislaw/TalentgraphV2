@@ -608,7 +608,13 @@ async def get_hr_analytics(
     if not company:
         raise HTTPException(status_code=403, detail="No company associated with user")
 
-    end_date = datetime.now(timezone.utc)
+    # HR team members have their own Company row, but jobs belong to the parent company
+    if company.parent_company_id:
+        parent = session.get(Company, company.parent_company_id)
+        if parent:
+            company = parent
+
+    end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=range_days)
     company_id = company.id
 
