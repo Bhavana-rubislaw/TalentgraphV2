@@ -505,17 +505,18 @@
 /* ====== WELCOME BANNER & KPI CARDS ====== */
 .welcome-banner-modern {
   background: white;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
+  border-radius: 12px;
+  padding: 14px 20px 10px;
+  margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
 }
 
 .welcome-header-compact {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .welcome-avatar-compact {
@@ -523,8 +524,8 @@
 }
 
 .avatar-circle-compact {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: linear-gradient(135deg, #7C3AED, #A78BFA);
   color: white;
@@ -532,8 +533,8 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 20px;
-  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+  font-size: 16px;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
 }
 
 .welcome-text-compact {
@@ -541,15 +542,15 @@
 }
 
 .welcome-title-compact {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
   color: #1F2937;
-  margin: 0 0 4px 0;
-  letter-spacing: -0.5px;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.3px;
 }
 
 .welcome-subtitle-compact {
-  font-size: 14px;
+  font-size: 12px;
   color: #6B7280;
   margin: 0;
 }

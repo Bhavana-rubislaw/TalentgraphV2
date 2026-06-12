@@ -20,10 +20,11 @@ from pydantic import BaseModel, EmailStr
 from sqlmodel import Session, select
 
 from app.database import get_session
-from app.models import Company, TeamInvite, TeamInviteStatus, User, UserRole
+from app.models import Company, TeamInvite, TeamInviteStatus, User, UserRole, EmailDelivery, EmailDeliveryStatus
 from app.security import get_current_user, hash_password
 from app.core.logging_config import get_logger
 from app import emailer
+from app.services.notification_service import NotificationService
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/company/team", tags=["Team Management"])
@@ -54,50 +55,138 @@ def _send_invite_email(
     raw_token: str,
     role: str,
     company_name: str,
+    inviter_name: str = "",
+    inviter_email: str = "",
+    session: Optional[Session] = None,
+    inviter_user_id: Optional[int] = None,
 ) -> None:
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
     invite_url = f"{frontend_url}/accept-invite?token={raw_token}"
     role_label = role.capitalize()
+    subject = f"You're invited to join {company_name} on TalentGraph"
+
+    # Build the "invited by" line
+    if inviter_name and inviter_email:
+        invited_by_html = f"""
+      <div style="background:#f5f3ff;border-left:4px solid #6366f1;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+        <p style="color:#4c1d95;font-size:13px;font-weight:700;margin:0 0 6px;text-transform:uppercase;letter-spacing:.5px;">Invited by</p>
+        <p style="color:#1e293b;font-size:15px;font-weight:600;margin:0 0 2px;">{inviter_name}</p>
+        <p style="color:#6366f1;font-size:13px;margin:0;">{inviter_email}</p>
+      </div>"""
+    else:
+        invited_by_html = ""
 
     html_body = f"""
-    <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;">
-      <div style="margin-bottom:24px;">
-        <span style="font-size:22px;font-weight:700;color:#111827;">TalentGraph</span>
+    <div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:40px 32px;text-align:center;">
+        <div style="background:rgba(255,255,255,0.15);width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:28px;">🎉</span>
+        </div>
+        <h1 style="color:#fff;margin:0;font-size:24px;font-weight:700;">You're Invited!</h1>
+        <p style="color:rgba(255,255,255,0.9);margin:8px 0 0;font-size:15px;">Join {company_name} on TalentGraph</p>
       </div>
-      <h2 style="font-size:20px;font-weight:600;color:#111827;margin:0 0 12px;">You've been invited to join {company_name}</h2>
-      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        You have been invited as a <strong style="color:#111827;">{role_label}</strong> on TalentGraph.
-        Click the button below to set up your account and accept the invitation.
-      </p>
-      <a href="{invite_url}"
-         style="display:inline-block;background:#6366f1;color:#ffffff;font-weight:600;font-size:15px;
-                padding:12px 28px;border-radius:8px;text-decoration:none;margin-bottom:24px;">
-        Accept Invitation
-      </a>
-      <p style="color:#9ca3af;font-size:13px;margin:0 0 8px;">
-        Or copy this link into your browser:
-      </p>
-      <p style="color:#6366f1;font-size:13px;word-break:break-all;margin:0 0 24px;">
-        {invite_url}
-      </p>
-      <p style="color:#9ca3af;font-size:12px;border-top:1px solid #f3f4f6;padding-top:16px;margin:0;">
-        This invitation expires in 72 hours. If you did not expect this email, you can safely ignore it.
-      </p>
+
+      <!-- Body -->
+      <div style="padding:36px 32px;">
+
+        <!-- Invited by card -->
+        {invited_by_html}
+
+        <!-- Company + role -->
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:0 0 28px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+            <div>
+              <p style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;">Company</p>
+              <p style="color:#1e293b;font-size:16px;font-weight:700;margin:0;">{company_name}</p>
+            </div>
+            <div>
+              <p style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;">Your Role</p>
+              <span style="display:inline-block;background:#6366f1;color:#fff;font-size:13px;font-weight:600;padding:4px 14px;border-radius:20px;">{role_label}</span>
+            </div>
+          </div>
+        </div>
+
+        <p style="color:#475569;font-size:15px;line-height:1.7;margin:0 0 28px;">
+          Click the button below to set up your account and accept the invitation.
+          Your link is valid for <strong>72 hours</strong>.
+        </p>
+
+        <!-- CTA button -->
+        <div style="text-align:center;margin:0 0 28px;">
+          <a href="{invite_url}"
+             style="display:inline-block;background:#6366f1;color:#ffffff;font-weight:700;font-size:16px;
+                    padding:14px 36px;border-radius:10px;text-decoration:none;
+                    box-shadow:0 4px 12px rgba(99,102,241,0.35);">
+            Accept Invitation
+          </a>
+        </div>
+
+        <!-- Fallback link -->
+        <p style="color:#94a3b8;font-size:12px;margin:0 0 6px;">Or copy this link into your browser:</p>
+        <p style="color:#6366f1;font-size:12px;word-break:break-all;margin:0;">{invite_url}</p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background:#f8fafc;padding:20px 32px;border-top:1px solid #e2e8f0;text-align:center;">
+        <p style="color:#94a3b8;font-size:12px;margin:0;line-height:1.6;">
+          This invitation was sent via <strong style="color:#6d28d9;">TalentGraph</strong>.<br/>
+          If you did not expect this, you can safely ignore it.
+        </p>
+      </div>
     </div>
     """
+
+    send_status = EmailDeliveryStatus.QUEUED.value
+    send_error: Optional[str] = None
 
     try:
         emailer.send_email(
             to_email=invitee_email,
-            subject=f"You're invited to join {company_name} on TalentGraph",
+            subject=subject,
             html_body=html_body,
         )
+        send_status = EmailDeliveryStatus.SENT.value
         logger.info(f"[TEAM_INVITE] Invitation email sent to {invitee_email} | role={role} | company={company_name}")
     except emailer.EmailConfigError:
+        send_status = EmailDeliveryStatus.FAILED.value
+        send_error = "Email not configured on server"
         logger.warning(f"[TEAM_INVITE] Email not configured — invite link for {invitee_email}: {invite_url}")
     except Exception as exc:
+        send_status = EmailDeliveryStatus.FAILED.value
+        send_error = str(exc)[:500]
         logger.error(f"[TEAM_INVITE] Failed to send invite email to {invitee_email}: {exc}")
-        raise
+
+    # Record delivery in EmailDelivery table so admin portal can see it
+    if session is not None and inviter_user_id is not None:
+        try:
+            idempotency_key = hashlib.sha256(
+                f"team_invite:{invitee_email}:{company_name}:{raw_token[:16]}".encode()
+            ).hexdigest()
+            # Avoid duplicate records (e.g. if same token re-sent)
+            existing = session.exec(
+                select(EmailDelivery).where(EmailDelivery.idempotency_key == idempotency_key)
+            ).first()
+            if not existing:
+                delivery = EmailDelivery(
+                    user_id=inviter_user_id,
+                    recipient_email=invitee_email,
+                    event_type="team_invite_sent",
+                    subject=subject,
+                    html_body=None,  # omit HTML from storage
+                    status=send_status,
+                    attempts=1,
+                    last_error=send_error,
+                    sent_at=datetime.now(timezone.utc) if send_status == EmailDeliveryStatus.SENT.value else None,
+                    failed_at=datetime.now(timezone.utc) if send_status == EmailDeliveryStatus.FAILED.value else None,
+                    idempotency_key=idempotency_key,
+                )
+                session.add(delivery)
+                session.commit()
+                logger.info(f"[TEAM_INVITE] EmailDelivery record created (status={send_status}) for {invitee_email}")
+        except Exception as _track_exc:
+            logger.warning(f"[TEAM_INVITE] Failed to create EmailDelivery record: {_track_exc}")
 
 
 # ─── schemas ──────────────────────────────────────────────────────────────────
@@ -204,23 +293,46 @@ def invite_team_member(
     session.refresh(invite)
 
     # Attempt email send (stub on localhost)
+    # Look up inviter's full name for the email
+    inviter_user = session.get(User, current_user["user_id"])
     _send_invite_email(
         invitee_email=body.email.lower(),
         raw_token=raw_token,
         role=invited_role,
         company_name=primary.company_name,
+        inviter_name=inviter_user.full_name if inviter_user else "",
+        inviter_email=inviter_user.email if inviter_user else "",
+        session=session,
+        inviter_user_id=current_user["user_id"],
     )
+
+    # In-app notification to the inviter confirming the invite was sent
+    try:
+        NotificationService.send_notification(
+            session=session,
+            user_id=current_user["user_id"],
+            event_type="team_invite_sent",
+            title="Invitation Sent",
+            message=f"An invitation has been sent to {body.email} to join as {invited_role.capitalize()}.",
+            payload={"route": "/recruiter/team", "route_context": {"invitee_email": body.email.lower(), "role": invited_role}},
+            notification_type="general",
+            validate_taxonomy=True,
+        )
+    except Exception as _e:
+        logger.warning(f"[TEAM] Failed to create invite-sent in-app notification: {_e}")
 
     logger.info(
         f"[TEAM] Invite sent to {body.email} as {invited_role} "
         f"for company {primary.id} by user {current_user['user_id']}"
     )
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
     return {
         "ok": True,
         "invite_id": invite.id,
         "invitee_email": invite.invitee_email,
         "role": invited_role,
         "expires_at": invite.expires_at.isoformat(),
+        "invite_url": f"{frontend_url}/accept-invite?token={raw_token}",
     }
 
 
@@ -336,6 +448,33 @@ def accept_invite(
         f"[TEAM] Invite accepted: user {new_user.id} ({new_user.email}) "
         f"joined company {primary_company.id} as {invite.role.value}"
     )
+
+    # Notify the person who sent the invite (in-app + email)
+    try:
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
+        inviter_user = session.get(User, invite.invited_by_user_id)
+        if inviter_user:
+            NotificationService.send_notification(
+                session=session,
+                user_id=inviter_user.id,
+                event_type="team_member_joined",
+                title="Team Member Joined",
+                message=f"{body.full_name} has accepted your invitation and joined as {invite.role.value.capitalize()}.",
+                payload={"route": "/recruiter/team", "route_context": {"member_email": new_user.email, "role": invite.role.value}},
+                email_data={
+                    "inviter_name": inviter_user.full_name or inviter_user.email,
+                    "member_name": body.full_name,
+                    "member_email": new_user.email,
+                    "role": invite.role.value,
+                    "company_name": primary_company.company_name,
+                    "action_url": f"{frontend_url}/recruiter/team",
+                },
+                notification_type="general",
+                validate_taxonomy=True,
+            )
+    except Exception as _e:
+        logger.warning(f"[TEAM] Failed to send team_member_joined notification: {_e}")
+
     return {
         "ok": True,
         "message": "Account created successfully. You can now log in.",

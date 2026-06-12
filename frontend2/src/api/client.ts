@@ -705,6 +705,10 @@ export const apiClient = {
   revokeInvite: (inviteId: number) =>
     api.delete(`/company/team/invites/${inviteId}`),
 
+  /** Resend a pending invitation (revokes old, creates fresh token + email) */
+  resendInvite: (email: string, role: string) =>
+    api.post('/company/team/invite', { email, role }),
+
   /** Update a member's role (Admin only) */
   updateMemberRole: (userId: number, role: string) =>
     api.put(`/company/team/members/${userId}/role`, { role }),

@@ -451,3 +451,91 @@ class NotificationEmailTemplates:
         )
         
         return subject, html_body
+
+    @classmethod
+    def job_lifecycle_email(cls, recruiter_name: str, job_title: str, action: str, details: str, action_url: str = "") -> tuple[str, str]:
+        """Email for job posting lifecycle status changes (frozen/reactivated/reposted/cancelled)."""
+        action_meta = {
+            "frozen":      ("#f59e0b", "#fef3c7", "#92400e", "❄️",  "Job Posting Frozen",      "Your job posting has been frozen"),
+            "reactivated": ("#10b981", "#f0fdf4", "#065f46", "✅",  "Job Posting Reactivated", "Your job posting is live again"),
+            "reposted":    ("#6366f1", "#eef2ff", "#3730a3", "🔄",  "Job Posting Reposted",    "Your job posting has been refreshed"),
+            "cancelled":   ("#ef4444", "#fef2f2", "#991b1b", "🚫",  "Job Posting Cancelled",   "Your job posting has been cancelled"),
+        }
+        border_color, bg_color, text_color, emoji, title, subtitle = action_meta.get(
+            action.lower(),
+            ("#64748b", "#f1f5f9", "#334155", "📋", "Job Posting Update", "Your job posting status has changed")
+        )
+        subject = f"{title}: {job_title}"
+
+        action_button = f"""
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{action_url}" style="display: inline-block; background: {border_color}; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                View Job Postings
+            </a>
+        </div>""" if action_url else ""
+
+        body_content = f"""
+        <p style="color: #1e293b; font-size: 16px; margin: 0 0 24px;">
+            Hi <strong>{recruiter_name}</strong>,
+        </p>
+        <div style="background: {bg_color}; border-left: 4px solid {border_color}; border-radius: 8px; padding: 24px; margin: 0 0 24px;">
+            <h3 style="color: {text_color}; font-size: 15px; font-weight: 700; margin: 0 0 8px;">{title}</h3>
+            <p style="color: #334155; font-size: 15px; margin: 0 0 8px;"><strong>{job_title}</strong></p>
+        </div>
+        <div style="background: #f8fafc; border-radius: 8px; padding: 20px; margin: 0 0 24px;">
+            <p style="color: #475569; font-size: 14px; line-height: 1.7; margin: 0;">{details}</p>
+        </div>
+        {action_button}
+        <p style="color: #64748b; font-size: 13px; line-height: 1.6; margin: 24px 0 0;">
+            Manage your job postings in your recruiter dashboard.
+        </p>
+        """
+
+        html_body = cls._get_base_template(
+            header_gradient=f"linear-gradient(135deg, {border_color}, {border_color}cc)",
+            header_emoji=emoji,
+            header_title=title,
+            header_subtitle=f"{subtitle}: {job_title}",
+            body_content=body_content
+        )
+        return subject, html_body
+
+    @classmethod
+    def team_member_joined_email(cls, inviter_name: str, member_name: str, member_email: str, role: str, company_name: str, action_url: str = "") -> tuple[str, str]:
+        """Email to the person who sent the invite when an invitee accepts."""
+        subject = f"{member_name} has joined {company_name} on TalentGraph"
+        role_label = role.capitalize()
+
+        action_button = f"""
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{action_url}" style="display: inline-block; background: #6366f1; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px;">
+                View Team
+            </a>
+        </div>""" if action_url else ""
+
+        body_content = f"""
+        <p style="color: #1e293b; font-size: 16px; margin: 0 0 24px;">
+            Hi <strong>{inviter_name}</strong>,
+        </p>
+        <p style="color: #334155; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+            Your team invitation has been accepted. <strong>{member_name}</strong> has joined <strong>{company_name}</strong> as a <strong>{role_label}</strong>.
+        </p>
+        <div style="background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 12px; padding: 24px; margin: 0 0 24px; border-left: 4px solid #6366f1;">
+            <p style="color: #334155; font-size: 15px; margin: 0;">
+                <strong>Name:</strong> {member_name}<br/>
+                <strong>Email:</strong> {member_email}<br/>
+                <strong>Role:</strong> {role_label}<br/>
+                <strong>Company:</strong> {company_name}
+            </p>
+        </div>
+        {action_button}
+        """
+
+        html_body = cls._get_base_template(
+            header_gradient="linear-gradient(135deg, #6366f1, #8b5cf6)",
+            header_emoji="🎉",
+            header_title="New Team Member Joined",
+            header_subtitle=f"{member_name} accepted your invitation",
+            body_content=body_content
+        )
+        return subject, html_body

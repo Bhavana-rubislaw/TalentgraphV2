@@ -750,26 +750,25 @@ const RecruiterDashboard: React.FC = () => {
     return (
       <>
         {/* Header */}
-        <div style={{ marginBottom: '24px', padding: '24px 24px 0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ marginBottom: '16px', padding: '16px 20px 0 20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div>
-              <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '4px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 AI Candidate Recommendations
                 {newToday > 0 && (
                   <span style={{ 
-                    marginLeft: '12px', 
-                    fontSize: '14px', 
+                    fontSize: '11px', 
                     fontWeight: 600,
                     background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
                     color: 'white',
-                    padding: '4px 12px',
-                    borderRadius: '12px'
+                    padding: '2px 8px',
+                    borderRadius: '10px'
                   }}>
                     {newToday} new
                   </span>
                 )}
               </h2>
-              <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
+              <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
                 Top candidates matched to: Sr. Product Designer - Stripe • Updated 12 min ago
               </p>
             </div>
@@ -777,10 +776,10 @@ const RecruiterDashboard: React.FC = () => {
           </div>
 
           {/* Job Selector */}
-          <div style={{ marginBottom: '16px' }}>
+          <div style={{ marginBottom: '8px' }}>
             <select
               className="job-select-modern"
-              style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
+              style={{ width: '100%', padding: '7px 12px', fontSize: '13px' }}
               value={selectedJobId || ''}
               onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
             >
@@ -795,20 +794,20 @@ const RecruiterDashboard: React.FC = () => {
           </div>
 
           {/* Work Type Filter */}
-          <div style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <div style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
             <span style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.6px', whiteSpace: 'nowrap' }}>Work Type</span>
             <select
               value={recommendationWorkTypeFilter}
               onChange={(e) => setRecommendationWorkTypeFilter(e.target.value)}
               style={{
-                padding: '6px 10px',
-                border: '1px solid #D1D5DB',
+                padding: '4px 8px',
+                border: '1px solid #E5E7EB',
                 borderRadius: '6px',
-                fontSize: '13px',
+                fontSize: '12px',
                 background: 'white',
                 cursor: 'pointer',
                 color: '#374151',
-                minWidth: '130px'
+                minWidth: '120px'
               }}
             >
               <option value="all">All Work Types</option>
@@ -3008,18 +3007,9 @@ const RecruiterDashboard: React.FC = () => {
             value={appStatusFilter}
             onChange={(e) => setAppStatusFilter(e.target.value)}
             style={{
-              padding: '8px 32px 8px 12px',
-              fontSize: '13px',
-              fontWeight: 500,
-              border: '1px solid var(--ra-border-1)',
-              borderRadius: '8px',
-              background: 'white',
-              color: 'var(--ra-text-1)',
-              cursor: 'pointer',
-              appearance: 'none',
               backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748b\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
               backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 10px center',
+              backgroundPosition: 'right 8px center',
               transition: 'all 0.2s ease'
             }}
           >

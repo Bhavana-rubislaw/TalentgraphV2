@@ -798,12 +798,8 @@ const HRDashboard: React.FC = () => {
             value={appStatusFilter}
             onChange={e => setAppStatusFilter(e.target.value)}
             style={{
-              padding: '8px 32px 8px 12px', fontSize: '13px', fontWeight: 500,
-              border: '1px solid var(--ra-border-1)', borderRadius: '8px',
-              background: 'white', color: 'var(--ra-text-1)', cursor: 'pointer',
-              appearance: 'none',
               backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748b\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
-              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center'
+              backgroundRepeat: 'no-repeat', backgroundPosition: 'right 8px center'
             }}
           >
             <option value="all">All Statuses</option>

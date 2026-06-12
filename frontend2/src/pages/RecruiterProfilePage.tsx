@@ -330,6 +330,21 @@ const RecruiterProfilePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Notification Preferences — below Company Information */}
+      {hasProfile && (
+        <div className="cp-profile-card" style={{ marginTop: 0 }}>
+          <div className="cp-profile-card-header" style={{ cursor: 'default' }}>
+            <span className="cp-profile-card-header-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </span>
+            <span className="cp-profile-card-header-text">Notification Preferences</span>
+          </div>
+          <div className="cp-profile-card-body" style={{ padding: '16px 20px' }}>
+            <NotificationPreferences />
+          </div>
+        </div>
+      )}
     </>
   );
 
@@ -673,17 +688,7 @@ const RecruiterProfilePage: React.FC = () => {
             {/* Right: team sidebar */}
             <div className="cp-sidebar-col">
               {renderTeamSidebar()}
-              {hasProfile && (
-                <div className="cp-sidebar-widget" style={{ marginTop: 0 }}>
-                  <div className="cp-sidebar-widget-title">
-                    <span className="cp-sidebar-widget-icon">{Icons.layout}</span>
-                    Preferences
-                  </div>
-                  <div className="cp-sidebar-widget-body">
-                    <NotificationPreferences />
-                  </div>
-                </div>
-              )}
+              {/* Notification Preferences moved to main column below Company Information */}
             </div>
           </div>
         </div>

@@ -195,13 +195,21 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
   };
 
   const getMeetingTypeIcon = () => {
-    const icons = {
-      interview: '💼',
-      screening: '📋',
-      follow_up: '🔄',
-      other: '📅',
+    const icons: Record<string, JSX.Element> = {
+      interview: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      ),
+      screening: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      ),
+      follow_up: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+      ),
+      other: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      ),
     };
-    return icons[meeting.meeting_type] || '📅';
+    return icons[meeting.meeting_type] || icons.other;
   };
 
   if (showCancelModal) {
@@ -641,61 +649,73 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
   }
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}
       onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '16px', maxWidth: '600px', width: '100%', maxHeight: '90vh', overflow: 'auto', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)', border: '1px solid #E4E7EC' }}
+      <div style={{ background: 'white', borderRadius: '14px', width: '640px', maxWidth: '100%', height: 'auto', maxHeight: '98vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', border: '1px solid #E4E7EC', overflow: 'hidden' }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* ── Header ── */}
-        <div style={{ padding: '24px 24px 20px', borderBottom: '1px solid #f0f1f4', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #667eea, #764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>
+        <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #f0f1f4', display: 'flex', alignItems: 'flex-start', gap: '12px', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {getMeetingTypeIcon()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '4px' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#1a1d2b' }}>{meeting.title}</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', marginBottom: '3px' }}>
+              <h2 style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: '#1a1d2b', lineHeight: 1.3 }}>{meeting.title}</h2>
               {getStatusBadge()}
             </div>
-            <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
               {meeting.meeting_type.replace('_', ' ').charAt(0).toUpperCase() + meeting.meeting_type.replace('_', ' ').slice(1)}
-              {meeting.participants[0]?.participant_name && <> · <span style={{ color: '#6d28d9' }}>{meeting.participants[0].participant_name.split(' ')[0]}'s Company</span></>}
+              {meeting.participants[0]?.participant_name && <> &middot; <span style={{ color: '#6d28d9', fontWeight: 500 }}>{meeting.participants[0].participant_name.split(' ')[0]}'s Company</span></>}
             </p>
           </div>
-          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', color: '#64748b', flexShrink: 0 }}>
-            ×
+          <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', flexShrink: 0 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
 
         {/* ── Body ── */}
-        <div style={{ padding: '20px 24px 24px' }}>
+        <div style={{ padding: '12px 16px 14px', flex: 1 }}>
 
           {/* Description */}
           {meeting.description && (
-            <p style={{ margin: '0 0 20px', color: '#64748b', fontSize: '14px', lineHeight: 1.65 }}>
+            <p style={{ margin: '0 0 10px', color: '#64748b', fontSize: '12px', lineHeight: 1.5, padding: '8px 10px', background: '#f8fafc', borderRadius: '7px', borderLeft: '3px solid #e2e8f0' }}>
               {meeting.description}
             </p>
           )}
 
-          {/* Info Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px 16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>📅 Scheduled Start</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{formatDateTime(meeting.scheduled_start)}</div>
+          {/* Info Grid — 2 columns, all 4 items */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px', marginBottom: '12px' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px', border: '1px solid #f0f1f4' }}>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="10" height="10"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Scheduled Start
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', lineHeight: 1.3 }}>{formatDateTime(meeting.scheduled_start)}</div>
             </div>
-            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px 16px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>🕐 Duration</div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{meeting.duration_minutes} minutes</div>
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px', border: '1px solid #f0f1f4' }}>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="10" height="10"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Duration
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{meeting.duration_minutes} minutes</div>
             </div>
             {meeting.location && (
-              <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px 16px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>📍 Location</div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{meeting.location}</div>
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px', border: '1px solid #f0f1f4' }}>
+                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="10" height="10"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  Location
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: '#1e293b', wordBreak: 'break-all', lineHeight: 1.3 }}>{meeting.location}</div>
               </div>
             )}
             {meeting.video_meeting_url && (
-              <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '14px 16px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>🎥 Video Link</div>
-                <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', fontWeight: 600, color: '#6d28d9', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '8px 10px', border: '1px solid #f0f1f4' }}>
+                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="10" height="10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                  Video Link
+                </div>
+                <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', fontWeight: 600, color: '#6d28d9', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {meeting.video_meeting_url.replace(/^https?:\/\//, '')}
                 </a>
               </div>
@@ -703,16 +723,19 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
           </div>
 
           {/* Participants */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '12px', fontWeight: 700, color: '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: '0.7px' }}>Participants</h3>
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+              <h3 style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', margin: 0, textTransform: 'uppercase', letterSpacing: '0.7px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="11" height="11"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Participants
+              </h3>
               {meeting.status === 'scheduled' && !isCandidate && (
-                <button onClick={() => setShowEditParticipants(true)} style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'white', color: '#6d28d9', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => setShowEditParticipants(true)} style={{ padding: '3px 9px', borderRadius: '5px', border: '1px solid #e2e8f0', background: 'white', color: '#6d28d9', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
                   Edit
                 </button>
               )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {meeting.participants.map((participant, idx) => {
                 const name = participant.participant_name || `User #${participant.user_id}`;
                 const initials = name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
@@ -721,27 +744,25 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 const isOrganizer = participant.user_id === meeting.organizer_user_id;
                 const isConfirmed = participant.has_confirmed;
                 return (
-                  <div key={participant.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#fafafa', borderRadius: '10px', border: '1px solid #f0f1f4' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', background: avatarBg, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0 }}>
+                  <div key={participant.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: '#fafafa', borderRadius: '8px', border: '1px solid #f0f1f4' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: avatarBg, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>
                         {initials}
                       </div>
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>{name}</div>
-                        <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                          {participant.participant_email || ''}
-                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>{name}</div>
+                        <div style={{ fontSize: '10px', color: '#94a3b8' }}>{participant.participant_email || ''}</div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                       {isOrganizer && (
-                        <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: '#ede9fe', color: '#6d28d9' }}>Organizer</span>
+                        <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: '#ede9fe', color: '#6d28d9' }}>Organizer</span>
                       )}
-                      <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px',
+                      <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px',
                         background: isConfirmed ? '#dcfce7' : '#fef3c7',
                         color: isConfirmed ? '#15803d' : '#b45309'
                       }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: isConfirmed ? '#16a34a' : '#f59e0b', display: 'inline-block' }} />
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: isConfirmed ? '#16a34a' : '#f59e0b', display: 'inline-block' }} />
                         {isConfirmed ? 'Confirmed' : 'Pending'}
                       </span>
                     </div>
@@ -753,28 +774,31 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
 
           {/* Cancellation reason */}
           {meeting.status === 'cancelled' && meeting.cancellation_reason && (
-            <div style={{ padding: '14px 16px', background: '#fee2e2', borderRadius: '12px', marginBottom: '20px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cancellation Reason</div>
-              <p style={{ color: '#7f1d1d', fontSize: '14px', margin: 0 }}>{meeting.cancellation_reason}</p>
+            <div style={{ padding: '10px 12px', background: '#fee2e2', borderRadius: '9px', marginBottom: '10px' }}>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: '#991b1b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cancellation Reason</div>
+              <p style={{ color: '#7f1d1d', fontSize: '12px', margin: 0 }}>{meeting.cancellation_reason}</p>
             </div>
           )}
 
           {/* Actions */}
           {meeting.status === 'scheduled' && (
-            <div style={{ display: 'flex', gap: '10px', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '7px' }}>
               <button onClick={() => meeting.video_meeting_url ? window.open(meeting.video_meeting_url, '_blank') : null}
-                style={{ padding: '10px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                📅 Open in Calendar
+                style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontWeight: 600, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Open in Calendar
               </button>
               {!isCandidate && (
                 <>
                   <button onClick={() => setShowRescheduleModal(true)}
-                    style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    ↺ Reschedule
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" width="12" height="12"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+                    Reschedule
                   </button>
                   <button onClick={() => setShowCancelModal(true)}
-                    style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                    ✕ Cancel Meeting
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    Cancel Meeting
                   </button>
                 </>
               )}

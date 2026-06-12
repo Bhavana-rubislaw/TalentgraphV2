@@ -280,6 +280,24 @@ class NotificationService:
                 update_type=data.get("update_type", ""),
                 details=data.get("details", "")
             )
+        elif event_type in ("job_posting_frozen", "job_posting_reactivated", "job_posting_reposted", "job_posting_cancelled"):
+            action = event_type.replace("job_posting_", "")
+            return templates.job_lifecycle_email(
+                recruiter_name=data.get("recruiter_name", ""),
+                job_title=data.get("job_title", ""),
+                action=action,
+                details=data.get("details", ""),
+                action_url=data.get("action_url", "")
+            )
+        elif event_type == "team_member_joined":
+            return templates.team_member_joined_email(
+                inviter_name=data.get("inviter_name", ""),
+                member_name=data.get("member_name", ""),
+                member_email=data.get("member_email", ""),
+                role=data.get("role", ""),
+                company_name=data.get("company_name", ""),
+                action_url=data.get("action_url", "")
+            )
         else:
             # Generic fallback
             return (

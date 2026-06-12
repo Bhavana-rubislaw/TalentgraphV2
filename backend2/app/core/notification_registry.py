@@ -242,6 +242,72 @@ RECRUITER_NOTIFICATIONS = {
         dedup_window_minutes=10,
         description="Update on job posting (applications, views, etc.)"
     ),
+
+    "job_posting_frozen": NotificationSpec(
+        event_type="job_posting_frozen",
+        display_name="Job Posting Frozen",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.JOBS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/recruiter/job-postings",
+        dedup_window_minutes=0,
+        description="Job posting has been frozen and is no longer accepting applications"
+    ),
+
+    "job_posting_reactivated": NotificationSpec(
+        event_type="job_posting_reactivated",
+        display_name="Job Posting Reactivated",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.JOBS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/recruiter/job-postings",
+        dedup_window_minutes=0,
+        description="Job posting reactivated and now accepting applications again"
+    ),
+
+    "job_posting_reposted": NotificationSpec(
+        event_type="job_posting_reposted",
+        display_name="Job Posting Reposted",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.JOBS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/recruiter/job-postings",
+        dedup_window_minutes=0,
+        description="Job posting refreshed and relisted for increased visibility"
+    ),
+
+    "job_posting_cancelled": NotificationSpec(
+        event_type="job_posting_cancelled",
+        display_name="Job Posting Cancelled",
+        priority=NotificationPriority.URGENT,
+        category=NotificationCategory.JOBS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/recruiter/job-postings",
+        dedup_window_minutes=0,
+        description="Job posting permanently cancelled"
+    ),
+
+    "team_invite_sent": NotificationSpec(
+        event_type="team_invite_sent",
+        display_name="Team Invitation Sent",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.SYSTEM,
+        default_channels=[NotificationChannel.IN_APP],
+        action_route_template="/recruiter/team",
+        dedup_window_minutes=2,
+        description="Confirmation that a team invitation was sent successfully"
+    ),
+
+    "team_member_joined": NotificationSpec(
+        event_type="team_member_joined",
+        display_name="Team Member Joined",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.SYSTEM,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/recruiter/team",
+        dedup_window_minutes=0,
+        description="An invited team member accepted the invitation and joined the team"
+    ),
 }
 
 

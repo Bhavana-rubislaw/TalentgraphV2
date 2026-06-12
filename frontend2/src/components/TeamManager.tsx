@@ -44,6 +44,8 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
   const [inviteRole, setInviteRole] = useState('recruiter');
   const [inviting, setInviting] = useState(false);
 
+  const [resendingInvite, setResendingInvite] = useState<string | null>(null); // tracks email being resent
+
   // Role edit state
   const [editingMember, setEditingMember] = useState<number | null>(null);
   const [editRole, setEditRole] = useState('');
@@ -122,6 +124,21 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
       fetchMembers();
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Failed to revoke invitation');
+    }
+  };
+
+  const handleResendInvite = async (email: string, role: string) => {
+    setResendingInvite(email);
+    setError('');
+    setSuccess('');
+    try {
+      await apiClient.resendInvite(email, role);
+      setSuccess(`Invitation resent to ${email}`);
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to resend invitation');
+    } finally {
+      setResendingInvite(null);
     }
   };
 
@@ -349,12 +366,28 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                     Expires {new Date(inv.expires_at).toLocaleDateString()}
                   </div>
                 </div>
-                <button
-                  onClick={() => handleRevokeInvite(inv.id, inv.invitee_email)}
-                  style={{ fontSize: 12, color: '#ef4444', background: 'none', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
-                >
-                  Revoke
-                </button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    onClick={() => handleResendInvite(inv.invitee_email, inv.role)}
+                    disabled={resendingInvite === inv.invitee_email}
+                    title="Resend invitation email"
+                    style={{
+                      fontSize: 12, color: '#6366f1', background: 'none',
+                      border: '1px solid #c7d2fe', borderRadius: 6, padding: '4px 10px',
+                      cursor: resendingInvite === inv.invitee_email ? 'not-allowed' : 'pointer',
+                      opacity: resendingInvite === inv.invitee_email ? 0.6 : 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {resendingInvite === inv.invitee_email ? 'Sending…' : '↩ Send Again'}
+                  </button>
+                  <button
+                    onClick={() => handleRevokeInvite(inv.id, inv.invitee_email)}
+                    style={{ fontSize: 12, color: '#ef4444', background: 'none', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                  >
+                    Revoke
+                  </button>
+                </div>
               </div>
             ))}
           </div>
