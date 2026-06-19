@@ -335,8 +335,23 @@ async def create_meeting(
             logger.info(f"✓ Notification sent to user {user_id}, notification ID: {notif.id}")
         except Exception as e:
             logger.error(f"✗ Failed to send notification to user {user_id}: {e}", exc_info=True)
+
+    # Also send confirmation notification to the organizer
+    try:
+        notif = push_notification(
+            session=session,
+            user_id=current_user["user_id"],
+            title="Interview Scheduled Successfully",
+            message=f"You have successfully scheduled: {meeting_data.title}",
+            event_type="interview_scheduled",
+            route=f"/meetings/{meeting.id}"
+        )
+        notifications_sent += 1
+        logger.info(f"✓ Organizer notification sent to user {current_user['user_id']}, notification ID: {notif.id}")
+    except Exception as e:
+        logger.error(f"✗ Failed to send organizer notification to user {current_user['user_id']}: {e}", exc_info=True)
     
-    logger.info(f"[MEETING CREATE] Sent {notifications_sent}/{len(participant_user_ids)} notifications successfully")
+    logger.info(f"[MEETING CREATE] Sent {notifications_sent}/{len(all_participant_ids)} notifications successfully")
     
     # Send email notifications with action tokens
     email_service = MeetingEmailService()
@@ -371,8 +386,24 @@ async def create_meeting(
             except Exception as e:
                 logger.error(f"✗ Failed to send email to {recipient.email}: {e}", exc_info=True)
                 email_failures.append(recipient.email)
+
+    # Send organizer confirmation email (lists all participants)
+    if current_user_obj:
+        try:
+            participant_user_objs = [session.get(User, uid) for uid in participant_user_ids]
+            participant_user_objs = [u for u in participant_user_objs if u]
+            email_service.send_organizer_confirmation_email(
+                session=session,
+                meeting=meeting,
+                organizer_user=current_user_obj,
+                participant_users=participant_user_objs
+            )
+            emails_sent += 1
+        except Exception as e:
+            logger.error(f"✗ Failed to send organizer confirmation email to {current_user_obj.email}: {e}", exc_info=True)
+            email_failures.append(current_user_obj.email)
     
-    logger.info(f"[MEETING CREATE] Sent {emails_sent}/{len(participant_user_ids)} emails successfully")
+    logger.info(f"[MEETING CREATE] Sent {emails_sent}/{len(all_participant_ids)} emails successfully")
     if email_failures:
         logger.warning(f"[MEETING CREATE] Email failures for: {', '.join(email_failures)}")
     
@@ -674,45 +705,59 @@ async def update_meeting(
             .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
         ).first()
         
-        # Notify all participants (including new ones)
+        # Notify ALL participants including organizer
+        current_user_obj_notify = session.get(User, current_user["user_id"])
+        user_full_name_notify = current_user_obj_notify.full_name if current_user_obj_notify else "Organizer"
         for participant in meeting.participants:
-            if participant.user_id != current_user["user_id"]:
-                push_notification(
-                    session=session,
-                    user_id=participant.user_id,
-                    title="Meeting Updated",
-                    message=f"Meeting '{meeting.title}' has been updated",
-                    event_type="meeting_updated",
-                    route=f"/meetings/{meeting.id}"
-                )
+            push_notification(
+                session=session,
+                user_id=participant.user_id,
+                title="Meeting Updated",
+                message=f"{user_full_name_notify} updated meeting '{meeting.title}'",
+                event_type="meeting_updated",
+                route=f"/meetings/{meeting.id}"
+            )
+        # Also notify organizer if not already in participants list
+        organizer_in_participants = any(p.user_id == meeting.organizer_user_id for p in meeting.participants)
+        if not organizer_in_participants:
+            push_notification(
+                session=session,
+                user_id=meeting.organizer_user_id,
+                title="Meeting Updated",
+                message=f"Meeting '{meeting.title}' has been updated",
+                event_type="meeting_updated",
+                route=f"/meetings/{meeting.id}"
+            )
 
-        # Send rescheduled/updated email to existing participants when meaningful fields changed
+        # Send updated email to ALL participants (including organizer) when meaningful fields changed
         if time_or_detail_changed:
             email_service = MeetingEmailService()
             current_user_obj = session.get(User, current_user["user_id"])
-            for participant in meeting.participants:
-                if participant.user_id != current_user["user_id"]:
-                    recipient = session.get(User, participant.user_id)
-                    if recipient:
-                        try:
-                            confirm_token = MeetingService.generate_action_token(
-                                session, meeting.id, recipient.id, "confirm"
-                            )
-                            cancel_token = MeetingService.generate_action_token(
-                                session, meeting.id, recipient.id, "cancel"
-                            )
-                            email_service.send_meeting_updated_email(
-                                session=session,
-                                meeting=meeting,
-                                recipient_user=recipient,
-                                editor_user=current_user_obj,
-                                confirm_token=confirm_token,
-                                cancel_token=cancel_token,
-                            )
-                        except Exception as email_err:
-                            logger.warning(
-                                f"Could not send updated-meeting email to {recipient.email}: {email_err}"
-                            )
+            # Collect all user IDs to notify (participants + organizer)
+            all_notify_ids = {p.user_id for p in meeting.participants}
+            all_notify_ids.add(meeting.organizer_user_id)
+            for uid in all_notify_ids:
+                recipient = session.get(User, uid)
+                if recipient:
+                    try:
+                        confirm_token = MeetingService.generate_action_token(
+                            session, meeting.id, recipient.id, "confirm"
+                        )
+                        cancel_token = MeetingService.generate_action_token(
+                            session, meeting.id, recipient.id, "cancel"
+                        )
+                        email_service.send_meeting_updated_email(
+                            session=session,
+                            meeting=meeting,
+                            recipient_user=recipient,
+                            editor_user=current_user_obj,
+                            confirm_token=confirm_token,
+                            cancel_token=cancel_token,
+                        )
+                    except Exception as email_err:
+                        logger.warning(
+                            f"Could not send updated-meeting email to {recipient.email}: {email_err}"
+                        )
         
         return MeetingRead.from_orm_with_participants(meeting)
     
@@ -843,41 +888,31 @@ async def cancel_meeting(
             except CalendarProviderError as e:
                 logger.warning(f"Failed to delete from {cal_account.provider.value} calendar: {str(e)}")
     
-    # Send notifications to other participants
+    # Send notifications to ALL participants (including organizer)
     notification_title = "Meeting Cancelled"
     notification_message = f"{user_full_name} cancelled meeting '{meeting.title}': {cancel_data.cancellation_reason}"
     
-    MeetingService.notify_participants(
-        session=session,
-        meeting=meeting,
-        notification_type="meeting_cancelled",
-        title=notification_title,
-        message=notification_message,
-        exclude_user_id=current_user["user_id"]
-    )
+    all_cancel_notify_ids = {p.user_id for p in meeting.participants}
+    all_cancel_notify_ids.add(meeting.organizer_user_id)
+    for uid in all_cancel_notify_ids:
+        push_notification(
+            session=session,
+            user_id=uid,
+            title=notification_title,
+            message=notification_message,
+            event_type="meeting_cancelled",
+            route=f"/meetings/{meeting.id}"
+        )
     
-    # Send emails to other participants
+    # Send cancellation emails to ALL participants and organizer
     email_service = MeetingEmailService()
-    for participant in meeting.participants:
-        if participant.user_id != current_user["user_id"]:
-            recipient = session.get(User, participant.user_id)
-            if recipient:
-                email_service.send_interview_cancelled_email(
-                    session=session,
-                    meeting=meeting,
-                    recipient_user=recipient,
-                    cancelled_by_user=current_user_obj,
-                    cancellation_reason=cancel_data.cancellation_reason
-                )
-    
-    # Also notify organizer if participant cancelled
-    if not is_organizer:
-        organizer = session.get(User, meeting.organizer_user_id)
-        if organizer:
+    for uid in all_cancel_notify_ids:
+        recipient = session.get(User, uid)
+        if recipient and uid != current_user["user_id"]:
             email_service.send_interview_cancelled_email(
                 session=session,
                 meeting=meeting,
-                recipient_user=organizer,
+                recipient_user=recipient,
                 cancelled_by_user=current_user_obj,
                 cancellation_reason=cancel_data.cancellation_reason
             )
@@ -1010,38 +1045,56 @@ async def reschedule_meeting(
         except CalendarProviderError as e:
             logger.warning(f"Failed to update {cal_account.provider.value} calendar: {str(e)}")
     
-    # Notify participants
-    MeetingService.notify_participants(
-        session=session,
-        meeting=meeting,
-        notification_type="meeting_rescheduled",
-        title="Meeting Rescheduled",
-        message=f"{user_full_name} rescheduled meeting '{meeting.title}'",
-        exclude_user_id=current_user["user_id"]
-    )
+    # Notify ALL participants including organizer
+    all_reschedule_notify_ids = {p.user_id for p in meeting.participants}
+    all_reschedule_notify_ids.add(meeting.organizer_user_id)
+    for uid in all_reschedule_notify_ids:
+        push_notification(
+            session=session,
+            user_id=uid,
+            title="Interview Rescheduled",
+            message=f"{user_full_name} rescheduled meeting '{meeting.title}'",
+            event_type="meeting_rescheduled",
+            route=f"/meetings/{meeting.id}"
+        )
     
-    # Send emails to participants
+    # Send emails to ALL participants including organizer
     email_service = MeetingEmailService()
-    for participant in meeting.participants:
-        if participant.user_id != current_user["user_id"]:
-            recipient = session.get(User, participant.user_id)
-            if recipient:
-                # Generate new tokens for the rescheduled meeting
-                confirm_token = MeetingService.generate_action_token(
-                    session, meeting.id, recipient.id, "confirm"
-                )
-                cancel_token = MeetingService.generate_action_token(
-                    session, meeting.id, recipient.id, "cancel"
-                )
-                
-                email_service.send_reschedule_approved_email(
-                    session=session,
-                    meeting=meeting,
-                    recipient_user=recipient,
-                    approver_user=current_user_obj,
-                    confirm_token=confirm_token,
-                    cancel_token=cancel_token
-                )
+    for uid in all_reschedule_notify_ids:
+        recipient = session.get(User, uid)
+        if recipient:
+            try:
+                # Organizer gets a summary confirmation; others get rescheduled notification
+                if uid == current_user["user_id"]:
+                    participant_user_objs = [
+                        session.get(User, p.user_id)
+                        for p in meeting.participants
+                        if p.user_id != uid
+                    ]
+                    participant_user_objs = [u for u in participant_user_objs if u]
+                    email_service.send_organizer_confirmation_email(
+                        session=session,
+                        meeting=meeting,
+                        organizer_user=recipient,
+                        participant_users=participant_user_objs
+                    )
+                else:
+                    confirm_token = MeetingService.generate_action_token(
+                        session, meeting.id, recipient.id, "confirm"
+                    )
+                    cancel_token = MeetingService.generate_action_token(
+                        session, meeting.id, recipient.id, "cancel"
+                    )
+                    email_service.send_reschedule_approved_email(
+                        session=session,
+                        meeting=meeting,
+                        recipient_user=recipient,
+                        approver_user=current_user_obj,
+                        confirm_token=confirm_token,
+                        cancel_token=cancel_token
+                    )
+            except Exception as email_err:
+                logger.warning(f"Could not send reschedule email to {recipient.email}: {email_err}")
     
     session.refresh(meeting)
     return meeting

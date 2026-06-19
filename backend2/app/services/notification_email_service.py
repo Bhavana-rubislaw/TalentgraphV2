@@ -36,11 +36,11 @@ class NotificationEmailTemplates:
                 
                 <!-- Header -->
                 <div style="background: {header_gradient}; padding: 40px 32px; text-align: center;">
-                    <div style="background: rgba(255,255,255,0.15); width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
-                        <span style="font-size: 28px;">{header_emoji}</span>
+                    <div style="background: rgba(255,255,255,0.15); width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 16px; line-height: 56px; text-align: center;">
+                        <span style="font-size: 28px; line-height: 56px; vertical-align: middle; display: inline-block;">{header_emoji}</span>
                     </div>
-                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px;">{header_title}</h1>
-                    <p style="color: rgba(255,255,255,0.95); margin: 8px 0 0; font-size: 15px;">{header_subtitle}</p>
+                    <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.5px; display: block;">{header_title}</h1>
+                    <p style="color: rgba(255,255,255,0.95); margin: 8px 0 0; font-size: 15px; display: block;">{header_subtitle}</p>
                 </div>
                 
                 <!-- Body -->
@@ -350,8 +350,118 @@ class NotificationEmailTemplates:
         
         return subject, html_body
     
-    # ============ RECRUITER EMAIL TEMPLATES ============
-    
+    @classmethod
+    def application_selected_email(cls, candidate_name: str, job_title: str, company_name: str, action_url: str = "") -> tuple[str, str]:
+        """High-impact congratulations email when candidate is selected."""
+        subject = f"Congratulations! You've been selected for {job_title} at {company_name}"
+
+        action_button = f"""
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(5,150,105,0.35);">
+                View Your Application
+            </a>
+        </div>""" if action_url else ""
+
+        body_content = f"""
+        <p style="color: #1e293b; font-size: 16px; margin: 0 0 24px;">
+            Hi <strong style="color: #059669;">{candidate_name}</strong>,
+        </p>
+
+        <div style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-radius: 16px; padding: 36px 28px; margin: 0 0 28px; text-align: center; border: 1px solid #bbf7d0;">
+            <div style="font-size: 56px; margin-bottom: 16px;">🎉</div>
+            <h2 style="color: #065f46; font-size: 22px; font-weight: 800; margin: 0 0 12px; letter-spacing: -0.3px;">
+                Congratulations! You've Been Selected!
+            </h2>
+            <p style="color: #047857; font-size: 15px; line-height: 1.7; margin: 0;">
+                We are thrilled to inform you that you have been <strong>selected</strong> for the
+                <strong>{job_title}</strong> position at <strong>{company_name}</strong>.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 10px; padding: 22px 24px; margin: 0 0 24px; border-left: 4px solid #10b981;">
+            <p style="color: #1e293b; font-size: 14px; font-weight: 700; margin: 0 0 12px;">What happens next?</p>
+            <ul style="color: #475569; font-size: 14px; line-height: 1.85; margin: 0; padding-left: 18px;">
+                <li>The hiring team at {company_name} will be in touch soon with next steps</li>
+                <li>Check your dashboard for any pending actions</li>
+                <li>Keep an eye on your email for further instructions</li>
+            </ul>
+        </div>
+
+        {action_button}
+
+        <p style="color: #334155; font-size: 15px; line-height: 1.7; margin: 24px 0 0;">
+            We wish you all the best in this exciting new chapter!<br/>
+            <strong style="color: #059669;">The {company_name} Team</strong>
+        </p>
+        """
+
+        html_body = cls._get_base_template(
+            header_gradient="linear-gradient(135deg, #059669, #10b981)",
+            header_emoji="🏆",
+            header_title="You've Been Selected!",
+            header_subtitle=f"{job_title} at {company_name}",
+            body_content=body_content,
+            footer_note=f"Congratulations on your selection at {company_name}!"
+        )
+        return subject, html_body
+
+    @classmethod
+    def application_rejected_email(cls, candidate_name: str, job_title: str, company_name: str, action_url: str = "") -> tuple[str, str]:
+        """Empathetic rejection email with encouragement."""
+        subject = f"Update on Your Application: {job_title} at {company_name}"
+
+        action_button = f"""
+        <div style="text-align: center; margin: 32px 0;">
+            <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #6d28d9, #8b5cf6); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(109,40,217,0.3);">
+                Explore More Opportunities
+            </a>
+        </div>""" if action_url else ""
+
+        body_content = f"""
+        <p style="color: #1e293b; font-size: 16px; margin: 0 0 24px;">
+            Hi <strong style="color: #6d28d9;">{candidate_name}</strong>,
+        </p>
+
+        <p style="color: #334155; font-size: 15px; line-height: 1.7; margin: 0 0 24px;">
+            Thank you for taking the time to apply for the <strong>{job_title}</strong> position at
+            <strong>{company_name}</strong> and for the interest you have shown in joining our team.
+        </p>
+
+        <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 10px; padding: 22px 24px; margin: 0 0 24px;">
+            <p style="color: #7f1d1d; font-size: 14px; line-height: 1.7; margin: 0;">
+                After careful consideration, we regret to inform you that we will not be moving forward
+                with your application for this particular role at this time. This was a difficult decision
+                as we received many strong applications.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; border-radius: 10px; padding: 22px 24px; margin: 0 0 24px; border-left: 4px solid #6d28d9;">
+            <p style="color: #1e293b; font-size: 14px; font-weight: 700; margin: 0 0 10px;">Keep going — your next opportunity is out there!</p>
+            <ul style="color: #475569; font-size: 14px; line-height: 1.85; margin: 0; padding-left: 18px;">
+                <li>Continue browsing open positions on TalentGraph</li>
+                <li>Update your profile to improve your match score</li>
+                <li>Explore other companies hiring for similar roles</li>
+            </ul>
+        </div>
+
+        {action_button}
+
+        <p style="color: #334155; font-size: 15px; line-height: 1.7; margin: 24px 0 0;">
+            We wish you the very best in your job search.<br/>
+            <strong style="color: #6d28d9;">The {company_name} Team</strong>
+        </p>
+        """
+
+        html_body = cls._get_base_template(
+            header_gradient="linear-gradient(135deg, #64748b, #94a3b8)",
+            header_emoji="📋",
+            header_title="Application Update",
+            header_subtitle=f"Regarding your application for {job_title}",
+            body_content=body_content,
+            footer_note=f"Thank you for applying to {company_name}. Keep exploring opportunities on TalentGraph."
+        )
+        return subject, html_body
+
     @classmethod
     def application_received_email(cls, recruiter_name: str, candidate_name: str, job_title: str, action_url: str = "") -> tuple[str, str]:
         """Email for new application notifications (recruiter)"""

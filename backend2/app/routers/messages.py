@@ -151,34 +151,43 @@ def start_conversation(
     session: Session = Depends(get_session),
 ) -> Dict[str, Any]:
     """
-    START CONVERSATION (Recruiter-only)
-    
-    Recruiter initiates a conversation with a candidate.
-    Returns existing conversation if already exists.
+    START CONVERSATION (Recruiter/HR-initiated)
+
+    Recruiter or HR can initiate a conversation with any user
+    (candidates, other recruiters, or HR members).
+    Candidates cannot start conversations.
+    Returns existing conversation if one already exists.
     """
     user = _get_user(session, current_user["email"])
-    
-    # Authorization: Only recruiters can start conversations
+
+    # Authorization: Only recruiters/HR/admin can start conversations
     if not _is_recruiter(user):
         raise HTTPException(
             status_code=403,
             detail="Candidates cannot initiate conversations"
         )
-    
-    # Verify candidate exists
+
+    # Verify target user exists
     candidate_user = session.get(User, data.candidate_user_id)
     if not candidate_user:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-    
-    if candidate_user.role != UserRole.CANDIDATE:
-        raise HTTPException(status_code=400, detail="Target user is not a candidate")
-    
-    # Check for existing conversation (idempotent)
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Cannot message yourself
+    if candidate_user.id == user.id:
+        raise HTTPException(status_code=400, detail="Cannot start a conversation with yourself")
+
+    # Check for existing conversation in either direction (idempotent)
     existing = session.exec(
         select(DirectConversation).where(
-            and_(
-                DirectConversation.recruiter_user_id == user.id,
-                DirectConversation.candidate_user_id == data.candidate_user_id
+            or_(
+                and_(
+                    DirectConversation.recruiter_user_id == user.id,
+                    DirectConversation.candidate_user_id == data.candidate_user_id
+                ),
+                and_(
+                    DirectConversation.recruiter_user_id == data.candidate_user_id,
+                    DirectConversation.candidate_user_id == user.id
+                )
             )
         )
     ).first()
@@ -265,28 +274,24 @@ def list_conversations(
 ) -> List[ConversationListItemResponse]:
     """
     LIST CONVERSATIONS
-    
-    Returns conversations for current user:
-    - Recruiter: conversations where they are the recruiter
-    - Candidate: conversations where they are the candidate
-    
+
+    Returns all conversations where the current user is a participant
+    (either as recruiter_user_id or candidate_user_id).
     Sorted by last_message_at DESC.
     """
     user = _get_user(session, current_user["email"])
     
-    # Query conversations based on role
-    if _is_recruiter(user):
-        conversations = session.exec(
-            select(DirectConversation)
-            .where(DirectConversation.recruiter_user_id == user.id)
-            .order_by(DirectConversation.last_message_at.desc())  # type: ignore
-        ).all()
-    else:
-        conversations = session.exec(
-            select(DirectConversation)
-            .where(DirectConversation.candidate_user_id == user.id)
-            .order_by(DirectConversation.last_message_at.desc())  # type: ignore
-        ).all()
+    # Query conversations where current user appears in either slot
+    conversations = session.exec(
+        select(DirectConversation)
+        .where(
+            or_(
+                DirectConversation.recruiter_user_id == user.id,
+                DirectConversation.candidate_user_id == user.id
+            )
+        )
+        .order_by(DirectConversation.last_message_at.desc())  # type: ignore
+    ).all()
     
     return [
         _serialize_conversation_list_item(conv, session, user.id)

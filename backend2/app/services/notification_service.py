@@ -212,15 +212,45 @@ class NotificationService:
         templates = NotificationEmailTemplates()
         
         # Map event types to template methods
-        if event_type == "application_status":
-            return templates.application_status_email(
+        if event_type == "application_selected":
+            return templates.application_selected_email(
                 candidate_name=data.get("candidate_name", ""),
                 job_title=data.get("job_title", ""),
                 company_name=data.get("company_name", ""),
-                status=data.get("status", ""),
-                message=data.get("message", ""),
                 action_url=data.get("action_url", "")
             )
+        elif event_type == "application_rejected":
+            return templates.application_rejected_email(
+                candidate_name=data.get("candidate_name", ""),
+                job_title=data.get("job_title", ""),
+                company_name=data.get("company_name", ""),
+                action_url=data.get("action_url", "")
+            )
+        elif event_type == "application_status":
+            status = data.get("status", "")
+            if status == "selected":
+                return templates.application_selected_email(
+                    candidate_name=data.get("candidate_name", ""),
+                    job_title=data.get("job_title", ""),
+                    company_name=data.get("company_name", ""),
+                    action_url=data.get("action_url", "")
+                )
+            elif status == "rejected":
+                return templates.application_rejected_email(
+                    candidate_name=data.get("candidate_name", ""),
+                    job_title=data.get("job_title", ""),
+                    company_name=data.get("company_name", ""),
+                    action_url=data.get("action_url", "")
+                )
+            else:
+                return templates.application_status_email(
+                    candidate_name=data.get("candidate_name", ""),
+                    job_title=data.get("job_title", ""),
+                    company_name=data.get("company_name", ""),
+                    status=status,
+                    message=data.get("message", ""),
+                    action_url=data.get("action_url", "")
+                )
         elif event_type == "application_submitted":
             return templates.application_submitted_email(
                 candidate_name=data.get("candidate_name", ""),

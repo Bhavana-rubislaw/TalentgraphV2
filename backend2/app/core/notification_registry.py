@@ -79,7 +79,29 @@ CANDIDATE_NOTIFICATIONS = {
         default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
         action_route_template="/candidate/applications",
         dedup_window_minutes=5,
-        description="Application status changed (submitted, under review, shortlisted, rejected)"
+        description="Application status changed (submitted, under review, shortlisted)"
+    ),
+
+    "application_selected": NotificationSpec(
+        event_type="application_selected",
+        display_name="Application Selected",
+        priority=NotificationPriority.URGENT,
+        category=NotificationCategory.APPLICATIONS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/candidate/applications",
+        dedup_window_minutes=0,
+        description="Candidate selected for the position — always delivered, never deduplicated"
+    ),
+
+    "application_rejected": NotificationSpec(
+        event_type="application_rejected",
+        display_name="Application Not Selected",
+        priority=NotificationPriority.NORMAL,
+        category=NotificationCategory.APPLICATIONS,
+        default_channels=[NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+        action_route_template="/candidate/applications",
+        dedup_window_minutes=0,
+        description="Candidate not selected for the position — always delivered, never deduplicated"
     ),
     
     "match_found": NotificationSpec(

@@ -252,6 +252,14 @@ const JobPostingBuilder: React.FC = () => {
           setShowForm(true);
         }
       }
+      // Check for ?edit= URL param — load posting for editing
+      const editId = params.get('edit');
+      if (!dupId && editId) {
+        const source = fetchedPostings.find((p: JobPosting) => p.id === parseInt(editId, 10));
+        if (source) {
+          loadPosting(source);
+        }
+      }
       setLoading(false);
     };
     init();
@@ -703,6 +711,61 @@ const JobPostingBuilder: React.FC = () => {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               New Posting
             </button>
+          </div>
+
+          {/* Recruiter Permissions Card */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderLeft: '4px solid #10b981',
+            borderRadius: 10,
+            padding: '16px 20px',
+            marginBottom: 16,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #10b981, #34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Job Postings — Recruiter Permissions</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>RECRUITER</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Full ownership of the job posting lifecycle</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Access</span>
+                </div>
+                {['Create new job postings', 'Edit job details', 'Duplicate postings', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 10, height: 10 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HR Can Also</span>
+                </div>
+                {['Edit job details', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span style={{ fontSize: 12, color: '#475569' }}>{item}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #e2e8f0', paddingTop: 6 }}>HR cannot create or duplicate postings.</div>
+              </div>
+            </div>
           </div>
 
           <div className="cp-filter-bar">

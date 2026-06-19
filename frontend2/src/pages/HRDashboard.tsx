@@ -403,6 +403,61 @@ const HRDashboard: React.FC = () => {
             <KPICard label="Cancelled" value={allJobs.filter(j => (j.status || '').toLowerCase() === 'cancelled').length}  color="#ef4444" stripe="#ef4444" />
           </div>
 
+          {/* HR Role Responsibilities Banner — Job Postings */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderLeft: '4px solid #6366f1',
+            borderRadius: 10,
+            padding: '16px 20px',
+            marginBottom: 18,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #6366f1, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Job Postings — HR Permissions</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>HR MANAGER</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>What you can and cannot do with job postings</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Allowed</span>
+                </div>
+                {['Edit job details', 'Freeze active postings', 'Unfreeze frozen postings', 'Cancel postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: '#fff7f7', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Not Permitted</span>
+                </div>
+                {['Create new postings', 'Duplicate postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <span style={{ fontSize: 12, color: '#991b1b' }}>{item}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #fecaca', paddingTop: 6 }}>Recruiters are responsible for creating new postings.</div>
+              </div>
+            </div>
+          </div>
+
           <div className="cp-filter-bar" style={{ marginBottom: 0, paddingBottom: 16, borderBottom: '1px solid #f3f4f6' }}>
             <div className="cp-search-box">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -426,8 +481,7 @@ const HRDashboard: React.FC = () => {
             <div className="cp-empty-state">
               <svg className="cp-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
               <h3 className="cp-empty-title">No job postings found</h3>
-              <p className="cp-empty-text">Create your first job posting to start hiring.</p>
-              <button className="jpb-btn jpb-btn-primary" onClick={() => navigate('/recruiter/job-postings')}>+ Create First Posting</button>
+              <p className="cp-empty-text">No postings match your search. Recruiters create new job postings — HR manages existing ones.</p>
             </div>
           ) : (
             <div className="cp-main-grid">
@@ -450,7 +504,6 @@ const HRDashboard: React.FC = () => {
                       >⋯</button>
                       {jpCardMenuOpenId === p.id && (
                         <div className="cp-card-menu-popover">
-                          <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); navigate('/recruiter/job-postings?duplicate=' + p.id); }}>Duplicate</button>
                           {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
                             <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); handleJpStatusAction(p.id, 'freeze'); }}>Freeze</button>
                           )}
@@ -485,7 +538,7 @@ const HRDashboard: React.FC = () => {
                     </div>
                     <div className="cp-posting-card-footer">
                       <div className="cp-posting-card-action-btns">
-                        <button className="cp-posting-action-btn" onClick={() => navigate('/recruiter/job-postings')}>Edit</button>
+                        <button className="cp-posting-action-btn" onClick={() => navigate('/recruiter/job-postings?edit=' + p.id)}>Edit</button>
                         {nStatus !== 'cancelled' && (
                           <button className="cp-posting-action-btn cancel" onClick={() => { setJpSelectedId(p.id); setJpShowCancelModal(true); }}>Cancel</button>
                         )}
@@ -780,6 +833,60 @@ const HRDashboard: React.FC = () => {
             {hrToast}
           </div>
         )}
+
+        {/* HR Applications Responsibilities Banner */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e5e7eb',
+          borderLeft: '4px solid #8b5cf6',
+          borderRadius: 10,
+          padding: '16px 20px',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #8b5cf6, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Applications — HR Permissions</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#f5f3ff', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>HR MANAGER</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Your scope within the hiring pipeline</div>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Allowed</span>
+              </div>
+              {['View all applications', 'Schedule interviews', 'Download resumes & certifications', 'Add HR notes', 'Message candidates', 'Set Selected / Rejected'].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#fff7f7', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Restricted</span>
+              </div>
+              {['Move through full pipeline stages', 'Shortlist candidates', 'Mark as Under Review'].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  <span style={{ fontSize: 12, color: '#991b1b' }}>{item}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #fecaca', paddingTop: 6 }}>Full pipeline management is handled by Recruiters.</div>
+            </div>
+          </div>
+        </div>
 
         {/* Toolbar */}
         <div className="ra-toolbar">
@@ -1485,12 +1592,13 @@ const HRDashboard: React.FC = () => {
       {/* Schedule Interview Modal */}
       {isScheduleInterviewModalOpen && selectedAppForSchedule && (
         <ScheduleInterviewModal
+          isOpen={isScheduleInterviewModalOpen}
           application={selectedAppForSchedule}
           onClose={() => {
             setIsScheduleInterviewModalOpen(false);
             setSelectedAppForSchedule(null);
           }}
-          onScheduled={() => {
+          onSuccess={() => {
             setIsScheduleInterviewModalOpen(false);
             setSelectedAppForSchedule(null);
             fetchApplications();

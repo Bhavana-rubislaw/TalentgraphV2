@@ -19,6 +19,8 @@ from app.services.notification_service import NotificationService
 from app.services.audit import log_activity_event, snap_application
 from app.emailer import send_interview_schedule_email, EmailConfigError
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
+from app.services.meeting_email_service import MeetingEmailService
+from app.services.notification_email_service import NotificationEmailTemplates
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -241,15 +243,18 @@ def update_application_status(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Update application status (Recruiter only)"""
+    """Update application status (Recruiter or HR)"""
     status = data.status
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    if user.role not in ("recruiter", "hr"):
+        raise HTTPException(status_code=403, detail="Recruiters and HR only")
+
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=403, detail="Recruiters only")
+        raise HTTPException(status_code=403, detail="No company profile found")
     
     application = session.get(Application, application_id)
     if not application:
@@ -308,17 +313,41 @@ def update_application_status(
                 "under_review": "Your application is being reviewed",
                 "shortlisted": "Great news! You've been shortlisted",
                 "rejected": "Unfortunately your application was not selected",
-                "selected": "🎉 Congratulations! You've been selected for the position!",
+                "selected": "Congratulations! You've been selected for the position!",
             }
             msg = status_labels.get(status, f"Your application status changed to {status}")
-            push_notification(
-                session, cand_user.id,
-                title=f"Application Update — {job_posting.job_title}",
-                message=msg,
-                event_type="status_update",
-                route="/candidate-dashboard",
-                route_context={"tab": "applied", "applicationId": application.id, "jobPostingId": application.job_posting_id},
-            )
+            # Notify via queue-based system (handles both in-app + email)
+            try:
+                company_obj = session.get(Company, job_posting.company_id)
+                company_name = company_obj.company_name if company_obj else "The Company"
+                # Use dedicated event types for selected/rejected — bypasses 5-min dedup
+                if status == "selected":
+                    event_type_key = "application_selected"
+                elif status == "rejected":
+                    event_type_key = "application_rejected"
+                else:
+                    event_type_key = "application_status"
+                NotificationService.send_notification(
+                    session=session,
+                    user_id=cand_user.id,
+                    event_type=event_type_key,
+                    title=f"Application Update — {job_posting.job_title}",
+                    message=msg,
+                    email_data={
+                        "candidate_name": cand_user.full_name,
+                        "job_title": job_posting.job_title,
+                        "company_name": company_name,
+                        "status": status,
+                        "message": msg,
+                        "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
+                    },
+                    notification_type="general",
+                    commit=True,
+                    validate_taxonomy=True
+                )
+                logger.info(f"[APP STATUS] Notification+email queued for {cand_user.email} — status: {status}")
+            except Exception as notify_err:
+                logger.warning(f"[APP STATUS] Notification failed for {cand_user.email}: {notify_err}")
     
     return {
         "message": f"Application status updated to {status}",
@@ -336,9 +365,9 @@ def update_application_review(
     session: Session = Depends(get_session)
 ):
     """
-    Update application status and/or recruiter notes (Recruiter only)
+    Update application status and/or recruiter notes (Recruiter or HR)
     
-    Allows recruiters to:
+    Allows recruiters and HR to:
     - Update status (with validation)
     - Add/update private recruiter notes
     - Update both together
@@ -347,18 +376,24 @@ def update_application_review(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    if user.role not in ("recruiter", "hr"):
+        raise HTTPException(status_code=403, detail="Recruiters and HR only")
+
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
-        raise HTTPException(status_code=403, detail="Recruiters only")
+        raise HTTPException(status_code=403, detail="No company profile found")
     
     application = session.get(Application, application_id)
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
     
-    # Verify the job posting belongs to this company
+    # Verify the job posting belongs to this company namespace
     job_posting = session.get(JobPosting, application.job_posting_id)
-    if not job_posting or job_posting.company_id != company.id:
+    company_ids = list(session.exec(
+        select(Company.id).where(Company.company_name == company.company_name)
+    ).all())
+    if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     # Must provide at least one field to update
@@ -418,7 +453,7 @@ def update_application_review(
 
     # Send notification to candidate only if status changed
     if status_changed:
-        candidate_obj =session.get(Candidate, application.candidate_id)
+        candidate_obj = session.get(Candidate, application.candidate_id)
         if candidate_obj:
             cand_user = session.exec(
                 select(User).where(User.id == candidate_obj.user_id)
@@ -429,17 +464,41 @@ def update_application_review(
                     "under_review": "Your application is being reviewed",
                     "shortlisted": "Great news! You've been shortlisted",
                     "rejected": "Unfortunately your application was not selected",
-                    "selected": "🎉 Congratulations! You've been selected for the position!",
+                    "selected": "Congratulations! You've been selected for the position!",
                 }
                 msg = status_labels.get(data.status, f"Your application status changed to {data.status}")
-                push_notification(
-                    session, cand_user.id,
-                    title=f"Application Update — {job_posting.job_title}",
-                    message=msg,
-                    event_type="status_update",
-                    route="/candidate-dashboard",
-                    route_context={"tab": "applied", "applicationId": application.id, "jobPostingId": application.job_posting_id},
-                )
+                # Notify via queue-based system (handles both in-app + email)
+                try:
+                    company_obj = session.get(Company, job_posting.company_id)
+                    company_name = company_obj.company_name if company_obj else "The Company"
+                    # Use dedicated event types for selected/rejected — bypasses 5-min dedup
+                    if data.status == "selected":
+                        event_type_key = "application_selected"
+                    elif data.status == "rejected":
+                        event_type_key = "application_rejected"
+                    else:
+                        event_type_key = "application_status"
+                    NotificationService.send_notification(
+                        session=session,
+                        user_id=cand_user.id,
+                        event_type=event_type_key,
+                        title=f"Application Update — {job_posting.job_title}",
+                        message=msg,
+                        email_data={
+                            "candidate_name": cand_user.full_name,
+                            "job_title": job_posting.job_title,
+                            "company_name": company_name,
+                            "status": data.status,
+                            "message": msg,
+                            "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
+                        },
+                        notification_type="general",
+                        commit=True,
+                        validate_taxonomy=True
+                    )
+                    logger.info(f"[APP STATUS] Notification+email queued for {cand_user.email} — status: {data.status}")
+                except Exception as notify_err:
+                    logger.warning(f"[APP STATUS] Notification failed for {cand_user.email}: {notify_err}")
     
     # Construct response message
     messages = []

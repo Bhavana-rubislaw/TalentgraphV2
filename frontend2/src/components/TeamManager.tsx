@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '../api/client';
 
 interface TeamMember {
@@ -54,6 +55,9 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
   const isHR = userRole === 'hr';
   const canManage = isAdmin || isHR;
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -102,6 +106,17 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
       fetchMembers();
     } catch (e: any) {
       setError(e?.response?.data?.detail || 'Failed to update role');
+    }
+  };
+
+  const handleMessageMember = async (userId: number, name: string) => {
+    try {
+      const res = await apiClient.startConversation(userId);
+      const convId = res.data.conversation?.id || res.data.id;
+      // SPA navigation — no page reload, goes directly to that conversation
+      navigate(location.pathname + '?tab=messages&c=' + convId);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || `Failed to start conversation with ${name}`);
     }
   };
 
@@ -244,7 +259,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
         <div style={{ border: '1px solid var(--border-light, #e2e8f0)', borderRadius: 10, overflow: 'hidden' }}>
           {/* Table header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 80px',
+            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 180px',
             gap: 12, padding: '10px 16px',
             background: 'var(--bg-tertiary, #f1f5f9)',
             fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#94a3b8',
@@ -252,7 +267,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
             <span>Member</span>
             <span>Role</span>
             <span>Jobs Posted</span>
-            {canManage && <span>Actions</span>}
+            <span>Actions</span>
           </div>
 
           {members.length === 0 ? (
@@ -264,7 +279,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
               <div
                 key={member.id}
                 style={{
-                  display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 80px',
+                  display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 180px',
                   gap: 12, padding: '14px 16px', alignItems: 'center',
                   borderTop: '1px solid var(--border-light, #e2e8f0)',
                   background: member.is_self ? 'rgba(99,102,241,0.04)' : 'transparent',
@@ -314,28 +329,79 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                 <div style={{ fontSize: 13, color: '#475569' }}>{member.jobs_posted}</div>
 
                 {/* Actions */}
-                {canManage && (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {isAdmin && !member.is_self && member.role.toUpperCase() !== 'ADMIN' && (
-                      <button
-                        onClick={() => { setEditingMember(member.user_id); setEditRole(member.role.toLowerCase()); }}
-                        title="Change role"
-                        style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', color: '#475569' }}
-                      >
-                        Edit
-                      </button>
-                    )}
-                    {isAdmin && !member.is_self && (
-                      <button
-                        onClick={() => handleRemoveMember(member.user_id, member.name)}
-                        title="Remove member"
-                        style={{ background: 'none', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 8px', fontSize: 11, cursor: 'pointer', color: '#ef4444' }}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Edit role — admin only */}
+                  {isAdmin && !member.is_self && member.role.toUpperCase() !== 'ADMIN' && editingMember !== member.user_id && (
+                    <button
+                      onClick={() => { setEditingMember(member.user_id); setEditRole(member.role.toLowerCase()); }}
+                      title="Change role"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#475569', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'border-color 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                      onMouseOut={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Role
+                    </button>
+                  )}
+                  {/* Message button */}
+                  {!member.is_self && (
+                    <button
+                      onClick={() => handleMessageMember(member.user_id, member.name)}
+                      title={`Message ${member.name}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#2563eb', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.background = '#dbeafe')}
+                      onMouseOut={e => (e.currentTarget.style.background = '#eff6ff')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Message
+                    </button>
+                  )}
+                  {/* Remove button — HR and Admin, non-self, non-owner */}
+                  {(isAdmin || isHR) && !member.is_self && !member.is_primary_account && (
+                    <button
+                      onClick={() => handleRemoveMember(member.user_id, member.name)}
+                      title="Remove from team"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.background = '#fee2e2')}
+                      onMouseOut={e => (e.currentTarget.style.background = '#fff5f5')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="18" y1="8" x2="23" y2="13"/>
+                        <line x1="23" y1="8" x2="18" y2="13"/>
+                      </svg>
+                      Remove
+                    </button>
+                  )}
+                  {/* Self label */}
+                  {member.is_self && (
+                    <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>—</span>
+                  )}
+                </div>
               </div>
             ))
           )}

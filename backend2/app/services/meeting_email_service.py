@@ -97,6 +97,24 @@ class MeetingEmailService:
                     <p style="color:#78350f;font-size:14px;line-height:1.6;margin:0;">{meeting.description}</p>
                 </div>"""
 
+        confirm_btn = (
+            f'<a href="{confirm_link}" style="display:inline-block;background:#10b981;color:white;'
+            f'padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;'
+            f'margin:4px;box-shadow:0 2px 8px rgba(16,185,129,0.3);">&#10003; Confirm Attendance</a>'
+        ) if confirm_link else ""
+
+        reschedule_btn = (
+            f'<a href="{reschedule_link}" style="display:inline-block;background:#3b82f6;color:white;'
+            f'padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;'
+            f'margin:4px;box-shadow:0 2px 8px rgba(59,130,246,0.3);">&#8635; Request Reschedule</a>'
+        ) if reschedule_link else ""
+
+        cancel_btn = (
+            f'<a href="{cancel_link}" style="display:inline-block;background:#ef4444;color:white;'
+            f'padding:12px 24px;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;'
+            f'margin:4px;box-shadow:0 2px 8px rgba(239,68,68,0.3);">&#10007; Cancel</a>'
+        ) if cancel_link else ""
+
         meeting_link_block = ""
         if meeting.video_meeting_url:
             meeting_link_block = (
@@ -141,7 +159,7 @@ class MeetingEmailService:
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
                     <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;width:32%;vertical-align:top;">Position</td>
-                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">Software Engineer - Full Stack</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{job_title}</td>
                 </tr>
                 <tr>
                     <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Company</td>
@@ -164,6 +182,14 @@ class MeetingEmailService:
 
         {meeting_link_block}
         {notes_block}
+
+        <!-- Action Buttons -->
+        <div style="text-align:center;margin:0 0 28px;">
+            <p style="color:#1e293b;font-size:14px;font-weight:600;margin:0 0 14px;">Quick Actions:</p>
+            {confirm_btn}
+            {reschedule_btn}
+            {cancel_btn}
+        </div>
 
         <!-- Preparation Tips -->
         <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:8px;padding:18px 20px;margin:0 0 24px;">
@@ -219,6 +245,139 @@ class MeetingEmailService:
         except Exception as e:
             logger.error(f"✗ Failed to send interview scheduled email to {recipient_user.email}: {e}", exc_info=True)
     
+    def send_organizer_confirmation_email(
+        self,
+        session: Session,
+        meeting: Meeting,
+        organizer_user: User,
+        participant_users: list
+    ) -> None:
+        """Send confirmation email to the organizer (recruiter) who scheduled the meeting."""
+
+        job_title, company_name = self._get_job_and_company(session, meeting, organizer_user)
+        start_time_str = meeting.scheduled_start.strftime("%B %d, %Y at %I:%M %p")
+        timezone_label = meeting.timezone or "UTC"
+        subject = f"Interview Scheduled: {job_title} | {company_name}"
+
+        participant_names = ", ".join(u.full_name for u in participant_users) if participant_users else "—"
+
+        meeting_link_row = ""
+        if meeting.video_meeting_url:
+            meeting_link_row = (
+                f'<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;width:32%;vertical-align:top;">Meeting Link</td>'
+                f'<td style="padding:8px 0;font-size:14px;"><a href="{meeting.video_meeting_url}" style="color:#059669;font-weight:600;word-break:break-all;">{meeting.video_meeting_url}</a></td></tr>'
+            )
+
+        notes_row = ""
+        if meeting.description:
+            notes_row = (
+                f'<tr><td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Notes</td>'
+                f'<td style="padding:8px 0;color:#475569;font-size:14px;">{meeting.description}</td></tr>'
+            )
+
+        html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:20px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background-color:#f1f5f9;line-height:1.6;">
+<div style="max-width:560px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 6px 32px rgba(0,0,0,0.10);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);padding:44px 32px 36px;text-align:center;">
+        <div style="display:inline-block;background:white;border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;font-size:26px;margin:0 auto 16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">&#10003;</div>
+        <h1 style="color:white;margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-0.3px;display:block;">Interview Scheduled!</h1>
+        <p style="color:rgba(255,255,255,0.9);margin:0;font-size:14px;display:block;">Your interview has been successfully created</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:36px 32px 28px;">
+        <p style="color:#1e293b;font-size:15px;margin:0 0 20px;">
+            Hi <strong style="color:#059669;">{organizer_user.full_name}</strong>,
+        </p>
+        <p style="color:#475569;font-size:14px;margin:0 0 28px;line-height:1.75;">
+            You have successfully scheduled an interview for the <strong style="color:#1e293b;">{job_title}</strong> position
+            at <strong style="color:#1e293b;">{company_name}</strong>.
+            A confirmation email has been sent to all participants.
+        </p>
+
+        <!-- Interview Details card -->
+        <div style="background:#f8fafc;border-radius:10px;padding:22px 24px;margin:0 0 22px;border-left:4px solid #10b981;">
+            <p style="color:#1e293b;font-size:15px;font-weight:700;margin:0 0 16px;">&#128203; Interview Details</p>
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;width:32%;vertical-align:top;">Position</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{job_title}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Company</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{company_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Participants</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{participant_names}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Date &amp; Time</td>
+                    <td style="padding:8px 0;font-weight:700;color:#059669;font-size:14px;">{start_time_str}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Duration</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{meeting.duration_minutes} minutes</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Timezone</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{timezone_label}</td>
+                </tr>
+                {meeting_link_row}
+                {notes_row}
+            </table>
+        </div>
+
+        <div style="text-align:center;margin:0 0 24px;">
+            <a href="{self.app_url}/meetings/{meeting.id}" style="display:inline-block;background:linear-gradient(135deg,#10b981,#059669);color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(16,185,129,0.3);">
+                &#128197; View Meeting Details
+            </a>
+        </div>
+
+        <p style="color:#1e293b;font-size:14px;line-height:1.7;margin:0;">
+            Best regards,<br>
+            <strong style="color:#059669;">The TalentGraph Team</strong>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f8fafc;padding:18px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
+            This confirmation was sent via <strong style="color:#6d28d9;">TalentGraph</strong>.<br>
+            Confirmation emails have been sent to all meeting participants.
+        </p>
+    </div>
+</div>
+</body>
+</html>"""
+
+        text_body = (
+            f"Interview Scheduled Successfully\n\n"
+            f"Hi {organizer_user.full_name},\n\n"
+            f"You have successfully scheduled an interview for the {job_title} position at {company_name}.\n\n"
+            f"Participants: {participant_names}\n"
+            f"Date & Time: {start_time_str}\n"
+            f"Duration: {meeting.duration_minutes} minutes\n"
+            f"Timezone: {timezone_label}\n"
+            + (f"Meeting Link: {meeting.video_meeting_url}\n" if meeting.video_meeting_url else "")
+            + f"\nView meeting details: {self.app_url}/meetings/{meeting.id}\n"
+        )
+
+        try:
+            self.provider.send_email(
+                to_email=organizer_user.email,
+                subject=subject,
+                html_body=html_body,
+                text_body=text_body
+            )
+            logger.info(f"✓ Organizer confirmation email sent to {organizer_user.email} for meeting: {meeting.title}")
+        except Exception as e:
+            logger.error(f"✗ Failed to send organizer confirmation email to {organizer_user.email}: {e}", exc_info=True)
+
     def send_interview_cancelled_email(
         self,
         session: Session,
@@ -228,49 +387,94 @@ class MeetingEmailService:
         cancellation_reason: str
     ) -> None:
         """Send interview cancellation email"""
-        
-        subject = f"Interview Cancelled: {meeting.title}"
-        
-        html_body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #ef4444;">Interview Cancelled</h2>
-                
-                <p>Hi {recipient_user.full_name},</p>
-                
-                <p>{cancelled_by_user.full_name} has cancelled the following interview:</p>
-                
-                <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #1f2937;">{meeting.title}</h3>
-                    <p style="margin: 10px 0;"><strong>Reason:</strong> {cancellation_reason}</p>
-                </div>
-                
-                <p><a href="{self.app_url}/meetings/{meeting.id}" style="color: #2563eb;">View details in TalentGraph →</a></p>
-                
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                
-                <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated email from TalentGraph.
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        text_body = f"""
-        Interview Cancelled
-        
-        Hi {recipient_user.full_name},
-        
-        {cancelled_by_user.full_name} has cancelled the following interview:
-        
-        {meeting.title}
-        Reason: {cancellation_reason}
-        
-        View details: {self.app_url}/meetings/{meeting.id}
-        """
-        
+
+        job_title, company_name = self._get_job_and_company(session, meeting, cancelled_by_user)
+        start_time_str = meeting.scheduled_start.strftime("%B %d, %Y at %I:%M %p")
+        timezone_label = meeting.timezone or "UTC"
+        subject = f"Interview Cancelled: {job_title} | {company_name}"
+
+        html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:20px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background-color:#f1f5f9;line-height:1.6;">
+<div style="max-width:560px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 6px 32px rgba(0,0,0,0.10);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);padding:44px 32px 36px;text-align:center;">
+        <div style="display:inline-block;background:white;border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;font-size:26px;margin:0 auto 16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">&#10007;</div>
+        <h1 style="color:white;margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-0.3px;display:block;">Interview Cancelled</h1>
+        <p style="color:rgba(255,255,255,0.9);margin:0;font-size:14px;display:block;">Your scheduled interview has been cancelled</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:36px 32px 28px;">
+        <p style="color:#1e293b;font-size:15px;margin:0 0 20px;">
+            Hi <strong style="color:#ef4444;">{recipient_user.full_name}</strong>,
+        </p>
+        <p style="color:#475569;font-size:14px;margin:0 0 28px;line-height:1.75;">
+            <strong style="color:#1e293b;">{cancelled_by_user.full_name}</strong> has cancelled the following interview.
+            We apologize for any inconvenience.
+        </p>
+
+        <!-- Cancelled Interview Details card -->
+        <div style="background:#fef2f2;border-radius:10px;padding:22px 24px;margin:0 0 22px;border-left:4px solid #ef4444;">
+            <p style="color:#1e293b;font-size:15px;font-weight:700;margin:0 0 16px;">&#128203; Cancelled Interview</p>
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;width:32%;vertical-align:top;">Position</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{job_title}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Company</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{company_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Was Scheduled</td>
+                    <td style="padding:8px 0;font-weight:600;color:#dc2626;font-size:14px;">{start_time_str} ({timezone_label})</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Cancelled By</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{cancelled_by_user.full_name}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Cancellation Reason -->
+        <div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:8px;padding:18px 20px;margin:0 0 24px;">
+            <p style="color:#9a3412;font-size:12px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.6px;">Reason for Cancellation</p>
+            <p style="color:#7c2d12;font-size:14px;line-height:1.6;margin:0;">{cancellation_reason}</p>
+        </div>
+
+        <p style="color:#475569;font-size:14px;line-height:1.7;margin:0 0 24px;">
+            If you have any questions, please reach out directly to <strong>{cancelled_by_user.full_name}</strong>.
+        </p>
+        <p style="color:#1e293b;font-size:14px;line-height:1.7;margin:0;">
+            Best regards,<br>
+            <strong style="color:#6d28d9;">The TalentGraph Team</strong>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f8fafc;padding:18px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
+            This notification was sent via <strong style="color:#6d28d9;">TalentGraph</strong>.
+        </p>
+    </div>
+</div>
+</body>
+</html>"""
+
+        text_body = (
+            f"Interview Cancelled\n\n"
+            f"Hi {recipient_user.full_name},\n\n"
+            f"{cancelled_by_user.full_name} has cancelled the following interview:\n\n"
+            f"Position: {job_title}\n"
+            f"Company: {company_name}\n"
+            f"Was Scheduled: {start_time_str} ({timezone_label})\n"
+            f"Reason: {cancellation_reason}\n\n"
+            f"View details: {self.app_url}/meetings/{meeting.id}\n"
+        )
+
         try:
             self.provider.send_email(
                 to_email=recipient_user.email,
@@ -292,53 +496,109 @@ class MeetingEmailService:
         preferred_times: Optional[str] = None
     ) -> None:
         """Send reschedule request notification to recruiter"""
-        
-        subject = f"Reschedule Request: {meeting.title}"
-        
-        html_body = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #f59e0b;">Reschedule Request</h2>
-                
-                <p>Hi {recipient_user.full_name},</p>
-                
-                <p>{requester_user.full_name} has requested to reschedule the following interview:</p>
-                
-                <div style="background: #fffbeb; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-                    <h3 style="margin-top: 0; color: #1f2937;">{meeting.title}</h3>
-                    <p style="margin: 10px 0;"><strong>Original Time:</strong> {meeting.scheduled_start.strftime("%B %d, %Y at %I:%M %p")}</p>
-                    <p style="margin: 10px 0;"><strong>Reason:</strong> {request_reason}</p>
-                    {f'<p style="margin: 10px 0;"><strong>Preferred Times:</strong> {preferred_times}</p>' if preferred_times else ''}
-                </div>
-                
-                <p><a href="{self.app_url}/meetings/{meeting.id}" style="display: inline-block; background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 10px 0;">Review and Respond →</a></p>
-                
-                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-                
-                <p style="font-size: 12px; color: #6b7280;">
-                    This is an automated email from TalentGraph.
-                </p>
-            </div>
-        </body>
-        </html>
-        """
-        
-        text_body = f"""
-        Reschedule Request
-        
-        Hi {recipient_user.full_name},
-        
-        {requester_user.full_name} has requested to reschedule the following interview:
-        
-        {meeting.title}
-        Original Time: {meeting.scheduled_start.strftime("%B %d, %Y at %I:%M %p")}
-        Reason: {request_reason}
-        {f'Preferred Times: {preferred_times}' if preferred_times else ''}
-        
-        Review and respond: {self.app_url}/meetings/{meeting.id}
-        """
-        
+
+        job_title, company_name = self._get_job_and_company(session, meeting, recipient_user)
+        original_time_str = meeting.scheduled_start.strftime("%B %d, %Y at %I:%M %p")
+        timezone_label = meeting.timezone or "UTC"
+        subject = f"Reschedule Request: {job_title} | {company_name}"
+
+        preferred_block = ""
+        if preferred_times:
+            preferred_block = f"""
+        <div style="background:#eff6ff;border-left:4px solid #3b82f6;border-radius:8px;padding:18px 20px;margin:0 0 22px;">
+            <p style="color:#1e40af;font-size:12px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.6px;">&#128337; Preferred Times Suggested</p>
+            <p style="color:#1e3a8a;font-size:14px;line-height:1.6;margin:0;">{preferred_times}</p>
+        </div>"""
+
+        html_body = f"""<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:20px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background-color:#f1f5f9;line-height:1.6;">
+<div style="max-width:560px;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 6px 32px rgba(0,0,0,0.10);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);padding:44px 32px 36px;text-align:center;">
+        <div style="display:inline-block;background:white;border-radius:50%;width:56px;height:56px;line-height:56px;text-align:center;font-size:26px;margin:0 auto 16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">&#8635;</div>
+        <h1 style="color:white;margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-0.3px;display:block;">Reschedule Request</h1>
+        <p style="color:rgba(255,255,255,0.9);margin:0;font-size:14px;display:block;">A participant has requested to reschedule</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:36px 32px 28px;">
+        <p style="color:#1e293b;font-size:15px;margin:0 0 20px;">
+            Hi <strong style="color:#d97706;">{recipient_user.full_name}</strong>,
+        </p>
+        <p style="color:#475569;font-size:14px;margin:0 0 28px;line-height:1.75;">
+            <strong style="color:#1e293b;">{requester_user.full_name}</strong> has requested to reschedule
+            the interview for <strong style="color:#1e293b;">{job_title}</strong> at <strong style="color:#1e293b;">{company_name}</strong>.
+        </p>
+
+        <!-- Interview Details card -->
+        <div style="background:#fffbeb;border-radius:10px;padding:22px 24px;margin:0 0 22px;border-left:4px solid #f59e0b;">
+            <p style="color:#1e293b;font-size:15px;font-weight:700;margin:0 0 16px;">&#128203; Interview Details</p>
+            <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;width:32%;vertical-align:top;">Position</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{job_title}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Company</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{company_name}</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Current Time</td>
+                    <td style="padding:8px 0;font-weight:700;color:#d97706;font-size:14px;">{original_time_str} ({timezone_label})</td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;color:#94a3b8;font-size:13px;font-weight:500;vertical-align:top;">Requested By</td>
+                    <td style="padding:8px 0;font-weight:600;color:#1e293b;font-size:14px;">{requester_user.full_name}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Reason -->
+        <div style="background:#fff7ed;border-left:4px solid #f97316;border-radius:8px;padding:18px 20px;margin:0 0 22px;">
+            <p style="color:#9a3412;font-size:12px;font-weight:700;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.6px;">Reason for Request</p>
+            <p style="color:#7c2d12;font-size:14px;line-height:1.6;margin:0;">{request_reason}</p>
+        </div>
+
+        {preferred_block}
+
+        <!-- Action Button -->
+        <div style="text-align:center;margin:0 0 24px;">
+            <a href="{self.app_url}/meetings/{meeting.id}" style="display:inline-block;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;box-shadow:0 2px 8px rgba(59,130,246,0.3);">
+                Review &amp; Respond &#8594;
+            </a>
+        </div>
+
+        <p style="color:#1e293b;font-size:14px;line-height:1.7;margin:0;">
+            Best regards,<br>
+            <strong style="color:#6d28d9;">The TalentGraph Team</strong>
+        </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f8fafc;padding:18px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+        <p style="color:#94a3b8;font-size:11px;margin:0;line-height:1.6;">
+            This notification was sent via <strong style="color:#6d28d9;">TalentGraph</strong>.
+        </p>
+    </div>
+</div>
+</body>
+</html>"""
+
+        text_body = (
+            f"Reschedule Request\n\n"
+            f"Hi {recipient_user.full_name},\n\n"
+            f"{requester_user.full_name} has requested to reschedule the interview.\n\n"
+            f"Position: {job_title}\n"
+            f"Company: {company_name}\n"
+            f"Current Time: {original_time_str} ({timezone_label})\n"
+            f"Reason: {request_reason}\n"
+            + (f"Preferred Times: {preferred_times}\n" if preferred_times else "")
+            + f"\nReview and respond: {self.app_url}/meetings/{meeting.id}\n"
+        )
+
         try:
             self.provider.send_email(
                 to_email=recipient_user.email,
