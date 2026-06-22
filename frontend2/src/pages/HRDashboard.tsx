@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiClient } from '../api/client';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -70,10 +70,6 @@ const HRDashboard: React.FC = () => {
   const [jpToast, setJpToast] = useState('');
   const JP_PAGE_SIZE = 9;
 
-  // ── Team Management state ──────────────────────────────────────
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [teamLoading, setTeamLoading] = useState(false);
-
   // ── Analytics state ────────────────────────────────────────────
   const [hrAnalytics, setHrAnalytics] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
@@ -111,18 +107,6 @@ const HRDashboard: React.FC = () => {
     }
   }, []);
 
-  const fetchTeam = useCallback(async () => {
-    setTeamLoading(true);
-    try {
-      const res = await apiClient.getCompanyTeam();
-      setTeamMembers(res.data || []);
-    } catch (err) {
-      console.error('[HR] Failed to fetch team:', err);
-    } finally {
-      setTeamLoading(false);
-    }
-  }, []);
-
   const fetchAnalytics = useCallback(async () => {
     setAnalyticsLoading(true);
     try {
@@ -155,17 +139,6 @@ const HRDashboard: React.FC = () => {
       await fetchJobs();
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Failed to update job status';
-      alert(msg);
-    }
-  };
-
-  const handleRemoveTeamMember = async (memberId: number, email: string) => {
-    if (!window.confirm(`Remove ${email} from the team? This will deactivate their account.`)) return;
-    try {
-      await apiClient.removeTeamMemberHR(memberId);
-      await fetchTeam();
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Failed to remove team member';
       alert(msg);
     }
   };
@@ -281,10 +254,9 @@ const HRDashboard: React.FC = () => {
   // ── Initial data load by tab ───────────────────────────────────
   useEffect(() => {
     if (activeTab === 'job-postings') fetchJobs();
-    if (activeTab === 'team') fetchTeam();
     if (activeTab === 'analytics') fetchAnalytics();
     if (activeTab === 'applications') fetchApplications();
-  }, [activeTab, fetchJobs, fetchTeam, fetchAnalytics, fetchApplications]);
+  }, [activeTab, fetchJobs, fetchAnalytics, fetchApplications]);
 
   // Re-fetch analytics when range changes
   useEffect(() => {
@@ -604,87 +576,6 @@ const HRDashboard: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderApprovalsTab = () => {
-    const draftJobs   = allJobs.filter(j => (j.status || '').toLowerCase() === 'draft');
-    const activeJobs  = allJobs.filter(j => (j.status || '').toLowerCase() === 'active');
-    const frozenJobs  = allJobs.filter(j => (j.status || '').toLowerCase() === 'frozen');
-
-    return (
-      <div className="content-panel-horizontal hr-tab-panel">
-        <div className="hr-panel-header">
-          <div>
-            <h2 className="hr-panel-title">Job Approval Queue</h2>
-            <p className="hr-panel-subtitle">
-              Review and manage job posting lifecycle. Draft jobs are awaiting approval before they go live.
-            </p>
-          </div>
-        </div>
-
-        {jobsLoading ? (
-          <div className="hr-loading">
-            <span className="hr-loading-spinner" />
-            Loading jobs…
-          </div>
-        ) : (
-          <>
-            {/* Draft / Pending Approval */}
-            <div className="hr-section">
-              <span className="hr-section-pill pending">⏳ Pending Approval ({draftJobs.length})</span>
-              {draftJobs.length === 0 ? (
-                <p className="hr-empty-text">No jobs pending approval.</p>
-              ) : (
-                draftJobs.map(job => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    actions={[
-                      { label: '✅ Activate',  variant: 'activate',  fn: () => handleJobStatusAction(job.id, 'reactivate') },
-                      { label: '❌ Cancel',    variant: 'cancel',    fn: () => handleJobStatusAction(job.id, 'cancel') },
-                    ]}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Active Jobs */}
-            <div className="hr-section">
-              <span className="hr-section-pill active">✅ Active ({activeJobs.length})</span>
-              {activeJobs.length === 0 ? (
-                <p className="hr-empty-text">No active jobs.</p>
-              ) : (
-                activeJobs.map(job => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    actions={[
-                      { label: '🧊 Freeze', variant: 'freeze', fn: () => handleJobStatusAction(job.id, 'freeze') },
-                    ]}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Frozen Jobs */}
-            {frozenJobs.length > 0 && (
-              <div className="hr-section">
-                <span className="hr-section-pill frozen">🧊 Frozen ({frozenJobs.length})</span>
-                {frozenJobs.map(job => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    actions={[
-                      { label: '🔄 Reactivate', variant: 'reactivate', fn: () => handleJobStatusAction(job.id, 'reactivate') },
-                    ]}
-                  />
-                ))}
-              </div>
-            )}
-          </>
         )}
       </div>
     );
@@ -1578,7 +1469,7 @@ const HRDashboard: React.FC = () => {
 
         {activeTab === 'messages' && (
           <div className="content-panel-horizontal" style={{ minHeight: 500 }}>
-            <ChatWindow initialConversationId={conversationId} />
+            <ChatWindow />
           </div>
         )}
 

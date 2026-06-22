@@ -6,7 +6,7 @@ import type { Notification } from './notificationTypes';
 import '../../styles/NotificationPopup.css';
 
 interface Props {
-  role: 'candidate' | 'recruiter';
+  role: 'candidate' | 'recruiter' | 'hr';
 }
 
 type FilterTab = 'all' | 'applications' | 'messages' | 'system';

@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
-import { Meeting, MeetingParticipant } from '../../types/meeting';
+import { Meeting } from '../../types/meeting';
 
 interface MeetingDetailsModalProps {
   meeting: Meeting;
