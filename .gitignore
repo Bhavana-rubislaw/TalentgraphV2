@@ -438,6 +438,18 @@ coverage/
 # TalentGraph specific files
 talentgraph_v2.log*
 
+# Generated analysis/report outputs
+backend2/reports/**/*.csv
+backend2/reports/**/*.zip
+backend2/reports/**/*.xlsv
+backend2/reports/**/*.xlsx
+
+
+**/output/**/*.csv
+**/output/**/*.zip
+**/output/**/*.xlsv
+**/output/**/*.xlsx
+
 # Nested duplicate directory (if not needed)
 TalentgraphV2/
 
