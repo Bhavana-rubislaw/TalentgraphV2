@@ -21,6 +21,12 @@ from app.emailer import send_interview_schedule_email, EmailConfigError
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
 from app.services.meeting_email_service import MeetingEmailService
 from app.services.notification_email_service import NotificationEmailTemplates
+from app.services.application_service import (
+    ApplicationService,
+    validate_status_transition,
+    VALID_STATUSES,
+    STATUS_TRANSITIONS,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/applications", tags=["Applications"])
@@ -41,38 +47,8 @@ class ApplicationReviewUpdateRequest(BaseModel):
     recruiter_notes: Optional[str] = None
 
 
-# Valid application statuses and transitions
-VALID_STATUSES = ["applied", "scheduled", "under_review", "shortlisted", "selected", "rejected"]
-
-# Status transition rules - maps current_status -> allowed_next_statuses
-STATUS_TRANSITIONS = {
-    "applied": ["scheduled", "under_review", "shortlisted", "rejected"],
-    "scheduled": ["under_review", "shortlisted", "selected", "rejected"],
-    "under_review": ["scheduled", "shortlisted", "selected", "rejected"],  # can schedule after review
-    "shortlisted": ["scheduled", "selected", "rejected"],  # can still schedule after shortlisting
-    "selected": [],  # Terminal state
-    "rejected": []   # Terminal state
-}
-
-
-def validate_status_transition(current_status: str, new_status: str) -> tuple[bool, str]:
-    """
-    Validate if a status transition is allowed.
-    
-    Returns:
-        (is_valid, error_message)
-    """
-    if new_status not in VALID_STATUSES:
-        return False, f"Invalid status '{new_status}'. Must be one of: {', '.join(VALID_STATUSES)}"
-    
-    if current_status == new_status:
-        return True, ""  # Allow staying in same status (for notes-only updates)
-    
-    allowed_transitions = STATUS_TRANSITIONS.get(current_status, [])
-    if new_status not in allowed_transitions:
-        return False, f"Cannot transition from '{current_status}' to '{new_status}'. Allowed transitions: {', '.join(allowed_transitions) if allowed_transitions else 'none (terminal state)'}"
-    
-    return True, ""
+# Status constants and validate_status_transition are now canonical in
+# app/services/application_service — imported above for backward compatibility.
 
 
 @router.post("/apply", response_model=dict)
@@ -83,135 +59,37 @@ def apply_to_job(
     session: Session = Depends(get_session)
 ):
     """Candidate applies to a job posting"""
-    job_posting_id = data.job_posting_id
-    job_profile_id = data.job_profile_id
-    logger.info(f"[APPLICATION] job_posting_id={job_posting_id}, job_profile_id={job_profile_id}")
-    
+    logger.info(
+        f"[APPLICATION] job_posting_id={data.job_posting_id}, "
+        f"job_profile_id={data.job_profile_id}"
+    )
+
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+
+    candidate = session.exec(
+        select(Candidate).where(Candidate.user_id == user.id)
+    ).first()
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
-    
-    job_profile = session.get(JobProfile, job_profile_id)
+
+    job_profile = session.get(JobProfile, data.job_profile_id)
     if not job_profile or job_profile.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Job profile not found")
-    
-    job_posting = session.get(JobPosting, job_posting_id)
+
+    job_posting = session.get(JobPosting, data.job_posting_id)
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
-    
-    # Prevent applications to frozen jobs
-    if job_posting.status == JobPostingStatus.FROZEN:
-        raise HTTPException(
-            status_code=400,
-            detail="This job is not currently accepting applications."
-        )
-    
-    # TODO: PRODUCT DECISION REQUIRED - Duplicate application behavior
-    # Current: One application per (candidate_id, job_posting_id) - same candidate cannot apply twice to the same posting
-    # Alternative: Allow one application per (candidate_id, job_posting_id, job_profile_id) - same candidate can apply with different profiles
-    # Confirm intended product rule before changing this logic.
-    
-    # Enforce: only one application per candidate per job posting (regardless of profile)
-    existing = session.exec(
-        select(Application)
-        .where(Application.candidate_id == candidate.id)
-        .where(Application.job_posting_id == job_posting_id)
-    ).first()
-    
-    if existing:
-        raise HTTPException(status_code=400, detail="Already applied to this job")
-    
-    # Create application — backend stamps applied_at
-    application = Application(
-        candidate_id=candidate.id,
-        job_posting_id=job_posting_id,
-        job_profile_id=job_profile_id,
-        status="applied",
-        applied_at=datetime.utcnow(),
-    )
-    
-    session.add(application)
-    # Flush to get application.id before audit log
-    session.flush()
 
-    # Audit log — same transaction
-    log_activity_event(
-        session,
-        entity_type="application",
-        entity_id=application.id,
-        action="created",
-        performed_by_user=user,
-        before_value=None,
-        after_value=snap_application(application),
+    return ApplicationService.apply(
+        session=session,
+        user=user,
+        candidate=candidate,
+        job_posting=job_posting,
+        job_profile=job_profile,
         request_id=getattr(request.state, "request_id", None),
-        dedupe_key=f"application:created:{candidate.id}:{job_posting_id}",
     )
-
-    session.commit()
-    session.refresh(application)
-    
-    # 1. Send confirmation notification to candidate (applicant)
-    try:
-        NotificationService.send_notification(
-            session=session,
-            user_id=user.id,
-            event_type="application_submitted",
-            title="✅ Application Submitted Successfully",
-            message=f"Your application for {job_posting.job_title} has been submitted",
-            email_data={
-                "candidate_name": candidate.name,
-                "job_title": job_posting.job_title,
-                "company_name": company_obj.company_name if (company_obj := session.get(Company, job_posting.company_id)) else "the company",
-                "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
-            },
-            notification_type="general",
-            commit=False,
-            validate_taxonomy=True
-        )
-        logger.info(f"[APPLICATION] Sent confirmation notification to candidate {candidate.id}")
-    except Exception as e:
-        logger.error(f"[APPLICATION] Failed to send candidate notification: {e}")
-    
-    # 2. Notify recruiter of the new application
-    company_obj = session.get(Company, job_posting.company_id)
-    if company_obj:
-        recruiter_user = session.exec(
-            select(User).where(User.id == company_obj.user_id)
-        ).first()
-        if recruiter_user:
-            try:
-                NotificationService.send_notification(
-                    session=session,
-                    user_id=recruiter_user.id,
-                    event_type="application_received",
-                    title="📎 New Application Received!",
-                    message=f"{candidate.name} applied for {job_posting.job_title}",
-                    email_data={
-                        "recruiter_name": company_obj.company_name,
-                        "candidate_name": candidate.name,
-                        "job_title": job_posting.job_title,
-                        "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/recruiter-dashboard?tab=applications&applicationId={application.id}"
-                    },
-                    notification_type="general",
-                    commit=False,
-                    validate_taxonomy=True
-                )
-                logger.info(f"[APPLICATION] Sent notification to recruiter {recruiter_user.id}")
-            except Exception as e:
-                logger.error(f"[APPLICATION] Failed to send recruiter notification: {e}")
-    
-    # Final commit for notifications
-    session.commit()
-    
-    return {
-        "message": "Application submitted successfully",
-        "application_id": application.id,
-        "job_title": job_posting.job_title
-    }
 
 
 @router.get("/my-applications", response_model=List[ApplicationRead])
@@ -244,116 +122,39 @@ def update_application_status(
     session: Session = Depends(get_session)
 ):
     """Update application status (Recruiter or HR)"""
-    status = data.status
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     if user.role not in ("recruiter", "hr"):
         raise HTTPException(status_code=403, detail="Recruiters and HR only")
 
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
         raise HTTPException(status_code=403, detail="No company profile found")
-    
+
     application = session.get(Application, application_id)
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    
-    # Verify the job posting belongs to this company namespace
-    # (multiple recruiter users can share the same company_name)
+
     job_posting = session.get(JobPosting, application.job_posting_id)
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
-    
-    # Get all company IDs that share this company_name (namespace)
+
+    # Verify job belongs to this company namespace
     company_ids = list(session.exec(
         select(Company.id).where(Company.company_name == company.company_name)
     ).all())
-    
     if job_posting.company_id not in company_ids:
         raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    # Validate status transition
-    is_valid, error_msg = validate_status_transition(application.status, status)
-    if not is_valid:
-        raise HTTPException(status_code=400, detail=error_msg)
-    
-    before_snap = snap_application(application)
-    old_status = application.status
-    application.status = status
-    application.last_status_updated_at = datetime.utcnow()
-    application.last_status_updated_by_user_id = user.id
-    session.add(application)
-    session.flush()
 
-    # Audit log
-    log_activity_event(
-        session,
-        entity_type="application",
-        entity_id=application.id,
-        action="status_changed",
-        performed_by_user=user,
-        before_value=before_snap,
-        after_value=snap_application(application),
+    return ApplicationService.update_status(
+        session=session,
+        application=application,
+        job_posting=job_posting,
+        new_status=data.status,
+        actor=user,
         request_id=getattr(request.state, "request_id", None),
     )
-
-    session.commit()
-    
-    # Notify candidate of the status change
-    candidate_obj = session.get(Candidate, application.candidate_id)
-    if candidate_obj:
-        cand_user = session.exec(
-            select(User).where(User.id == candidate_obj.user_id)
-        ).first()
-        if cand_user:
-            status_labels = {
-                "scheduled": "Your interview has been scheduled",
-                "under_review": "Your application is being reviewed",
-                "shortlisted": "Great news! You've been shortlisted",
-                "rejected": "Unfortunately your application was not selected",
-                "selected": "Congratulations! You've been selected for the position!",
-            }
-            msg = status_labels.get(status, f"Your application status changed to {status}")
-            # Notify via queue-based system (handles both in-app + email)
-            try:
-                company_obj = session.get(Company, job_posting.company_id)
-                company_name = company_obj.company_name if company_obj else "The Company"
-                # Use dedicated event types for selected/rejected — bypasses 5-min dedup
-                if status == "selected":
-                    event_type_key = "application_selected"
-                elif status == "rejected":
-                    event_type_key = "application_rejected"
-                else:
-                    event_type_key = "application_status"
-                NotificationService.send_notification(
-                    session=session,
-                    user_id=cand_user.id,
-                    event_type=event_type_key,
-                    title=f"Application Update — {job_posting.job_title}",
-                    message=msg,
-                    email_data={
-                        "candidate_name": cand_user.full_name,
-                        "job_title": job_posting.job_title,
-                        "company_name": company_name,
-                        "status": status,
-                        "message": msg,
-                        "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
-                    },
-                    notification_type="general",
-                    commit=True,
-                    validate_taxonomy=True
-                )
-                logger.info(f"[APP STATUS] Notification+email queued for {cand_user.email} — status: {status}")
-            except Exception as notify_err:
-                logger.warning(f"[APP STATUS] Notification failed for {cand_user.email}: {notify_err}")
-    
-    return {
-        "message": f"Application status updated to {status}",
-        "application_id": application.id,
-        "new_status": status
-    }
 
 
 @router.put("/{application_id}/review", response_model=dict)
@@ -365,159 +166,41 @@ def update_application_review(
     session: Session = Depends(get_session)
 ):
     """
-    Update application status and/or recruiter notes (Recruiter or HR)
-    
-    Allows recruiters and HR to:
-    - Update status (with validation)
-    - Add/update private recruiter notes
-    - Update both together
-    - Save notes only without changing status
+    Update application status and/or recruiter notes (Recruiter or HR).
+
+    Delegates all business logic and notification dispatch to
+    ApplicationService.update_review().
     """
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
     if user.role not in ("recruiter", "hr"):
         raise HTTPException(status_code=403, detail="Recruiters and HR only")
 
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
         raise HTTPException(status_code=403, detail="No company profile found")
-    
+
     application = session.get(Application, application_id)
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    
-    # Verify the job posting belongs to this company namespace
+
     job_posting = session.get(JobPosting, application.job_posting_id)
     company_ids = list(session.exec(
         select(Company.id).where(Company.company_name == company.company_name)
     ).all())
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    # Must provide at least one field to update
-    if data.status is None and data.recruiter_notes is None:
-        raise HTTPException(status_code=400, detail="Must provide status or recruiter_notes to update")
-    
-    before_snap = snap_application(application)
-    old_status = application.status
-    status_changed = False
-    notes_changed = False
-    
-    # Update status if provided
-    if data.status is not None:
-        # Validate status transition
-        is_valid, error_msg = validate_status_transition(application.status, data.status)
-        if not is_valid:
-            raise HTTPException(status_code=400, detail=error_msg)
-        
-        if data.status != application.status:
-            application.status = data.status
-            application.last_status_updated_at = datetime.utcnow()
-            application.last_status_updated_by_user_id = user.id
-            status_changed = True
-    
-    # Update recruiter notes if provided (allow empty string to clear notes)
-    if data.recruiter_notes is not None:
-        trimmed_notes = data.recruiter_notes.strip() if data.recruiter_notes else None
-        if trimmed_notes != application.recruiter_notes:
-            application.recruiter_notes = trimmed_notes
-            application.notes_updated_at = datetime.utcnow()
-            notes_changed = True
-    
-    session.add(application)
-    session.flush()
 
-    # Audit log
-    action = "review_updated"
-    if status_changed and notes_changed:
-        action = "status_and_notes_updated"
-    elif status_changed:
-        action = "status_changed"
-    elif notes_changed:
-        action = "notes_updated"
-    
-    log_activity_event(
-        session,
-        entity_type="application",
-        entity_id=application.id,
-        action=action,
-        performed_by_user=user,
-        before_value=before_snap,
-        after_value=snap_application(application),
+    return ApplicationService.update_review(
+        session=session,
+        application=application,
+        job_posting=job_posting,
+        actor=user,
+        new_status=data.status,
+        recruiter_notes=data.recruiter_notes,
         request_id=getattr(request.state, "request_id", None),
     )
-
-    session.commit()
-
-    # Send notification to candidate only if status changed
-    if status_changed:
-        candidate_obj = session.get(Candidate, application.candidate_id)
-        if candidate_obj:
-            cand_user = session.exec(
-                select(User).where(User.id == candidate_obj.user_id)
-            ).first()
-            if cand_user:
-                status_labels = {
-                    "scheduled": "Your interview has been scheduled",
-                    "under_review": "Your application is being reviewed",
-                    "shortlisted": "Great news! You've been shortlisted",
-                    "rejected": "Unfortunately your application was not selected",
-                    "selected": "Congratulations! You've been selected for the position!",
-                }
-                msg = status_labels.get(data.status, f"Your application status changed to {data.status}")
-                # Notify via queue-based system (handles both in-app + email)
-                try:
-                    company_obj = session.get(Company, job_posting.company_id)
-                    company_name = company_obj.company_name if company_obj else "The Company"
-                    # Use dedicated event types for selected/rejected — bypasses 5-min dedup
-                    if data.status == "selected":
-                        event_type_key = "application_selected"
-                    elif data.status == "rejected":
-                        event_type_key = "application_rejected"
-                    else:
-                        event_type_key = "application_status"
-                    NotificationService.send_notification(
-                        session=session,
-                        user_id=cand_user.id,
-                        event_type=event_type_key,
-                        title=f"Application Update — {job_posting.job_title}",
-                        message=msg,
-                        email_data={
-                            "candidate_name": cand_user.full_name,
-                            "job_title": job_posting.job_title,
-                            "company_name": company_name,
-                            "status": data.status,
-                            "message": msg,
-                            "action_url": f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/candidate/applications"
-                        },
-                        notification_type="general",
-                        commit=True,
-                        validate_taxonomy=True
-                    )
-                    logger.info(f"[APP STATUS] Notification+email queued for {cand_user.email} — status: {data.status}")
-                except Exception as notify_err:
-                    logger.warning(f"[APP STATUS] Notification failed for {cand_user.email}: {notify_err}")
-    
-    # Construct response message
-    messages = []
-    if status_changed:
-        messages.append(f"Status updated to '{application.status}'")
-    if notes_changed:
-        messages.append("Notes updated")
-    
-    response_message = " and ".join(messages) if messages else "No changes"
-    
-    return {
-        "success": True,
-        "message": response_message,
-        "application_id": application.id,
-        "status": application.status,
-        "recruiter_notes": application.recruiter_notes,
-        "notes_updated_at": application.notes_updated_at.isoformat() if application.notes_updated_at else None,
-        "last_updated": application.last_status_updated_at.isoformat() if application.last_status_updated_at else None
-    }
 
 
 @router.delete("/{application_id}", response_model=dict)

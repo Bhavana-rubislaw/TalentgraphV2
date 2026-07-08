@@ -24,9 +24,9 @@ DATABASE_URL = os.getenv(
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,  # Test connections for liveness
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max connections beyond pool_size
-    echo=False  # Set to True for SQL debugging
+    pool_size=int(os.getenv("DB_POOL_SIZE", "10")),      # Override via env for production scaling
+    max_overflow=int(os.getenv("DB_POOL_OVERFLOW", "20")),  # Burst capacity beyond pool_size
+    echo=os.getenv("DB_ECHO", "false").lower() == "true"  # Enable SQL logging via DB_ECHO=true
 )
 
 

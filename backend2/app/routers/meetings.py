@@ -354,7 +354,7 @@ async def create_meeting(
     logger.info(f"[MEETING CREATE] Sent {notifications_sent}/{len(all_participant_ids)} notifications successfully")
     
     # Send email notifications with action tokens
-    email_service = MeetingEmailService()
+    email_service = MeetingEmailService(queue_mode=True)
     emails_sent = 0
     email_failures = []
     
@@ -623,7 +623,7 @@ async def update_meeting(
             logger.debug(f"Re-queried meeting {meeting.id}: title={meeting.title}, participants={len(meeting.participants)}")
             
             # Send email notifications for participant changes
-            email_service = MeetingEmailService()
+            email_service = MeetingEmailService(queue_mode=True)
             current_user_obj = session.get(User, current_user["user_id"])
             
             # Email newly added participants
@@ -731,7 +731,7 @@ async def update_meeting(
 
         # Send updated email to ALL participants (including organizer) when meaningful fields changed
         if time_or_detail_changed:
-            email_service = MeetingEmailService()
+            email_service = MeetingEmailService(queue_mode=True)
             current_user_obj = session.get(User, current_user["user_id"])
             # Collect all user IDs to notify (participants + organizer)
             all_notify_ids = {p.user_id for p in meeting.participants}
@@ -905,7 +905,7 @@ async def cancel_meeting(
         )
     
     # Send cancellation emails to ALL participants and organizer
-    email_service = MeetingEmailService()
+    email_service = MeetingEmailService(queue_mode=True)
     for uid in all_cancel_notify_ids:
         recipient = session.get(User, uid)
         if recipient and uid != current_user["user_id"]:
@@ -1059,7 +1059,7 @@ async def reschedule_meeting(
         )
     
     # Send emails to ALL participants including organizer
-    email_service = MeetingEmailService()
+    email_service = MeetingEmailService(queue_mode=True)
     for uid in all_reschedule_notify_ids:
         recipient = session.get(User, uid)
         if recipient:
@@ -1190,7 +1190,7 @@ async def request_reschedule(
         )
         
         # Send email to organizer
-        email_service = MeetingEmailService()
+        email_service = MeetingEmailService(queue_mode=True)
         preferred_times_str = ", ".join(request_data.preferred_times) if request_data.preferred_times else None
         
         email_service.send_reschedule_request_email(
@@ -1303,7 +1303,7 @@ async def respond_to_reschedule_request(
             )
             
             # Send email
-            email_service = MeetingEmailService()
+            email_service = MeetingEmailService(queue_mode=True)
             confirm_token = MeetingService.generate_action_token(
                 session, meeting.id, requester.id, "confirm"
             )
@@ -1572,7 +1572,7 @@ async def cancel_meeting_via_token_confirmed(
     )
     
     # Send emails
-    email_service = MeetingEmailService()
+    email_service = MeetingEmailService(queue_mode=True)
     for participant in meeting.participants:
         if participant.user_id != token_record.user_id:
             recipient = session.get(User, participant.user_id)
@@ -1708,7 +1708,7 @@ async def request_reschedule_via_token_submit(
         )
         
         # Send email
-        email_service = MeetingEmailService()
+        email_service = MeetingEmailService(queue_mode=True)
         preferred_times_str = ", ".join(request_data.preferred_times) if request_data.preferred_times else None
         
         email_service.send_reschedule_request_email(

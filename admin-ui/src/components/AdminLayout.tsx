@@ -31,6 +31,7 @@ const NAV = [
     items: [
       { path: '/email-logs', label: 'Email Logs',   Icon: IconInbox },
       { path: '/logs',       label: 'System Logs',  Icon: IconList },
+      { path: '/algorithm',  label: 'Algorithm',    Icon: IconBarChart },
     ],
   },
 ];
@@ -46,6 +47,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/taxonomy':        'Product Taxonomy',
   '/email-logs':      'Email Logs',
   '/logs':            'System Logs',
+  '/algorithm':       'Recommendation Algorithm',
 };
 
 const AdminLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

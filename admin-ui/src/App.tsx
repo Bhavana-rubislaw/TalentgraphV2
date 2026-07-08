@@ -18,6 +18,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import CompaniesPage from './pages/CompaniesPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import EmailLogsPage from './pages/EmailLogsPage';
+import AlgorithmPage from './pages/AlgorithmPage';
 
 // â”€â”€ Guard: redirect to /login if not authenticated admin â”€â”€â”€â”€â”€â”€â”€â”€
 const RequireAdmin: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/email-logs"   element={<AdminPage><EmailLogsPage /></AdminPage>} />
       <Route path="/taxonomy"     element={<AdminPage><TaxonomyPage /></AdminPage>} />
       <Route path="/analytics"    element={<AdminPage><AnalyticsPage /></AdminPage>} />
+      <Route path="/algorithm"    element={<AdminPage><AlgorithmPage /></AdminPage>} />
 
       {/* Default redirect */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

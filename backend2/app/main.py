@@ -29,6 +29,16 @@ async def lifespan(app: FastAPI):
     logger.info("[STARTUP] TalentGraph V2 API starting...")
     init_db()
     logger.info("[STARTUP] Database initialized successfully")
+
+    # Initialize recommender DB (idempotent schema create + default config seed)
+    recommender_enabled = os.getenv("RECOMMENDER_ENABLED", "true").lower() == "true"
+    if recommender_enabled:
+        try:
+            from app.recommender.database import init_recommender_db
+            init_recommender_db()
+            logger.info("[STARTUP] Recommender database initialized successfully")
+        except Exception as e:
+            logger.warning(f"[STARTUP] Recommender DB init failed (non-fatal): {e}")
     
     # Start background workers if enabled
     workers_enabled = os.getenv("WORKERS_ENABLED", "true").lower() == "true"
@@ -215,8 +225,23 @@ def root():
 
 @app.get("/health", tags=["Health"])
 def health():
-    """Health check endpoint"""
-    return {"status": "ok"}
+    """Health check endpoint — reports core DB and recommender DB status."""
+    from app.core.feature_flags import flags
+
+    result: dict = {"status": "ok", "core_db": "ok"}
+
+    if flags.recommender_enabled:
+        try:
+            from app.recommender.database import check_recommender_db_health
+            ok, detail = check_recommender_db_health()
+            result["recommender_db"] = "ok" if ok else f"degraded: {detail}"
+            result["recommender_mode"] = flags.recommender_mode.value
+        except Exception as exc:
+            result["recommender_db"] = f"error: {exc}"
+    else:
+        result["recommender_db"] = "disabled"
+
+    return result
 
 
 # ============ ROUTERS ============
@@ -230,6 +255,8 @@ from app.routers.admin_extended import router as admin_extended_router, accept_r
 from app.routers.subscriptions import router as subscriptions_router
 from app.routers.credits import router as credits_router
 from app.routers.team import router as team_router
+from app.routers.recommendations_v2 import router as recommendations_v2_router
+from app.routers.admin_recommendations import router as admin_recommendations_router
 
 log_change(
     logger, 
@@ -264,6 +291,8 @@ app.include_router(invitations_router)       # Public invitation acceptance
 app.include_router(subscriptions_router)     # Subscription plans & purchases
 app.include_router(credits_router)           # Credits balance & transactions
 app.include_router(team_router)              # Team invitations & member management
+app.include_router(recommendations_v2_router)  # Recommendations V2 (gateway-backed)
+app.include_router(admin_recommendations_router)  # Admin: algorithm config & ops
 
 log_change(
     logger,

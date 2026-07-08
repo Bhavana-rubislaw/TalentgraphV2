@@ -137,6 +137,44 @@ def start_workers():
     logger.info("Scheduled: post_meeting_worker (hourly)")
 
     # ═════════════════════════════════════════════════════════════════════
+    # RECOMMENDER WORKERS — conditional on RECOMMENDER_WORKERS_ENABLED
+    # ═════════════════════════════════════════════════════════════════════
+
+    import os
+    recommender_workers_enabled = (
+        os.getenv("RECOMMENDER_ENABLED", "true").lower() == "true"
+        and os.getenv("RECOMMENDER_WORKERS_ENABLED", "true").lower() == "true"
+    )
+
+    if recommender_workers_enabled:
+        from app.workers.recommendation_worker import run_backfill, run_incremental_sync
+
+        # One-time backfill at startup (runs once 60 seconds after boot, then stops)
+        from datetime import timedelta
+        import pytz
+
+        scheduler.add_job(
+            func=run_backfill,
+            trigger="date",
+            run_date=datetime.now(tz=pytz.utc) + timedelta(seconds=60),
+            id="recommendation_backfill_startup",
+            name="Recommendation Feature Backfill (startup)",
+            replace_existing=True,
+        )
+
+        # Incremental sync every 15 minutes
+        scheduler.add_job(
+            func=run_incremental_sync,
+            trigger=IntervalTrigger(minutes=15, timezone="UTC"),
+            id="recommendation_sync",
+            name="Recommendation Incremental Sync",
+            replace_existing=True,
+        )
+
+        logger.info("Scheduled: recommendation_backfill_startup (once, 60s after boot)")
+        logger.info("Scheduled: recommendation_sync (every 15 minutes)")
+
+    # ═════════════════════════════════════════════════════════════════════
     # START SCHEDULER
     # ═════════════════════════════════════════════════════════════════════
     

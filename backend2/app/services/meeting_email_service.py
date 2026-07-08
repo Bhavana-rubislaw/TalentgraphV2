@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 class MeetingEmailService:
     """Service for sending meeting-related emails"""
     
-    def __init__(self):
+    def __init__(self, queue_mode: bool = False):
         # Initialize email provider
         provider_type = os.getenv('EMAIL_PROVIDER', 'sendgrid')
         logger.info(f"[MEETING EMAIL] Initializing with provider: {provider_type}")
@@ -38,6 +38,9 @@ class MeetingEmailService:
         
         self.app_url = os.getenv('APP_URL', 'http://localhost:3000')
         logger.info(f"[MEETING EMAIL] App URL: {self.app_url}")
+        # When True, emails are queued in EmailDelivery for async worker delivery
+        # instead of being sent synchronously via the provider (blocks ~2-5s per email).
+        self.queue_mode = queue_mode
     
     def _get_job_and_company(self, session: Session, meeting: Meeting, organizer_user: User):
         """
@@ -60,6 +63,40 @@ class MeetingEmailService:
                     company_name = company.company_name
 
         return job_title, company_name
+
+    def _dispatch(
+        self,
+        session: Session,
+        recipient_user: User,
+        event_type: str,
+        subject: str,
+        html_body: str,
+        text_body: str,
+        notification_id: Optional[int] = None,
+    ) -> None:
+        """Send or queue email depending on queue_mode.
+
+        queue_mode=True  → stores EmailDelivery record; async worker sends it (non-blocking).
+        queue_mode=False → sends immediately via the configured provider (original behaviour).
+        """
+        if self.queue_mode:
+            from app.workers.email_worker import queue_notification_email
+            queue_notification_email(
+                session=session,
+                user_id=recipient_user.id,
+                event_type=event_type,
+                recipient_email=recipient_user.email,
+                subject=subject,
+                html_body=html_body,
+                notification_id=notification_id,
+            )
+        else:
+            self.provider.send_email(
+                to_email=recipient_user.email,
+                subject=subject,
+                html_body=html_body,
+                text_body=text_body,
+            )
 
     def send_interview_scheduled_email(
         self,
@@ -235,15 +272,10 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=recipient_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Interview scheduled email sent to {recipient_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, recipient_user, "interview_scheduled", subject, html_body, text_body)
+            logger.info(f"✓ Interview scheduled email {'queued' if self.queue_mode else 'sent'} for {recipient_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send interview scheduled email to {recipient_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch interview scheduled email to {recipient_user.email}: {e}", exc_info=True)
     
     def send_organizer_confirmation_email(
         self,
@@ -368,15 +400,10 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=organizer_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Organizer confirmation email sent to {organizer_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, organizer_user, "recruiter_interview_scheduled", subject, html_body, text_body)
+            logger.info(f"✓ Organizer confirmation email {'queued' if self.queue_mode else 'sent'} for {organizer_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send organizer confirmation email to {organizer_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch organizer confirmation email to {organizer_user.email}: {e}", exc_info=True)
 
     def send_interview_cancelled_email(
         self,
@@ -476,15 +503,10 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=recipient_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Cancellation email sent to {recipient_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, recipient_user, "interview_cancelled", subject, html_body, text_body)
+            logger.info(f"✓ Cancellation email {'queued' if self.queue_mode else 'sent'} for {recipient_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send cancellation email to {recipient_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch cancellation email to {recipient_user.email}: {e}", exc_info=True)
     
     def send_reschedule_request_email(
         self,
@@ -600,15 +622,10 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=recipient_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Reschedule request email sent to {recipient_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, recipient_user, "reschedule_requested", subject, html_body, text_body)
+            logger.info(f"✓ Reschedule request email {'queued' if self.queue_mode else 'sent'} for {recipient_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send reschedule request email to {recipient_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch reschedule request email to {recipient_user.email}: {e}", exc_info=True)
     
     def _build_rescheduled_html(
         self,
@@ -731,15 +748,10 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=recipient_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Reschedule approved email sent to {recipient_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, recipient_user, "interview_rescheduled", subject, html_body, text_body)
+            logger.info(f"✓ Reschedule approved email {'queued' if self.queue_mode else 'sent'} for {recipient_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send reschedule approved email to {recipient_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch reschedule approved email to {recipient_user.email}: {e}", exc_info=True)
 
     def send_meeting_updated_email(
         self,
@@ -779,12 +791,7 @@ class MeetingEmailService:
         )
 
         try:
-            self.provider.send_email(
-                to_email=recipient_user.email,
-                subject=subject,
-                html_body=html_body,
-                text_body=text_body
-            )
-            logger.info(f"✓ Meeting updated email sent to {recipient_user.email} for meeting: {meeting.title}")
+            self._dispatch(session, recipient_user, "meeting_updated", subject, html_body, text_body)
+            logger.info(f"✓ Meeting updated email {'queued' if self.queue_mode else 'sent'} for {recipient_user.email} (meeting: {meeting.title})")
         except Exception as e:
-            logger.error(f"✗ Failed to send meeting updated email to {recipient_user.email}: {e}", exc_info=True)
+            logger.error(f"✗ Failed to dispatch meeting updated email to {recipient_user.email}: {e}", exc_info=True)

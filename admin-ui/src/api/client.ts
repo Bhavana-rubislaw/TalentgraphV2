@@ -453,3 +453,91 @@ export const getEmailDelivery = (deliveryId: number) =>
 export const resendEmailDelivery = (deliveryId: number) =>
   api.post(`/api/admin/email-deliveries/${deliveryId}/resend`);
 
+// ─── Admin: Recommendation Algorithm ─────────────────────────────────────────
+
+export interface AlgorithmConfig {
+  id: number;
+  version: string;
+  status: 'draft' | 'active' | 'archived';
+  weight_product_match: number;
+  weight_skills_match: number;
+  weight_experience_match: number;
+  weight_salary_match: number;
+  weight_location_match: number;
+  description: string | null;
+  created_at: string;
+  activated_at: string | null;
+  activated_by_user_id: number | null;
+  archived_at: string | null;
+}
+
+export interface RecommenderFlags {
+  recommender_enabled: boolean;
+  recommender_mode: string;
+  recommender_shadow_compare: boolean;
+  recommender_workers_enabled: boolean;
+  recommender_timeout_seconds: number;
+  recommender_min_score_threshold: number;
+}
+
+export interface RecommenderHealth {
+  gateway_adapter: string;
+  recommender_db: string;
+  feature_flags: RecommenderFlags;
+}
+
+export interface RunMetric {
+  id: number;
+  run_type: string;
+  started_at: string;
+  finished_at: string | null;
+  duration_ms: number | null;
+  records_processed: number;
+  records_updated: number;
+  records_failed: number;
+  error_message: string | null;
+}
+
+export interface SyncWatermark {
+  entity_type: string;
+  last_synced_at: string;
+  last_run_at: string;
+  records_synced_last_run: number;
+}
+
+export const getRecommenderHealth = () =>
+  api.get<RecommenderHealth>('/api/admin/recommendations/health');
+
+export const getRecommenderFlags = () =>
+  api.get<RecommenderFlags>('/api/admin/recommendations/flags');
+
+export const listAlgorithmConfigs = () =>
+  api.get<{ configs: AlgorithmConfig[] }>('/api/admin/recommendations/config');
+
+export const createAlgorithmConfig = (body: {
+  version: string;
+  description?: string;
+  weight_product_match: number;
+  weight_skills_match: number;
+  weight_experience_match: number;
+  weight_salary_match: number;
+  weight_location_match: number;
+}) => api.post<AlgorithmConfig>('/api/admin/recommendations/config', body);
+
+export const activateAlgorithmConfig = (configId: number) =>
+  api.put<AlgorithmConfig>(`/api/admin/recommendations/config/${configId}/activate`);
+
+export const archiveAlgorithmConfig = (configId: number) =>
+  api.put(`/api/admin/recommendations/config/${configId}/archive`);
+
+export const getRecommenderMetrics = (limit = 50) =>
+  api.get<{ metrics: RunMetric[] }>('/api/admin/recommendations/metrics', {
+    params: { limit },
+  });
+
+export const getRecommenderWatermarks = () =>
+  api.get<{ watermarks: SyncWatermark[] }>('/api/admin/recommendations/watermarks');
+
+export const triggerRecommenderBackfill = () =>
+  api.post('/api/admin/recommendations/backfill');
+

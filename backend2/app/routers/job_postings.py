@@ -27,6 +27,7 @@ from app.security import (
 )
 from app.routers.notifications import push_notification
 from app.services.notification_service import NotificationService
+from app.services.job_posting_service import JobPostingService
 
 router = APIRouter(prefix="/job-postings", tags=["Job Postings"])
 
@@ -103,42 +104,7 @@ def create_job_posting(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=403, detail="Company profile not found. Are you a recruiter?")
-    
-    # Extract skills before creating posting
-    skills_data = job_data.skills
-    posting_dict = job_data.dict(exclude={"skills"})
-    
-    job_posting = JobPosting(
-        company_id=company.id,
-        **posting_dict
-    )
-    session.add(job_posting)
-    session.commit()
-    session.refresh(job_posting)
-    
-    # Add skills
-    for skill in skills_data:
-        db_skill = JobPostingSkill(
-            job_posting_id=job_posting.id,
-            skill_name=skill.skill_name,
-            skill_category=skill.skill_category,
-            rating=skill.rating,
-        )
-        session.add(db_skill)
-    
-    if skills_data:
-        session.commit()
-    
-    return {
-        "message": "Job posting created successfully",
-        "job_id": job_posting.id,
-        "job_title": job_posting.job_title,
-        "product_vendor": job_posting.product_vendor
-    }
+    return JobPostingService.create(session=session, job_data=job_data, user=user)
 
 
 @router.get("", response_model=List[JobPostingRead])
@@ -219,51 +185,7 @@ def update_job_posting(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    
-    job_posting = session.get(JobPosting, job_id)
-    if not job_posting:
-        raise HTTPException(status_code=404, detail="Job posting not found")
-    
-    # Check company access (same company_name)
-    posting_company = session.get(Company, job_posting.company_id)
-    if posting_company.company_name != company.company_name:
-        raise HTTPException(status_code=403, detail="Unauthorized - different company")
-    
-    # Update posting fields
-    skills_data = job_data.skills
-    posting_dict = job_data.dict(exclude={"skills"})
-    for key, value in posting_dict.items():
-        setattr(job_posting, key, value)
-    job_posting.updated_at = datetime.utcnow()
-    
-    session.add(job_posting)
-    session.commit()
-    
-    # Replace all skills: delete existing, add new
-    existing_skills = session.exec(
-        select(JobPostingSkill).where(JobPostingSkill.job_posting_id == job_id)
-    ).all()
-    for skill in existing_skills:
-        session.delete(skill)
-    session.commit()
-    
-    for skill in skills_data:
-        db_skill = JobPostingSkill(
-            job_posting_id=job_id,
-            skill_name=skill.skill_name,
-            skill_category=skill.skill_category,
-            rating=skill.rating,
-        )
-        session.add(db_skill)
-    
-    if skills_data:
-        session.commit()
-    
-    return {"message": "Job posting updated", "job_id": job_posting.id}
+    return JobPostingService.update(session=session, job_id=job_id, job_data=job_data, user=user)
 
 
 @router.delete("/{job_id}", response_model=dict)
@@ -479,23 +401,27 @@ def update_job_posting_status(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     company = session.exec(select(Company).where(Company.user_id == user.id)).first()
     if not company:
         raise HTTPException(status_code=403, detail="Unauthorized - Company profile required")
-    
+
     job_posting = session.get(JobPosting, job_id)
     if not job_posting:
         raise HTTPException(status_code=404, detail="Job posting not found")
-    
+
     # Verify company ownership
     posting_company = session.get(Company, job_posting.company_id)
     if posting_company.company_name != company.company_name:
         raise HTTPException(status_code=403, detail="Unauthorized - Different company")
-    
-    action = request.action.lower()
-    current_status = job_posting.status
-    now = datetime.utcnow()
+
+    return JobPostingService.update_lifecycle_status(
+        session=session,
+        job_posting=job_posting,
+        action=request.action.lower(),
+        user=user,
+        cancellation_reason=request.cancellation_reason,
+    )
     
     # Validate and execute state transition
     if action == "freeze":
