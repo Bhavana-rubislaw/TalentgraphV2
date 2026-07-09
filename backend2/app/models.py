@@ -560,6 +560,8 @@ class Company(SQLModel, table=True):
     job_postings: List["JobPosting"] = Relationship(back_populates="company")
     matches: List["Match"] = Relationship(back_populates="company")
     swipes: List["Swipe"] = Relationship(back_populates="company")
+    subscription: Optional["CompanySubscription"] = Relationship(back_populates="company")
+    credit_transactions: List["CreditTransaction"] = Relationship(back_populates="company")
 
 
 class JobPostingSkill(SQLModel, table=True):
