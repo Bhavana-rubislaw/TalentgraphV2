@@ -1,0 +1,137 @@
+/* CascadingTaxonomySelect.css
+   Aligned to CandidatePages design system tokens
+   (matches cp-form-group / cp-form-grid-3 styling)
+*/
+
+/* ── Design tokens (mirrors CandidatePages.css) ── */
+:root {
+  --cts-border:        #E4E7EC;
+  --cts-border-hover:  #D0D5DD;
+  --cts-accent:        #6C5CE7;
+  --cts-accent-focus:  rgba(108, 92, 231, 0.2);
+  --cts-danger:        #E74C3C;
+  --cts-danger-focus:  rgba(231, 76, 60, 0.1);
+  --cts-text-primary:  #1D2939;
+  --cts-text-secondary:#44495C;
+  --cts-text-tertiary: #667085;
+  --cts-surface:       #ffffff;
+  --cts-disabled-bg:   #f7f8fa;
+  --cts-radius:        8px;
+  --cts-font:          'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Container — 3-column grid matching cp-form-grid-3 ── */
+.cascading-taxonomy-select {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 860px) {
+  .cascading-taxonomy-select {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Individual field — matches cp-form-group ── */
+.taxonomy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Label — matches cp-form-group label ── */
+.taxonomy-field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--cts-font);
+  color: var(--cts-text-secondary);
+  letter-spacing: 0.1px;
+}
+
+/* Required asterisk */
+.taxonomy-field label .required {
+  color: var(--cts-danger);
+  margin-left: 1px;
+}
+
+/* ── Select — matches cp-form-group select ── */
+.taxonomy-field select {
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  font-size: 14px;
+  font-family: var(--cts-font);
+  border: 1px solid var(--cts-border);
+  border-radius: var(--cts-radius);
+  background-color: var(--cts-surface);
+  color: var(--cts-text-primary);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%238792a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  line-height: 1.4;
+}
+
+.taxonomy-field select:hover {
+  border-color: var(--cts-border-hover);
+}
+
+.taxonomy-field select:focus {
+  outline: none;
+  border-color: var(--cts-accent);
+  box-shadow: 0 0 0 3px var(--cts-accent-focus);
+}
+
+/* Disabled state */
+.taxonomy-field select:disabled {
+  background-color: var(--cts-disabled-bg);
+  color: var(--cts-text-tertiary);
+  cursor: not-allowed;
+  border-color: var(--cts-border);
+  box-shadow: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23c5cad3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Error state */
+.taxonomy-field select.error {
+  border-color: var(--cts-danger);
+}
+.taxonomy-field select.error:focus {
+  border-color: var(--cts-danger);
+  box-shadow: 0 0 0 3px var(--cts-danger-focus);
+}
+
+/* ── Error messages ── */
+.error-message {
+  font-size: 12px;
+  color: var(--cts-danger);
+  margin-top: 4px;
+  font-family: var(--cts-font);
+}
+
+.taxonomy-error-message {
+  padding: 10px 14px;
+  background-color: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: var(--cts-radius);
+  color: #991b1b;
+  font-size: 13px;
+  font-family: var(--cts-font);
+  margin-top: 4px;
+}
+
+/* ── Description text ── */
+.taxonomy-field .description {
+  font-size: 12px;
+  color: var(--cts-text-tertiary);
+  margin-top: 4px;
+  font-family: var(--cts-font);
+  line-height: 1.45;
+}

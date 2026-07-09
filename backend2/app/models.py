@@ -4,8 +4,10 @@ Candidate-centric talent marketplace with enhanced job profiles and postings
 """
 
 from typing import Optional, List
-from datetime import datetime
-from sqlmodel import SQLModel, Field, Relationship
+from datetime import datetime, date
+from sqlalchemy import UniqueConstraint, String
+from sqlmodel import SQLModel, Field, Relationship, Column, Date
+from sqlalchemy import Enum as SQLEnum
 from enum import Enum
 
 
@@ -45,6 +47,230 @@ class CurrencyType(str, Enum):
     EUR = "eur"
 
 
+class ParseStatus(str, Enum):
+    """Resume parsing status"""
+    PENDING = "pending"
+    PARSING = "parsing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class ReviewStatus(str, Enum):
+    """Draft profile review status"""
+    PENDING = "pending"
+    REVIEWED = "reviewed"
+
+
+class JobPostingStatus(str, Enum):
+    """
+    Job posting lifecycle status
+    - active: Currently open and accepting applications
+    - frozen: Temporarily closed, not accepting new applications, preserved in system
+    - reposted: Reopened/relisted posting that was previously frozen
+    - cancelled: Permanently closed, position no longer hiring (cannot be reactivated)
+    """
+    ACTIVE = "active"
+    FROZEN = "frozen"
+    REPOSTED = "reposted"
+    CANCELLED = "cancelled"
+
+
+class MeetingStatus(str, Enum):
+    """
+    Meeting lifecycle status
+    - scheduled: Meeting confirmed and scheduled
+    - cancelled: Meeting cancelled by either party
+    - reschedule_requested: Candidate requested reschedule
+    - rescheduled: Meeting was rescheduled by recruiter
+    - completed: Meeting took place
+    - no_show: Meeting time passed without attendance
+    """
+    SCHEDULED = "scheduled"
+    CANCELLED = "cancelled"
+    RESCHEDULE_REQUESTED = "reschedule_requested"
+    RESCHEDULED = "rescheduled"
+    COMPLETED = "completed"
+    NO_SHOW = "no_show"
+
+
+class MeetingType(str, Enum):
+    """
+    Type of meeting
+    - interview: Job interview (recruiter + candidate)
+    - screening: Initial candidate screening
+    - follow_up: Follow-up discussion
+    - other: Generic meeting
+    """
+    INTERVIEW = "interview"
+    SCREENING = "screening"
+    FOLLOW_UP = "follow_up"
+    OTHER = "other"
+
+
+class CalendarProvider(str, Enum):
+    """Calendar provider types"""
+    GOOGLE = "google"
+    MICROSOFT = "microsoft"
+
+
+class VideoProvider(str, Enum):
+    """Video conferencing provider types"""
+    ZOOM = "zoom"
+    MICROSOFT_TEAMS = "microsoft_teams"
+    GOOGLE_MEET = "google_meet"
+
+
+class AnalyticsEventType(str, Enum):
+    """Analytics event types for tracking user actions"""
+    # Job events
+    JOB_VIEWED = "job_viewed"
+    JOB_LIKED = "job_liked"
+    JOB_EXPIRED = "job_expired"
+    
+    # Application events
+    APPLICATION_SUBMITTED = "application_submitted"
+    APPLICATION_VIEWED = "application_viewed"
+    APPLICATION_STATUS_CHANGED = "application_status_changed"
+    
+    # Interview events
+    INTERVIEW_SCHEDULED = "interview_scheduled"
+    INTERVIEW_COMPLETED = "interview_completed"
+    INTERVIEW_CANCELLED = "interview_cancelled"
+    
+    # Hiring events
+    OFFER_MADE = "offer_made"
+    OFFER_ACCEPTED = "offer_accepted"
+    OFFER_REJECTED = "offer_rejected"
+    CANDIDATE_HIRED = "candidate_hired"
+    CANDIDATE_REJECTED = "candidate_rejected"
+    
+    # Communication events
+    MESSAGE_SENT = "message_sent"
+    MESSAGE_READ = "message_read"
+    EMAIL_SENT = "email_sent"
+    EMAIL_OPENED = "email_opened"
+    EMAIL_CLICKED = "email_clicked"
+    
+    # Other events
+    SEARCH_PERFORMED = "search_performed"
+    PROFILE_VIEWED = "profile_viewed"
+    PAYMENT_COMPLETED = "payment_completed"
+    GOOGLE_MEET = "google_meet"
+    OTHER = "other"
+
+
+# ============ PRODUCT TAXONOMY MODELS ============
+
+class ProductVendor(SQLModel, table=True):
+    """
+    Product vendors/companies (e.g., Salesforce, SAP, AWS, Oracle)
+    Supports both curated core taxonomy and user-generated custom entries
+    """
+    __tablename__ = "product_vendor"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)  # Vendor name (e.g., "Salesforce", "SAP")
+    description: Optional[str] = None  # Optional description
+    is_custom: bool = Field(default=False)  # True if user-generated, False if curated
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")  # User who created custom vendor
+    usage_count: int = Field(default=0)  # Track popularity for sorting
+    is_active: bool = Field(default=True)  # Soft delete flag
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    product_types: List["ProductType"] = Relationship(back_populates="vendor")
+    creator: Optional["User"] = Relationship()
+
+
+class ProductType(SQLModel, table=True):
+    """
+    Product types under a vendor (e.g., Sales Cloud, S/4HANA, Lambda)
+    """
+    __tablename__ = "product_type"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    vendor_id: int = Field(foreign_key="product_vendor.id", index=True)
+    name: str = Field(index=True)  # Product type name
+    description: Optional[str] = None
+    is_custom: bool = Field(default=False)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    usage_count: int = Field(default=0)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    vendor: ProductVendor = Relationship(back_populates="product_types")
+    roles: List["ProductRole"] = Relationship(back_populates="product_type")
+    creator: Optional["User"] = Relationship()
+    
+    __table_args__ = (
+        UniqueConstraint('vendor_id', 'name', name='unique_vendor_product_type'),
+    )
+
+
+class ProductRole(SQLModel, table=True):
+    """
+    Roles associated with a product type (e.g., Salesforce Developer, SAP Consultant)
+    """
+    __tablename__ = "product_role"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    product_type_id: int = Field(foreign_key="product_type.id", index=True)
+    name: str = Field(index=True)  # Role name
+    description: Optional[str] = None
+    is_custom: bool = Field(default=False)
+    created_by: Optional[int] = Field(default=None, foreign_key="user.id")
+    usage_count: int = Field(default=0)
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Relationships
+    product_type: ProductType = Relationship(back_populates="roles")
+    creator: Optional["User"] = Relationship()
+    
+    __table_args__ = (
+        UniqueConstraint('product_type_id', 'name', name='unique_product_type_role'),
+    )
+
+
+# ============ ROLE-SPECIFIC SKILL TAXONOMY MODELS ============
+
+class TaxonomySkill(SQLModel, table=True):
+    """
+    Standardized skills linked to the product taxonomy.
+    Skills are categorized as technical, functional, or soft.
+    """
+    __tablename__ = "taxonomy_skill"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True, unique=True)
+    category: str = Field(index=True)  # 'technical', 'functional', 'soft'
+    description: Optional[str] = None
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    role_links: List["RoleSkillLink"] = Relationship(back_populates="skill")
+
+
+class RoleSkillLink(SQLModel, table=True):
+    """
+    Many-to-many association between ProductRole and TaxonomySkill.
+    Marks whether a skill is required for that role.
+    """
+    __tablename__ = "role_skill_link"
+
+    role_id: int = Field(foreign_key="product_role.id", primary_key=True)
+    skill_id: int = Field(foreign_key="taxonomy_skill.id", primary_key=True)
+    is_required: bool = Field(default=False)  # True → suggested as 'Required' in UI
+
+    # Relationships
+    skill: TaxonomySkill = Relationship(back_populates="role_links")
+
+
 # ============ USER MODELS ============
 
 class User(SQLModel, table=True):
@@ -55,6 +281,7 @@ class User(SQLModel, table=True):
     password_hash: str
     role: UserRole = Field(default=UserRole.CANDIDATE)
     is_active: bool = Field(default=True)
+    last_seen_at: Optional[datetime] = Field(default=None)  # presence tracking
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -80,6 +307,7 @@ class Candidate(SQLModel, table=True):
     github_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     profile_summary: Optional[str] = None
+    profile_complete: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -103,6 +331,62 @@ class Resume(SQLModel, table=True):
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="resumes")
+
+
+class ResumeDraftProfile(SQLModel, table=True):
+    """Draft profile created from resume parsing - not the final candidate profile"""
+    __tablename__ = "resume_draft_profile"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", unique=True)
+    
+    # Resume file info
+    resume_filename: str
+    resume_storage_path: str
+    
+    # Parsed candidate fields (may be incomplete or low confidence)
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    residential_address: Optional[str] = None
+    location_state: Optional[str] = None
+    location_county: Optional[str] = None
+    location_zipcode: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    profile_summary: Optional[str] = None
+    
+    # Confidence scores for each parsed field (0.0 to 1.0)
+    name_confidence: Optional[float] = None
+    email_confidence: Optional[float] = None
+    phone_confidence: Optional[float] = None
+    residential_address_confidence: Optional[float] = None
+    location_state_confidence: Optional[float] = None
+    location_county_confidence: Optional[float] = None
+    location_zipcode_confidence: Optional[float] = None
+    linkedin_url_confidence: Optional[float] = None
+    github_url_confidence: Optional[float] = None
+    portfolio_url_confidence: Optional[float] = None
+    profile_summary_confidence: Optional[float] = None
+    
+    # Parse and review status
+    parse_status: ParseStatus = Field(default=ParseStatus.PENDING, sa_column=Column(SQLEnum(ParseStatus)))
+    review_status: ReviewStatus = Field(default=ReviewStatus.PENDING, sa_column=Column(SQLEnum(ReviewStatus)))
+    
+    # Missing required fields (JSON array of field names)
+    missing_required_fields: Optional[str] = None  # JSON string: ["phone", "location_state"]
+    
+    # Parse error message (if parsing failed)
+    parse_error: Optional[str] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    finalized_at: Optional[datetime] = None
+    
+    # Relationships
+    user: User = Relationship()
 
 
 class Certification(SQLModel, table=True):
@@ -150,9 +434,17 @@ class JobProfile(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     candidate_id: int = Field(foreign_key="candidate.id")
     profile_name: str
-    product_vendor: str  # Oracle, SAP, etc.
-    product_type: str
-    job_role: str
+    
+    # Product Taxonomy (NEW - standardized)
+    vendor_id: Optional[int] = Field(default=None, foreign_key="product_vendor.id", index=True)
+    product_type_id: Optional[int] = Field(default=None, foreign_key="product_type.id", index=True)
+    role_id: Optional[int] = Field(default=None, foreign_key="product_role.id", index=True)
+    
+    # Legacy text fields (deprecated - kept for backward compatibility)
+    product_vendor: Optional[str] = None  # Oracle, SAP, etc.
+    product_type: Optional[str] = None
+    job_role: Optional[str] = None
+    
     years_of_experience: int
     worktype: WorkType
     employment_type: EmploymentType
@@ -199,6 +491,9 @@ class JobProfile(SQLModel, table=True):
     website_url: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    # ── Soft-delete ──
+    is_deleted: bool = Field(default=False)
+    deleted_at: Optional[datetime] = None
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="job_profiles")
@@ -207,18 +502,56 @@ class JobProfile(SQLModel, table=True):
     matches: List["Match"] = Relationship(back_populates="job_profile")
 
 
+# ============ ORGANIZATION MODEL ============
+
+COMPANY_SIZE_VALUES = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1001-5000", "5001+"]
+
+
+class Organization(SQLModel, table=True):
+    """
+    Organization-level entity representing a unique company.
+    Multiple Company (member) rows can belong to one Organization.
+    """
+    __tablename__ = "organization"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    industry: Optional[str] = None
+    company_size: Optional[str] = None  # controlled values: COMPANY_SIZE_VALUES
+    website: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ============ COMPANY MODELS ============
 
 class Company(SQLModel, table=True):
     """Company/Recruiter profile"""
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id", unique=True)
+    organization_id: Optional[int] = Field(default=None, foreign_key="organization.id", index=True)
     company_name: str
     company_email: str = Field(index=True)
     employee_type: str  # Admin, HR, Recruiter/Manager
-    current_credits: int = Field(default=0)  # Current credit balance
-    parent_company_id: Optional[int] = Field(default=None, foreign_key="company.id")  # For team members
-    is_primary_account: bool = Field(default=False)  # Indicates if this is the primary company account
+    
+    # Extended Profile Fields for Setup
+    company_website: Optional[str] = None
+    company_location: Optional[str] = None
+    department: Optional[str] = None
+    phone_number: Optional[str] = None
+    linkedin_profile: Optional[str] = None
+    hiring_focus: Optional[str] = None  # JSON array of job categories
+    company_description: Optional[str] = None
+    profile_complete: bool = Field(default=False)
+    
+    # ── Credits & Subscriptions ──────────────────────────────────
+    current_credits: int = Field(default=0)
+    is_primary_account: bool = Field(default=False)
+    parent_company_id: Optional[int] = Field(default=None, foreign_key="company.id", index=True)
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -271,7 +604,15 @@ class JobPosting(SQLModel, table=True):
     pay_type: Optional[str] = None  # "hourly" or "annually"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=True)  # Legacy field, kept for backward compatibility
+    
+    # Job Posting Lifecycle Management
+    status: JobPostingStatus = Field(default=JobPostingStatus.ACTIVE)
+    frozen_at: Optional[datetime] = None
+    reposted_at: Optional[datetime] = None
+    last_reactivated_at: Optional[datetime] = None
+    cancelled_at: Optional[datetime] = None
+    cancellation_reason: Optional[str] = Field(default=None, max_length=500)
     
     # Relationships
     company: Company = Relationship(back_populates="job_postings")
@@ -327,60 +668,799 @@ class Application(SQLModel, table=True):
     candidate_id: int = Field(foreign_key="candidate.id", index=True)
     job_posting_id: int = Field(foreign_key="jobposting.id", index=True)
     job_profile_id: int = Field(foreign_key="jobprofile.id")
-    status: str = Field(default="applied")  # applied, reviewed, shortlisted, rejected, offered
+    status: str = Field(default="applied")  # applied, scheduled, under_review, shortlisted, selected, rejected
     applied_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Recruiter notes (internal only, not visible to candidate)
+    recruiter_notes: Optional[str] = Field(default=None)
+    notes_updated_at: Optional[datetime] = Field(default=None)
+    
+    # Audit fields for tracking status changes
+    last_status_updated_at: Optional[datetime] = Field(default=None)
+    last_status_updated_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
     # Relationships
     candidate: Candidate = Relationship(back_populates="applications")
     job_posting: JobPosting = Relationship(back_populates="applications")
 
 
+# ============ NOTIFICATION MODEL ============
 
-# ============ SUBSCRIPTION & BILLING MODELS ============
+class Notification(SQLModel, table=True):
+    """In-app notifications for candidates and recruiters"""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    type: Optional[str] = Field(default="general")  # notification type (general, message, alert, etc.)
+    title: str
+    message: str
+    event_type: str  # match, invite, application, status_update, shortlisted
+    is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)  # Timestamp when notification was marked as read
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    # JSON payload: {"route": "...", "route_context": {...}}
+    payload: Optional[str] = Field(default=None)
+
+
+class NotificationFrequency(str, Enum):
+    """Frequency for notification delivery"""
+    REALTIME = "realtime"  # Immediate delivery
+    DAILY = "daily"        # Once per day digest
+    WEEKLY = "weekly"      # Once per week digest
+
+
+class NotificationPreferences(SQLModel, table=True):
+    """User preferences for notification delivery across channels
+    
+    Stores per-user, per-event-type preferences for in-app and email notifications.
+    Default for new users: in-app ON (realtime), email ON (realtime) for all events.
+    """
+    __tablename__ = "notification_preferences"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Event type (matches Notification.event_type)
+    # Candidate: application_status, match_found, shortlisted, invitation, interview_scheduled, 
+    #           interview_reminder, message_received, job_recommendation
+    # Recruiter: application_received, match_found, interview_scheduled, interview_confirmed,
+    #           message_received, job_update
+    event_type: str = Field(index=True)
+    
+    # Channel toggles
+    in_app_enabled: bool = Field(default=True)
+    email_enabled: bool = Field(default=True)
+    
+    # Frequency (realtime, daily, weekly)
+    in_app_frequency: str = Field(
+        default=NotificationFrequency.REALTIME.value,
+        sa_column=Column(SQLEnum(NotificationFrequency, name="notification_frequency_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    email_frequency: str = Field(
+        default=NotificationFrequency.REALTIME.value,
+        sa_column=Column(SQLEnum(NotificationFrequency, name="notification_frequency_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    
+    # Priority level for categorization
+    priority: str = Field(default="normal")  # urgent, normal, low
+    
+    # Metadata
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one preference row per user per event type
+    __table_args__ = (
+        UniqueConstraint('user_id', 'event_type', name='unique_user_event_preference'),
+    )
+
+
+class EmailDeliveryStatus(str, Enum):
+    """Email delivery status tracking"""
+    QUEUED = "queued"       # Queued for delivery
+    SENDING = "sending"     # Currently being sent
+    SENT = "sent"          # Successfully sent
+    FAILED = "failed"      # Delivery failed
+    BOUNCED = "bounced"    # Email bounced
+    SUPPRESSED = "suppressed"  # Suppressed due to user preferences
+
+
+class EmailDelivery(SQLModel, table=True):
+    """Tracks email delivery status for notifications
+    
+    Separate from Notification to track async email sending.
+    Enables retry logic, error tracking, and delivery analytics.
+    """
+    __tablename__ = "email_delivery"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    notification_id: Optional[int] = Field(default=None, foreign_key="notification.id", index=True)
+    
+    # Recipient info
+    user_id: int = Field(foreign_key="user.id", index=True)
+    recipient_email: str = Field(index=True)
+    
+    # Email details
+    event_type: str = Field(index=True)
+    subject: str
+    html_body: Optional[str] = Field(default=None)  # Store generated HTML
+    
+    # Delivery tracking
+    status: str = Field(
+        default=EmailDeliveryStatus.QUEUED.value,
+        sa_column=Column(SQLEnum(EmailDeliveryStatus, name="email_delivery_status_enum", values_callable=lambda x: [e.value for e in x]))
+    )
+    attempts: int = Field(default=0)
+    max_attempts: int = Field(default=3)
+    
+    # Error tracking
+    last_error: Optional[str] = Field(default=None)
+    last_attempt_at: Optional[datetime] = Field(default=None)
+    
+    # Idempotency
+    idempotency_key: str = Field(index=True, unique=True)  # Prevents duplicate sends
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    sent_at: Optional[datetime] = Field(default=None)
+    failed_at: Optional[datetime] = Field(default=None)
+
+
+# ============ AUDIT / ACTIVITY EVENT LOG ============
+
+class ActivityEvent(SQLModel, table=True):
+    """Immutable append-only audit log of every UI-triggered mutation.
+
+    Rules:
+    - No UPDATE or DELETE on this table (application-enforced).
+    - Rows are written in the same transaction as the operational change.
+    - before_value / after_value are serialised JSON strings (safe subset).
+    - dedupe_key prevents storing the same logical event twice (optional).
+    """
+    __tablename__ = "activityevent"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # What changed
+    entity_type: str  # application | swipe | notification | match | job_posting | profile | company
+    entity_id: str    # stringified int / uuid of the affected row
+    action: str       # created | updated | status_changed | read | bulk_read | deleted
+                      # liked | passed | invited | withdrawn | submitted | offered | rejected
+
+    # Snapshot (JSON strings – serialised safe subsets, nullable)
+    before_value: Optional[str] = Field(default=None)
+    after_value: Optional[str] = Field(default=None)
+
+    # Who
+    performed_by_user_id: int = Field(index=True)
+    performed_by_role: str  # candidate | recruiter | hr | admin
+
+    # When – ALWAYS server-stamped UTC
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Tracing
+    request_id: Optional[str] = Field(default=None, index=True)
+    source: str = Field(default="web")  # web | ios | android
+
+    # Deduplication (unique constraint enforced at DB level via migration)
+    dedupe_key: Optional[str] = Field(default=None)
+
+
+# ============ USER INVITATION MODEL ============
+
+class InvitationStatus(str, Enum):
+    """Invitation lifecycle status"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class UserInvitation(SQLModel, table=True):
+    """
+    Admin-issued invitation for a new user to join the platform.
+    Security requirements:
+    - Only token_hash is stored (never the raw token)
+    - Tokens are cryptographically secure random bytes
+    - Single-use (status updated to accepted on use)
+    - Have an expiry time
+    """
+    __tablename__ = "user_invitation"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    email: str = Field(index=True)
+    full_name: str
+    role: UserRole
+    organization_id: Optional[int] = Field(default=None, foreign_key="organization.id", index=True)
+    token_hash: str = Field(index=True, unique=True)  # SHA-256 of the raw token
+    invited_by_user_id: int = Field(foreign_key="user.id", index=True)
+    status: str = Field(default=InvitationStatus.PENDING.value, index=True)
+    expires_at: datetime
+    accepted_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============ SUBSCRIPTION & CREDITS MODELS ============
 
 class SubscriptionPlan(SQLModel, table=True):
-    """Subscription plans available for companies"""
+    """Available subscription plans (managed by system admins)."""
+    __tablename__ = "subscription_plan"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True, index=True)
+    name: str = Field(unique=True, index=True)          # e.g. "Free", "Starter", "Pro"
     description: Optional[str] = None
-    price: float  # Monthly/Annual price
+    price: float = Field(default=0.0)                   # monthly price
     currency: str = Field(default="USD")
-    credits_included: int = Field(default=0)
-    job_post_limit: int = Field(default=0)  # 0 = unlimited
-    team_member_limit: int = Field(default=1)
+    credits_included: int = Field(default=0)            # credits granted on each billing cycle
+    job_post_limit: int = Field(default=5)              # 0 = unlimited
+    team_member_limit: int = Field(default=1)           # max team members allowed
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Relationships
-    subscriptions: List["CompanySubscription"] = Relationship(back_populates="plan")
 
 
 class CompanySubscription(SQLModel, table=True):
-    """Subscription details for a company"""
+    """Active (or historical) subscription for a primary company account."""
+    __tablename__ = "company_subscription"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    company_id: int = Field(foreign_key="company.id", unique=True)
-    plan_id: int = Field(foreign_key="subscriptionplan.id")
-    start_date: datetime = Field(default_factory=datetime.utcnow)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    plan_id: int = Field(foreign_key="subscription_plan.id", index=True)
+    start_date: datetime
     end_date: datetime
-    status: str = Field(default="active")  # active, cancelled, expired
+    status: str = Field(default="active", index=True)   # active | cancelled | expired
     auto_renew: bool = Field(default=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class CreditTransaction(SQLModel, table=True):
+    """Append-only ledger of credit additions and deductions for a company."""
+    __tablename__ = "credit_transaction"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    type: str = Field(index=True)   # purchase | usage | bonus | refund | subscription_grant
+    amount: int                     # positive = credited, negative = debited
+    description: Optional[str] = None
+    transaction_date: datetime = Field(default_factory=datetime.utcnow)
+
+
+# ============ TEAM INVITE MODEL ============
+
+class TeamInviteStatus(str, Enum):
+    """Team invite lifecycle"""
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+class TeamInvite(SQLModel, table=True):
+    """
+    Company-scoped team invitation created by Admin or HR.
+
+    Security:
+    - Raw token is returned once in the API response (for localhost) or emailed (production).
+    - Only the SHA-256 hash is persisted.
+    - Single-use: marked ACCEPTED on acceptance, EXPIRED after expires_at.
+    """
+    __tablename__ = "team_invite"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)       # primary company
+    invited_by_user_id: int = Field(foreign_key="user.id", index=True)
+    invitee_email: str = Field(index=True)
+    role: UserRole                                                        # HR or RECRUITER
+    token_hash: str = Field(unique=True, index=True)                     # SHA-256(raw_token)
+    status: str = Field(default=TeamInviteStatus.PENDING.value, index=True)
+    expires_at: datetime
+    accepted_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class SystemLog(SQLModel, table=True):
+    """System-wide logging for debugging and monitoring.
+    
+    Captures all application logs for persistence beyond file system.
+    Survives deployments, restarts, and allows querying historical logs.
+    """
+    __tablename__ = "systemlog"
+    
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Log metadata
+    timestamp: datetime = Field(index=True)
+    level: str = Field(index=True)  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    logger: str  # logger name (module hierarchy)
+    message: str  # log message
+    module: str  # Python module name
+    function: str  # Function name where log originated
+    line_number: int  # Line number in source
+    
+    # Request tracing
+    request_id: Optional[str] = Field(default=None, index=True)
+    user_id: Optional[int] = Field(default=None, index=True)
+    
+    # Change tracking
+    action: Optional[str] = Field(default=None, index=True)  # create, update, delete, etc.
+    entity_type: Optional[str] = Field(default=None, index=True)  # user, job, application, etc.
+    entity_id: Optional[str] = Field(default=None)
+    
+    # Additional context (JSON) - maps to 'metadata' column in database
+    log_metadata: Optional[str] = Field(default=None, sa_column=Column("metadata", String, nullable=True))
+    exception: Optional[str] = Field(default=None)  # Exception traceback if any
+    
+    # Housekeeping
+    created_at: datetime = Field(default_factory=lambda: datetime.now())
+
+
+# ============ CHAT MODELS ============
+
+class Conversation(SQLModel, table=True):
+    """One conversation per (candidate, recruiter-company, job_posting)."""
+    __tablename__ = "conversation"
+    __table_args__ = (
+        UniqueConstraint("company_id", "candidate_id", "job_posting_id",
+                         name="uq_conversation_company_candidate_job"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    candidate_id: int = Field(foreign_key="candidate.id", index=True)
+    job_posting_id: int = Field(foreign_key="jobposting.id", index=True)
+    created_by_user_id: int = Field(foreign_key="user.id")
+    last_message_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    messages: List["Message"] = Relationship(back_populates="conversation")
+
+
+class Message(SQLModel, table=True):
+    """A single chat message inside a Conversation."""
+    __tablename__ = "message"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="conversation.id", index=True)
+    sender_user_id: int = Field(foreign_key="user.id", index=True)
+    sender_role: Optional[str] = Field(default=None)  # "candidate", "recruiter", "hr", "admin"
+    text: str
+    is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)  # Timestamp when message was read
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    conversation: Conversation = Relationship(back_populates="messages")
+
+
+# ============ DIRECT MESSAGING MODELS (WhatsApp-style) ============
+
+class DirectConversation(SQLModel, table=True):
+    """Direct conversation between recruiter and candidate (no job posting requirement)."""
+    __tablename__ = "direct_conversation"
+    __table_args__ = (
+        UniqueConstraint("recruiter_user_id", "candidate_user_id",
+                         name="uq_direct_conversation_recruiter_candidate"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    recruiter_user_id: int = Field(foreign_key="user.id", index=True)
+    candidate_user_id: int = Field(foreign_key="user.id", index=True)
+    created_by_user_id: int = Field(foreign_key="user.id", index=True)  # Always recruiter
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_message_at: Optional[datetime] = Field(default=None)
+
+    # Relationships
+    direct_messages: List["DirectMessage"] = Relationship(back_populates="direct_conversation")
+
+
+class DirectMessage(SQLModel, table=True):
+    """A message in a direct conversation."""
+    __tablename__ = "direct_message"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    conversation_id: int = Field(foreign_key="direct_conversation.id", index=True)
+    sender_user_id: int = Field(foreign_key="user.id", index=True)
+    receiver_user_id: int = Field(foreign_key="user.id", index=True)
+    content: str
+    is_read: bool = Field(default=False)
+    read_at: Optional[datetime] = Field(default=None)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Relationships
+    direct_conversation: DirectConversation = Relationship(back_populates="direct_messages")
+
+
+# ============ MEETING & SCHEDULING MODELS ============
+
+class Meeting(SQLModel, table=True):
+    """
+    First-class Meeting domain model for interview scheduling
+    Represents scheduled meetings between recruiters and candidates
+    """
+    __tablename__ = "meeting"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Core meeting details
+    title: str = Field(index=True)
+    description: Optional[str] = None
+    meeting_type: MeetingType = Field(
+        default=MeetingType.INTERVIEW,
+        sa_column=Column(SQLEnum(MeetingType, values_callable=lambda obj: [e.value for e in obj]))
+    )
+    status: MeetingStatus = Field(
+        default=MeetingStatus.SCHEDULED,
+        sa_column=Column(SQLEnum(MeetingStatus, values_callable=lambda obj: [e.value for e in obj]), index=True)
+    )
+    
+    # Time & duration
+    scheduled_start: datetime = Field(index=True)  # UTC timestamp
+    scheduled_end: datetime = Field(index=True)    # UTC timestamp
+    duration_minutes: int = Field(default=60)
+    timezone: str = Field(default="UTC")  # IANA timezone (e.g., "America/New_York")
+    
+    # Organizer & context
+    organizer_user_id: int = Field(foreign_key="user.id", index=True)  # Who created/scheduled
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    match_id: Optional[int] = Field(default=None, foreign_key="match.id", index=True)
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id", index=True)
+    
+    # Meeting location/link
+    location: Optional[str] = None  # Physical address or "Virtual"
+    video_meeting_url: Optional[str] = None  # Zoom/Teams/Meet link
+    video_provider: Optional[str] = None  # "zoom", "teams", "meet", etc.
+    
+    # Calendar sync
+    google_calendar_event_id: Optional[str] = None
+    microsoft_calendar_event_id: Optional[str] = None
+    
+    # Cancellation tracking
+    cancelled_at: Optional[datetime] = None
+    cancelled_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    cancellation_reason: Optional[str] = None
+    
+    # Reschedule request tracking (candidate requests, recruiter approves/rejects)
+    reschedule_requested_at: Optional[datetime] = None
+    reschedule_requested_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    reschedule_request_reason: Optional[str] = None
+    reschedule_request_preferred_times: Optional[str] = None  # JSON array of preferred times
+
+    # Post-meeting reminder tracking (sent to recruiter/HR after meeting ends)
+    post_meeting_reminder_sent: bool = Field(default=False)
+    post_meeting_reminder_sent_at: Optional[datetime] = None
+    post_meeting_escalation_sent: bool = Field(default=False)
+    post_meeting_escalation_sent_at: Optional[datetime] = None
+
+    # Outcome tracking (set when recruiter marks complete/no-show)
+    completed_at: Optional[datetime] = None
+    completed_by_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    completion_notes: Optional[str] = None
+
+    # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    company: Company = Relationship(back_populates="subscription")
-    plan: SubscriptionPlan = Relationship(back_populates="subscriptions")
+    participants: List["MeetingParticipant"] = Relationship(back_populates="meeting")
 
 
-class CreditTransaction(SQLModel, table=True):
-    """Credit transaction history for companies"""
+class MeetingParticipant(SQLModel, table=True):
+    """
+    Participants in a meeting (many-to-many: Meeting <-> User)
+    Tracks attendance, confirmation, and reminders
+    """
+    __tablename__ = "meeting_participant"
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    company_id: int = Field(foreign_key="company.id", index=True)
-    type: str  # purchase, usage, bonus, refund
-    amount: int  # Positive for adding, negative for deducting
-    description: Optional[str] = None
-    transaction_date: datetime = Field(default_factory=datetime.utcnow)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # RSVP tracking
+    is_required: bool = Field(default=True)  # Required vs optional participant
+    has_confirmed: bool = Field(default=False)
+    confirmed_at: Optional[datetime] = None
+    
+    # Attendance tracking
+    attended: Optional[bool] = None  # None=unknown, True=attended, False=no-show
+    
+    # Reminder tracking
+    reminder_sent_24h: bool = Field(default=False)
+    reminder_sent_1h: bool = Field(default=False)
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     # Relationships
-    company: Company = Relationship(back_populates="credit_transactions")
+    meeting: Meeting = Relationship(back_populates="participants")
+    user: "User" = Relationship()  # Added relationship to User for easy access to name/email
+    
+    # Unique constraint: one record per meeting-user pair
+    __table_args__ = (UniqueConstraint("meeting_id", "user_id", name="unique_meeting_participant"),)
+
+
+class MeetingTimelineEvent(SQLModel, table=True):
+    """
+    Timeline/audit log of meeting actions for in-app history display
+    Every meeting action creates an entry for full traceability
+    """
+    __tablename__ = "meeting_timeline_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    
+    # Who performed the action
+    actor_user_id: int = Field(foreign_key="user.id", index=True)
+    actor_role: Optional[str] = None  # "recruiter", "candidate" for display
+    
+    # Event details
+    event_type: str = Field(index=True)  # interview_scheduled, recruiter_cancelled, candidate_cancelled, etc.
+    message: str  # Human-readable description for timeline display
+    
+    # Optional metadata (JSON)
+    metadata_json: Optional[str] = None  # Store reason, notes, old/new times, etc.
+    
+    # Previous meeting state (for rescheduling history)
+    previous_scheduled_start: Optional[datetime] = None
+    previous_scheduled_end: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+
+
+class MeetingActionToken(SQLModel, table=True):
+    """
+    Secure tokens for email-based meeting actions (confirm, cancel, reschedule)
+    Allows candidates/recruiters to take actions via tokenized email links
+    """
+    __tablename__ = "meeting_action_token"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    meeting_id: int = Field(foreign_key="meeting.id", index=True)
+    user_id: int = Field(foreign_key="user.id", index=True)  # Who the token is for
+    
+    # Token details
+    token: str = Field(unique=True, index=True)  # Secure random token
+    action_type: str = Field(index=True)  # "confirm", "cancel", "reschedule"
+    
+    # Token lifecycle
+    expires_at: datetime = Field(index=True)
+    is_used: bool = Field(default=False, index=True)
+    used_at: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class MeetingAvailabilitySlot(SQLModel, table=True):
+    """
+    Availability slots proposed by recruiter or candidate
+    Used for scheduling workflow: propose slots -> candidate picks -> meeting created
+    """
+    __tablename__ = "meeting_availability_slot"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Who proposed this slot
+    proposed_by_user_id: int = Field(foreign_key="user.id", index=True)
+    proposed_to_user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Slot timing
+    slot_start: datetime = Field(index=True)  # UTC timestamp
+    slot_end: datetime = Field(index=True)    # UTC timestamp
+    timezone: str = Field(default="UTC")
+    
+    # Context (what this availability is for)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    match_id: Optional[int] = Field(default=None, foreign_key="match.id", index=True)
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id", index=True)
+    
+    # Selection tracking
+    is_selected: bool = Field(default=False)  # True when candidate picks this slot
+    selected_at: Optional[datetime] = None
+    meeting_id: Optional[int] = Field(default=None, foreign_key="meeting.id", index=True)  # Created meeting
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    expired_at: Optional[datetime] = None  # Slots can have expiration
+
+
+# ============ CALENDAR & VIDEO INTEGRATION MODELS (Phase 2) ============
+
+class CalendarAccount(SQLModel, table=True):
+    """
+    External calendar account connections (Google Calendar, Microsoft Calendar)
+    Stores OAuth tokens and sync settings per user
+    """
+    __tablename__ = "calendar_account"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Provider info
+    provider: CalendarProvider = Field(index=True)  # "google" or "microsoft"
+    provider_account_id: str = Field(index=True)  # External account ID
+    provider_email: str  # Email associated with calendar
+    
+    # OAuth credentials (ENCRYPTED in production)
+    access_token: str  # Encrypted access token
+    refresh_token: Optional[str] = None  # Encrypted refresh token
+    token_expires_at: Optional[datetime] = None
+    
+    # Sync settings
+    is_primary: bool = Field(default=False)  # Primary calendar for this user
+    sync_enabled: bool = Field(default=True)  # Auto-sync meetings to this calendar
+    last_synced_at: Optional[datetime] = None
+    
+    # Calendar metadata
+    calendar_name: Optional[str] = None
+    calendar_timezone: str = Field(default="UTC")
+    
+    # Timestamps
+    connected_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one account per user-provider-email combo
+    __table_args__ = (UniqueConstraint("user_id", "provider", "provider_email", name="unique_calendar_account"),)
+
+
+class VideoProviderAccount(SQLModel, table=True):
+    """
+    Video conferencing provider connections (Zoom, Microsoft Teams, Google Meet)
+    Stores API keys and default meeting settings
+    """
+    __tablename__ = "video_provider_account"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    
+    # Provider info
+    provider: VideoProvider = Field(index=True)  # "zoom", "microsoft_teams", "google_meet"
+    provider_account_id: Optional[str] = None  # External account ID
+    provider_email: Optional[str] = None
+    
+    # OAuth/API credentials (ENCRYPTED in production)
+    access_token: Optional[str] = None  # Encrypted access token
+    refresh_token: Optional[str] = None  # Encrypted refresh token
+    api_key: Optional[str] = None  # For Zoom SDK/API
+    api_secret: Optional[str] = None  # For Zoom SDK/API
+    token_expires_at: Optional[datetime] = None
+    
+    # Meeting defaults
+    is_primary: bool = Field(default=False)  # Primary video provider for this user
+    auto_generate_links: bool = Field(default=True)  # Auto-create meeting links
+    default_meeting_password: Optional[str] = None  # Default password for meetings
+    waiting_room_enabled: bool = Field(default=True)
+    
+    # Timestamps
+    connected_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Unique constraint: one account per user-provider combo
+    __table_args__ = (UniqueConstraint("user_id", "provider", name="unique_video_provider_account"),)
+
+
+class EmailThreadLink(SQLModel, table=True):
+    """
+    Links tokenized reply-to email addresses to conversations/meetings
+    Enables email threading for interview scheduling and messages
+    """
+    __tablename__ = "email_thread_link"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Email provider tracking
+    provider_name: str = Field(default="sendgrid")  # "sendgrid", "postmark", etc.
+    action_token: str = Field(unique=True, index=True)  # Unique token in reply-to address
+    
+    # Link to entities
+    conversation_id: Optional[int] = Field(default=None, foreign_key="conversation.id", index=True)
+    meeting_id: Optional[int] = Field(default=None, foreign_key="meeting.id", index=True)
+    
+    # User tracking
+    candidate_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    recruiter_user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    company_id: Optional[int] = Field(default=None, foreign_key="company.id")
+    
+    # Token management
+    token_expires_at: datetime
+    
+    # Usage tracking
+    inbound_count: int = Field(default=0)  # Number of inbound emails received
+    last_inbound_at: Optional[datetime] = None
+    
+    # Timestamps
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class InboundEmailEvent(SQLModel, table=True):
+    """
+    Audit log of inbound emails received via webhook
+    """
+    __tablename__ = "inbound_email_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    
+    # Provider info
+    provider_name: str  # "sendgrid", "postmark", etc.
+    provider_event_id: str = Field(index=True)  # Message ID from provider (idempotency)
+    
+    # Email metadata
+    from_email: str
+    to_email: str
+    subject: str
+    body_text: Optional[str] = None
+    body_html: Optional[str] = None
+    
+    # Processing
+    thread_link_id: Optional[int] = Field(default=None, foreign_key="email_thread_link.id")
+    message_created_id: Optional[int] = Field(default=None, foreign_key="message.id")
+    processed: bool = Field(default=False)
+    processed_at: Optional[datetime] = None
+    processing_error: Optional[str] = None
+    
+    # Timestamps
+    received_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AnalyticsEvent(SQLModel, table=True):
+    """
+    Raw analytics events (high volume table)
+    Tracks individual user actions and interactions
+    """
+    __tablename__ = "analytics_event"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    
+    # Event info
+    event_type: AnalyticsEventType = Field(index=True)
+    event_time: datetime = Field(index=True)
+    
+    # Related entities
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    candidate_id: Optional[int] = Field(default=None, foreign_key="candidate.id")
+    application_id: Optional[int] = Field(default=None, foreign_key="application.id")
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    
+    # Additional metadata (source, device, location, etc.)
+    metadata_json: Optional[str] = None  # JSON string
+    
+    # User journey tracking
+    correlation_id: Optional[str] = Field(default=None, index=True)  # Group related events
+
+
+class AnalyticsRollupDaily(SQLModel, table=True):
+    """
+    Daily aggregated analytics metrics
+    Reduces query load on raw events table
+    """
+    __tablename__ = "analytics_rollup_daily"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    company_id: int = Field(foreign_key="company.id", index=True)
+    rollup_date: date = Field(sa_column=Column(Date, index=True))
+    
+    # Job posting specific (optional)
+    job_posting_id: Optional[int] = Field(default=None, foreign_key="jobposting.id", index=True)
+    
+    # Event counts
+    jobs_viewed: int = Field(default=0)
+    jobs_liked: int = Field(default=0)
+    applications_submitted: int = Field(default=0)
+    applications_viewed: int = Field(default=0)
+    interviews_scheduled: int = Field(default=0)
+    interviews_completed: int = Field(default=0)
+    offers_made: int = Field(default=0)
+    hires: int = Field(default=0)
+    
+    # Engagement metrics
+    messages_sent: int = Field(default=0)
+    emails_sent: int = Field(default=0)
+    emails_opened: int = Field(default=0)
+    
+    # Unique constraint: one record per company-date-job combo
+    __table_args__ = (UniqueConstraint("company_id", "rollup_date", "job_posting_id", name="unique_daily_rollup"),)
+
+

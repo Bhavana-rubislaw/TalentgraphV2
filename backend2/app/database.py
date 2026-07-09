@@ -4,9 +4,12 @@ PostgreSQL with SQLModel ORM
 """
 
 import os
+import logging
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlmodel import SQLModel, Session
+
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -32,11 +35,12 @@ def init_db():
     # Import all models so they're registered
     from app.models import (
         User, Candidate, Resume, Certification, Skill, JobProfile,
-        Company, JobPosting, Swipe, Match, Application
+        Company, JobPosting, Swipe, Match, Application,
+        Conversation, Message
     )
     
     SQLModel.metadata.create_all(engine)
-    print("✅ Database initialized successfully!")
+    logger.info("[OK] Database initialized successfully!")
 
 
 def get_session():

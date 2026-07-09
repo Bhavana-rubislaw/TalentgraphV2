@@ -1,11 +1,13 @@
 """
 Candidate routes
 Profile management, job profiles, applications, file uploads
+Resume parsing endpoint added for job preferences auto-fill
 """
 
 import logging
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from sqlmodel import Session, select
+from sqlalchemy import text
 from typing import List, Optional
 from pathlib import Path
 import shutil
@@ -24,6 +26,32 @@ router = APIRouter(prefix="/candidates", tags=["Candidates"])
 # Create uploads directory
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
+
+
+@router.get("/profile-status", response_model=dict)
+def get_candidate_profile_status(
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Check if candidate profile setup is complete"""
+    logger.info(f"[CANDIDATE PROFILE] Profile status check for user: {current_user['email']}")
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        logger.error(f"[CANDIDATE PROFILE] User not found: {current_user['email']}")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+    if not candidate:
+        logger.info(f"[CANDIDATE PROFILE] No profile found for user ID: {user.id}")
+        return {"profile_complete": False, "profile_exists": False}
+    
+    logger.info(f"[CANDIDATE PROFILE] Profile status - Complete: {candidate.profile_complete}")
+    return {
+        "profile_complete": candidate.profile_complete,
+        "profile_exists": True,
+        "candidate_id": candidate.id,
+        "name": candidate.name
+    }
 
 
 @router.post("/profile", response_model=dict)
@@ -47,6 +75,7 @@ def create_candidate_profile(
     
     candidate = Candidate(
         user_id=user.id,
+        profile_complete=True,
         **candidate_data.dict()
     )
     session.add(candidate)
@@ -58,7 +87,8 @@ def create_candidate_profile(
         "message": "Candidate profile created",
         "candidate_id": candidate.id,
         "name": candidate.name,
-        "email": candidate.email
+        "email": candidate.email,
+        "profile_complete": True
     }
 
 
@@ -105,12 +135,19 @@ def update_candidate_profile(
     for key, value in candidate_data.dict().items():
         setattr(candidate, key, value)
     
+    # Mark profile as complete when updated
+    candidate.profile_complete = True
+    
     session.add(candidate)
     session.commit()
     session.refresh(candidate)
     logger.info(f"[CANDIDATE PROFILE] Profile updated successfully - Candidate ID: {candidate.id}")
     
-    return {"message": "Profile updated", "candidate_id": candidate.id}
+    return {
+        "message": "Profile updated",
+        "candidate_id": candidate.id,
+        "profile_complete": True
+    }
 
 
 @router.post("/job-profiles", response_model=dict)
@@ -185,8 +222,12 @@ def get_job_profiles(
     candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
-    
-    return candidate.job_profiles
+
+    return session.exec(
+        select(JobProfile)
+        .where(JobProfile.candidate_id == candidate.id)
+        .where(JobProfile.is_deleted == False)  # noqa: E712
+    ).all()
 
 
 @router.get("/skill-catalogs", response_model=dict)
@@ -253,14 +294,30 @@ def delete_job_profile(
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    # Explicitly fetch candidate to avoid lazy-loading issues
+    candidate = session.exec(select(Candidate).where(Candidate.user_id == user.id)).first()
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
     job_profile = session.get(JobProfile, job_profile_id)
-    if not job_profile or job_profile.candidate.user_id != user.id:
+    if not job_profile or job_profile.candidate_id != candidate.id:
         raise HTTPException(status_code=404, detail="Job profile not found")
-    
-    session.delete(job_profile)
-    session.commit()
-    
+
+    # Soft-delete: mark as deleted so the record stays visible in admin dashboard
+    session.expunge_all()
+
+    try:
+        from datetime import datetime
+        session.execute(
+            text("UPDATE jobprofile SET is_deleted = TRUE, deleted_at = :now WHERE id = :id"),
+            {"id": job_profile_id, "now": datetime.utcnow()}
+        )
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
+
     return {"message": "Job profile deleted"}
 
 
@@ -272,7 +329,9 @@ async def upload_resume(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Upload a resume file"""
+    """Upload a resume file with comprehensive security validation"""
+    from app.core.file_validation import validate_resume_upload, FileValidator
+    
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -281,30 +340,52 @@ async def upload_resume(
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
     
-    # Create unique filename
+    # Validate file upload (size, type, content, security)
+    try:
+        content, mime_type, file_hash = validate_resume_upload(file)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Resume validation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="File validation failed")
+    
+    # Sanitize filename
+    safe_filename = FileValidator.sanitize_filename(file.filename or "resume")
+    
+    # Create unique filename with hash prefix for integrity
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{candidate.id}_{timestamp}_{file.filename}"
+    filename = f"{candidate.id}_{timestamp}_{file_hash[:8]}_{safe_filename}"
     file_path = UPLOAD_DIR / "resumes" / filename
-    file_path.parent.mkdir(exist_ok=True)
+    file_path.parent.mkdir(exist_ok=True, parents=True, mode=0o755)
     
-    # Save file
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Save validated content to file
+    try:
+        with file_path.open("wb") as buffer:
+            buffer.write(content)
+        # Set restrictive file permissions
+        file_path.chmod(0o644)
+    except Exception as e:
+        logger.error(f"Failed to save resume file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save file")
     
-    # Save to database
+    # Save to database with metadata
     resume = Resume(
         candidate_id=candidate.id,
-        filename=file.filename,
+        filename=safe_filename,
         storage_path=str(file_path)
     )
     session.add(resume)
     session.commit()
     session.refresh(resume)
     
+    logger.info(f"Resume uploaded successfully: candidate={candidate.id}, file={filename}, hash={file_hash[:8]}")
+    
     return {
         "message": "Resume uploaded successfully",
         "resume_id": resume.id,
-        "filename": resume.filename
+        "filename": resume.filename,
+        "file_hash": file_hash[:8],
+        "mime_type": mime_type
     }
 
 
@@ -361,7 +442,9 @@ async def upload_certification(
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Upload a certification file"""
+    """Upload a certification file with comprehensive security validation"""
+    from app.core.file_validation import validate_certification_upload, FileValidator
+    
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -370,22 +453,39 @@ async def upload_certification(
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate profile not found")
     
-    # Create unique filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{candidate.id}_{timestamp}_{file.filename}"
-    file_path = UPLOAD_DIR / "certifications" / filename
-    file_path.parent.mkdir(exist_ok=True)
+    # Validate file upload (size, type, content, security)
+    try:
+        content, mime_type, file_hash = validate_certification_upload(file)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Certification validation failed: {str(e)}")
+        raise HTTPException(status_code=400, detail="File validation failed")
     
-    # Save file
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Sanitize filename
+    safe_filename = FileValidator.sanitize_filename(file.filename or "certification")
+    
+    # Create unique filename with hash prefix
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{candidate.id}_{timestamp}_{file_hash[:8]}_{safe_filename}"
+    file_path = UPLOAD_DIR / "certifications" / filename
+    file_path.parent.mkdir(exist_ok=True, parents=True, mode=0o755)
+    
+    # Save validated content to file
+    try:
+        with file_path.open("wb") as buffer:
+            buffer.write(content)
+        file_path.chmod(0o644)
+    except Exception as e:
+        logger.error(f"Failed to save certification file: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to save file")
     
     # Save to database
     certification = Certification(
         candidate_id=candidate.id,
-        name=name or file.filename,
+        name=name or safe_filename,
         issuer=issuer,
-        filename=file.filename,
+        filename=safe_filename,
         storage_path=str(file_path),
         issued_date=issued_date,
         expiry_date=expiry_date
@@ -394,10 +494,13 @@ async def upload_certification(
     session.commit()
     session.refresh(certification)
     
+    logger.info(f"Certification uploaded: candidate={candidate.id}, file={filename}, hash={file_hash[:8]}")
+    
     return {
         "message": "Certification uploaded successfully",
         "certification_id": certification.id,
-        "name": certification.name
+        "name": certification.name,
+        "file_hash": file_hash[:8]
     }
 
 
@@ -443,3 +546,184 @@ def delete_certification(
     session.commit()
     
     return {"message": "Certification deleted"}
+
+
+# ============ RESUME PARSING FOR JOB PREFERENCES ============
+
+@router.post("/parse-resume-for-job-preferences", response_model=dict)
+async def parse_resume_for_job_preferences(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Parse resume to auto-fill job preference fields (Partial Resume Assist).
+    
+    This endpoint extracts:
+    - Skills (technical)
+    - Years of experience
+    - Seniority level
+    - Job titles / preferred roles
+    - Education level
+    - Certifications
+    - LinkedIn, GitHub, Portfolio URLs
+    
+    Fields NOT extracted (require manual input):
+    - Salary expectations
+    - Work type preferences
+    - Location preferences
+    - Travel willingness
+    - Notice period
+    - Work authorization
+    """
+    from app.services.resume_parser import ResumeParser
+    
+    logger.info(f"[RESUME PARSING] Job preferences parsing request from user: {current_user['email']}")
+    
+    # Validate user exists
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        logger.error(f"[RESUME PARSING] User not found: {current_user['email']}")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Validate file exists
+    if not file.filename:
+        logger.error("[RESUME PARSING] No filename provided")
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    # Log file details
+    logger.info(f"[RESUME PARSING] File upload details - Name: {file.filename}, Content-Type: {file.content_type}")
+    
+    # Validate file type
+    file_ext = Path(file.filename).suffix.lower()
+    allowed_extensions = ['.pdf', '.docx', '.doc', '.txt']
+    if file_ext not in allowed_extensions:
+        logger.error(f"[RESUME PARSING] Invalid file type: {file_ext}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid file type. Please upload PDF, DOCX, DOC, or TXT files only. Received: {file_ext}"
+        )
+    
+    # Validate file size (10MB limit)
+    content = await file.read()
+    file_size_mb = len(content) / (1024 * 1024)
+    logger.info(f"[RESUME PARSING] File size: {file_size_mb:.2f}MB")
+    
+    if file_size_mb > 10:
+        logger.error(f"[RESUME PARSING] File too large: {file_size_mb:.2f}MB")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File size must be under 10MB. Your file is {file_size_mb:.2f}MB"
+        )
+    
+    # Validate file is not empty
+    if len(content) == 0:
+        logger.error("[RESUME PARSING] Empty file uploaded")
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    
+    # Save to temporary file for parsing
+    import tempfile
+    temp_file_path = None
+    try:
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        
+        logger.info(f"[RESUME PARSING] Starting text extraction from: {file.filename}")
+        
+        # Extract text from resume
+        try:
+            resume_text = ResumeParser.extract_text_from_file(temp_file_path)
+            
+            if not resume_text or len(resume_text.strip()) < 50:
+                logger.error("[RESUME PARSING] Insufficient text extracted from resume")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Could not extract sufficient text from resume. Please ensure the file is not password-protected or corrupted."
+                )
+            
+            logger.info(f"[RESUME PARSING] Successfully extracted {len(resume_text)} characters from resume")
+        
+        except ImportError as e:
+            logger.error(f"[RESUME PARSING] Missing required library: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail="Resume parsing library not available. Please contact support."
+            )
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
+        except Exception as e:
+            logger.error(f"[RESUME PARSING] Text extraction failed: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Failed to extract text from resume: {str(e)}. Please ensure the file is readable and not corrupted."
+            )
+        
+        # Parse resume for job preferences
+        try:
+            logger.info(f"[RESUME PARSING] Starting job preferences parsing for user: {current_user['email']}")
+            parsed_data = ResumeParser.parse_resume_for_job_preferences(resume_text)
+            
+            # Count successfully parsed fields (with confidence > 0.5)
+            parsed_field_count = sum(
+                1 for k, v in parsed_data.items() 
+                if k.endswith('_confidence') and v >= 0.5
+            )
+            
+            logger.info(f"[RESUME PARSING] Successfully parsed {parsed_field_count} fields from resume")
+            logger.info(f"[RESUME PARSING] Parsed fields: {[k.replace('_confidence', '') for k, v in parsed_data.items() if k.endswith('_confidence') and v >= 0.5]}")
+            
+            # Debug: Log all confidence scores
+            logger.info(f"[RESUME PARSING] All confidence scores: {[(k, v) for k, v in parsed_data.items() if k.endswith('_confidence')]}")
+            
+            # Structure response to match frontend expectations
+            response = {
+                "success": True,
+                "message": f"Resume parsed successfully. {parsed_field_count} fields auto-filled.",
+                "data": {
+                    "skills": parsed_data.get('skills', []),
+                    "skills_confidence": parsed_data.get('skills_confidence', 0.0),
+                    "years_of_experience": parsed_data.get('years_of_experience'),
+                    "years_of_experience_confidence": parsed_data.get('years_of_experience_confidence', 0.0),
+                    "seniority_level": parsed_data.get('seniority_level'),
+                    "seniority_level_confidence": parsed_data.get('seniority_level_confidence', 0.0),
+                    "job_titles": parsed_data.get('job_titles', []),
+                    "job_titles_confidence": parsed_data.get('job_titles_confidence', 0.0),
+                    "preferred_job_titles": parsed_data.get('preferred_job_titles', []),
+                    "preferred_job_titles_confidence": parsed_data.get('preferred_job_titles_confidence', 0.0),
+                    "highest_education": parsed_data.get('highest_education'),
+                    "highest_education_confidence": parsed_data.get('highest_education_confidence', 0.0),
+                    "certifications": parsed_data.get('certifications', []),
+                    "certifications_confidence": parsed_data.get('certifications_confidence', 0.0),
+                    "linkedin_url": parsed_data.get('linkedin_url'),
+                    "linkedin_url_confidence": parsed_data.get('linkedin_url_confidence', 0.0),
+                    "github_url": parsed_data.get('github_url'),
+                    "github_url_confidence": parsed_data.get('github_url_confidence', 0.0),
+                    "portfolio_url": parsed_data.get('portfolio_url'),
+                    "portfolio_url_confidence": parsed_data.get('portfolio_url_confidence', 0.0),
+                }
+            }
+            
+            logger.info(f"[RESUME PARSING] Parsing completed successfully for user: {current_user['email']}")
+            return response
+        
+        except HTTPException:
+            # Re-raise HTTP exceptions
+            raise
+        except Exception as e:
+            logger.error(f"[RESUME PARSING] Parsing failed with exception: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Failed to parse resume content: {str(e)}. Please try again or contact support."
+            )
+    
+    finally:
+        # Clean up temporary file
+        if temp_file_path and Path(temp_file_path).exists():
+            try:
+                Path(temp_file_path).unlink()
+                logger.debug(f"[RESUME PARSING] Cleaned up temporary file: {temp_file_path}")
+            except Exception as e:
+                logger.warning(f"[RESUME PARSING] Failed to delete temporary file: {str(e)}")

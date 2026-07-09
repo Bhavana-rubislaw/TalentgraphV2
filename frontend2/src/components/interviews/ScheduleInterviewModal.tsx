@@ -1,0 +1,592 @@
+import React, { useState, useEffect } from 'react';
+import { apiClient } from '../../api/client';
+import './ScheduleInterviewModal.css';
+
+interface ScheduleInterviewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  application: {
+    id: number;
+    candidate?: {
+      name?: string;
+      email?: string;
+    };
+    job_posting?: {
+      job_title?: string;
+      company_name?: string;
+    };
+  };
+  onSuccess?: () => void;
+}
+
+interface FormData {
+  candidateEmail: string;
+  interviewDate: string;
+  interviewStartTime: string;
+  interviewEndTime: string;
+  timezone: string;
+  meetingProvider: 'zoom' | 'google_meet' | 'microsoft_teams' | 'manual';
+  meetingLink: string;
+  notes: string;
+  subject: string;
+}
+
+interface FormErrors {
+  candidateEmail?: string;
+  interviewDate?: string;
+  interviewStartTime?: string;
+  interviewEndTime?: string;
+  meetingLink?: string;
+}
+
+const TIMEZONES = [
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+  { value: 'America/Anchorage', label: 'Alaska Time (AKT)' },
+  { value: 'Pacific/Honolulu', label: 'Hawaii Time (HT)' },
+  { value: 'UTC', label: 'UTC' },
+];
+
+export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
+  isOpen,
+  onClose,
+  application,
+  onSuccess
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [responseData, setResponseData] = useState<any>(null);
+  const [formData, setFormData] = useState<FormData>({
+    candidateEmail: '',
+    interviewDate: '',
+    interviewStartTime: '',
+    interviewEndTime: '',
+    timezone: 'America/New_York',
+    meetingProvider: 'zoom',
+    meetingLink: '',
+    notes: '',
+    subject: ''
+  });
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  // Prefill form when modal opens
+  useEffect(() => {
+    if (isOpen && application) {
+      const candidateEmail = application.candidate?.email || '';
+      const jobTitle = application.job_posting?.job_title || 'the position';
+      const companyName = application.job_posting?.company_name || 'our company';
+      
+      setFormData({
+        candidateEmail,
+        interviewDate: '',
+        interviewStartTime: '10:00',
+        interviewEndTime: '11:00',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+        meetingProvider: 'zoom',
+        meetingLink: '',
+        notes: '',
+        subject: `Interview for ${jobTitle} at ${companyName}`
+      });
+      setErrors({});
+      setSubmitSuccess(false);
+      setSubmitError(null);
+    }
+  }, [isOpen, application]);
+
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    // Validate email
+    if (!formData.candidateEmail.trim()) {
+      newErrors.candidateEmail = 'Candidate email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.candidateEmail)) {
+      newErrors.candidateEmail = 'Invalid email format';
+    }
+    
+    // Validate date
+    if (!formData.interviewDate) {
+      newErrors.interviewDate = 'Interview date is required';
+    } else {
+      const selectedDate = new Date(formData.interviewDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        newErrors.interviewDate = 'Interview date cannot be in the past';
+      }
+    }
+    
+    // Validate start time
+    if (!formData.interviewStartTime) {
+      newErrors.interviewStartTime = 'Interview start time is required';
+    }
+    
+    // Validate end time
+    if (!formData.interviewEndTime) {
+      newErrors.interviewEndTime = 'Interview end time is required';
+    }
+    
+    // Validate that end time is after start time
+    if (formData.interviewStartTime && formData.interviewEndTime) {
+      const [startHour, startMin] = formData.interviewStartTime.split(':').map(Number);
+      const [endHour, endMin] = formData.interviewEndTime.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+      
+      if (endMinutes <= startMinutes) {
+        newErrors.interviewEndTime = 'End time must be after start time';
+      }
+    }
+    
+    // Validate meeting link (required if manual, must be valid URL format)
+    if (formData.meetingProvider === 'manual') {
+      if (!formData.meetingLink.trim()) {
+        newErrors.meetingLink = 'Meeting link is required when using manual option';
+      } else if (!/^https?:\/\/.+/.test(formData.meetingLink.trim())) {
+        newErrors.meetingLink = 'Meeting link must be a valid URL (starting with http:// or https://)';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitError(null);
+    
+    try {
+      // Format date as "May 25, 2026" — the schedule-interview endpoint uses dateutil parsing
+      const dateObj = new Date(formData.interviewDate + 'T00:00:00');
+      const formattedDate = dateObj.toLocaleDateString('en-US', {
+        month: 'long', day: 'numeric', year: 'numeric'
+      });
+
+      const payload = {
+        date: formattedDate,
+        start_time: formData.interviewStartTime,  // HH:MM (24-hr from time input)
+        end_time: formData.interviewEndTime,       // HH:MM (24-hr from time input)
+        timezone: formData.timezone,
+        meeting_provider: formData.meetingProvider !== 'manual' ? formData.meetingProvider : undefined,
+        meeting_link: formData.meetingProvider === 'manual' ? formData.meetingLink.trim() || undefined : undefined,
+        notes_for_candidate: formData.notes.trim() || undefined,
+        email_subject: formData.subject.trim() || undefined,
+      };
+
+      const response = await apiClient.scheduleInterview(application.id, payload);
+      setResponseData(response.data);
+      setSubmitSuccess(true);
+      
+      setTimeout(() => {
+        if (onSuccess) {
+          onSuccess();
+        }
+        onClose();
+      }, 1500);
+      
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to schedule interview';
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const candidateName = application.candidate?.name || 'Candidate';
+  const jobTitle = application.job_posting?.job_title || 'Position';
+  const companyName = application.job_posting?.company_name || 'Company';
+
+  return (
+    <div className="schedule-interview-overlay" onClick={handleClose}>
+      <div className="schedule-interview-modal" onClick={(e) => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div className="schedule-interview-header">
+          <div className="schedule-interview-header-icon">📅</div>
+          <div className="schedule-interview-header-text">
+            <h2>Schedule Interview</h2>
+            <p>Send interview invitation to candidate and recruiter from TalentGraph</p>
+          </div>
+          <button 
+            className="schedule-interview-close"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Success State */}
+        {submitSuccess && (
+          <div className="schedule-interview-success">
+            <div className="schedule-interview-success-icon">✓</div>
+            <h3>Interview Scheduled Successfully!</h3>
+            <p>Confirmation emails sent to candidate and recruiter from TalentGraph Interviews. Both parties have been notified with interview details.</p>
+            
+            {responseData?.auto_generated && responseData?.meeting_link && (
+              <div style={{
+                marginTop: '20px',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                borderRadius: '8px',
+                borderLeft: '4px solid #10b981'
+              }}>
+                <div style={{ 
+                  fontSize: '13px', 
+                  fontWeight: 700, 
+                  color: '#065f46', 
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  🎥 Auto-Generated Meeting Link
+                </div>
+                <div style={{ fontSize: '14px', color: '#047857', marginBottom: '6px', fontWeight: 600 }}>
+                  Provider: {responseData.video_provider === 'microsoft_teams' ? 'Microsoft Teams' : 
+                            responseData.video_provider === 'google_meet' ? 'Google Meet' : 
+                            responseData.video_provider === 'zoom' ? 'Zoom' : 'Unknown'}
+                </div>
+                <a 
+                  href={responseData.meeting_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#059669',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    wordBreak: 'break-all',
+                    textDecoration: 'none',
+                    borderBottom: '2px solid #059669'
+                  }}
+                >
+                  {responseData.meeting_link}
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Form */}
+        {!submitSuccess && (
+          <form onSubmit={handleSubmit} className="schedule-interview-form">
+            
+            {/* Candidate Context Section */}
+            <div className="schedule-interview-section">
+              <h3 className="schedule-interview-section-title">
+                <span className="schedule-interview-section-icon">👤</span>
+                Candidate Information
+              </h3>
+              <div className="schedule-interview-context">
+                <div className="schedule-interview-context-item">
+                  <span className="schedule-interview-context-label">Name:</span>
+                  <span className="schedule-interview-context-value">{candidateName}</span>
+                </div>
+                <div className="schedule-interview-context-item">
+                  <span className="schedule-interview-context-label">Position:</span>
+                  <span className="schedule-interview-context-value">{jobTitle}</span>
+                </div>
+                <div className="schedule-interview-context-item">
+                  <span className="schedule-interview-context-label">Company:</span>
+                  <span className="schedule-interview-context-value">{companyName}</span>
+                </div>
+              </div>
+              
+              <div className="schedule-interview-field">
+                <label htmlFor="candidateEmail">
+                  Email Address <span className="schedule-interview-required">*</span>
+                </label>
+                <input
+                  id="candidateEmail"
+                  type="email"
+                  value={formData.candidateEmail}
+                  onChange={(e) => handleInputChange('candidateEmail', e.target.value)}
+                  placeholder="candidate@example.com"
+                  disabled={isSubmitting}
+                  className={errors.candidateEmail ? 'schedule-interview-input-error' : ''}
+                />
+                {errors.candidateEmail && (
+                  <span className="schedule-interview-error">{errors.candidateEmail}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Interview Details Section */}
+            <div className="schedule-interview-section">
+              <h3 className="schedule-interview-section-title">
+                <span className="schedule-interview-section-icon">📆</span>
+                Interview Details
+              </h3>
+              <p style={{ fontSize: '13px', color: '#64748b', marginTop: '-8px', marginBottom: '16px' }}>
+                Select a date and time window for the interview. The video meeting link will be valid for the entire time frame.
+              </p>
+              
+              <div className="schedule-interview-field-group">
+                <div className="schedule-interview-field schedule-interview-field-half">
+                  <label htmlFor="interviewDate">
+                    Date <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="interviewDate"
+                    type="date"
+                    value={formData.interviewDate}
+                    onChange={(e) => handleInputChange('interviewDate', e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    disabled={isSubmitting}
+                    className={errors.interviewDate ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.interviewDate && (
+                    <span className="schedule-interview-error">{errors.interviewDate}</span>
+                  )}
+                </div>
+                
+                <div className="schedule-interview-field schedule-interview-field-half">
+                  <label htmlFor="interviewStartTime">
+                    Start Time <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="interviewStartTime"
+                    type="time"
+                    value={formData.interviewStartTime}
+                    onChange={(e) => handleInputChange('interviewStartTime', e.target.value)}
+                    disabled={isSubmitting}
+                    className={errors.interviewStartTime ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.interviewStartTime && (
+                    <span className="schedule-interview-error">{errors.interviewStartTime}</span>
+                  )}
+                </div>
+                
+                <div className="schedule-interview-field schedule-interview-field-half">
+                  <label htmlFor="interviewEndTime">
+                    End Time <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="interviewEndTime"
+                    type="time"
+                    value={formData.interviewEndTime}
+                    onChange={(e) => handleInputChange('interviewEndTime', e.target.value)}
+                    disabled={isSubmitting}
+                    className={errors.interviewEndTime ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.interviewEndTime && (
+                    <span className="schedule-interview-error">{errors.interviewEndTime}</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="schedule-interview-field">
+                <label htmlFor="timezone">
+                  Timezone <span className="schedule-interview-required">*</span>
+                </label>
+                <select
+                  id="timezone"
+                  value={formData.timezone}
+                  onChange={(e) => handleInputChange('timezone', e.target.value)}
+                  disabled={isSubmitting}
+                >
+                  {TIMEZONES.map(tz => (
+                    <option key={tz.value} value={tz.value}>{tz.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="schedule-interview-field">
+                <label>
+                  Video Meeting Provider <span className="schedule-interview-required">*</span>
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="meetingProvider"
+                      value="zoom"
+                      checked={formData.meetingProvider === 'zoom'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🎥 Zoom</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Zoom meeting link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="meetingProvider"
+                      value="google_meet"
+                      checked={formData.meetingProvider === 'google_meet'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>📹 Google Meet</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Google Meet link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="meetingProvider"
+                      value="microsoft_teams"
+                      checked={formData.meetingProvider === 'microsoft_teams'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>👥 Microsoft Teams</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Teams meeting link</div>
+                    </div>
+                  </label>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                    <input
+                      type="radio"
+                      name="meetingProvider"
+                      value="manual"
+                      checked={formData.meetingProvider === 'manual'}
+                      onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
+                      disabled={isSubmitting}
+                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🔗 Manual Link</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Provide your own meeting link</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {formData.meetingProvider === 'manual' && (
+                <div className="schedule-interview-field">
+                  <label htmlFor="meetingLink">
+                    Meeting Link <span className="schedule-interview-required">*</span>
+                  </label>
+                  <input
+                    id="meetingLink"
+                    type="url"
+                    value={formData.meetingLink}
+                    onChange={(e) => handleInputChange('meetingLink', e.target.value)}
+                    placeholder="https://zoom.us/j/1234567890 or https://meet.google.com/..."
+                    disabled={isSubmitting}
+                    className={errors.meetingLink ? 'schedule-interview-input-error' : ''}
+                  />
+                  {errors.meetingLink && (
+                    <span className="schedule-interview-error">{errors.meetingLink}</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Optional Details Section */}
+            <div className="schedule-interview-section">
+              <h3 className="schedule-interview-section-title">
+                <span className="schedule-interview-section-icon">📝</span>
+                Additional Details (Optional)
+              </h3>
+              
+              <div className="schedule-interview-field">
+                <label htmlFor="subject">
+                  Email Subject
+                </label>
+                <input
+                  id="subject"
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => handleInputChange('subject', e.target.value)}
+                  placeholder="Leave blank to use default subject"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="schedule-interview-field">
+                <label htmlFor="notes">
+                  Notes for Candidate
+                </label>
+                <textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  placeholder="Add any additional information or preparation instructions..."
+                  rows={4}
+                  disabled={isSubmitting}
+                />
+                <span className="schedule-interview-hint">
+                  These notes will be included in the interview confirmation email
+                </span>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {submitError && (
+              <div className="schedule-interview-error-banner">
+                <span className="schedule-interview-error-icon">⚠️</span>
+                <span>{submitError}</span>
+              </div>
+            )}
+
+            {/* Footer Actions */}
+            <div className="schedule-interview-footer">
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={isSubmitting}
+                className="schedule-interview-btn schedule-interview-btn-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="schedule-interview-btn schedule-interview-btn-primary"
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="schedule-interview-spinner"></span>
+                    Scheduling...
+                  </>
+                ) : (
+                  <>
+                    <span>📧</span>
+                    Send Interview Invite
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ScheduleInterviewModal;

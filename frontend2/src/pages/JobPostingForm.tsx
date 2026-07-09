@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import PageContainer from '../components/PageContainer';
 import { apiClient } from '../api/client';
+import CascadingTaxonomySelect from '../components/CascadingTaxonomySelect';
 import '../styles/Form.css';
 
 const JobPostingForm: React.FC = () => {
   const [formData, setFormData] = useState({
     job_title: '',
-    product_vendor: 'Oracle',
+    product_vendor: '',
     product_type: '',
     job_role: '',
     seniority_level: '',
@@ -72,62 +73,29 @@ const JobPostingForm: React.FC = () => {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Product Vendor *
-              </label>
-              <select name="product_vendor" value={formData.product_vendor} onChange={handleInputChange}>
-                <option>Oracle</option>
-                <option>SAP</option>
-                <option>Salesforce</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Product Type *
-              </label>
-              <input
-                type="text"
-                name="product_type"
-                value={formData.product_type}
-                onChange={handleInputChange}
-                placeholder="e.g., ERP, CRM"
-                required
-              />
-            </div>
+          <div style={{ marginBottom: '20px' }}>
+            <CascadingTaxonomySelect
+              selectedVendor={formData.product_vendor}
+              selectedProductType={formData.product_type}
+              selectedRole={formData.job_role}
+              onVendorChange={(name) => setFormData({ ...formData, product_vendor: name, product_type: '', job_role: '' })}
+              onProductTypeChange={(name) => setFormData({ ...formData, product_type: name, job_role: '' })}
+              onRoleChange={(name) => setFormData({ ...formData, job_role: name })}
+              required={true}
+            />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Job Role *
-              </label>
-              <input
-                type="text"
-                name="job_role"
-                value={formData.job_role}
-                onChange={handleInputChange}
-                placeholder="e.g., Developer, Consultant"
-                required
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                Seniority Level *
-              </label>
-              <input
-                type="text"
-                name="seniority_level"
-                value={formData.seniority_level}
-                onChange={handleInputChange}
-                placeholder="e.g., 2-3 years"
-                required
-              />
-            </div>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+              Seniority Level
+            </label>
+            <input
+              type="text"
+              name="seniority_level"
+              value={formData.seniority_level}
+              onChange={handleInputChange}
+              placeholder="e.g., Senior, Mid-level"
+            />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>

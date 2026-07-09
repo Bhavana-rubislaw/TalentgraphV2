@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Interview Scheduling</title>
+</head>
+<body>
+    <h1>Test Interview Scheduling Endpoint</h1>
+    <button onclick="testSchedule()">Test Schedule Interview</button>
+    <pre id="output"></pre>
+
+    <script>
+async function testSchedule() {
+    const output = document.getElementById('output');
+    output.textContent = 'Testing...\\n';
+    
+    try {
+        // Get token from localStorage (must be logged in first)
+        const token = localStorage.getItem('token');
+        if (!token) {
+            output.textContent = 'ERROR: No token found in localStorage. Please log in first.';
+            return;
+        }
+        
+        output.textContent += 'Token found: ' + token.substring(0, 20) + '...\\n';
+        
+        // Test payload
+        const payload = {
+            date: "March 29, 2026",
+            time: "10:00 AM",
+            timezone: "Central Time (CT)",
+            meeting_link: "https://zoom.us/j/test123",
+            notes_for_candidate: "Test notes",
+            email_subject: "Test Interview"
+        };
+        
+        output.textContent += 'Sending request...\\n';
+        output.textContent += 'Payload: ' + JSON.stringify(payload, null, 2) + '\\n\\n';
+        
+        const response = await fetch('http://localhost:8001/applications/11/schedule-interview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        output.textContent += `Response status: ${response.status} ${response.statusText}\\n`;
+        
+        const data = await response.json();
+        output.textContent += 'Response body:\\n' + JSON.stringify(data, null, 2);
+        
+    } catch (error) {
+        output.textContent += 'ERROR: ' + error.message + '\\n';
+        output.textContent += 'Error stack: ' + error.stack;
+        console.error('Full error:', error);
+    }
+}
+    </script>
+</body>
+</html>

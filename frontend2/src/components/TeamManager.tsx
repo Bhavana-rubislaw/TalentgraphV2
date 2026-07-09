@@ -1,238 +1,464 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import '../styles/TeamManager.css';
 
 interface TeamMember {
   id: number;
   user_id: number;
+  name: string;
   email: string;
-  full_name: string;
-  employee_type: string;
   role: string;
   jobs_posted: number;
+  status: string;
+  is_self: boolean;
+  is_primary_account: boolean;
+}
+
+interface PendingInvite {
+  id: number;
+  invitee_email: string;
+  role: string;
+  expires_at: string;
+  created_at: string;
 }
 
 interface TeamManagerProps {
-  userRole?: string;
-  canManageTeam?: boolean;
+  userRole: string; // 'admin' | 'hr' | 'recruiter'
 }
 
-const TeamManager: React.FC<TeamManagerProps> = ({ userRole = 'recruiter', canManageTeam = false }) => {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const ROLE_BADGE: Record<string, string> = {
+  ADMIN: '#6366f1',
+  HR: '#0ea5e9',
+  RECRUITER: '#10b981',
+};
+
+const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Invite form state
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('recruiter');
-  const [editingMemberId, setEditingMemberId] = useState<number | null>(null);
-  const [newRole, setNewRole] = useState('');
+  const [inviting, setInviting] = useState(false);
+
+  const [resendingInvite, setResendingInvite] = useState<string | null>(null); // tracks email being resent
+
+  // Role edit state
+  const [editingMember, setEditingMember] = useState<number | null>(null);
+  const [editRole, setEditRole] = useState('');
+
+  const isAdmin = userRole === 'admin';
+  const isHR = userRole === 'hr';
+  const canManage = isAdmin || isHR;
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [membersRes, invitesRes] = await Promise.all([
+        apiClient.getTeamMembersV2(),
+        canManage ? apiClient.getPendingInvites() : Promise.resolve({ data: [] }),
+      ]);
+      setMembers(membersRes.data || []);
+      setPendingInvites(invitesRes.data || []);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to load team data');
+    } finally {
+      setLoading(false);
+    }
+  }, [canManage]);
 
   useEffect(() => {
-    fetchTeamMembers();
-  }, []);
+    fetchMembers();
+  }, [fetchMembers]);
 
-  const fetchTeamMembers = async () => {
-    try {
-      setLoading(true);
-      const members = await apiClient.getTeamMembers();
-      setTeamMembers(members);
-    } catch (err) {
-      setError('Failed to load team members');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInviteMember = async (e: React.FormEvent) => {
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInviting(true);
+    setError('');
+    setSuccess('');
     try {
-      setLoading(true);
-      const companyName = localStorage.getItem('company_name') || '';
-      await apiClient.inviteTeamMember(inviteEmail, inviteRole, companyName);
-      alert('Invitation sent successfully!');
+      const res = await apiClient.inviteTeamMember({ email: inviteEmail, role: inviteRole });
+      const data = res.data;
+      setSuccess(`Invitation sent to ${inviteEmail}`);
       setInviteEmail('');
-      setInviteRole('recruiter');
       setShowInviteForm(false);
-      fetchTeamMembers();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to send invitation');
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to send invitation');
     } finally {
-      setLoading(false);
+      setInviting(false);
     }
   };
 
-  const handleUpdateRole = async (memberId: number) => {
-    if (!newRole) return;
-
+  const handleRoleUpdate = async (userId: number) => {
     try {
-      setLoading(true);
-      await apiClient.updateTeamMemberRole(memberId, newRole);
-      alert('Member role updated successfully!');
-      setEditingMemberId(null);
-      setNewRole('');
-      fetchTeamMembers();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update member role');
-    } finally {
-      setLoading(false);
+      await apiClient.updateMemberRole(userId, editRole);
+      setSuccess('Role updated successfully');
+      setEditingMember(null);
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to update role');
     }
   };
 
-  const handleRemoveMember = async (memberId: number) => {
-    if (!window.confirm('Are you sure you want to remove this team member?')) {
-      return;
-    }
-
+  const handleMessageMember = async (userId: number, name: string) => {
     try {
-      setLoading(true);
-      await apiClient.removeTeamMember(memberId);
-      alert('Team member removed successfully!');
-      fetchTeamMembers();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to remove team member');
-    } finally {
-      setLoading(false);
+      const res = await apiClient.startConversation(userId);
+      const convId = res.data.conversation?.id || res.data.id;
+      // SPA navigation — no page reload, goes directly to that conversation
+      navigate(location.pathname + '?tab=messages&c=' + convId);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || `Failed to start conversation with ${name}`);
     }
   };
 
-  if (loading && teamMembers.length === 0) {
-    return <div className="team-manager loading">Loading team members...</div>;
-  }
+  const handleRemoveMember = async (userId: number, name: string) => {
+    if (!window.confirm(`Remove ${name} from the team? They will be deactivated.`)) return;
+    try {
+      await apiClient.removeTeamMember(userId);
+      setSuccess(`${name} has been removed from the team`);
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to remove member');
+    }
+  };
+
+  const handleRevokeInvite = async (inviteId: number, email: string) => {
+    if (!window.confirm(`Revoke invitation for ${email}?`)) return;
+    try {
+      await apiClient.revokeInvite(inviteId);
+      setSuccess('Invitation revoked');
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to revoke invitation');
+    }
+  };
+
+  const handleResendInvite = async (email: string, role: string) => {
+    setResendingInvite(email);
+    setError('');
+    setSuccess('');
+    try {
+      await apiClient.resendInvite(email, role);
+      setSuccess(`Invitation resent to ${email}`);
+      fetchMembers();
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Failed to resend invitation');
+    } finally {
+      setResendingInvite(null);
+    }
+  };
 
   return (
-    <div className="team-manager">
-      <div className="team-header">
-        <h3>Team Members</h3>
-        {canManageTeam && (
+    <div style={{ padding: '0' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text-primary, #1e293b)' }}>
+            Team Members
+          </h3>
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted, #64748b)' }}>
+            {members.length} member{members.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        {canManage && (
           <button
-            className="btn-add-member"
             onClick={() => setShowInviteForm(!showInviteForm)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 16px', background: '#6366f1', color: '#fff',
+              border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', transition: 'background 0.2s',
+            }}
+            onMouseOver={e => (e.currentTarget.style.background = '#4f46e5')}
+            onMouseOut={e => (e.currentTarget.style.background = '#6366f1')}
           >
-            {showInviteForm ? 'Cancel' : '+ Add Team Member'}
+            + Invite Member
           </button>
         )}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {/* Alerts */}
+      {error && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#dc2626', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', marginBottom: 14, color: '#16a34a', fontSize: 13 }}>
+          {success}
+        </div>
+      )}
 
-      {showInviteForm && canManageTeam && (
-        <form className="invite-form" onSubmit={handleInviteMember}>
-          <h4>Invite Team Member</h4>
-          <div className="form-group">
-            <label htmlFor="invite-email">Email Address</label>
+      {/* Invite Form */}
+      {showInviteForm && (
+        <form onSubmit={handleInvite} style={{
+          background: 'var(--bg-secondary, #f8fafc)', border: '1px solid var(--border-light, #e2e8f0)',
+          borderRadius: 10, padding: '16px 20px', marginBottom: 20,
+        }}>
+          <p style={{ margin: '0 0 12px', fontWeight: 600, fontSize: 14, color: 'var(--text-primary, #1e293b)' }}>
+            Invite a new team member
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <input
-              id="invite-email"
               type="email"
               value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="member@company.com"
+              onChange={e => setInviteEmail(e.target.value)}
+              placeholder="Email address"
               required
+              style={{
+                flex: '1 1 220px', padding: '8px 12px', borderRadius: 6,
+                border: '1px solid #cbd5e1', fontSize: 13, outline: 'none',
+              }}
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="invite-role">Role</label>
             <select
-              id="invite-role"
               value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
+              onChange={e => setInviteRole(e.target.value)}
+              style={{
+                padding: '8px 12px', borderRadius: 6,
+                border: '1px solid #cbd5e1', fontSize: 13, background: '#fff', cursor: 'pointer',
+              }}
             >
+              {isAdmin && <option value="hr">HR</option>}
               <option value="recruiter">Recruiter</option>
-              <option value="hr">HR</option>
-              <option value="admin">Admin</option>
             </select>
+            <button
+              type="submit"
+              disabled={inviting}
+              style={{
+                padding: '8px 18px', background: '#6366f1', color: '#fff',
+                border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
+                cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1,
+              }}
+            >
+              {inviting ? 'Sending…' : 'Send Invite'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowInviteForm(false)}
+              style={{ padding: '8px 14px', background: 'none', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 13, cursor: 'pointer', color: '#64748b' }}
+            >
+              Cancel
+            </button>
           </div>
-          <button type="submit" className="btn-submit" disabled={loading}>
-            Send Invitation
-          </button>
         </form>
       )}
 
-      <div className="team-list">
-        {teamMembers.length === 0 ? (
-          <p className="no-members">No team members yet</p>
-        ) : (
-          <table className="members-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Job Postings</th>
-                {canManageTeam && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {teamMembers.map((member) => (
-                <tr key={member.id}>
-                  <td>{member.full_name}</td>
-                  <td>{member.email}</td>
-                  <td>
-                    {editingMemberId === member.id && canManageTeam ? (
-                      <select
-                        value={newRole}
-                        onChange={(e) => setNewRole(e.target.value)}
-                      >
-                        <option value="">Select Role</option>
-                        <option value="recruiter">Recruiter</option>
-                        <option value="hr">HR</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    ) : (
-                      <span className={`role-badge ${member.role.toLowerCase()}`}>
-                        {member.role.toUpperCase()}
-                      </span>
+      {/* Members Table */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 14 }}>Loading team…</div>
+      ) : (
+        <div style={{ border: '1px solid var(--border-light, #e2e8f0)', borderRadius: 10, overflow: 'hidden' }}>
+          {/* Table header */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 180px',
+            gap: 12, padding: '10px 16px',
+            background: 'var(--bg-tertiary, #f1f5f9)',
+            fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.5px', color: '#94a3b8',
+          }}>
+            <span>Member</span>
+            <span>Role</span>
+            <span>Jobs Posted</span>
+            <span>Actions</span>
+          </div>
+
+          {members.length === 0 ? (
+            <div style={{ padding: 32, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+              No team members found
+            </div>
+          ) : (
+            members.map(member => (
+              <div
+                key={member.id}
+                style={{
+                  display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 180px',
+                  gap: 12, padding: '14px 16px', alignItems: 'center',
+                  borderTop: '1px solid var(--border-light, #e2e8f0)',
+                  background: member.is_self ? 'rgba(99,102,241,0.04)' : 'transparent',
+                }}
+              >
+                {/* Name / email */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{member.name}</span>
+                    {member.is_self && (
+                      <span style={{ fontSize: 10, background: '#ede9fe', color: '#6d28d9', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>You</span>
                     )}
-                  </td>
-                  <td>{member.jobs_posted}</td>
-                  {canManageTeam && (
-                    <td className="actions">
-                      {editingMemberId === member.id ? (
-                        <>
-                          <button
-                            className="btn-save"
-                            onClick={() => handleUpdateRole(member.id)}
-                            disabled={!newRole || loading}
-                          >
-                            Save
-                          </button>
-                          <button
-                            className="btn-cancel"
-                            onClick={() => {
-                              setEditingMemberId(null);
-                              setNewRole('');
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="btn-edit"
-                            onClick={() => {
-                              setEditingMemberId(member.id);
-                              setNewRole(member.role);
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn-remove"
-                            onClick={() => handleRemoveMember(member.id)}
-                          >
-                            Remove
-                          </button>
-                        </>
-                      )}
-                    </td>
+                    {member.is_primary_account && (
+                      <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>Owner</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{member.email}</div>
+                </div>
+
+                {/* Role badge / edit */}
+                <div>
+                  {editingMember === member.user_id ? (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <select
+                        value={editRole}
+                        onChange={e => setEditRole(e.target.value)}
+                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 12 }}
+                      >
+                        <option value="hr">HR</option>
+                        <option value="recruiter">Recruiter</option>
+                      </select>
+                      <button onClick={() => handleRoleUpdate(member.user_id)} style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✓</button>
+                      <button onClick={() => setEditingMember(null)} style={{ padding: '4px 8px', background: 'none', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✕</button>
+                    </div>
+                  ) : (
+                    <span style={{
+                      display: 'inline-block', padding: '3px 10px', borderRadius: 20,
+                      fontSize: 12, fontWeight: 600, color: '#fff',
+                      background: ROLE_BADGE[member.role.toUpperCase()] || '#94a3b8',
+                    }}>
+                      {member.role}
+                    </span>
                   )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                </div>
+
+                {/* Jobs posted */}
+                <div style={{ fontSize: 13, color: '#475569' }}>{member.jobs_posted}</div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {/* Edit role — admin only */}
+                  {isAdmin && !member.is_self && member.role.toUpperCase() !== 'ADMIN' && editingMember !== member.user_id && (
+                    <button
+                      onClick={() => { setEditingMember(member.user_id); setEditRole(member.role.toLowerCase()); }}
+                      title="Change role"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#475569', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'border-color 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                      onMouseOut={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Role
+                    </button>
+                  )}
+                  {/* Message button */}
+                  {!member.is_self && (
+                    <button
+                      onClick={() => handleMessageMember(member.user_id, member.name)}
+                      title={`Message ${member.name}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#2563eb', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.background = '#dbeafe')}
+                      onMouseOut={e => (e.currentTarget.style.background = '#eff6ff')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Message
+                    </button>
+                  )}
+                  {/* Remove button — HR and Admin, non-self, non-owner */}
+                  {(isAdmin || isHR) && !member.is_self && !member.is_primary_account && (
+                    <button
+                      onClick={() => handleRemoveMember(member.user_id, member.name)}
+                      title="Remove from team"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        background: '#fff5f5', border: '1px solid #fecaca', borderRadius: 6,
+                        padding: '6px 10px', fontSize: 12, cursor: 'pointer',
+                        color: '#dc2626', fontWeight: 600, whiteSpace: 'nowrap',
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseOver={e => (e.currentTarget.style.background = '#fee2e2')}
+                      onMouseOut={e => (e.currentTarget.style.background = '#fff5f5')}
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="18" y1="8" x2="23" y2="13"/>
+                        <line x1="23" y1="8" x2="18" y2="13"/>
+                      </svg>
+                      Remove
+                    </button>
+                  )}
+                  {/* Self label */}
+                  {member.is_self && (
+                    <span style={{ fontSize: 12, color: '#94a3b8', fontStyle: 'italic' }}>—</span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Pending Invitations */}
+      {canManage && pendingInvites.length > 0 && (
+        <div style={{ marginTop: 28 }}>
+          <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 700, color: '#475569' }}>
+            Pending Invitations ({pendingInvites.length})
+          </h4>
+          <div style={{ border: '1px solid #fde68a', borderRadius: 10, overflow: 'hidden', background: '#fffbeb' }}>
+            {pendingInvites.map(inv => (
+              <div
+                key={inv.id}
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 16px', borderTop: '1px solid #fde68a',
+                }}
+              >
+                <div>
+                  <span style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>{inv.invitee_email}</span>
+                  <span style={{ marginLeft: 10, fontSize: 12, color: '#92400e', background: '#fef3c7', padding: '2px 8px', borderRadius: 20 }}>
+                    {inv.role}
+                  </span>
+                  <div style={{ fontSize: 11, color: '#a16207', marginTop: 2 }}>
+                    Expires {new Date(inv.expires_at).toLocaleDateString()}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    onClick={() => handleResendInvite(inv.invitee_email, inv.role)}
+                    disabled={resendingInvite === inv.invitee_email}
+                    title="Resend invitation email"
+                    style={{
+                      fontSize: 12, color: '#6366f1', background: 'none',
+                      border: '1px solid #c7d2fe', borderRadius: 6, padding: '4px 10px',
+                      cursor: resendingInvite === inv.invitee_email ? 'not-allowed' : 'pointer',
+                      opacity: resendingInvite === inv.invitee_email ? 0.6 : 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {resendingInvite === inv.invitee_email ? 'Sending…' : '↩ Send Again'}
+                  </button>
+                  <button
+                    onClick={() => handleRevokeInvite(inv.id, inv.invitee_email)}
+                    style={{ fontSize: 12, color: '#ef4444', background: 'none', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                  >
+                    Revoke
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

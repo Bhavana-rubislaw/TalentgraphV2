@@ -1,0 +1,1858 @@
+﻿====================================================================================================
+DETAILED BREAKDOWN: JOB PREFERENCES (CANDIDATES) vs JOB POSTINGS (COMPANIES)
+====================================================================================================
+
+====================================================================================================
+SECTION 1: CANDIDATES & THEIR JOB PREFERENCES (Job Profiles)
+====================================================================================================
+
+Total Candidates: 17
+
+1. Sarah Anderson (sarah.anderson@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Oracle Fusion - Senior Finance Role
+    ò Vendor/Product: Oracle / Fusion Cloud / Oracle Fusion Functional Consultant
+    ò Experience: 8 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $140 - $180 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Oracle Fusion Financials (technical): Level 5/5
+        - General Ledger (functional): Level 5/5
+        - Accounts Payable/Receivable (functional): Level 5/5
+        - OTBI Reporting (technical): Level 5/5
+        - Project Management (soft): Level 4/5
+        - Chart of Accounts Design (functional): Level 5/5
+        - Oracle Revenue Management (technical): Level 4/5
+        - Financial Close (technical): Level 3/5
+        - Analytical Thinking (soft): Level 3/5
+        - GAAP/IFRS (functional): Level 5/5
+    ò Location Preferences (2):
+        - San Francisco, California, USA
+        - Remote, Nationwide, USA
+    ò Summary: Seeking senior-level Oracle Fusion Finance implementation role with focus on complex enterprise tran...
+
+  Profile 2: Oracle EBS - Supply Chain Specialist
+    ò Vendor/Product: Oracle / E-Business Suite / Oracle EBS Supply Chain Consultant
+    ò Experience: 8 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+    ò Salary: $130 - $170 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - Oracle EBS (technical): Level 4/5
+        - Inventory Management (functional): Level 4/5
+        - Order Management (functional): Level 4/5
+        - Purchasing (functional): Level 4/5
+        - Disaster Recovery Planning (functional): Level 5/5
+        - Documentation (soft): Level 3/5
+        - Problem Solving (soft): Level 5/5
+        - Change Management (functional): Level 3/5
+        - High Availability Architecture (functional): Level 3/5
+        - Oracle Autonomous Database (technical): Level 5/5
+    ò Location Preferences (2):
+        - San Francisco, California, USA
+        - San Jose, California, USA
+    ò Summary: Open to Oracle EBS Supply Chain projects with hybrid work arrangements....
+
+  Profile 3: Oracle Fusion - Integration Architect
+    ò Vendor/Product: Oracle / Fusion Cloud / Oracle Fusion Technical Consultant
+    ò Experience: 8 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $150 - $190 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Oracle Integration Cloud (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - FBDI (technical): Level 5/5
+        - PL/SQL (technical): Level 4/5
+        - Month-End Close (functional): Level 5/5
+        - Oracle Fusion Financials (technical): Level 4/5
+        - Oracle Budgetary Control (technical): Level 3/5
+        - GAAP/IFRS (functional): Level 3/5
+        - Chart of Accounts Design (functional): Level 3/5
+        - Attention to Detail (soft): Level 4/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Interested in technical architecture roles focusing on integrations and customizations....
+
+2. Michael Chen (michael.chen@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Oracle HCM - Full Implementation
+    ò Vendor/Product: Oracle / HCM Cloud / Oracle HCM Cloud Consultant
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+    ò Salary: $120 - $160 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_VISA
+    ò Availability: Immediately
+    ò Skills (10):
+        - Oracle HCM Cloud (technical): Level 5/5
+        - Core HR (functional): Level 5/5
+        - Talent Management (functional): Level 4/5
+        - Payroll (functional): Level 4/5
+        - Change Management (soft): Level 4/5
+        - Oracle Compensation (technical): Level 3/5
+        - Oracle Talent Management (technical): Level 3/5
+        - Oracle Core HR (technical): Level 3/5
+        - Oracle Payroll Cloud (technical): Level 3/5
+        - Performance Management (functional): Level 5/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Dallas, Texas, USA
+    ò Summary: Looking for comprehensive HCM Cloud implementation projects covering Core HR, Talent, and Payroll mo...
+
+  Profile 2: Oracle Fusion - Payroll Specialist
+    ò Vendor/Product: Oracle / HCM Cloud / Oracle Payroll Cloud Consultant
+    ò Experience: 6 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $115 - $155 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Oracle Payroll Cloud (technical): Level 5/5
+        - Fast Formulas (technical): Level 5/5
+        - Payroll Compliance (functional): Level 4/5
+        - HSDL (technical): Level 4/5
+        - Oracle Compensation (technical): Level 5/5
+        - Oracle Learning Cloud (technical): Level 5/5
+        - Oracle Fast Formula (technical): Level 4/5
+        - Oracle Workforce Management (technical): Level 5/5
+        - Oracle Absence Management (technical): Level 3/5
+        - Communication (soft): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Specialized in Oracle Payroll Cloud implementations with focus on complex payroll configurations and...
+
+  Profile 3: Oracle HCM - Talent & Recruitment
+    ò Vendor/Product: Oracle / HCM Cloud / Oracle Talent Management Consultant
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+    ò Salary: $110 - $150 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Oracle Talent Management (functional): Level 4/5
+        - Recruiting Cloud (functional): Level 4/5
+        - Performance Management (functional): Level 4/5
+        - Learning Cloud (functional): Level 3/5
+        - Cross-functional Collaboration (soft): Level 5/5
+        - Workforce Analytics (functional): Level 3/5
+        - Labour Law Compliance (functional): Level 3/5
+        - Oracle Core HR (technical): Level 5/5
+        - HCM Experience Design Studio (technical): Level 4/5
+        - Oracle Payroll Cloud (technical): Level 3/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Houston, Texas, USA
+    ò Summary: Interested in Talent Management and Recruiting Cloud implementations....
+
+3. David Kumar (david.kumar@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Oracle DBA - Senior Position
+    ò Vendor/Product: Oracle / Database / Oracle Database Administrator
+    ò Experience: 10 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $145,000 - $195,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 1 month
+    ò Skills (10):
+        - Oracle Database (technical): Level 5/5
+        - Oracle RAC (technical): Level 5/5
+        - Data Guard (technical): Level 5/5
+        - Performance Tuning (technical): Level 5/5
+        - PL/SQL (technical): Level 5/5
+        - Oracle Data Guard (technical): Level 3/5
+        - Oracle RMAN (technical): Level 4/5
+        - Oracle AWR/ASH (technical): Level 3/5
+        - Oracle Database 19c (technical): Level 5/5
+        - Attention to Detail (soft): Level 5/5
+    ò Location Preferences (2):
+        - Seattle, Washington, USA
+        - Portland, Oregon, USA
+    ò Summary: Seeking senior DBA role with focus on Oracle RAC and high availability solutions....
+
+  Profile 2: Oracle Cloud DBA
+    ò Vendor/Product: Oracle / Cloud Infrastructure / Oracle Cloud DBA
+    ò Experience: 10 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $140 - $190 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Oracle Cloud Infrastructure (technical): Level 4/5
+        - Autonomous Database (technical): Level 4/5
+        - Database Migration (technical): Level 5/5
+        - Cloud Architecture (technical): Level 4/5
+        - Change Management (functional): Level 4/5
+        - Capacity Planning (functional): Level 3/5
+        - Attention to Detail (soft): Level 3/5
+        - Oracle Autonomous Database (technical): Level 3/5
+        - Oracle GoldenGate (technical): Level 5/5
+        - Oracle Multitenant (CDB/PDB) (technical): Level 4/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Interested in Oracle Cloud Database migrations and management....
+
+  Profile 3: Database Performance Architect
+    ò Vendor/Product: Oracle / Database / Database Performance Architect
+    ò Experience: 10 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+    ò Salary: $150 - $200 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: Immediately
+    ò Skills (10):
+        - Performance Tuning (technical): Level 5/5
+        - SQL Optimization (technical): Level 5/5
+        - Database Architecture (technical): Level 5/5
+        - Capacity Planning (technical): Level 5/5
+        - Analytical Thinking (soft): Level 3/5
+        - Oracle Cash Management (technical): Level 5/5
+        - Oracle Fixed Assets (technical): Level 5/5
+        - Oracle Fusion Financials (technical): Level 3/5
+        - Chart of Accounts Design (functional): Level 3/5
+        - Audit Compliance (functional): Level 3/5
+    ò Location Preferences (2):
+        - Seattle, Washington, USA
+        - San Francisco, California, USA
+    ò Summary: Specialized role focusing on database performance optimization for large enterprise systems....
+
+4. Emily Zhang (emily.zhang@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior ML Engineer - NLP
+    ò Vendor/Product: AWS / SageMaker / ML Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $150,000 - $200,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - TensorFlow (technical): Level 5/5
+        - PyTorch (technical): Level 5/5
+        - NLP (technical): Level 5/5
+        - AWS SageMaker (technical): Level 4/5
+        - Problem Solving (soft): Level 3/5
+        - Data Pipeline Design (functional): Level 5/5
+        - Analytical Thinking (soft): Level 3/5
+        - LangChain (technical): Level 3/5
+        - Critical Thinking (soft): Level 3/5
+    ò Location Preferences (2):
+        - Seattle, Washington, USA
+        - Remote, Nationwide, USA
+    ò Summary: Seeking senior ML role focused on NLP and large language models....
+
+  Profile 2: Senior ML Engineer - NLP
+    ò Vendor/Product: AWS / SageMaker / ML Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $150,000 - $200,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - TensorFlow (technical): Level 5/5
+        - PyTorch (technical): Level 5/5
+        - NLP (technical): Level 5/5
+        - AWS SageMaker (technical): Level 4/5
+        - OpenAI API (technical): Level 3/5
+        - LangChain (technical): Level 4/5
+        - Pandas (technical): Level 5/5
+        - NoSQL (technical): Level 4/5
+        - Feature Engineering (functional): Level 5/5
+    ò Location Preferences (2):
+        - Seattle, Washington, USA
+        - Remote, Nationwide, USA
+    ò Summary: Seeking senior ML role focused on NLP and large language models....
+
+  Profile 3: Senior ML Engineer - NLP
+    ò Vendor/Product: General / AI/ML / Machine Learning Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $150,000 - $200,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - TensorFlow (technical): Level 5/5
+        - PyTorch (technical): Level 5/5
+        - NLP (technical): Level 5/5
+        - AWS SageMaker (technical): Level 4/5
+        - Hugging Face (technical): Level 5/5
+        - NoSQL (technical): Level 4/5
+        - Feature Engineering (functional): Level 3/5
+        - A/B Testing (functional): Level 3/5
+        - NumPy (technical): Level 5/5
+    ò Location Preferences (2):
+        - Seattle, Washington, USA
+        - Remote, Nationwide, USA
+    ò Summary: Seeking senior ML role focused on NLP and large language models....
+
+5. James Wilson (james.wilson@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior DevOps Engineer
+    ò Vendor/Product: AWS / EKS / DevOps Engineer
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - AWS (technical): Level 5/5
+        - Kubernetes (technical): Level 5/5
+        - Docker (technical): Level 5/5
+        - Terraform (technical): Level 5/5
+        - Jenkins (technical): Level 4/5
+        - Teamwork (soft): Level 3/5
+        - Grafana (technical): Level 5/5
+        - Helm (technical): Level 5/5
+        - Resilience (soft): Level 5/5
+        - CI/CD Pipeline Design (functional): Level 3/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Dallas, Texas, USA
+    ò Summary: Experienced DevOps engineer seeking challenging infrastructure roles....
+
+  Profile 2: Senior DevOps Engineer
+    ò Vendor/Product: AWS / EKS / DevOps Engineer
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - AWS (technical): Level 5/5
+        - Kubernetes (technical): Level 5/5
+        - Docker (technical): Level 5/5
+        - Terraform (technical): Level 5/5
+        - Jenkins (technical): Level 4/5
+        - Azure (technical): Level 3/5
+        - Shell Scripting (technical): Level 4/5
+        - Ansible (technical): Level 5/5
+        - Linux (technical): Level 4/5
+        - Teamwork (soft): Level 5/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Dallas, Texas, USA
+    ò Summary: Experienced DevOps engineer seeking challenging infrastructure roles....
+
+  Profile 3: Senior DevOps Engineer
+    ò Vendor/Product: General / Cloud Infrastructure / DevOps Engineer
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - AWS (technical): Level 5/5
+        - Kubernetes (technical): Level 5/5
+        - Docker (technical): Level 5/5
+        - Terraform (technical): Level 5/5
+        - Jenkins (technical): Level 4/5
+        - Communication (soft): Level 4/5
+        - Python (technical): Level 5/5
+        - Incident Management (functional): Level 5/5
+        - Ansible (technical): Level 5/5
+        - ArgoCD (technical): Level 5/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Dallas, Texas, USA
+    ò Summary: Experienced DevOps engineer seeking challenging infrastructure roles....
+
+6. Priya Sharma (priya.sharma@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior UX Designer
+    ò Vendor/Product: General / Design / UX/UI Designer
+    ò Experience: 8 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $120,000 - $160,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Figma (technical): Level 5/5
+        - Adobe XD (technical): Level 5/5
+        - User Research (functional): Level 5/5
+        - Prototyping (technical): Level 5/5
+        - Accessibility (functional): Level 4/5
+        - CSS3 (technical): Level 5/5
+        - JavaScript (technical): Level 3/5
+        - Playwright (technical): Level 4/5
+        - Teamwork (soft): Level 3/5
+        - Responsive Design (functional): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Looking for senior design role with focus on design systems....
+
+  Profile 2: Senior UX Designer
+    ò Vendor/Product: General / Design / UX/UI Designer
+    ò Experience: 8 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $120,000 - $160,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Figma (technical): Level 5/5
+        - Adobe XD (technical): Level 5/5
+        - User Research (functional): Level 5/5
+        - Prototyping (technical): Level 5/5
+        - Accessibility (functional): Level 4/5
+        - Next.js (technical): Level 4/5
+        - GraphQL (technical): Level 5/5
+        - Accessibility (WCAG) (functional): Level 5/5
+        - Component Architecture (functional): Level 4/5
+        - Jest (technical): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Looking for senior design role with focus on design systems....
+
+  Profile 3: Senior UX Designer
+    ò Vendor/Product: General / Design / UX/UI Designer
+    ò Experience: 8 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $120,000 - $160,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Figma (technical): Level 5/5
+        - Adobe XD (technical): Level 5/5
+        - User Research (functional): Level 5/5
+        - Prototyping (technical): Level 5/5
+        - Accessibility (functional): Level 4/5
+        - HTML5 (technical): Level 3/5
+        - Storybook (technical): Level 3/5
+        - Creativity (soft): Level 4/5
+        - JavaScript (technical): Level 4/5
+        - Communication (soft): Level 3/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Looking for senior design role with focus on design systems....
+
+7. Carlos Rodriguez (carlos.rodriguez@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Data Scientist - Analytics
+    ò Vendor/Product: Snowflake / Snowflake Data Cloud / Data Analyst
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $125,000 - $165,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - R (technical): Level 4/5
+        - SQL (technical): Level 5/5
+        - Machine Learning (technical): Level 5/5
+        - Statistical Analysis (functional): Level 5/5
+        - Pandas (technical): Level 4/5
+        - Tableau (technical): Level 4/5
+        - Statistics (technical): Level 3/5
+        - Airflow (technical): Level 4/5
+        - dbt (technical): Level 3/5
+    ò Location Preferences (1):
+        - Chicago, Illinois, USA
+    ò Summary: Data scientist specializing in predictive modeling and analytics....
+
+  Profile 2: Data Scientist - Analytics
+    ò Vendor/Product: Snowflake / Snowflake Data Cloud / Data Analyst
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $125,000 - $165,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - R (technical): Level 4/5
+        - SQL (technical): Level 5/5
+        - Machine Learning (technical): Level 5/5
+        - Statistical Analysis (functional): Level 5/5
+        - Presentation Skills (soft): Level 3/5
+        - Airflow (technical): Level 3/5
+        - Business Intelligence (functional): Level 4/5
+        - dbt (technical): Level 3/5
+        - Snowflake (technical): Level 4/5
+    ò Location Preferences (1):
+        - Chicago, Illinois, USA
+    ò Summary: Data scientist specializing in predictive modeling and analytics....
+
+  Profile 3: Data Scientist - Analytics
+    ò Vendor/Product: General / Data Science / Data Scientist
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $125,000 - $165,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - R (technical): Level 4/5
+        - SQL (technical): Level 5/5
+        - Machine Learning (technical): Level 5/5
+        - Statistical Analysis (functional): Level 5/5
+        - Data Visualization (functional): Level 5/5
+        - Snowflake (technical): Level 4/5
+        - Attention to Detail (soft): Level 4/5
+        - dbt (technical): Level 3/5
+        - Statistics (technical): Level 3/5
+    ò Location Preferences (1):
+        - Chicago, Illinois, USA
+    ò Summary: Data scientist specializing in predictive modeling and analytics....
+
+8. Aisha Patel (aisha.patel@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior Security Engineer
+    ò Vendor/Product: AWS / General / Security Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - Penetration Testing (technical): Level 5/5
+        - Network Security (technical): Level 5/5
+        - SIEM (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Incident Response (functional): Level 5/5
+        - Cloud Security (technical): Level 5/5
+        - Zero Trust Architecture (technical): Level 4/5
+        - Wireshark (technical): Level 5/5
+        - Threat Intelligence (functional): Level 5/5
+        - IAM (technical): Level 4/5
+    ò Location Preferences (1):
+        - Washington, District of Columbia, USA
+    ò Summary: Cybersecurity expert seeking challenging security architecture roles....
+
+  Profile 2: Senior Security Engineer
+    ò Vendor/Product: AWS / General / Security Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - Penetration Testing (technical): Level 5/5
+        - Network Security (technical): Level 5/5
+        - SIEM (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Incident Response (functional): Level 5/5
+        - IAM (technical): Level 3/5
+        - Threat Intelligence (functional): Level 4/5
+        - Cloud Security (technical): Level 5/5
+        - Splunk (technical): Level 4/5
+        - Analytical Thinking (soft): Level 4/5
+    ò Location Preferences (1):
+        - Washington, District of Columbia, USA
+    ò Summary: Cybersecurity expert seeking challenging security architecture roles....
+
+  Profile 3: Senior Security Engineer
+    ò Vendor/Product: General / Cybersecurity / Security Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 1 month
+    ò Skills (10):
+        - Penetration Testing (technical): Level 5/5
+        - Network Security (technical): Level 5/5
+        - SIEM (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Incident Response (functional): Level 5/5
+        - Problem Solving (soft): Level 5/5
+        - Nessus (technical): Level 3/5
+        - SOC Operations (technical): Level 4/5
+        - Communication (soft): Level 5/5
+        - Analytical Thinking (soft): Level 5/5
+    ò Location Preferences (1):
+        - Washington, District of Columbia, USA
+    ò Summary: Cybersecurity expert seeking challenging security architecture roles....
+
+9. Ryan O'Brien (ryan.obrien@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior iOS Developer
+    ò Vendor/Product: Apple / Mobile / iOS Developer
+    ò Experience: 5 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $130,000 - $170,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Swift (technical): Level 5/5
+        - SwiftUI (technical): Level 5/5
+        - UIKit (technical): Level 5/5
+        - Core Data (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - Firebase (technical): Level 3/5
+        - React Native (technical): Level 4/5
+        - Teamwork (soft): Level 3/5
+        - XCTest (technical): Level 3/5
+        - Creativity (soft): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: iOS developer passionate about creating delightful mobile experiences....
+
+  Profile 2: Senior iOS Developer
+    ò Vendor/Product: General / Mobile Development / iOS Developer
+    ò Experience: 5 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $130,000 - $170,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Swift (technical): Level 5/5
+        - SwiftUI (technical): Level 5/5
+        - UIKit (technical): Level 5/5
+        - Core Data (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - Teamwork (soft): Level 4/5
+        - Xcode (technical): Level 5/5
+        - XCTest (technical): Level 4/5
+        - App Store Deployment (functional): Level 4/5
+        - Problem Solving (soft): Level 4/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: iOS developer passionate about creating delightful mobile experiences....
+
+  Profile 3: Senior iOS Developer
+    ò Vendor/Product: General / Mobile Development / iOS Developer
+    ò Experience: 5 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $130,000 - $170,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Swift (technical): Level 5/5
+        - SwiftUI (technical): Level 5/5
+        - UIKit (technical): Level 5/5
+        - Core Data (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - App Store Deployment (functional): Level 3/5
+        - Teamwork (soft): Level 4/5
+        - Communication (soft): Level 5/5
+        - Flutter (technical): Level 4/5
+        - Problem Solving (soft): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: iOS developer passionate about creating delightful mobile experiences....
+
+10. Meilin Huang (meilin.huang@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior Product Manager
+    ò Vendor/Product: General / Product Management / Product Manager
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $145,000 - $185,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Product Strategy (functional): Level 5/5
+        - Agile/Scrum (soft): Level 5/5
+        - User Research (functional): Level 4/5
+        - Analytics (technical): Level 4/5
+        - Stakeholder Management (soft): Level 5/5
+        - Leadership (soft): Level 4/5
+        - Jira (technical): Level 3/5
+        - Stakeholder Alignment (functional): Level 5/5
+        - Competitive Analysis (functional): Level 5/5
+        - Figma (technical): Level 3/5
+    ò Location Preferences (1):
+        - San Diego, California, USA
+    ò Summary: Experienced PM seeking B2B SaaS product leadership roles....
+
+  Profile 2: Senior Product Manager
+    ò Vendor/Product: General / Product Management / Product Manager
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $145,000 - $185,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Product Strategy (functional): Level 5/5
+        - Agile/Scrum (soft): Level 5/5
+        - User Research (functional): Level 4/5
+        - Analytics (technical): Level 4/5
+        - Stakeholder Management (soft): Level 5/5
+        - Google Analytics (technical): Level 4/5
+        - Roadmunk (technical): Level 4/5
+        - Excel/Google Sheets (technical): Level 3/5
+        - OKR Setting (functional): Level 5/5
+        - Competitive Analysis (functional): Level 4/5
+    ò Location Preferences (1):
+        - San Diego, California, USA
+    ò Summary: Experienced PM seeking B2B SaaS product leadership roles....
+
+  Profile 3: Senior Product Manager
+    ò Vendor/Product: General / SaaS / Product Manager
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $145,000 - $185,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Product Strategy (functional): Level 5/5
+        - Agile/Scrum (soft): Level 5/5
+        - User Research (functional): Level 4/5
+        - Analytics (technical): Level 4/5
+        - Stakeholder Management (soft): Level 5/5
+        - A/B Testing Tools (technical): Level 3/5
+        - Figma (technical): Level 4/5
+        - Leadership (soft): Level 4/5
+        - Empathy (soft): Level 5/5
+        - Google Analytics (technical): Level 5/5
+    ò Location Preferences (1):
+        - San Diego, California, USA
+    ò Summary: Experienced PM seeking B2B SaaS product leadership roles....
+
+11. Kwame Mensah (kwame.mensah@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Blockchain Developer - DeFi
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 4 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Solidity (technical): Level 5/5
+        - Web3.js (technical): Level 5/5
+        - Ethereum (technical): Level 5/5
+        - Smart Contracts (technical): Level 5/5
+        - JavaScript (technical): Level 4/5
+        - Accountability (soft): Level 3/5
+        - Docker (technical): Level 3/5
+        - Kubernetes (technical): Level 5/5
+        - API Design (functional): Level 4/5
+        - System Design (functional): Level 3/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Blockchain developer specializing in DeFi protocols and smart contracts....
+
+  Profile 2: Blockchain Developer - DeFi
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 4 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Solidity (technical): Level 5/5
+        - Web3.js (technical): Level 5/5
+        - Ethereum (technical): Level 5/5
+        - Smart Contracts (technical): Level 5/5
+        - JavaScript (technical): Level 4/5
+        - System Design (functional): Level 3/5
+        - Problem Solving (soft): Level 4/5
+        - Microservices (technical): Level 3/5
+        - Node.js (technical): Level 4/5
+        - Documentation (soft): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Blockchain developer specializing in DeFi protocols and smart contracts....
+
+  Profile 3: Blockchain Developer - DeFi
+    ò Vendor/Product: General / Blockchain / Blockchain Developer
+    ò Experience: 4 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+    ò Salary: $140,000 - $180,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Solidity (technical): Level 5/5
+        - Web3.js (technical): Level 5/5
+        - Ethereum (technical): Level 5/5
+        - Smart Contracts (technical): Level 5/5
+        - JavaScript (technical): Level 4/5
+        - Anchor Framework (technical): Level 4/5
+        - Smart Contract Architecture (functional): Level 5/5
+        - Innovation (soft): Level 3/5
+        - IPFS (technical): Level 4/5
+        - Rust (technical): Level 3/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Blockchain developer specializing in DeFi protocols and smart contracts....
+
+12. Natasha Volkov (natasha.volkov@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior QA Automation Engineer
+    ò Vendor/Product: General / Quality Assurance / QA Automation Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $110,000 - $145,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Selenium (technical): Level 5/5
+        - Cypress (technical): Level 5/5
+        - Java (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Test Strategy (functional): Level 5/5
+        - Test Planning (functional): Level 3/5
+        - BDD/Cucumber (technical): Level 3/5
+        - Teamwork (soft): Level 3/5
+        - TestNG (technical): Level 5/5
+        - LoadRunner (technical): Level 3/5
+    ò Location Preferences (1):
+        - Denver, Colorado, USA
+    ò Summary: QA automation expert focused on building robust testing frameworks....
+
+  Profile 2: Senior QA Automation Engineer
+    ò Vendor/Product: General / Quality Assurance / QA Automation Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $110,000 - $145,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Selenium (technical): Level 5/5
+        - Cypress (technical): Level 5/5
+        - Java (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Test Strategy (functional): Level 5/5
+        - JIRA (technical): Level 3/5
+        - JUnit (technical): Level 3/5
+        - JMeter (technical): Level 3/5
+        - TestNG (technical): Level 3/5
+        - Attention to Detail (soft): Level 4/5
+    ò Location Preferences (1):
+        - Denver, Colorado, USA
+    ò Summary: QA automation expert focused on building robust testing frameworks....
+
+  Profile 3: Senior QA Automation Engineer
+    ò Vendor/Product: General / Software Testing / QA Engineer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $110,000 - $145,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_GREEN_CARD
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Selenium (technical): Level 5/5
+        - Cypress (technical): Level 5/5
+        - Java (technical): Level 4/5
+        - Python (technical): Level 4/5
+        - Test Strategy (functional): Level 5/5
+        - Teamwork (soft): Level 5/5
+        - Communication (soft): Level 3/5
+        - TestRail (technical): Level 3/5
+        - Analytical Thinking (soft): Level 4/5
+        - TestNG (technical): Level 5/5
+    ò Location Preferences (1):
+        - Denver, Colorado, USA
+    ò Summary: QA automation expert focused on building robust testing frameworks....
+
+13. Raj Krishnamurthy (raj.krishnamurthy@email.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior Java Developer
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 9 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Java (technical): Level 5/5
+        - Spring Boot (technical): Level 5/5
+        - Microservices (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - AWS (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - Documentation (soft): Level 3/5
+        - Problem Solving (soft): Level 5/5
+        - Docker (technical): Level 3/5
+        - Message Queues (technical): Level 4/5
+    ò Location Preferences (1):
+        - Atlanta, Georgia, USA
+    ò Summary: Experienced Java architect seeking senior backend engineering roles....
+
+  Profile 2: Senior Java Developer
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 9 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Java (technical): Level 5/5
+        - Spring Boot (technical): Level 5/5
+        - Microservices (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - AWS (technical): Level 4/5
+        - Accountability (soft): Level 5/5
+        - Security Best Practices (functional): Level 4/5
+        - FastAPI (technical): Level 3/5
+        - Problem Solving (soft): Level 4/5
+        - Teamwork (soft): Level 4/5
+    ò Location Preferences (1):
+        - Atlanta, Georgia, USA
+    ò Summary: Experienced Java architect seeking senior backend engineering roles....
+
+  Profile 3: Senior Java Developer
+    ò Vendor/Product: General / Enterprise Software / Java Developer
+    ò Experience: 9 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $135,000 - $175,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - Java (technical): Level 5/5
+        - Spring Boot (technical): Level 5/5
+        - Microservices (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - AWS (technical): Level 4/5
+        - API Design (functional): Level 5/5
+        - Code Review (functional): Level 3/5
+        - Hibernate (technical): Level 4/5
+        - Kafka (technical): Level 5/5
+        - Spring Cloud (technical): Level 5/5
+    ò Location Preferences (1):
+        - Atlanta, Georgia, USA
+    ò Summary: Experienced Java architect seeking senior backend engineering roles....
+
+14. Bhavs Bayya (bhavsbayya@gmail.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior Cloud Architect
+    ò Vendor/Product: AWS / General / Cloud Solutions Architect
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $155,000 - $200,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - AWS (technical): Level 5/5
+        - Azure (technical): Level 5/5
+        - Terraform (technical): Level 5/5
+        - Kubernetes (technical): Level 4/5
+        - Cloud Security (technical): Level 5/5
+        - Cloud Strategy (functional): Level 5/5
+        - Helm (technical): Level 4/5
+        - Load Balancing (technical): Level 5/5
+        - Leadership (soft): Level 4/5
+        - VPC Design (technical): Level 5/5
+    ò Location Preferences (2):
+        - Phoenix, Arizona, USA
+        - Remote, Nationwide, USA
+    ò Summary: Cloud architect with expertise in multi-cloud solutions and migration strategies....
+
+  Profile 2: Site Reliability Engineer (SRE)
+    ò Vendor/Product: AWS / Cloud Infrastructure / SRE
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $150,000 - $195,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - AWS (technical): Level 3/5
+        - Kubernetes (technical): Level 3/5
+        - Prometheus & Grafana (technical): Level 3/5
+        - PagerDuty / Incident Response (technical): Level 3/5
+        - Terraform (technical): Level 3/5
+        - Python Scripting (technical): Level 3/5
+        - Chaos Engineering (technical): Level 3/5
+        - SLOs / SLAs / Error Budgets (functional): Level 3/5
+        - Capacity Planning (functional): Level 3/5
+        - Leadership (soft): Level 3/5
+    ò Location Preferences (2):
+        - Phoenix, Arizona, USA
+        - Remote, Nationwide, USA
+    ò Summary: Experienced SRE responsible for maintaining 99.99% uptime across distributed cloud-native systems. O...
+
+  Profile 3: DevSecOps Engineer
+    ò Vendor/Product: AWS / Cloud Security / Cloud Security Engineer
+    ò Experience: 7 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $155,000 - $200,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - AWS Security (IAM, GuardDuty, Security Hub) (technical): Level 3/5
+        - Terraform (technical): Level 3/5
+        - Vulnerability Assessment (Snyk/Trivy) (technical): Level 3/5
+        - SIEM & Log Analysis (technical): Level 3/5
+        - Zero Trust Architecture (technical): Level 3/5
+        - Penetration Testing (technical): Level 3/5
+        - SOC 2 / ISO 27001 Compliance (functional): Level 3/5
+        - Security Automation (technical): Level 3/5
+        - OWASP Top 10 (technical): Level 3/5
+        - Risk Assessment (functional): Level 3/5
+    ò Location Preferences (2):
+        - Phoenix, Arizona, USA
+        - Remote, Nationwide, USA
+    ò Summary: DevSecOps engineer embedding security into every stage of the SDLC. Specialises in cloud security po...
+
+15. Vallisiri Sista (vallisisira.sista@gmail.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior BI Analyst
+    ò Vendor/Product: Power BI / Power BI Service / BI Analyst
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $105,000 - $140,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Tableau (technical): Level 5/5
+        - Power BI (technical): Level 5/5
+        - SQL (technical): Level 5/5
+        - Python (technical): Level 4/5
+        - Data Modeling (functional): Level 4/5
+        - Business Intelligence (functional): Level 3/5
+        - Problem Solving (soft): Level 4/5
+        - dbt (technical): Level 3/5
+        - Communication (soft): Level 5/5
+        - A/B Testing (technical): Level 3/5
+    ò Location Preferences (1):
+        - Minneapolis, Minnesota, USA
+    ò Summary: BI analyst focused on creating actionable insights through data visualization....
+
+  Profile 2: Senior BI Analyst
+    ò Vendor/Product: Power BI / Power BI Service / BI Analyst
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $105,000 - $140,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Tableau (technical): Level 5/5
+        - Power BI (technical): Level 5/5
+        - SQL (technical): Level 5/5
+        - Python (technical): Level 4/5
+        - Data Modeling (functional): Level 4/5
+        - R (technical): Level 3/5
+        - Airflow (technical): Level 5/5
+        - Statistical Modeling (functional): Level 3/5
+        - Data Analysis (functional): Level 5/5
+        - Databricks (technical): Level 5/5
+    ò Location Preferences (1):
+        - Minneapolis, Minnesota, USA
+    ò Summary: BI analyst focused on creating actionable insights through data visualization....
+
+  Profile 3: Senior BI Analyst
+    ò Vendor/Product: General / Business Intelligence / BI Analyst
+    ò Experience: 5 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $105,000 - $140,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 3 weeks
+    ò Skills (10):
+        - Tableau (technical): Level 5/5
+        - Power BI (technical): Level 5/5
+        - SQL (technical): Level 5/5
+        - Python (technical): Level 4/5
+        - Data Modeling (functional): Level 4/5
+        - Snowflake (technical): Level 4/5
+        - Excel (technical): Level 3/5
+        - Pandas (technical): Level 4/5
+        - Stakeholder Reporting (functional): Level 4/5
+        - dbt (technical): Level 4/5
+    ò Location Preferences (1):
+        - Minneapolis, Minnesota, USA
+    ò Summary: BI analyst focused on creating actionable insights through data visualization....
+
+16. Bayya Kutty (bayyakutty02@gmail.com) - 3 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Senior Full Stack Engineer
+    ò Vendor/Product: General / Web Development / Full Stack Developer
+    ò Experience: 6 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $120,000 - $160,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Node.js (technical): Level 5/5
+        - React (technical): Level 5/5
+        - JavaScript (technical): Level 5/5
+        - TypeScript (technical): Level 4/5
+        - AWS (technical): Level 4/5
+        - PostgreSQL (technical): Level 4/5
+        - Communication (soft): Level 3/5
+        - Teamwork (soft): Level 4/5
+        - Docker (technical): Level 4/5
+        - FastAPI (technical): Level 4/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Full stack developer with expertise in modern web technologies and cloud platforms....
+
+  Profile 2: Backend API Developer
+    ò Vendor/Product: General / Backend Development / Backend Developer
+    ò Experience: 6 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $115,000 - $155,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - Node.js (technical): Level 5/5
+        - FastAPI (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - Docker (technical): Level 4/5
+        - REST APIs (technical): Level 5/5
+        - Redis (technical): Level 3/5
+        - Message Queues (technical): Level 3/5
+        - Django (technical): Level 3/5
+        - MongoDB (technical): Level 3/5
+    ò Location Preferences (2):
+        - Austin, Texas, USA
+        - Remote, Nationwide, USA
+    ò Summary: Backend developer specializing in RESTful APIs, microservices and cloud-native architectures....
+
+  Profile 3: React Frontend Developer
+    ò Vendor/Product: General / Frontend Development / Frontend Developer
+    ò Experience: 5 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $110,000 - $150,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 1 month
+    ò Skills (10):
+        - React (technical): Level 5/5
+        - TypeScript (technical): Level 5/5
+        - JavaScript (technical): Level 5/5
+        - HTML/CSS (technical): Level 5/5
+        - Redux (technical): Level 4/5
+        - Vite (technical): Level 4/5
+        - Attention to Detail (soft): Level 4/5
+        - Tailwind CSS (technical): Level 3/5
+        - Component Architecture (functional): Level 5/5
+        - HTML5 (technical): Level 5/5
+    ò Location Preferences (2):
+        - Remote, Nationwide, USA
+        - New York, New York, USA
+    ò Summary: Frontend developer with deep React/TypeScript expertise building performant single-page applications...
+
+17. Bhavana Bayya (bhavanabayya13@gmail.com) - 5 Job Profiles
+----------------------------------------------------------------------------------------------------
+
+  Profile 1: Platform / DevOps Engineer
+    ò Vendor/Product: AWS / Cloud Infrastructure / DevOps Engineer
+    ò Experience: 4 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $105,000 - $140,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 3/5
+        - Docker (technical): Level 3/5
+        - Kubernetes (technical): Level 3/5
+        - Terraform (technical): Level 3/5
+        - GitHub Actions / CI-CD (technical): Level 3/5
+        - AWS (ECS, EC2, RDS, S3) (technical): Level 3/5
+        - Helm Charts (technical): Level 3/5
+        - Infrastructure as Code (functional): Level 3/5
+        - Monitoring & Alerting (technical): Level 3/5
+        - Problem Solving (soft): Level 3/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Platform engineer bridging development and operations ù designing CI/CD pipelines, containerised dep...
+
+  Profile 2: Python Backend Developer
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 4 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $95,000 - $130,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - FastAPI (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - React (technical): Level 4/5
+        - Docker (technical): Level 4/5
+        - Accountability (soft): Level 4/5
+        - MongoDB (technical): Level 4/5
+        - System Design (functional): Level 3/5
+        - Kubernetes (technical): Level 3/5
+        - Redis (technical): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Backend specialist with strong Python and FastAPI experience....
+
+  Profile 3: Data Engineer
+    ò Vendor/Product: General / Data Engineering / Data Engineer
+    ò Experience: 4 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $100,000 - $138,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 3/5
+        - Apache Spark (technical): Level 3/5
+        - Apache Airflow (technical): Level 3/5
+        - dbt (technical): Level 3/5
+        - Snowflake (technical): Level 3/5
+        - Apache Kafka (technical): Level 3/5
+        - SQL & Data Modeling (technical): Level 3/5
+        - AWS Glue / S3 (technical): Level 3/5
+        - ETL Pipeline Design (functional): Level 3/5
+        - Analytical Thinking (soft): Level 3/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Data engineer skilled in building robust ETL/ELT pipelines, data lake architectures, and analytics i...
+
+  Profile 4: Platform / DevOps Engineer
+    ò Vendor/Product: Oracle / Oracle Database /
+    ò Experience: 7 years
+    ò Work Type: WorkType.REMOTE | Employment: EmploymentType.FT
+    ò Salary: $600,000 - $39,999,999 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.US_CITIZEN
+    ò Availability: 2026-06-17
+    ò Skills (7):
+        - AWS (technical): Level 3/5
+        - Agile (technical): Level 4/5
+        - Angular (technical): Level 3/5
+        - Azure (technical): Level 5/5
+        - C# (technical): Level 4/5
+        - Ci/cd (technical): Level 3/5
+        - Django (technical): Level 4/5
+    ò Summary: N/A
+
+  Profile 5: Python Backend Developer
+    ò Vendor/Product: General / Web Development / Backend Developer
+    ò Experience: 4 years
+    ò Work Type: WorkType.HYBRID | Employment: EmploymentType.FT
+    ò Salary: $95,000 - $130,000 (CurrencyType.USD)
+    ò Visa Status: VisaStatus.WORK_VISA
+    ò Availability: 2 weeks
+    ò Skills (10):
+        - Python (technical): Level 5/5
+        - FastAPI (technical): Level 5/5
+        - PostgreSQL (technical): Level 4/5
+        - React (technical): Level 4/5
+        - Docker (technical): Level 4/5
+        - Accountability (soft): Level 4/5
+        - MongoDB (technical): Level 4/5
+        - System Design (functional): Level 3/5
+        - Kubernetes (technical): Level 3/5
+        - Redis (technical): Level 5/5
+    ò Location Preferences (1):
+        - Remote, Nationwide, USA
+    ò Summary: Backend specialist with strong Python and FastAPI experience....
+
+
+====================================================================================================
+SECTION 2: COMPANIES & THEIR JOB POSTINGS
+====================================================================================================
+
+Total Companies/Recruiters: 23
+
+1. CloudTech Innovations (ID: 13)
+   Contact: recruiter2.emily@cloudtech.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Financial Reporting Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-5 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $115 - $150
+        Skills: 8 required
+
+      ò Oracle HCM Payroll Implementation Lead
+        Product: HCM Cloud | Role: Oracle Payroll Cloud Consultant | Level: 6-10 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $140 - $180
+        Skills: 8 required
+
+      ò Oracle Cloud Infrastructure Engineer
+        Product: Cloud Infrastructure | Role: Oracle Cloud Infrastructure Architect | Level: 5-8 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $130,000 - $170,000
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+2. CloudTech Innovations (ID: 14)
+   Contact: hr.chris@cloudtech.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Tax Cloud Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-6 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $118 - $152
+        Skills: 8 required
+
+      ò Oracle EBS Purchasing Consultant
+        Product: E-Business Suite | Role: Oracle EBS Functional Consultant | Level: 4-7 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $122 - $158
+        Skills: 8 required
+
+      ò Oracle Field Service Cloud Consultant
+        Product: CX Cloud | Role: Oracle CX Sales Consultant | Level: 3-5 years
+        Location: Seattle, WA | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $115 - $148
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+3. CloudTech Innovations (ID: 15)
+   Contact: recruiter.brian@cloudtech.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Integration Cloud (OIC) Developer
+        Product: Cloud Infrastructure | Role: Oracle Fusion Technical Consultant | Level: 3-6 years
+        Location: Seattle, WA | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $120 - $155
+        Skills: 8 required
+
+      ò Oracle Fusion OTBI Report Developer
+        Product: Fusion Cloud | Role: Oracle Analytics Developer | Level: 3-5 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $112 - $148
+        Skills: 8 required
+
+      ò Oracle Fusion HCM Core HR Consultant
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 4-7 years
+        Location: Seattle, WA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $162
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+4. Digital Transform Group (ID: 16)
+   Contact: recruiter2.kevin@digitaltrans.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle EBS to Cloud Migration Lead
+        Product: Fusion Cloud | Role: Oracle Cloud Migration Specialist | Level: 10-15 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $170 - $210
+        Skills: 8 required
+
+      ò Oracle Database Administrator - RAC Specialist
+        Product: Database | Role: Oracle Database Administrator | Level: 8-12 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $145,000 - $190,000
+        Skills: 8 required
+
+      ò Oracle Fusion PPM Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion PPM Consultant | Level: 5-8 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $165
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+5. Digital Transform Group (ID: 17)
+   Contact: hr.amanda@digitaltrans.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Lease Accounting Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-5 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $120 - $155
+        Skills: 8 required
+
+      ò Oracle EBS Technical PL/SQL Developer
+        Product: E-Business Suite | Role: Oracle EBS Technical Consultant | Level: 4-7 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $122 - $158
+        Skills: 8 required
+
+      ò Oracle OCI Network Engineer
+        Product: Cloud Infrastructure | Role: Oracle Cloud Infrastructure Architect | Level: 5-8 years
+        Location: Boston, MA | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $132 - $170
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+6. Digital Transform Group (ID: 18)
+   Contact: recruiter.mike@digitaltrans.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Workflow Automation Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 4-6 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $162
+        Skills: 8 required
+
+      ò Oracle EBS Workflow Developer
+        Product: E-Business Suite | Role: Oracle EBS Technical Consultant | Level: 4-7 years
+        Location: Boston, MA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $118 - $155
+        Skills: 8 required
+
+      ò Oracle OCI Security Engineer
+        Product: Cloud Infrastructure | Role: Oracle Cloud Infrastructure Architect | Level: 5-8 years
+        Location: Boston, MA | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $135 - $172
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+7. Enterprise Solutions LLC (ID: 7)
+   Contact: recruiter2.susan@enterprisesol.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle HCM Talent Management Lead
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 5-8 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $165
+        Skills: 8 required
+
+      ò Oracle Fusion Financials Architect
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 7-10 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $150 - $190
+        Skills: 8 required
+
+      ò Oracle Database Performance Engineer
+        Product: Database | Role: Oracle Database Administrator | Level: 5-8 years
+        Location: Remote | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $130 - $170
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+8. Enterprise Solutions LLC (ID: 8)
+   Contact: hr.tom@enterprisesol.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Receivables Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-5 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $112 - $148
+        Skills: 8 required
+
+      ò Oracle Identity Governance Specialist
+        Product: Cloud Infrastructure | Role: Oracle Cloud Infrastructure Architect | Level: 5-8 years
+        Location: Chicago, IL | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $135 - $175
+        Skills: 8 required
+
+      ò Oracle Fusion Manufacturing Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Supply Chain Consultant | Level: 4-7 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $128 - $165
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+9. Enterprise Solutions LLC (ID: 9)
+   Contact: recruiter.diana@enterprisesol.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion AP Automation Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-6 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $115 - $150
+        Skills: 8 required
+
+      ò Oracle Cloud FCCS Consultant
+        Product: Cloud Infrastructure | Role: Oracle Analytics Developer | Level: 4-7 years
+        Location: Chicago, IL | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $128 - $165
+        Skills: 8 required
+
+      ò Oracle ERP Cloud Cutover Manager
+        Product: Fusion Cloud | Role: Oracle Cloud Migration Specialist | Level: 7-10 years
+        Location: Chicago, IL | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $145 - $185
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+10. Global Systems Inc (ID: 4)
+   Contact: recruiter2.lisa@globalsystems.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle EBS Finance Consultant
+        Product: E-Business Suite | Role: Oracle EBS Functional Consultant | Level: 4-7 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $120 - $160
+        Skills: 8 required
+
+      ò Oracle Payroll Cloud Specialist
+        Product: HCM Cloud | Role: Oracle Payroll Cloud Consultant | Level: 4-6 years
+        Location: Remote | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $115 - $155
+        Skills: 8 required
+
+      ò Oracle Fusion SCM Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Supply Chain Consultant | Level: 5-8 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $135 - $175
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+11. Global Systems Inc (ID: 5)
+   Contact: hr.mark@globalsystems.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion General Ledger Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 4-7 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $162
+        Skills: 8 required
+
+      ò Oracle Fusion Fixed Assets Specialist
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-5 years
+        Location: New York, NY | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $110 - $145
+        Skills: 8 required
+
+      ò Oracle SOA Integration Developer
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 5-8 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $135 - $170
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+12. Global Systems Inc (ID: 6)
+   Contact: recruiter.anna@globalsystems.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Budget Controller
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 4-6 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $120 - $155
+        Skills: 8 required
+
+      ò Oracle HCM Goal Management Consultant
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 3-5 years
+        Location: New York, NY | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $112 - $148
+        Skills: 8 required
+
+      ò Oracle Fusion Integration Architect
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 6-10 years
+        Location: New York, NY | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $145 - $185
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+13. Oracle Consulting Partners (ID: 10)
+   Contact: recruiter2.rachel@oraclepartners.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Cloud Migration Architect
+        Product: Fusion Cloud | Role: Oracle Cloud Migration Specialist | Level: 8-12 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $160 - $200
+        Skills: 8 required
+
+      ò Oracle Fusion HCM Implementation Consultant
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 4-6 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $120 - $160
+        Skills: 8 required
+
+      ò Oracle Integration Developer
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 3-5 years
+        Location: Remote | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $165
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+14. Oracle Consulting Partners (ID: 11)
+   Contact: hr.james@oraclepartners.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Fusion Cash Management Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 3-6 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $118 - $152
+        Skills: 8 required
+
+      ò Oracle APEX Developer
+        Product: Database | Role: Oracle EBS Technical Consultant | Level: 4-7 years
+        Location: Austin, TX | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $122 - $158
+        Skills: 8 required
+
+      ò Oracle HCM Learning Cloud Consultant
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 3-5 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $115 - $148
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+15. Oracle Consulting Partners (ID: 12)
+   Contact: recruiter.linda@oraclepartners.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Cloud AIM Methodology Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 5-8 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $132 - $168
+        Skills: 8 required
+
+      ò Oracle Fusion Benefits Consultant
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 3-6 years
+        Location: Austin, TX | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $118 - $155
+        Skills: 8 required
+
+      ò Oracle RAC/Exadata DBA
+        Product: Database | Role: Oracle Database Administrator | Level: 6-10 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $140 - $178
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+16. Rubislaw Invest (ID: 20)
+   Contact: ashokkumarbayya@gmail.com | Role: Recruiter
+   Location: New York, NY | Website: https://www.rubislawinvest.com
+   Profile Complete: Yes
+   JOB POSTINGS: 0 positions
+----------------------------------------------------------------------------------------------------
+   [WARNING] NO JOB POSTINGS
+
+17. TechCorp Solutions (ID: 1)
+   Contact: recruiter2.jennifer@techcorp.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle Database Administrator - Senior
+        Product: Database | Role: Oracle Database Administrator | Level: 8-12 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $140,000 - $180,000
+        Skills: 8 required
+
+      ò Oracle HCM Cloud Implementation Lead
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 4-6 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $165
+        Skills: 8 required
+
+      ò Oracle Integration Cloud Architect
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 6-10 years
+        Location: Remote | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $150 - $190
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+18. TechCorp Solutions (ID: 2)
+   Contact: hr.jane@techcorp.com | Role: HR
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle HCM Recruiting Cloud Lead
+        Product: HCM Cloud | Role: Oracle HCM Cloud Consultant | Level: 5-8 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $130 - $168
+        Skills: 8 required
+
+      ò Oracle E-Commerce B2B Architect
+        Product: CX Cloud | Role: Oracle Commerce Cloud Architect | Level: 7-10 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $150,000 - $195,000
+        Skills: 8 required
+
+      ò Oracle BI Publisher Specialist
+        Product: Fusion Cloud | Role: Oracle BI Developer | Level: 4-7 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $125 - $160
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+19. TechCorp Solutions (ID: 3)
+   Contact: recruiter.robert@techcorp.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 4 positions
+----------------------------------------------------------------------------------------------------
+
+   Oracle (4 postings):
+      ò Oracle ERP Cloud Test Lead
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 4-7 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $122 - $158
+        Skills: 8 required
+
+      ò Oracle Fusion Financials Upgrade Consultant
+        Product: Fusion Cloud | Role: Oracle Fusion Functional Consultant | Level: 5-8 years
+        Location: San Francisco, CA | Type: WorkType.REMOTE | Employment: EmploymentType.CONTRACT
+        Salary: $132 - $168
+        Skills: 8 required
+
+      ò Oracle Fusion Data Migration Specialist
+        Product: Fusion Cloud | Role: Oracle Fusion Technical Consultant | Level: 4-7 years
+        Location: San Francisco, CA | Type: WorkType.HYBRID | Employment: EmploymentType.CONTRACT
+        Salary: $128 - $165
+        Skills: 8 required
+
+      ... and 1 more Oracle postings
+
+20. Rubislaw Invest (ID: 19)
+   Contact: bhavana@rubislawinvest.com | Role: Recruiter
+   Location: New York, NY | Website: https://www.rubislawinvest.com
+   Profile Complete: Yes
+   JOB POSTINGS: 11 positions
+----------------------------------------------------------------------------------------------------
+
+   AWS (2 postings):
+      ò Senior AWS Cloud Solutions Architect
+        Product: Cloud Infrastructure | Role: Cloud Solutions Architect | Level: 6-10 years
+        Location: Dallas, TX | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $155,000 - $200,000
+        Skills: 0 required
+
+      ò Cloud Infrastructure Engineer (AWS/DevOps)
+        Product: Cloud Infrastructure | Role: Cloud Architect | Level: 4-8 years
+        Location: Remote, USA | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $140,000 - $185,000
+        Skills: 0 required
+
+
+   General (9 postings):
+      ò React/TypeScript Frontend Engineer
+        Product: Frontend Development | Role: Frontend Developer | Level: 3-6 years
+        Location: Remote, USA | Type: WorkType.REMOTE | Employment: EmploymentType.FT
+        Salary: $100,000 - $130,000
+        Skills: 0 required
+
+      ò Senior Frontend Developer (React + Next.js)
+        Product: Web Development | Role: Frontend Developer | Level: 4-7 years
+        Location: Austin, TX | Type: WorkType.HYBRID | Employment: EmploymentType.FT
+        Salary: $110,000 - $145,000
+        Skills: 0 required
+
+      ò Python Backend Developer
+        Product: Backend Development | Role: Backend Developer | Level: 3-6 years
+        Location: Remote, USA | Type: WorkType.REMOTE | Employment: EmploymentType.FT
+        Salary: $95,000 - $130,000
+        Skills: 0 required
+
+      ... and 6 more General postings
+
+21. Rubislaw Invest (ID: 21)
+   Contact: siddhartha.kothi@inoapps.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 0 positions
+----------------------------------------------------------------------------------------------------
+   [WARNING] NO JOB POSTINGS
+
+22. Rubislaw Invest (ID: 22)
+   Contact: divija.kalluri@inoapps.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 0 positions
+----------------------------------------------------------------------------------------------------
+   [WARNING] NO JOB POSTINGS
+
+23. Rubislaw Invest (ID: 23)
+   Contact: kuttybayya@gmail.com | Role: RECRUITER
+   Location: None | Website: None
+   Profile Complete: No
+   JOB POSTINGS: 0 positions
+----------------------------------------------------------------------------------------------------
+   [WARNING] NO JOB POSTINGS
+
+
+====================================================================================================
+SECTION 3: CURRENT STATE SUMMARY
+====================================================================================================
+
+CANDIDATES:
+  Total: 17
+  Total Job Profiles: 53
+  Skills per Profile: avg 9.9, min 7, max 10
+  Locations per Profile: avg 1.3, min 0, max 2
+
+COMPANIES & JOB POSTINGS:
+  Total Companies: 23
+  Total Job Postings: 83
+  Average Postings per Company: 3.6
+  Companies with 0 postings: 4
+  Companies with 1+ postings: 19
+
+  Vendors Represented: 3
+    ò Oracle: 72
+    ò General: 9
+    ò AWS: 2
+
+====================================================================================================
+SECTION 4: MATCHING POTENTIAL ANALYSIS
+====================================================================================================
+
+CURRENT MATCHING POTENTIAL:
+  Candidate Profiles: 53
+  Job Postings: 83
+  Potential Matches (if all profiles matched to all postings): 4399
+
+VENDOR OVERLAP ANALYSIS:
+  Vendors in Candidate Profiles: 6

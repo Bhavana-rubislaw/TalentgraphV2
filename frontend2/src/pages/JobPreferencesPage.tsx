@@ -5,6 +5,7 @@ import SkillsPicker, { SelectedSkill } from '../components/SkillsPicker';
 import ResumeSelector, { ResumeOption } from '../components/ResumeSelector';
 import CertificationsSelector, { CertOption } from '../components/CertificationsSelector';
 import LivePreview from '../components/LivePreview';
+import CascadingTaxonomySelect from '../components/CascadingTaxonomySelect';
 import '../styles/CandidatePages.css';
 
 /* ── SVG Icons ── */
@@ -46,9 +47,6 @@ const I = {
 /* ── Helpers ── */
 const WORK_LABELS: Record<string, string> = { remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' };
 const EMP_LABELS: Record<string, string> = { ft: 'Full-Time', pt: 'Part-Time', contract: 'Contract', c2c: 'C2C', w2: 'W2' };
-const VISA_LABELS: Record<string, string> = { us_citizen: 'US Citizen', us_green_card: 'Green Card', us_visa: 'US Visa', eu_citizen: 'EU Citizen', uk_citizen: 'UK Citizen', work_visa: 'Work Visa' };
-const fmtSalary = (min: number, max: number, c: string) => { const u = (c||'usd').toUpperCase(); const f = (v: number) => v >= 1000 ? `${Math.round(v/1000)}k` : v.toLocaleString(); return `${u} ${f(min)} – ${f(max)}`; };
-
 /* ── Interfaces ── */
 interface LocationPref { city: string; state: string; country?: string; }
 
@@ -90,6 +88,38 @@ const EMPTY: FormState = {
   skills: [], location_preferences: [],
 };
 
+/* ================================================================
+   ACCORDION SECTION WRAPPER (moved outside to prevent re-creation)
+   ================================================================ */
+interface SectionProps {
+  id: string;
+  icon: JSX.Element;
+  title: string;
+  children: React.ReactNode;
+  openSections: Set<string>;
+  toggleSection: (id: string) => void;
+}
+
+const Section: React.FC<SectionProps> = ({ id, icon, title, children, openSections, toggleSection }) => {
+  // Defensive check for HMR edge cases
+  if (!openSections || !toggleSection) {
+    console.error('Section component received undefined props:', { openSections, toggleSection, id });
+    return null;
+  }
+  
+  const isOpen = openSections.has(id);
+  return (
+    <div className={`cp-accordion-section ${isOpen ? 'open' : ''}`}>
+      <button type="button" className="cp-accordion-header" onClick={() => toggleSection(id)}>
+        <span className="cp-accordion-icon">{icon}</span>
+        <span className="cp-accordion-title">{title}</span>
+        <span className="cp-accordion-chevron">{isOpen ? I.chevUp : I.chevDown}</span>
+      </button>
+      {isOpen && <div className="cp-accordion-body">{children}</div>}
+    </div>
+  );
+};
+
 /* ================================================================ */
 const JobPreferencesPage: React.FC = () => {
   const navigate = useNavigate();
@@ -104,15 +134,19 @@ const JobPreferencesPage: React.FC = () => {
   const [certifications, setCertifications] = useState<CertOption[]>([]);
   const [techCatalog, setTechCatalog] = useState<string[]>([]);
   const [softCatalog, setSoftCatalog] = useState<string[]>([]);
+  const [globalTechCatalog, setGlobalTechCatalog] = useState<string[]>([]);
+  const [globalSoftCatalog, setGlobalSoftCatalog] = useState<string[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 
   // Accordion
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['role', 'work', 'location', 'comp', 'skills', 'exp', 'auth', 'edu', 'resume', 'socials']));
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set(['role', 'work', 'location', 'comp', 'skills', 'exp', 'auth', 'edu', 'resume', 'socials', 'summary']));
   // List view
   const [searchQuery, setSearchQuery] = useState('');
   const [filterWork, setFilterWork] = useState<string | null>(null);
-  const [expandedSkills, setExpandedSkills] = useState<Set<number>>(new Set());
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const PAGE_SIZE = 9;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Tag inputs
   const [titleInput, setTitleInput] = useState('');
@@ -121,13 +155,46 @@ const JobPreferencesPage: React.FC = () => {
   const [locInput, setLocInput] = useState<LocationPref>({ city: '', state: '', country: '' });
 
   // Toast
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{ message: string; lines?: string[]; type: 'success' | 'error' } | null>(null);
   const toastRef = useRef<any>(null);
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message: string, type: 'success' | 'error' = 'success', lines?: string[]) => {
     if (toastRef.current) clearTimeout(toastRef.current);
-    setToast({ message, type });
-    toastRef.current = setTimeout(() => setToast(null), 3500);
+    setToast({ message, type, lines });
+    toastRef.current = setTimeout(() => setToast(null), type === 'error' ? 6000 : 3500);
   };
+
+  const FIELD_LABELS: Record<string, string> = {
+    profile_name: 'Profile Name', product_vendor: 'Product / Vendor', product_type: 'Product Type',
+    job_role: 'Job Role', years_of_experience: 'Years of Experience', worktype: 'Work Type',
+    employment_type: 'Employment Type', salary_min: 'Salary Min', salary_max: 'Salary Max',
+    salary_currency: 'Currency', resume_id: 'Resume', visa_status: 'Visa Status',
+    availability_date: 'Availability Date', profile_summary: 'Summary',
+    preferred_job_titles: 'Preferred Titles', seniority_level: 'Seniority Level',
+    travel_willingness: 'Travel Willingness', shift_preference: 'Shift Preference',
+    remote_acceptance: 'Remote Preference', relocation_willingness: 'Relocation',
+    pay_type: 'Pay Type', negotiability: 'Negotiability', core_strengths: 'Core Strengths',
+    relevant_experience: 'Relevant Experience (yrs)', notice_period: 'Notice Period',
+    security_clearance: 'Security Clearance', highest_education: 'Highest Education',
+  };
+
+  const parse422Errors = (detail: any[]): string[] =>
+    detail.slice(0, 4).map((d: any) => {
+      const loc: string[] = d.loc || [];
+      const rawField = loc.filter((l: any) => l !== 'body' && typeof l === 'string').pop() || '';
+      const label = FIELD_LABELS[rawField] || rawField.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const issue = d.type === 'int_parsing' ? 'must be a number'
+        : d.type === 'missing' ? 'is required'
+        : d.type === 'string_too_short' ? 'is too short'
+        : d.type === 'enum' ? 'has an invalid value'
+        : 'has an issue';
+      return label ? `• ${label}: ${issue}` : `• ${issue}`;
+    });
+
+  // Resume parsing state
+  const [resumeParsing, setResumeParsing] = useState(false);
+  const [parsedFields, setParsedFields] = useState<Set<string>>(new Set());
+  const [preParseForm, setPreParseForm] = useState<FormState | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ── fetch ── */
   useEffect(() => {
@@ -139,6 +206,43 @@ const JobPreferencesPage: React.FC = () => {
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, []);
+
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, filterWork]);
+
+  // Fetch role-specific skills when the selected role changes
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setTechCatalog(globalTechCatalog);
+      setSoftCatalog(globalSoftCatalog);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.getRoleSkills(selectedRoleId);
+        if (cancelled) return;
+        const roleSkills: Array<{ name: string; category: string }> = res.data.skills;
+        if (roleSkills.length === 0) {
+          setTechCatalog(globalTechCatalog);
+          setSoftCatalog(globalSoftCatalog);
+          return;
+        }
+        setTechCatalog(roleSkills
+          .filter(s => s.category === 'technical' || s.category === 'functional')
+          .map(s => s.name));
+        setSoftCatalog(roleSkills
+          .filter(s => s.category === 'soft')
+          .map(s => s.name));
+      } catch {
+        if (!cancelled) {
+          setTechCatalog(globalTechCatalog);
+          setSoftCatalog(globalSoftCatalog);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoleId]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -154,6 +258,8 @@ const JobPreferencesPage: React.FC = () => {
       setCertifications(certRes.data);
       setTechCatalog(catRes.data.technical_skills || []);
       setSoftCatalog(catRes.data.soft_skills || []);
+      setGlobalTechCatalog(catRes.data.technical_skills || []);
+      setGlobalSoftCatalog(catRes.data.soft_skills || []);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
@@ -199,8 +305,6 @@ const JobPreferencesPage: React.FC = () => {
   // Resume/cert IDs
   const certIds: number[] = (() => { try { return JSON.parse(form.certification_ids || '[]'); } catch { return []; } })();
   const setCertIds = (ids: number[]) => setForm(prev => ({ ...prev, certification_ids: JSON.stringify(ids) }));
-  const attachedIds: number[] = (() => { try { return JSON.parse(form.attached_resume_ids || '[]'); } catch { return []; } })();
-  const setAttachedIds = (ids: number[]) => setForm(prev => ({ ...prev, attached_resume_ids: JSON.stringify(ids) }));
 
   const addLocation = () => {
     if (!locInput.city.trim() || !locInput.state.trim()) return;
@@ -214,10 +318,21 @@ const JobPreferencesPage: React.FC = () => {
   };
 
   /* ── CRUD ── */
+  const toInt = (v: any, fallback = 0) => { const n = parseInt(String(v), 10); return isNaN(n) ? fallback : n; };
+  const toIntOrNull = (v: any) => { if (v === null || v === undefined || v === '') return null; const n = parseInt(String(v), 10); return isNaN(n) ? null : n; };
+  const buildPayload = (f: FormState) => ({
+    ...f,
+    years_of_experience: toInt(f.years_of_experience),
+    salary_min: toInt(f.salary_min),
+    salary_max: toInt(f.salary_max),
+    relevant_experience: toIntOrNull(f.relevant_experience),
+    primary_resume_id: toIntOrNull(f.primary_resume_id),
+    resume_id: toIntOrNull(f.primary_resume_id),
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Merge primary_resume_id into resume_id for backward compat
-    const payload = { ...form, resume_id: form.primary_resume_id };
+    const payload = buildPayload(form);
     try {
       if (editingId) {
         await apiClient.updateJobProfile(editingId, payload);
@@ -231,12 +346,20 @@ const JobPreferencesPage: React.FC = () => {
       setForm({ ...EMPTY });
       fetchAll();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to save', 'error');
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 422 && Array.isArray(detail)) {
+        const lines = parse422Errors(detail);
+        showToast('Please fix these fields before saving:', 'error', lines);
+      } else {
+        const msg = status === 409 ? 'A preference with that name already exists.' : 'Something went wrong saving your preference.';
+        showToast(msg, 'error');
+      }
     }
   };
 
   const handleSaveAsNew = async () => {
-    const payload = { ...form, resume_id: form.primary_resume_id };
+    const payload = buildPayload(form);
     try {
       await apiClient.createJobProfile(payload);
       showToast('Saved as new preference');
@@ -245,7 +368,15 @@ const JobPreferencesPage: React.FC = () => {
       setForm({ ...EMPTY });
       fetchAll();
     } catch (err: any) {
-      showToast(err.response?.data?.detail || 'Failed to save', 'error');
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 422 && Array.isArray(detail)) {
+        const lines = parse422Errors(detail);
+        showToast('Please fix these fields before saving:', 'error', lines);
+      } else {
+        const msg = status === 409 ? 'A preference with that name already exists.' : 'Something went wrong saving your preference.';
+        showToast(msg, 'error');
+      }
     }
   };
 
@@ -253,9 +384,25 @@ const JobPreferencesPage: React.FC = () => {
     const allSkills = (p.skills || []).map((s: any) => ({
       skill_name: s.skill_name, skill_category: s.skill_category, proficiency_level: s.proficiency_level
     }));
+    // Coerce any null string fields to '' to avoid React controlled-component warnings
+    const sanitiseStr = (v: any) => (v === null || v === undefined ? '' : String(v));
     setForm({
       ...EMPTY,
       ...p,
+      // String fields that may come back as null from API
+      seniority_level: sanitiseStr(p.seniority_level),
+      travel_willingness: sanitiseStr(p.travel_willingness),
+      shift_preference: sanitiseStr(p.shift_preference),
+      remote_acceptance: sanitiseStr(p.remote_acceptance),
+      relocation_willingness: sanitiseStr(p.relocation_willingness),
+      negotiability: sanitiseStr(p.negotiability),
+      notice_period: sanitiseStr(p.notice_period),
+      visa_status: sanitiseStr(p.visa_status),
+      security_clearance: sanitiseStr(p.security_clearance),
+      highest_education: sanitiseStr(p.highest_education),
+      salary_currency: sanitiseStr(p.salary_currency) || 'USD',
+      // start_date_preference is free text (e.g. "2 weeks", "Immediately")
+      start_date_preference: sanitiseStr(p.start_date_preference),
       skills: allSkills,
       location_preferences: (p.location_preferences || []).map((l: any) => ({ city: l.city, state: l.state, country: l.country })),
       certification_ids: p.certification_ids || '[]',
@@ -268,6 +415,15 @@ const JobPreferencesPage: React.FC = () => {
     setEditingId(p.id);
     setShowForm(true);
     setOpenMenuId(null);
+    // Resolve role ID from name so role-specific skills load automatically
+    setSelectedRoleId(null);
+    if (p.job_role) {
+      apiClient.searchTaxonomy(p.job_role, 10).then((res: any) => {
+        const match = (res.data.roles as Array<{ id: number; name: string }>)
+          .find((r: { id: number; name: string }) => r.name === p.job_role);
+        if (match) setSelectedRoleId(match.id);
+      }).catch(() => { /* fallback: global catalog */ });
+    }
   };
 
   const confirmDelete = async () => {
@@ -282,7 +438,136 @@ const JobPreferencesPage: React.FC = () => {
     setDeleteTarget(null);
   };
 
-  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setShowForm(true); };
+  const openNew = () => { setForm({ ...EMPTY }); setEditingId(null); setSelectedRoleId(null); setShowForm(true); setParsedFields(new Set()); setPreParseForm(null); };
+
+  /* ── Resume Parsing ── */
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    const allowedTypes = [
+      'application/pdf', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain'
+    ];
+    const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt'];
+    const fileExt = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExt)) {
+      showToast('Please upload a PDF, DOCX, DOC, or TXT file', 'error');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      showToast('File size must be under 10MB', 'error');
+      return;
+    }
+
+    setResumeParsing(true);
+    // Snapshot form state for undo
+    setForm(currentForm => { setPreParseForm(currentForm); return currentForm; });
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await apiClient.parseResumeForJobPreferences(formData);
+      const parsed = response.data.data;
+
+      // Track which fields were parsed
+      const newParsedFields = new Set<string>();
+
+      // Merge parsed data into form state
+      setForm(prev => {
+        const updated = { ...prev };
+
+        // Skills (if found with good confidence)
+        if (parsed.skills && parsed.skills.length > 0 && parsed.skills_confidence >= 0.3) {  // Lowered from 0.5
+          const newSkills: SelectedSkill[] = parsed.skills.map((skillName: string) => ({
+            skill_name: skillName,
+            skill_category: 'technical', // Assume technical from resume
+            proficiency_level: 'intermediate' // Default proficiency
+          }));
+          updated.skills = [...newSkills, ...prev.skills.filter((s: SelectedSkill) => s.skill_category !== 'technical')];
+          newParsedFields.add('skills');
+        }
+
+        // Years of experience
+        if (parsed.years_of_experience && parsed.years_of_experience_confidence >= 0.3) {  // Lowered from 0.5
+          updated.years_of_experience = parsed.years_of_experience;
+          updated.relevant_experience = parsed.years_of_experience;
+          newParsedFields.add('years_of_experience');
+          newParsedFields.add('relevant_experience');
+        }
+
+        // Seniority level
+        if (parsed.seniority_level && parsed.seniority_level_confidence >= 0.3) {  // Lowered from 0.5
+          updated.seniority_level = parsed.seniority_level;  // Backend now returns correct lowercase value
+          newParsedFields.add('seniority_level');
+        }
+
+        // Preferred job titles
+        if (parsed.preferred_job_titles && parsed.preferred_job_titles.length > 0 && parsed.preferred_job_titles_confidence >= 0.3) {  // Lowered from 0.5
+          updated.preferred_job_titles = JSON.stringify(parsed.preferred_job_titles);
+          newParsedFields.add('preferred_job_titles');
+        } else if (parsed.job_titles && parsed.job_titles.length > 0 && parsed.job_titles_confidence >= 0.3) {  // Lowered from 0.5
+          // Fallback to job_titles if preferred_job_titles not available
+          updated.preferred_job_titles = JSON.stringify(parsed.job_titles.slice(0, 3));
+          newParsedFields.add('preferred_job_titles');
+        }
+
+        // Education
+        if (parsed.highest_education && parsed.highest_education_confidence >= 0.3) {  // Lowered from 0.5
+          updated.highest_education = parsed.highest_education;  // Backend now returns correct lowercase value with underscores
+          newParsedFields.add('highest_education');
+        }
+
+        // Certifications
+        if (parsed.certifications && parsed.certifications.length > 0 && parsed.certifications_confidence >= 0.3) {  // Lowered from 0.5
+          // Note: This doesn't auto-link to existing certification IDs, just shows we found them
+          newParsedFields.add('certifications');
+        }
+
+        // URLs
+        if (parsed.linkedin_url && parsed.linkedin_url_confidence >= 0.5) {
+          updated.linkedin_url = parsed.linkedin_url;
+          newParsedFields.add('linkedin_url');
+        }
+        if (parsed.github_url && parsed.github_url_confidence >= 0.5) {
+          updated.github_url = parsed.github_url;
+          newParsedFields.add('github_url');
+        }
+        if (parsed.portfolio_url && parsed.portfolio_url_confidence >= 0.5) {
+          updated.portfolio_url = parsed.portfolio_url;
+          newParsedFields.add('portfolio_url');
+        }
+
+        return updated;
+      });
+
+      setParsedFields(newParsedFields);
+
+      const fieldCount = newParsedFields.size;
+      showToast(`Resume "${file.name}" parsed! Auto-filled ${fieldCount} field${fieldCount !== 1 ? 's' : ''}`, 'success');
+
+    } catch (err: any) {
+      console.error('[Resume Upload] Parsing error:', err);
+      console.error('[Resume Upload] Error response:', err.response?.data);
+      
+      const status = err.response?.status;
+      const errorMessage = status === 422
+        ? "Couldn't read all fields from your resume — you can fill them in manually."
+        : status === 413
+        ? 'That file is too large. Try a smaller one.'
+        : "Couldn't parse the resume — try a different file.";
+      showToast(errorMessage, 'error');
+    } finally {
+      setResumeParsing(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   /* ── filter ── */
   const filtered = profiles.filter(p => {
@@ -294,6 +579,43 @@ const JobPreferencesPage: React.FC = () => {
     return true;
   });
 
+  /* ── pagination ── */
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginatedFiltered = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const getPageNumbers = (): (number | string)[] => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | string)[] = [];
+    if (currentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+    return pages;
+  };
+
+  /* ── Helper for parsed field indicator ── */
+  const isParsed = (fieldName: string) => parsedFields.has(fieldName);
+  const parsedClass = (fieldName: string) => isParsed(fieldName) ? 'cp-field-parsed' : '';
+  const ParsedBadge = ({ fieldName }: { fieldName: string }) => 
+    isParsed(fieldName) ? (
+      <span style={{ 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        gap: '0.25rem', 
+        padding: '0.25rem 0.5rem', 
+        background: '#10b981', 
+        color: 'white', 
+        borderRadius: '4px', 
+        fontSize: '0.75rem', 
+        fontWeight: 600,
+        marginLeft: '0.5rem'
+      }}>
+        {I.check} Auto-filled
+      </span>
+    ) : null;
+
   /* ── accordion toggle ── */
   const toggleSection = (key: string) => {
     setOpenSections(prev => {
@@ -303,28 +625,56 @@ const JobPreferencesPage: React.FC = () => {
     });
   };
 
-  /* ── Proficiency Dots ── */
-  const Dots = ({ level }: { level: number }) => (
-    <span className="cp-level">{[1,2,3,4,5].map(i => <span key={i} className={`cp-level-dot ${i <= level ? 'filled' : ''}`}/>)}</span>
-  );
-
   /* ================================================================
-     RENDER — CARD (LIST VIEW)
+     RENDER — CARD (LIST VIEW — Job Postings style)
      ================================================================ */
   const renderCard = (p: any) => {
-    const expanded = expandedSkills.has(p.id);
     const sk = p.skills || [];
     const locs = p.location_preferences || [];
-    const vis = sk.length > 4 && !expanded ? sk.slice(0, 4) : sk;
+    const techSkillsArr = sk.filter((s: any) => s.skill_category === 'technical').slice(0, 3);
+
+    const salaryFull = (p.salary_min || p.salary_max)
+      ? `$${Number(p.salary_min || 0).toLocaleString()} – $${Number(p.salary_max || 0).toLocaleString()}/${p.pay_type === 'hourly' ? 'hr' : 'yr'}`
+      : null;
+
+    const createdDate = p.created_at
+      ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : null;
+    const updatedDate = p.updated_at
+      ? new Date(p.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : null;
+
+    const empLabel = EMP_LABELS[p.employment_type] || p.employment_type;
+    const locationStr = locs.length > 0
+      ? locs.map((l: any) => [l.city, l.state].filter(Boolean).join(', ')).slice(0, 2).join(' · ')
+      : (WORK_LABELS[p.worktype] || p.worktype);
+
+    const prefTitles: string[] = (() => { try { return JSON.parse(p.preferred_job_titles || '[]'); } catch { return []; } })();
+    const cats: string[] = (() => { try { return JSON.parse(p.job_category || '[]'); } catch { return []; } })();
+    const grayTags = [...prefTitles.slice(0, 2), ...cats.slice(0, 2)];
+
+    // Status badge by worktype
+    const statusMap: Record<string, { label: string; bg: string; color: string }> = {
+      remote:  { label: 'REMOTE',  bg: '#ecfdf5', color: '#059669' },
+      hybrid:  { label: 'HYBRID',  bg: '#f3f4f6', color: '#374151' },
+      onsite:  { label: 'ON-SITE', bg: '#faf5ff', color: '#7c3aed' },
+    };
+    const status = statusMap[p.worktype] || statusMap.hybrid;
+
     return (
-      <div key={p.id} className="cp-card">
-        <div className="cp-card-header">
-          <div className="cp-card-header-left">
-            <h3 className="cp-card-title">{p.profile_name}</h3>
-            <p className="cp-card-subtitle">{p.product_vendor} · {p.product_type}{p.seniority_level ? ` · ${p.seniority_level}` : ''}</p>
+      <div key={p.id} className="cp-card cp-card-v2">
+        {/* Card Header */}
+        <div className="cp-cv2-header">
+          <div className="cp-cv2-header-left">
+            <h3 className="cp-cv2-title">{p.profile_name}</h3>
+            <p className="cp-cv2-subtitle">
+              {[p.product_vendor, p.product_type, p.job_role].filter(Boolean).join(' · ')}
+            </p>
           </div>
-          <div className="cp-card-header-right">
-            {p.updated_at && <span className="cp-card-date">Updated {new Date(p.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+          <div className="cp-cv2-header-right">
+            <span className="cp-status-badge" style={{ background: status.bg, color: status.color }}>
+              {status.label}
+            </span>
             <div className="cp-kebab">
               <button className="cp-kebab-btn" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === p.id ? null : p.id); }} aria-label="Actions">{I.moreV}</button>
               {openMenuId === p.id && (
@@ -337,64 +687,78 @@ const JobPreferencesPage: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="cp-card-body">
-          <div className="cp-meta-grid">
-            <div className="cp-meta-group"><span className="cp-meta-label">Role</span><span className="cp-meta-value">{p.job_role}</span></div>
-            <div className="cp-meta-group"><span className="cp-meta-label">Experience</span><span className="cp-meta-value">{p.years_of_experience} yrs{p.relevant_experience ? ` (${p.relevant_experience} relevant)` : ''}</span></div>
-            <div className="cp-meta-group"><span className="cp-meta-label">Work Type</span>
-              <div className="cp-chips">
-                <span className="cp-chip cp-chip-accent">{WORK_LABELS[p.worktype] || p.worktype}</span>
-                <span className="cp-chip cp-chip-default">{EMP_LABELS[p.employment_type] || p.employment_type}</span>
-              </div>
-            </div>
-            <div className="cp-meta-group"><span className="cp-meta-label">Compensation</span><span className="cp-meta-value">{fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}{p.pay_type ? ` (${p.pay_type})` : ''}</span></div>
-            {locs.length > 0 && (
-              <div className="cp-meta-group" style={{ gridColumn: '1 / -1' }}><span className="cp-meta-label">Location</span>
-                <div className="cp-chips">{locs.map((l: any, i: number) => <span key={i} className="cp-chip cp-chip-green">{l.city}, {l.state}</span>)}</div>
-              </div>
-            )}
-            <div className="cp-meta-group"><span className="cp-meta-label">Visa</span><span className="cp-meta-value">{VISA_LABELS[p.visa_status] || p.visa_status}</span></div>
-            {(p.linkedin_url || p.github_url || p.portfolio_url || p.twitter_url || p.website_url) && (
-              <div className="cp-meta-group" style={{ gridColumn: '1 / -1' }}><span className="cp-meta-label">Socials</span>
-                <div className="cp-social-links">
-                  {p.linkedin_url && <a href={p.linkedin_url} target="_blank" rel="noopener noreferrer" className="cp-social-link linkedin" title="LinkedIn">{I.linkedin}</a>}
-                  {p.github_url && <a href={p.github_url} target="_blank" rel="noopener noreferrer" className="cp-social-link github" title="GitHub">{I.github}</a>}
-                  {p.portfolio_url && <a href={p.portfolio_url} target="_blank" rel="noopener noreferrer" className="cp-social-link portfolio" title="Portfolio">{I.globe}</a>}
-                  {p.twitter_url && <a href={p.twitter_url} target="_blank" rel="noopener noreferrer" className="cp-social-link twitter" title="Twitter / X">{I.twitter}</a>}
-                  {p.website_url && <a href={p.website_url} target="_blank" rel="noopener noreferrer" className="cp-social-link website" title="Website">{I.globe}</a>}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {sk.length > 0 && (
-          <div className="cp-skills-row">
-            <div className="cp-skills-label">Skills ({sk.length})</div>
-            <div className="cp-chips">{vis.map((s: any, i: number) => <span key={i} className="cp-chip cp-chip-default">{s.skill_name} <Dots level={s.proficiency_level} /></span>)}</div>
-            {sk.length > 4 && <button className="cp-show-toggle" onClick={() => { const n = new Set(expandedSkills); expanded ? n.delete(p.id) : n.add(p.id); setExpandedSkills(n); }}>{expanded ? <>Show less {I.chevUp}</> : <>+{sk.length-4} more {I.chevDown}</>}</button>}
+
+        {/* Purple skill chips */}
+        {techSkillsArr.length > 0 && (
+          <div className="cp-cv2-tags">
+            {techSkillsArr.map((s: any, i: number) => (
+              <span key={i} className="cp-chip cp-chip-accent">{s.skill_name}</span>
+            ))}
           </div>
         )}
-        <div className="cp-card-footer">
-          <button className="cp-btn cp-btn-outline cp-btn-sm" onClick={() => startEdit(p)}>{I.edit} Edit</button>
-          <button className="cp-btn cp-btn-danger-outline cp-btn-sm" onClick={() => setDeleteTarget(p)}>{I.trash} Delete</button>
-        </div>
-      </div>
-    );
-  };
 
-  /* ================================================================
-     ACCORDION SECTION WRAPPER
-     ================================================================ */
-  const Section = ({ id, icon, title, children }: { id: string; icon: JSX.Element; title: string; children: React.ReactNode }) => {
-    const isOpen = openSections.has(id);
-    return (
-      <div className={`cp-accordion-section ${isOpen ? 'open' : ''}`}>
-        <button type="button" className="cp-accordion-header" onClick={() => toggleSection(id)}>
-          <span className="cp-accordion-icon">{icon}</span>
-          <span className="cp-accordion-title">{title}</span>
-          <span className="cp-accordion-chevron">{isOpen ? I.chevUp : I.chevDown}</span>
-        </button>
-        {isOpen && <div className="cp-accordion-body">{children}</div>}
+        {/* Info rows */}
+        <div className="cp-cv2-info">
+          <div className="cp-cv2-info-row">
+            <span className="cp-cv2-icon">{I.mapPin}</span>
+            <span>{locationStr}</span>
+            {empLabel && (
+              <>
+                <span className="cp-cv2-sep">·</span>
+                <span className="cp-cv2-icon">{I.briefcase}</span>
+                <span>{empLabel}</span>
+              </>
+            )}
+          </div>
+          {salaryFull && (
+            <div className="cp-cv2-info-row">
+              <span className="cp-cv2-icon">{I.dollar}</span>
+              <strong className="cp-cv2-salary">{salaryFull}</strong>
+            </div>
+          )}
+          {(createdDate || updatedDate) && (
+            <div className="cp-cv2-info-row">
+              {createdDate && (
+                <><span className="cp-cv2-icon">{I.calendar}</span><span>Created {createdDate}</span></>
+              )}
+              {updatedDate && (
+                <><span className="cp-cv2-sep">·</span><span className="cp-cv2-icon">{I.clock}</span><span>Updated {updatedDate}</span></>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Gray tag chips — preferred titles & categories */}
+        {grayTags.length > 0 && (
+          <div className="cp-cv2-gray-tags">
+            {grayTags.map((t: string, i: number) => (
+              <span key={i} className="cp-chip cp-chip-default">{t}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Experience / seniority row */}
+        {(p.years_of_experience || p.seniority_level) && (
+          <div className="cp-cv2-count-row">
+            <span className="cp-cv2-count-icon">{I.user}</span>
+            <span className="cp-cv2-count-text">
+              {[
+                p.seniority_level && (p.seniority_level.charAt(0).toUpperCase() + p.seniority_level.slice(1)),
+                p.years_of_experience ? `${p.years_of_experience} yrs experience` : null,
+              ].filter(Boolean).join(' · ')}
+            </span>
+          </div>
+        )}
+
+        {/* Footer actions */}
+        <div className="cp-cv2-footer">
+          <button className="cp-cv2-footer-btn cp-btn cp-btn-outline cp-btn-sm" onClick={() => startEdit(p)}>
+            {I.edit} Edit Preference
+          </button>
+          <button className="cp-cv2-footer-btn cp-btn cp-btn-danger-outline cp-btn-sm" onClick={() => setDeleteTarget(p)}>
+            {I.trash} Delete
+          </button>
+        </div>
       </div>
     );
   };
@@ -403,39 +767,74 @@ const JobPreferencesPage: React.FC = () => {
      RENDER — FORM
      ================================================================ */
   const renderForm = () => (
-    <div className="cp-split-layout">
-      {/* LEFT: Form */}
-      <div className="cp-split-form">
-        <form onSubmit={handleSubmit}>
-          <div className="cp-form-container" style={{ marginBottom: 0 }}>
+    <form id="pref-form" onSubmit={handleSubmit}>
+
+            {/* Resume Upload Section */}
+            {!editingId && (
+              <div className="cp-resume-assist-banner" style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ width: 22, height: 22, display: 'flex' }}>{I.file}</span>
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Quick Start with Resume</h3>
+                    <p style={{ margin: '2px 0 0', opacity: 0.88, fontSize: '0.82rem' }}>Upload your resume and we'll auto-fill your preferences using AI.</p>
+                  </div>
+                </div>
+                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input ref={fileInputRef} type="file" accept=".pdf,.docx" onChange={handleResumeUpload} disabled={resumeParsing} style={{ display: 'none' }} id="resume-upload-input" />
+                    <label htmlFor="resume-upload-input" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'white', color: '#667eea', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: resumeParsing ? 'not-allowed' : 'pointer', opacity: resumeParsing ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+                      {resumeParsing ? 'Parsing...' : <>{I.plus} Upload Resume</>}
+                    </label>
+                    {parsedFields.size > 0 && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.22)', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                        <span style={{ display: 'inline-flex', width: 16, height: 16 }}>{I.check}</span>
+                        {parsedFields.size} fields auto-filled
+                      </span>
+                    )}
+                    {preParseForm && parsedFields.size > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => { setForm(preParseForm); setParsedFields(new Set()); setPreParseForm(null); }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '0.5rem 0.9rem', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        title="Undo auto-filled fields"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="14" height="14"><path d="M3 7v6h6"/><path d="M3 13C5.33 7.36 12.31 4.5 18 7.5a9 9 0 0 1 3 13.5"/></svg>
+                        Undo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* S1: Role & Domain */}
-            <Section id="role" icon={I.briefcase} title="Role & Domain Preferences">
+            <Section id="role" icon={I.briefcase} title="Role & Domain Preferences" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
                 <label className="required">Profile Name</label>
                 <input type="text" name="profile_name" value={form.profile_name} onChange={inp} placeholder="e.g., Oracle Cloud Senior Developer" required />
                 <span className="cp-helper-text">A unique name for this preference</span>
               </div>
+              
+              {/* Dynamic 3-Tier Taxonomy Selection */}
+              <CascadingTaxonomySelect
+                selectedVendor={form.product_vendor}
+                selectedProductType={form.product_type}
+                selectedRole={form.job_role}
+                onVendorChange={(name) => { setSelectedRoleId(null); setForm(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' })); }}
+                onProductTypeChange={(name) => { setSelectedRoleId(null); setForm(prev => ({ ...prev, product_type: name, job_role: '' })); }}
+                onRoleChange={(name, roleId) => { setSelectedRoleId(roleId || null); setForm(prev => ({ ...prev, job_role: name })); }}
+                required={true}
+              />
+              
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label className="required">Product Vendor</label>
-                  <select name="product_vendor" value={form.product_vendor} onChange={inp} required>
-                    <option value="Oracle">Oracle</option><option value="SAP">SAP</option><option value="Salesforce">Salesforce</option><option value="Microsoft">Microsoft</option>
-                  </select>
-                </div>
-                <div className="cp-form-group">
-                  <label className="required">Product Type</label>
-                  <input type="text" name="product_type" value={form.product_type} onChange={inp} placeholder="e.g., ERP Cloud, HCM" required />
-                </div>
-              </div>
-              <div className="cp-form-grid-2">
-                <div className="cp-form-group">
-                  <label className="required">Job Role</label>
-                  <input type="text" name="job_role" value={form.job_role} onChange={inp} placeholder="e.g., Senior Developer" required />
-                </div>
-                <div className="cp-form-group">
-                  <label>Seniority Level</label>
-                  <select name="seniority_level" value={form.seniority_level} onChange={inp}>
+                  <label>
+                    Seniority Level
+                    <ParsedBadge fieldName="seniority_level" />
+                  </label>
+                  <select name="seniority_level" value={form.seniority_level} onChange={inp} className={parsedClass('seniority_level')}>
                     <option value="">Select...</option>
                     {['entry','junior','mid','senior','lead','manager'].map(v => <option key={v} value={v}>{v.charAt(0).toUpperCase()+v.slice(1)}</option>)}
                   </select>
@@ -443,7 +842,10 @@ const JobPreferencesPage: React.FC = () => {
               </div>
               {/* Preferred Job Titles — tag input */}
               <div className="cp-form-group">
-                <label>Preferred Job Titles</label>
+                <label>
+                  Preferred Job Titles
+                  <ParsedBadge fieldName="preferred_job_titles" />
+                </label>
                 <div className="cp-tag-input-wrap">
                   <input type="text" value={titleInput} onChange={(e) => setTitleInput(e.target.value)} placeholder="Type title + Enter" onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag('preferred_job_titles', titleInput); setTitleInput(''); } }} />
                 </div>
@@ -460,7 +862,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S2: Employment & Work Style */}
-            <Section id="work" icon={I.monitor} title="Employment Type & Work Style">
+            <Section id="work" icon={I.monitor} title="Employment Type & Work Style" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
                 <label className="required">Work Mode</label>
                 <div className="cp-radio-grid">
@@ -494,7 +896,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S3: Location */}
-            <Section id="location" icon={I.mapPin} title="Location Preferences">
+            <Section id="location" icon={I.mapPin} title="Location Preferences" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
                   <label>Remote Acceptance</label>
@@ -528,7 +930,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S4: Compensation */}
-            <Section id="comp" icon={I.dollar} title="Compensation Expectations">
+            <Section id="comp" icon={I.dollar} title="Compensation Expectations" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-3">
                 <div className="cp-form-group">
                   <label className="required">Currency</label>
@@ -564,7 +966,13 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S5: Skills */}
-            <Section id="skills" icon={I.code} title="Skills & Expertise">
+            <Section id="skills" icon={I.code} title="Skills & Expertise" openSections={openSections} toggleSection={toggleSection}>
+              {isParsed('skills') && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#ecfdf5', border: '1px solid #10b981', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#065f46' }}>
+                  <span style={{ fontSize: '1.25rem' }}>{I.check}</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>Technical skills auto-filled from resume. You can edit or add more below.</span>
+                </div>
+              )}
               <SkillsPicker catalog={techCatalog} category="technical" selected={techSkills} onChange={setTechSkills} label="Technical Skills" />
               <div style={{ height: 20 }} />
               <SkillsPicker catalog={softCatalog} category="soft" selected={softSkills} onChange={setSoftSkills} label="Soft Skills" />
@@ -579,15 +987,21 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S6: Experience & Availability */}
-            <Section id="exp" icon={I.calendar} title="Experience & Availability">
+            <Section id="exp" icon={I.calendar} title="Experience & Availability" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label className="required">Total Years of Experience</label>
-                  <input type="number" name="years_of_experience" value={form.years_of_experience || ''} onChange={e => numInp('years_of_experience', e.target.value)} min="0" required />
+                  <label className="required">
+                    Total Years of Experience
+                    <ParsedBadge fieldName="years_of_experience" />
+                  </label>
+                  <input type="number" name="years_of_experience" value={form.years_of_experience || ''} onChange={e => numInp('years_of_experience', e.target.value)} min="0" required className={parsedClass('years_of_experience')} />
                 </div>
                 <div className="cp-form-group">
-                  <label>Relevant Experience</label>
-                  <input type="number" value={form.relevant_experience || ''} onChange={e => setForm(prev => ({ ...prev, relevant_experience: e.target.value ? Number(e.target.value) : null }))} min="0" />
+                  <label>
+                    Relevant Experience
+                    <ParsedBadge fieldName="relevant_experience" />
+                  </label>
+                  <input type="number" value={form.relevant_experience || ''} onChange={e => setForm(prev => ({ ...prev, relevant_experience: e.target.value ? Number(e.target.value) : null }))} min="0" className={parsedClass('relevant_experience')} />
                 </div>
               </div>
               <div className="cp-form-grid-2">
@@ -600,7 +1014,7 @@ const JobPreferencesPage: React.FC = () => {
                 </div>
                 <div className="cp-form-group">
                   <label>Start Date Preference</label>
-                  <input type="date" name="start_date_preference" value={form.start_date_preference} onChange={inp} />
+                  <input type="text" name="start_date_preference" value={form.start_date_preference} onChange={inp} placeholder="e.g. Immediately, 2 weeks, 1 month" />
                 </div>
               </div>
               <div className="cp-form-group">
@@ -610,7 +1024,7 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S7: Authorization */}
-            <Section id="auth" icon={I.shield} title="Authorization & Compliance">
+            <Section id="auth" icon={I.shield} title="Authorization & Compliance" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
                   <label className="required">Visa / Work Authorization</label>
@@ -632,47 +1046,60 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* S8: Education & Credentials */}
-            <Section id="edu" icon={I.graduation} title="Education & Credentials">
+            <Section id="edu" icon={I.graduation} title="Education & Credentials" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
-                <label>Highest Education Level</label>
-                <select name="highest_education" value={form.highest_education} onChange={inp}>
+                <label>
+                  Highest Education Level
+                  <ParsedBadge fieldName="highest_education" />
+                </label>
+                <select name="highest_education" value={form.highest_education} onChange={inp} className={parsedClass('highest_education')}>
                   <option value="">Select...</option>
                   <option value="high_school">High School</option><option value="associate">Associate Degree</option><option value="bachelor">Bachelor's Degree</option><option value="master">Master's Degree</option><option value="doctorate">Doctorate</option>
                 </select>
               </div>
               <div className="cp-form-group">
-                <label>Certifications from Profile</label>
+                <label>
+                  Certifications from Profile
+                  <ParsedBadge fieldName="certifications" />
+                </label>
                 <CertificationsSelector certifications={certifications} selectedIds={certIds} onChange={setCertIds} />
               </div>
             </Section>
 
             {/* S9: Resume */}
-            <Section id="resume" icon={I.file} title="Resume Attachment">
+            <Section id="resume" icon={I.file} title="Resume Attachment" openSections={openSections} toggleSection={toggleSection}>
               <ResumeSelector
                 resumes={resumes}
                 primaryResumeId={form.primary_resume_id}
-                attachedResumeIds={attachedIds}
                 onPrimaryChange={(id) => setForm(prev => ({ ...prev, primary_resume_id: id }))}
-                onAttachedChange={setAttachedIds}
               />
             </Section>
 
             {/* S10: Socials / Hyperlinks */}
-            <Section id="socials" icon={I.link} title="Social & Web Links">
+            <Section id="socials" icon={I.link} title="Social & Web Links" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.linkedin}</span> LinkedIn</label>
-                  <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={inp} placeholder="https://linkedin.com/in/your-profile" />
+                  <label>
+                    <span className="cp-social-icon">{I.linkedin}</span> LinkedIn
+                    <ParsedBadge fieldName="linkedin_url" />
+                  </label>
+                  <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={inp} placeholder="https://linkedin.com/in/your-profile" className={parsedClass('linkedin_url')} />
                 </div>
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.github}</span> GitHub</label>
-                  <input type="url" name="github_url" value={form.github_url} onChange={inp} placeholder="https://github.com/username" />
+                  <label>
+                    <span className="cp-social-icon">{I.github}</span> GitHub
+                    <ParsedBadge fieldName="github_url" />
+                  </label>
+                  <input type="url" name="github_url" value={form.github_url} onChange={inp} placeholder="https://github.com/username" className={parsedClass('github_url')} />
                 </div>
               </div>
               <div className="cp-form-grid-2">
                 <div className="cp-form-group">
-                  <label><span className="cp-social-icon">{I.globe}</span> Portfolio</label>
-                  <input type="url" name="portfolio_url" value={form.portfolio_url} onChange={inp} placeholder="https://your-portfolio.com" />
+                  <label>
+                    <span className="cp-social-icon">{I.globe}</span> Portfolio
+                    <ParsedBadge fieldName="portfolio_url" />
+                  </label>
+                  <input type="url" name="portfolio_url" value={form.portfolio_url} onChange={inp} placeholder="https://your-portfolio.com" className={parsedClass('portfolio_url')} />
                 </div>
                 <div className="cp-form-group">
                   <label><span className="cp-social-icon">{I.twitter}</span> Twitter / X</label>
@@ -687,37 +1114,12 @@ const JobPreferencesPage: React.FC = () => {
             </Section>
 
             {/* Summary */}
-            <div className="cp-form-section">
+            <Section id="summary" icon={I.file} title="Profile Summary" openSections={openSections} toggleSection={toggleSection}>
               <div className="cp-form-group">
-                <label>Profile Summary</label>
                 <textarea name="profile_summary" value={form.profile_summary} onChange={inp} rows={4} placeholder="Describe what makes you a great fit..." />
               </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="cp-form-footer" style={{ borderRadius: '0 0 var(--cp-radius-lg) var(--cp-radius-lg)' }}>
-            <button type="button" className="cp-btn cp-btn-outline" onClick={() => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY }); }}>Cancel</button>
-            {editingId && <button type="button" className="cp-btn cp-btn-outline" onClick={handleSaveAsNew}>{I.copy} Save as New</button>}
-            <button type="submit" className="cp-btn cp-btn-primary cp-btn-lg">{editingId ? 'Update Preference' : 'Save Preference'}</button>
-          </div>
-        </form>
-      </div>
-
-      {/* RIGHT: Live Preview */}
-      <div className="cp-split-preview">
-        <LivePreview
-          formData={form}
-          technicalSkills={techSkills}
-          softSkills={softSkills}
-          resumes={resumes}
-          certifications={certifications}
-          selectedCertIds={certIds}
-          primaryResumeId={form.primary_resume_id}
-          attachedResumeIds={attachedIds}
-        />
-      </div>
-    </div>
+            </Section>
+    </form>
   );
 
   /* ================================================================
@@ -739,33 +1141,86 @@ const JobPreferencesPage: React.FC = () => {
   /* ================================================================
      MAIN RENDER
      ================================================================ */
+
   return (
     <div className="cp-page">
-      <div className="cp-header">
-        <div className="cp-header-inner">
-          <div className="cp-header-left">
-            <h1 className="cp-header-title">Job Preferences</h1>
-            <p className="cp-header-subtitle">{showForm ? (editingId ? 'Edit your job preference' : 'Create a new job preference') : 'Manage your job preference profiles'}</p>
+      {showForm ? (
+        <>
+          {/* Form top bar */}
+          <div className="cp-form-topbar">
+            <button className="cp-btn cp-btn-ghost" type="button" onClick={() => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY }); }}>
+              ← Back
+            </button>
+            <h2 className="cp-form-topbar-title">
+              {editingId ? 'Edit Preference' : 'New Job Preference'}
+            </h2>
+            <div className="cp-form-topbar-actions">
+              {editingId && (
+                <button type="button" className="cp-btn cp-btn-outline" onClick={handleSaveAsNew}>
+                  {I.copy} Save as New
+                </button>
+              )}
+              <button type="submit" form="pref-form" className="cp-btn cp-btn-primary cp-btn-lg">
+                {editingId ? 'Update Preference' : 'Save Preference'}
+              </button>
+            </div>
           </div>
-          <div className="cp-header-actions">
-            <button className="cp-btn cp-btn-outline" onClick={() => navigate('/candidate/profile')}>{I.user} Profile</button>
-            <button className="cp-btn cp-btn-outline" onClick={() => navigate('/candidate-dashboard')}>{I.layout} Dashboard</button>
-            {!showForm && <button className="cp-btn cp-btn-primary" onClick={openNew}>{I.plus} Add Preference</button>}
-          </div>
-        </div>
-      </div>
 
-      <div className="cp-content">
-        {showForm ? renderForm() : (
-          <>
+          {/* Full-height split: form left | preview right */}
+          <div className="cp-form-body-split">
+            <div className="cp-form-body-left">
+              {renderForm()}
+            </div>
+            <div className="cp-form-body-right">
+              <LivePreview
+                formData={form}
+                technicalSkills={techSkills}
+                softSkills={softSkills}
+                resumes={resumes}
+                certifications={certifications}
+                selectedCertIds={certIds}
+                primaryResumeId={form.primary_resume_id}
+              />
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Header: breadcrumb + title + filter */}
+          <div className="cp-list-header">
+            <nav className="cp-breadcrumb">
+              <a onClick={() => navigate('/candidate-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+              <span className="cp-breadcrumb-sep">›</span>
+              <span className="cp-breadcrumb-current">Job Preferences</span>
+            </nav>
+
+            <div className="cp-page-title-block">
+              <h1 className="cp-page-h1">Job Preferences</h1>
+              <button className="cp-btn cp-btn-primary" onClick={openNew}>{I.plus} New Preference</button>
+            </div>
+
             {profiles.length > 0 && (
               <div className="cp-filter-bar">
-                <div className="cp-search-box">{I.search}<input type="text" placeholder="Search by title, role, vendor..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
+                <div className="cp-search-box">{I.search}<input type="text" placeholder="Search preferences..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
                 <div className="cp-filter-chips">
-                  {['remote','hybrid','onsite'].map(w => <button key={w} className={`cp-filter-chip ${filterWork===w?'active':''}`} onClick={() => setFilterWork(filterWork===w?null:w)}>{WORK_LABELS[w]}</button>)}
+                  <button className={`cp-filter-chip ${filterWork===null?'active':''}`} onClick={() => setFilterWork(null)}>All</button>
+                  {[
+                    { value: 'remote',  label: 'Remote',  dot: '#10b981' },
+                    { value: 'hybrid',  label: 'Hybrid',  dot: '#6b7280' },
+                    { value: 'onsite',  label: 'On-site', dot: '#8b5cf6' },
+                  ].map(({ value, label, dot }) => (
+                    <button key={value} className={`cp-filter-chip ${filterWork===value?'active':''}`} onClick={() => setFilterWork(filterWork===value?null:value)}>
+                      <span className="cp-filter-dot" style={{ background: dot }} />
+                      {label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Scrollable card grid */}
+          <div className="cp-page-body">
             {loading ? renderSkeletons()
             : filtered.length === 0 && profiles.length === 0 ? (
               <div className="cp-empty-state">
@@ -781,11 +1236,31 @@ const JobPreferencesPage: React.FC = () => {
                 <button className="cp-btn cp-btn-outline" onClick={() => { setSearchQuery(''); setFilterWork(null); }}>Clear Filters</button>
               </div>
             ) : (
-              <div className="cp-card-list">{filtered.map(renderCard)}</div>
+              <div className="cp-main-grid">{paginatedFiltered.map(renderCard)}</div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+
+          {/* Pagination footer */}
+          {totalPages > 1 && (
+            <div className="cp-pagination-footer">
+              <span className="cp-pagination-info">
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} of {filtered.length}
+              </span>
+              <div className="cp-pagination-buttons">
+                <button className="cp-pag-btn" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>← Prev</button>
+                {getPageNumbers().map((pn, i) =>
+                  pn === '...' ? (
+                    <span key={`e${i}`} className="cp-pag-btn ellipsis">…</span>
+                  ) : (
+                    <button key={pn} className={`cp-pag-btn${currentPage === pn ? ' active' : ''}`} onClick={() => setCurrentPage(pn as number)}>{pn}</button>
+                  )
+                )}
+                <button className="cp-pag-btn" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>Next →</button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Delete Modal */}
       {deleteTarget && (
@@ -804,7 +1279,19 @@ const JobPreferencesPage: React.FC = () => {
       )}
 
       {/* Toast */}
-      {toast && <div className={`cp-toast ${toast.type}`}>{toast.type === 'success' ? I.check : I.alert}{toast.message}</div>}
+      {toast && (
+        <div className={`cp-toast ${toast.type}`}>
+          {toast.type === 'success' ? I.check : I.alert}
+          <div>
+            <div>{toast.message}</div>
+            {toast.lines && toast.lines.length > 0 && (
+              <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none', fontSize: '0.85em', lineHeight: '1.6' }}>
+                {toast.lines.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -353,6 +353,10 @@ $RECYCLE.BIN/
 secrets.json
 config/secrets.json
 
+# OAuth Tokens
+google_token.pickle
+token.pickle
+
 # SSH Keys
 *.pem
 *.key
@@ -434,8 +438,30 @@ coverage/
 # TalentGraph specific files
 talentgraph_v2.log*
 
+# Generated analysis/report outputs
+backend2/reports/**/*.csv
+backend2/reports/**/*.zip
+backend2/reports/**/*.xlsv
+backend2/reports/**/*.xlsx
+
+
+**/output/**/*.csv
+**/output/**/*.zip
+**/output/**/*.xlsv
+**/output/**/*.xlsx
+
 # Nested duplicate directory (if not needed)
 TalentgraphV2/
 
 # User-specific files
 commands.txt.bak
+# Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

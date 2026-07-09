@@ -10,21 +10,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database import init_db
+from app.middleware.request_id import RequestIdMiddleware
+from app.core.logging_config import setup_logging, get_logger, log_change
 import os
+from pathlib import Path
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('talentgraph_v2.log')
-    ]
-)
-logger = logging.getLogger(__name__)
+# Load environment variables from .env file (look in backend2 root directory)
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+# Configure enhanced logging system
+setup_logging()
+logger = get_logger(__name__)
 
 # Initialize database on startup
 @asynccontextmanager
@@ -33,10 +29,101 @@ async def lifespan(app: FastAPI):
     logger.info("[STARTUP] TalentGraph V2 API starting...")
     init_db()
     logger.info("[STARTUP] Database initialized successfully")
+    
+    # Start background workers if enabled
+    workers_enabled = os.getenv("WORKERS_ENABLED", "true").lower() == "true"
+    if workers_enabled:
+        try:
+            from app.workers import start_workers
+            start_workers()
+            logger.info("[STARTUP] Background workers started successfully")
+        except Exception as e:
+            logger.warning(f"[STARTUP] Failed to start workers: {e}")
+    else:
+        logger.info("[STARTUP] Background workers disabled (WORKERS_ENABLED=false)")
+
+    # Start email scheduler immediately at startup (ensures misfire_grace_time is applied)
+    try:
+        from app.workers.email_worker import get_email_scheduler
+        get_email_scheduler()  # Creates scheduler with polling fallback
+        logger.info("[STARTUP] Email scheduler initialized")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Email scheduler init failed: {e}")
+
+    # Recover orphaned queued emails (lost when scheduler restarts)
+    try:
+        from app.database import engine
+        from app.models import EmailDelivery, EmailDeliveryStatus
+        from app.workers.email_worker import send_notification_email_task, get_email_scheduler
+        from sqlmodel import Session, select
+        from apscheduler.triggers.date import DateTrigger
+        from datetime import datetime, timedelta
+
+        with Session(engine) as session:
+            orphaned = session.exec(
+                select(EmailDelivery).where(
+                    EmailDelivery.status == EmailDeliveryStatus.QUEUED.value,
+                    EmailDelivery.attempts < EmailDelivery.max_attempts
+                )
+            ).all()
+
+            if orphaned:
+                scheduler = get_email_scheduler()
+                for i, delivery in enumerate(orphaned):
+                    # Stagger jobs by 2s each to avoid all firing simultaneously
+                    run_at = datetime.utcnow() + timedelta(seconds=5 + i * 2)
+                    scheduler.add_job(
+                        send_notification_email_task,
+                        trigger=DateTrigger(run_date=run_at),
+                        args=[delivery.id],
+                        id=f"email_recover_{delivery.id}",
+                        replace_existing=True
+                    )
+                logger.info(f"[STARTUP] Re-queued {len(orphaned)} orphaned email(s) for delivery")
+            else:
+                logger.info("[STARTUP] No orphaned emails found")
+    except Exception as e:
+        logger.warning(f"[STARTUP] Orphaned email recovery failed: {e}")
+
+    # Run lifecycle checks immediately on startup
+    lifecycle_enabled = os.getenv("LIFECYCLE_CHECK_ON_STARTUP", "true").lower() == "true"
+    if lifecycle_enabled:
+        try:
+            from app.services.lifecycle_service import LifecycleService
+            from app.database import engine
+            from sqlmodel import Session
+            
+            logger.info("[STARTUP] Running lifecycle checks...")
+            with Session(engine) as session:
+                lifecycle = LifecycleService()
+                
+                # Check expiring jobs (3-day warnings to recruiters)
+                expiring_3day = lifecycle.check_expiring_jobs(session, warning_days=3)
+                logger.info(f"[STARTUP] Sent {expiring_3day} 3-day expiry warnings")
+                
+                # Check expiring jobs (1-day URGENT warnings to Admin/HR)
+                expiring_1day = lifecycle.check_expiring_jobs(session, warning_days=1)
+                logger.info(f"[STARTUP] Sent {expiring_1day} urgent 1-day warnings (Admin/HR)")
+                
+                # Auto-freeze expired jobs
+                frozen_count = lifecycle.auto_freeze_expired_jobs(session)
+                logger.info(f"[STARTUP] Auto-frozen jobs: {frozen_count} jobs closed")
+                
+            logger.info("[STARTUP] Lifecycle checks completed")
+        except Exception as e:
+            logger.error(f"[STARTUP] Lifecycle checks failed: {e}")
+    
     yield
+    
     # Shutdown
     logger.info("[SHUTDOWN] TalentGraph V2 API shutting down...")
-    pass
+    if workers_enabled:
+        try:
+            from app.workers import stop_workers
+            stop_workers()
+            logger.info("[SHUTDOWN] Background workers stopped successfully")
+        except Exception as e:
+            logger.warning(f"[SHUTDOWN] Failed to stop workers: {e}")
 
 
 app = FastAPI(
@@ -46,25 +133,70 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS Configuration
-origins = [
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
+# CORS Configuration - Restrictive for production security
+default_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
     "http://localhost:3002",
     "http://127.0.0.1:3002",
     "http://localhost:3003",
     "http://127.0.0.1:3003",
+    "http://localhost:3004",
+    "http://127.0.0.1:3004",
+    "http://localhost:3005",
+    "http://127.0.0.1:3005",
 ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Optional env override: FRONTEND_ORIGINS="http://localhost:3002,https://app.example.com"
+frontend_origins_env = os.getenv("FRONTEND_ORIGINS", "").strip()
+origins = [
+    origin.strip() for origin in frontend_origins_env.split(",") if origin.strip()
+] or default_origins
+
+# Production environment check
+is_production = os.getenv("APP_ENV", "development").lower() == "production"
+
+# Configure CORS with appropriate strictness
+if is_production:
+    # Production: strict CORS - no regex, explicit origins only
+    logger.info("[CORS] Production mode - strict CORS policy")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,  # Explicit whitelist only
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],  # Only expose specific headers
+        max_age=3600,
+    )
+else:
+    # Development: flexible for local testing on various ports
+    logger.info("[CORS] Development mode - flexible CORS for localhost")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        # Allow localhost variations only in development
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):(300[0-9]|8000|8001|5173)$",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],  # Limited exposure
+        max_age=3600,
+    )
+
+logger.info(f"[STARTUP] CORS origins configured: {origins}")
+# Request-ID tracing — must be added AFTER CORSMiddleware
+app.add_middleware(RequestIdMiddleware)
+
+# Rate limiting middleware for security
+from app.middleware.rate_limiting import setup_rate_limiting
+limiter = setup_rate_limiting(app)
+
+# Change tracking middleware for comprehensive logging
+from app.middleware.change_tracking import ChangeTrackingMiddleware
+app.add_middleware(ChangeTrackingMiddleware)
 
 
 # ============ ROOT ============
@@ -88,11 +220,28 @@ def health():
 
 
 # ============ ROUTERS ============
-from app.routers import auth, candidates, company, job_postings, matches, recommendations, swipes, dashboard, applications, subscriptions, team
+from app.routers import (
+    auth, candidates, company, job_postings, matches, recommendations, 
+    swipes, dashboard, applications, notifications, activity_feed, 
+    messages, meetings, calendar, analytics, logs, notification_preferences,
+    onboarding, product_taxonomy, admin
+)
+from app.routers.admin_extended import router as admin_extended_router, accept_router as invitations_router
+from app.routers.subscriptions import router as subscriptions_router
+from app.routers.credits import router as credits_router
+from app.routers.team import router as team_router
 
-logger.info("[STARTUP] Registering routers...")
+log_change(
+    logger, 
+    action="startup", 
+    entity_type="application", 
+    message="Registering API routers"
+)
+
+# Core routers
 app.include_router(auth.router)
 app.include_router(candidates.router)
+app.include_router(onboarding.router)  # Resume-assisted candidate onboarding
 app.include_router(company.router)
 app.include_router(job_postings.router)
 app.include_router(matches.router)
@@ -100,9 +249,28 @@ app.include_router(recommendations.router)
 app.include_router(swipes.router)
 app.include_router(dashboard.router)
 app.include_router(applications.router)
-app.include_router(subscriptions.router)
-app.include_router(team.router)
-logger.info("[STARTUP] All routers registered successfully")
+app.include_router(notifications.router)
+app.include_router(notification_preferences.router)  # Notification preference settings
+app.include_router(activity_feed.router)
+app.include_router(messages.router)  # Direct messaging system
+app.include_router(meetings.router)  # Meeting scheduler with email notifications
+app.include_router(calendar.router)  # Calendar & video provider OAuth integration
+app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
+app.include_router(logs.router)  # Comprehensive logging system
+app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences
+app.include_router(admin_extended_router)    # Admin portal — extended features (Phase 2-7)
+app.include_router(admin.router)             # Admin portal management APIs
+app.include_router(invitations_router)       # Public invitation acceptance
+app.include_router(subscriptions_router)     # Subscription plans & purchases
+app.include_router(credits_router)           # Credits balance & transactions
+app.include_router(team_router)              # Team invitations & member management
+
+log_change(
+    logger,
+    action="startup_complete",
+    entity_type="application",
+    message="All routers registered successfully"
+)
 
 
 if __name__ == "__main__":
@@ -113,3 +281,5 @@ if __name__ == "__main__":
         port=8001,
         reload=True
     )
+
+

@@ -11,3 +11,19 @@ passlib[bcrypt]==1.7.4
 pytest==7.4.3
 httpx==0.25.2
 psycopg2-binary==2.9.9
+requests==2.31.0
+
+# Phase 3 & 4 Dependencies
+sendgrid==6.11.0             # Email service
+apscheduler==3.10.4          # Background job scheduler
+python-dateutil==2.8.2       # Date/time parsing for interview scheduling
+
+# Security & File Validation
+python-magic==0.4.27         # File type detection via magic bytes
+python-magic-bin==0.4.14     # Windows: bundles native libmagic DLL (no-op on Linux/Mac)
+argon2-cffi==23.1.0          # Secure password hashing
+slowapi==0.1.9               # Rate limiting middleware
+
+# Resume Parsing
+PyPDF2==3.0.1                # PDF text extraction
+python-docx==1.1.0           # DOCX text extraction

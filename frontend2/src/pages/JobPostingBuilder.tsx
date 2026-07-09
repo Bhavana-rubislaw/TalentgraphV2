@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/JobPostingBuilder.css';
+import { StatusBadge, SectionCard, LifecycleActions, JobPreviewPanel, FormProgressBar } from '../components/JobPostingComponents';
+import CascadingTaxonomySelect from '../components/CascadingTaxonomySelect';
 
 // ============ TYPES ============
 interface PostingSkill {
@@ -61,6 +63,12 @@ interface JobPosting {
   required_skills?: string;
   posting_skills: PostingSkill[];
   is_active: boolean;
+  status?: string; // 'active', 'frozen', 'reposted', 'cancelled'
+  frozen_at?: string;
+  reposted_at?: string;
+  last_reactivated_at?: string;
+  cancelled_at?: string;
+  cancellation_reason?: string;
   created_at: string;
   updated_at: string;
 }
@@ -110,88 +118,10 @@ const VISA_OPTIONS = [
   'US Citizen', 'Green Card', 'H1B', 'OPT', 'CPT',
   'Sponsorship Available', 'Not Required',
 ];
-const PRODUCT_VENDORS = ['Oracle'];
 
-// Oracle Product → Role mapping
-const ORACLE_PRODUCTS: Record<string, string[]> = {
-  'Oracle Fusion Cloud Financials': [
-    'Functional Consultant', 'Technical Consultant', 'Solution Architect',
-    'Implementation Lead', 'Business Analyst', 'Finance SME', 'Project Manager',
-  ],
-  'Oracle Fusion Cloud HCM': [
-    'HCM Functional Consultant', 'HCM Technical Consultant', 'Payroll Consultant',
-    'Benefits Consultant', 'Absence Management Consultant', 'Talent Management Consultant',
-    'HCM Solution Architect', 'Implementation Lead', 'Business Analyst',
-  ],
-  'Oracle Fusion Cloud SCM': [
-    'SCM Functional Consultant', 'SCM Technical Consultant', 'Procurement Consultant',
-    'Inventory Management Consultant', 'Order Management Consultant', 'Manufacturing Consultant',
-    'SCM Solution Architect', 'Implementation Lead',
-  ],
-  'Oracle Fusion Cloud PPM': [
-    'PPM Functional Consultant', 'PPM Technical Consultant', 'Project Manager',
-    'Grants Management Consultant', 'PPM Solution Architect',
-  ],
-  'Oracle Fusion Cloud CX': [
-    'CX Functional Consultant', 'CX Technical Consultant', 'Sales Cloud Consultant',
-    'Service Cloud Consultant', 'Marketing Cloud Consultant', 'CPQ Consultant',
-    'CX Solution Architect',
-  ],
-  'Oracle Fusion Cloud ERP': [
-    'ERP Functional Consultant', 'ERP Technical Consultant', 'ERP Solution Architect',
-    'Implementation Lead', 'Business Analyst', 'Finance Consultant', 'Procurement Consultant',
-  ],
-  'Oracle Integration Cloud (OIC)': [
-    'Integration Developer', 'Integration Architect', 'OIC Consultant',
-    'Technical Lead', 'Middleware Consultant',
-  ],
-  'Oracle VBCS': [
-    'VBCS Developer', 'UI/UX Developer', 'Frontend Consultant',
-    'Application Developer', 'Technical Lead',
-  ],
-  'Oracle Analytics Cloud': [
-    'Analytics Consultant', 'BI Developer', 'Data Analyst',
-    'OTBI Developer', 'Analytics Architect', 'Reporting Specialist',
-  ],
-  'Oracle EPM Cloud': [
-    'EPM Functional Consultant', 'EPM Technical Consultant', 'Planning Consultant',
-    'PBCS Consultant', 'FCCS Consultant', 'ARCS Consultant', 'EPM Architect',
-  ],
-  'Oracle E-Business Suite (EBS)': [
-    'EBS Functional Consultant', 'EBS Technical Consultant', 'EBS DBA',
-    'Forms/Reports Developer', 'EBS Solution Architect', 'EBS Upgrade Specialist',
-  ],
-  'Oracle PeopleSoft': [
-    'PeopleSoft Functional Consultant', 'PeopleSoft Technical Consultant',
-    'PeopleSoft DBA', 'PeopleTools Developer', 'PeopleSoft Architect',
-  ],
-  'Oracle Database': [
-    'Database Administrator', 'Database Developer', 'Performance Tuning Specialist',
-    'RAC Specialist', 'Data Guard Specialist', 'Database Architect',
-  ],
-  'Oracle Autonomous Database': [
-    'Cloud DBA', 'Autonomous DB Specialist', 'Database Architect',
-    'Data Engineer', 'Migration Specialist',
-  ],
-  'Oracle Cloud Infrastructure (OCI)': [
-    'Cloud Architect', 'Cloud Engineer', 'DevOps Engineer',
-    'Infrastructure Consultant', 'Security Specialist', 'Network Engineer',
-  ],
-  'Oracle NetSuite': [
-    'NetSuite Functional Consultant', 'NetSuite Technical Consultant',
-    'SuiteScript Developer', 'NetSuite Administrator', 'NetSuite Architect',
-  ],
-  'Oracle Primavera': [
-    'Primavera P6 Consultant', 'Primavera Administrator', 'Project Controls Specialist',
-    'Scheduling Analyst', 'Primavera Architect',
-  ],
-  'Oracle APEX': [
-    'APEX Developer', 'APEX Architect', 'Application Developer',
-    'Low-Code Developer', 'Technical Lead',
-  ],
-};
-
-const ORACLE_PRODUCT_LIST = Object.keys(ORACLE_PRODUCTS);
+// NOTE: Product taxonomy (vendors, product types, roles) now loaded dynamically from database
+// The hardcoded PRODUCT_VENDORS and ORACLE_PRODUCTS constants have been removed
+// Use CascadingTaxonomySelect component for vendor/product/role selection
 
 const EDUCATION_OPTIONS = [
   "Bachelor's Degree", "Master's Degree", "PhD", "Associate's Degree",
@@ -206,6 +136,8 @@ const JobPostingBuilder: React.FC = () => {
   // State
   const [postings, setPostings] = useState<JobPosting[]>([]);
   const [catalogs, setCatalogs] = useState<Catalogs>({ technical_skills: [], soft_skills: [], certifications: [] });
+  const [globalCatalogs, setGlobalCatalogs] = useState<Catalogs>({ technical_skills: [], soft_skills: [], certifications: [] });
+  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [formData, setFormData] = useState<JobPostingFormData>({ ...EMPTY_FORM });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -213,7 +145,18 @@ const JobPostingBuilder: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [listSearch, setListSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'frozen' | 'cancelled'>('all');
   const [showPreview, setShowPreview] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedPostingId, setSelectedPostingId] = useState<number | null>(null);
+  
+  // Cancel modal state
+  const [showCancelModal, setShowCancelModal] = useState<number | null>(null);
+  const [cancelReason, setCancelReason] = useState<string>('');
+  const [customReason, setCustomReason] = useState<string>('');
+  const PAGE_SIZE_POSTINGS = 9;
+  const [currentPostPage, setCurrentPostPage] = useState(1);
+  const [cardMenuOpenId, setCardMenuOpenId] = useState<number | null>(null);
 
   // Skills state
   const [skillSearchTech, setSkillSearchTech] = useState('');
@@ -239,7 +182,7 @@ const JobPostingBuilder: React.FC = () => {
 
   const fetchPostings = useCallback(async () => {
     try {
-      const res = await apiClient.getJobPostings();
+      const res = await apiClient.getJobPostings(false); // Get all postings including frozen
       setPostings(res.data);
     } catch (err) {
       console.error('Failed to fetch postings:', err);
@@ -250,19 +193,77 @@ const JobPostingBuilder: React.FC = () => {
     try {
       const res = await apiClient.getSkillCatalogs();
       setCatalogs(res.data);
+      setGlobalCatalogs(res.data);
     } catch (err) {
       console.error('Failed to fetch catalogs:', err);
     }
   }, []);
 
+  // Fetch role-specific skills when selected role changes
+  useEffect(() => {
+    if (!selectedRoleId) {
+      setCatalogs(globalCatalogs);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.getRoleSkills(selectedRoleId);
+        if (cancelled) return;
+        const roleSkills: Array<{ name: string; category: string }> = res.data.skills;
+        if (roleSkills.length === 0) {
+          // No role-specific skills — fall back to global catalog
+          setCatalogs(globalCatalogs);
+          return;
+        }
+        setCatalogs({
+          technical_skills: roleSkills
+            .filter(s => s.category === 'technical' || s.category === 'functional')
+            .map(s => s.name),
+          soft_skills: roleSkills
+            .filter(s => s.category === 'soft')
+            .map(s => s.name),
+          certifications: globalCatalogs.certifications,
+        });
+      } catch {
+        if (!cancelled) setCatalogs(globalCatalogs);
+      }
+    })();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoleId]);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([fetchPostings(), fetchCatalogs()]);
+      const [postRes] = await Promise.all([
+        apiClient.getJobPostings(false),
+        fetchCatalogs()
+      ]);
+      const fetchedPostings: JobPosting[] = postRes.data || [];
+      setPostings(fetchedPostings);
+      // Check for ?duplicate= URL param — pre-fill form as a copy
+      const params = new URLSearchParams(window.location.search);
+      const dupId = params.get('duplicate');
+      if (dupId) {
+        const source = fetchedPostings.find((p: JobPosting) => p.id === parseInt(dupId, 10));
+        if (source) {
+          handleDuplicatePosting(source);
+          setShowForm(true);
+        }
+      }
+      // Check for ?edit= URL param — load posting for editing
+      const editId = params.get('edit');
+      if (!dupId && editId) {
+        const source = fetchedPostings.find((p: JobPosting) => p.id === parseInt(editId, 10));
+        if (source) {
+          loadPosting(source);
+        }
+      }
       setLoading(false);
     };
     init();
-  }, [fetchPostings, fetchCatalogs]);
+  }, [fetchCatalogs]);
 
   // Click-outside for dropdowns
   useEffect(() => {
@@ -283,11 +284,22 @@ const JobPostingBuilder: React.FC = () => {
 
   // Toast auto-dismiss
   useEffect(() => {
+    if (cardMenuOpenId === null) return;
+    const handler = () => setCardMenuOpenId(null);
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [cardMenuOpenId]);
+
+  // Toast auto-dismiss
+  useEffect(() => {
     if (toast) {
       const t = setTimeout(() => setToast(null), 3500);
       return () => clearTimeout(t);
     }
   }, [toast]);
+
+  // Reset pagination when filters change
+  useEffect(() => { setCurrentPostPage(1); }, [listSearch, statusFilter]);
 
   // Dirty tracking
   useEffect(() => {
@@ -301,21 +313,10 @@ const JobPostingBuilder: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    if (name === 'product_type') {
-      // When product changes, reset the role
-      setFormData(prev => ({ ...prev, product_type: value, job_role: '' }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
     // Clear field error
     if (errors[name]) setErrors(prev => { const n = { ...prev }; delete n[name]; return n; });
   };
-
-  // Get roles for the currently selected Oracle product
-  const availableRoles = useMemo(() => {
-    if (!formData.product_type) return [];
-    return ORACLE_PRODUCTS[formData.product_type] || [];
-  }, [formData.product_type]);
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -446,17 +447,103 @@ const JobPostingBuilder: React.FC = () => {
     setEditingId(posting.id);
     setIsDirty(false);
     setErrors({});
+    setShowForm(true);
+    // Resolve role ID from name so role-specific skills load automatically
+    if (posting.job_role) {
+      apiClient.searchTaxonomy(posting.job_role, 10).then(res => {
+        const match = (res.data.roles as Array<{ id: number; name: string }>)
+          .find(r => r.name === posting.job_role);
+        if (match) setSelectedRoleId(match.id);
+      }).catch(() => { /* fallback: global catalog */ });
+    } else {
+      setSelectedRoleId(null);
+    }
+  };
+
+  const handleDuplicatePosting = (posting: JobPosting) => {
+    if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+
+    const certs = posting.certifications_required
+      ? (() => { try { return JSON.parse(posting.certifications_required); } catch { return []; } })()
+      : [];
+    const newForm: JobPostingFormData = {
+      job_title: `${posting.job_title} (Copy)`,
+      product_vendor: posting.product_vendor,
+      product_type: posting.product_type,
+      job_role: posting.job_role,
+      seniority_level: posting.seniority_level,
+      worktype: posting.worktype,
+      location: posting.location,
+      employment_type: posting.employment_type,
+      start_date: posting.start_date,
+      end_date: posting.end_date || '',
+      salary_min: posting.salary_min?.toString() || '',
+      salary_max: posting.salary_max?.toString() || '',
+      salary_currency: posting.salary_currency,
+      pay_type: posting.pay_type || 'annually',
+      job_description: posting.job_description,
+      job_category: posting.job_category || '',
+      travel_requirements: posting.travel_requirements || 'None',
+      visa_info: posting.visa_info || '',
+      education_qualifications: posting.education_qualifications || '',
+      certifications_required: certs,
+      skills: (posting.posting_skills || []).map(s => ({
+        skill_name: s.skill_name,
+        skill_category: s.skill_category as 'technical' | 'soft',
+        rating: s.rating,
+      })),
+    };
+    setFormData(newForm);
+    setEditingId(null); // Critical: null = creates new on submit
+    setIsDirty(true);
+    setErrors({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleNewPosting = () => {
-    if (isDirty) {
-      if (!window.confirm('You have unsaved changes. Discard and start new?')) return;
-    }
     setFormData({ ...EMPTY_FORM });
     savedFormRef.current = JSON.stringify(EMPTY_FORM);
     setEditingId(null);
+    setSelectedRoleId(null);
     setIsDirty(false);
     setErrors({});
+    setShowForm(true);
+  };
+
+  const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate', e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    try {
+      const response = await apiClient.updateJobPostingStatus(jobId, action);
+      alert(`Job ${action}d successfully!`);
+      // Refresh job listings
+      await fetchPostings();
+    } catch (error: any) {
+      console.error('[LIFECYCLE ERROR]', error);
+      alert(error.response?.data?.detail || `Failed to ${action} job`);
+    }
+  };
+
+  const handleCancelJob = async () => {
+    if (!showCancelModal) return;
+    
+    const reasonText = cancelReason === 'Other' ? customReason.trim() : cancelReason;
+    
+    if (!reasonText) {
+      alert('Please provide a cancellation reason');
+      return;
+    }
+    
+    try {
+      await apiClient.updateJobPostingStatus(showCancelModal, 'cancel', reasonText);
+      alert('Job posting cancelled successfully');
+      setShowCancelModal(null);
+      setCancelReason('');
+      setCustomReason('');
+      await fetchPostings();
+    } catch (error: any) {
+      console.error('[CANCEL ERROR]', error);
+      alert(error.response?.data?.detail || 'Failed to cancel job posting');
+    }
   };
 
   // ============ SKILLS HANDLERS ============
@@ -526,14 +613,42 @@ const JobPostingBuilder: React.FC = () => {
   }, [catalogs.certifications, formData.certifications_required, certSearch]);
 
   const filteredPostings = useMemo(() => {
-    if (!listSearch.trim()) return postings;
+    let filtered = postings;
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(p => (p.status || '').toLowerCase() === statusFilter);
+    }
+    
+    // Apply search filter
+    if (!listSearch.trim()) return filtered;
     const q = listSearch.toLowerCase();
-    return postings.filter(p =>
+    return filtered.filter(p =>
       p.job_title.toLowerCase().includes(q) ||
       p.location?.toLowerCase().includes(q) ||
       p.product_vendor?.toLowerCase().includes(q)
     );
-  }, [postings, listSearch]);
+  }, [postings, listSearch, statusFilter]);
+
+  // ============ PAGINATION ============
+
+  const totalPostPages = Math.ceil(filteredPostings.length / PAGE_SIZE_POSTINGS);
+  const paginatedPostings = filteredPostings.slice(
+    (currentPostPage - 1) * PAGE_SIZE_POSTINGS,
+    currentPostPage * PAGE_SIZE_POSTINGS
+  );
+  const getPostPageNumbers = (): (number | string)[] => {
+    if (totalPostPages <= 7) return Array.from({ length: totalPostPages }, (_, i) => i + 1);
+    const pages: (number | string)[] = [];
+    if (currentPostPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, '...', totalPostPages);
+    } else if (currentPostPage >= totalPostPages - 3) {
+      pages.push(1, '...', totalPostPages - 4, totalPostPages - 3, totalPostPages - 2, totalPostPages - 1, totalPostPages);
+    } else {
+      pages.push(1, '...', currentPostPage - 1, currentPostPage, currentPostPage + 1, '...', totalPostPages);
+    }
+    return pages;
+  };
 
   // ============ FORMAT HELPERS ============
 
@@ -562,6 +677,234 @@ const JobPostingBuilder: React.FC = () => {
     );
   }
 
+  // ---- LIST VIEW ----
+  if (!showForm) {
+    const worktypeLabel = (wt: string) => ({ remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' }[wt] || wt);
+    const fmtSalary = (min: number, max: number, cur: string) => {
+      const fmt = (v: number) => v >= 1000 ? `${Math.round(v/1000)}k` : v.toLocaleString();
+      return `${(cur||'USD').toUpperCase()} ${fmt(min)} – ${fmt(max)}`;
+    };
+
+    return (
+      <div className="cp-page">
+        {/* Toast */}
+        {toast && (
+          <div className={`jpb-toast jpb-toast-${toast.type}`}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {toast.type === 'success' ? <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></> : <><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></>}
+            </svg>
+            <span>{toast.message}</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="cp-list-header">
+          <nav className="cp-breadcrumb">
+            <a onClick={() => navigate('/recruiter-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+            <span className="cp-breadcrumb-sep">›</span>
+            <span className="cp-breadcrumb-current">Job Postings</span>
+          </nav>
+
+          <div className="cp-page-title-block">
+            <h1 className="cp-page-h1">Job Postings</h1>
+            <button className="jpb-btn jpb-btn-primary" onClick={handleNewPosting}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Posting
+            </button>
+          </div>
+
+          {/* Recruiter Permissions Card */}
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e5e7eb',
+            borderLeft: '4px solid #10b981',
+            borderRadius: 10,
+            padding: '16px 20px',
+            marginBottom: 16,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #10b981, #34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Job Postings — Recruiter Permissions</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>RECRUITER</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Full ownership of the job posting lifecycle</div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Access</span>
+                </div>
+                {['Create new job postings', 'Edit job details', 'Duplicate postings', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 10, height: 10 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HR Can Also</span>
+                </div>
+                {['Edit job details', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span style={{ fontSize: 12, color: '#475569' }}>{item}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #e2e8f0', paddingTop: 6 }}>HR cannot create or duplicate postings.</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="cp-filter-bar">
+            <div className="cp-search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Search postings..." value={listSearch} onChange={e => setListSearch(e.target.value)} />
+            </div>
+            <div className="cp-filter-chips">
+              {(['all','active','frozen','cancelled'] as const).map(s => (
+                <button key={s} className={`cp-filter-chip ${statusFilter === s ? 'active' : ''}`} onClick={() => setStatusFilter(s)}>
+                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Scrollable card grid */}
+        <div className="cp-page-body">
+          {filteredPostings.length === 0 ? (
+            <div className="cp-empty-state">
+              <svg className="cp-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+              <h3 className="cp-empty-title">No job postings yet</h3>
+              <p className="cp-empty-text">Create your first job posting to start hiring.</p>
+              <button className="jpb-btn jpb-btn-primary cp-btn-lg" onClick={handleNewPosting}>+ Create First Posting</button>
+            </div>
+          ) : (
+            <div className="cp-main-grid">
+              {paginatedPostings.map(p => {
+                const nStatus = (p.status || '').toLowerCase();
+                const skills = p.posting_skills || [];
+                return (
+                  <div key={p.id} className="cp-posting-card" onClick={() => setSelectedPostingId(selectedPostingId === p.id ? null : p.id)}>
+                    <div className="cp-posting-card-top">
+                      <div>
+                        <div className="cp-posting-card-title">{p.job_title}</div>
+                        <div className="cp-posting-card-dept">{p.product_vendor}{p.product_type ? ` · ${p.product_type}` : ''}</div>
+                      </div>
+                      <span className={`cp-posting-status ${nStatus}`}>{p.status || 'active'}</span>
+                      <button
+                        className="cp-card-menu-btn"
+                        onClick={e => { e.stopPropagation(); setCardMenuOpenId(cardMenuOpenId === p.id ? null : p.id); }}
+                        title="More actions"
+                      >⋯</button>
+                      {cardMenuOpenId === p.id && (
+                        <div className="cp-card-menu-popover">
+                          <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleDuplicatePosting(p); setShowForm(true); }}>Duplicate</button>
+                          {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
+                            <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleJobLifecycleAction(p.id, 'freeze', e); }}>Freeze</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {skills.length > 0 && (
+                      <div className="cp-posting-card-skill-tags">
+                        {skills.slice(0,4).map((s: any,i: number) => <span key={i} className="cp-posting-card-skill-tag">{s.skill_name}</span>)}
+                        {skills.length > 4 && <span className="cp-posting-card-skill-tag">+{skills.length-4}</span>}
+                      </div>
+                    )}
+                    <div className="cp-posting-card-meta">
+                      {p.location && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                          {p.location}
+                        </span>
+                      )}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 22V12h6v10"/><path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01"/></svg>
+                        {worktypeLabel(p.worktype)}
+                      </span>
+                      {p.salary_min > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                          {fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="cp-posting-card-footer">
+                      <div className="cp-posting-card-action-btns">
+                        <button className="cp-posting-action-btn" onClick={(e) => { e.stopPropagation(); loadPosting(p); }}>Edit</button>
+                        {nStatus !== 'cancelled' && (
+                          <button className="cp-posting-action-btn cancel" onClick={(e) => { e.stopPropagation(); setShowCancelModal(p.id); }}>Cancel</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Pagination footer */}
+        {totalPostPages > 1 && (
+          <div className="cp-pagination-footer">
+            <span className="cp-pagination-info">
+              Showing {(currentPostPage - 1) * PAGE_SIZE_POSTINGS + 1}–{Math.min(currentPostPage * PAGE_SIZE_POSTINGS, filteredPostings.length)} of {filteredPostings.length}
+            </span>
+            <div className="cp-pagination-buttons">
+              <button className="cp-pag-btn" onClick={() => setCurrentPostPage(p => p - 1)} disabled={currentPostPage === 1}>← Prev</button>
+              {getPostPageNumbers().map((pn, i) =>
+                pn === '...' ? (
+                  <span key={`e${i}`} className="cp-pag-btn ellipsis">…</span>
+                ) : (
+                  <button key={pn} className={`cp-pag-btn${currentPostPage === pn ? ' active' : ''}`} onClick={() => setCurrentPostPage(pn as number)}>{pn}</button>
+                )
+              )}
+              <button className="cp-pag-btn" onClick={() => setCurrentPostPage(p => p + 1)} disabled={currentPostPage === totalPostPages}>Next →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Modal */}
+        {showCancelModal && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            onClick={() => setShowCancelModal(null)}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%' }} onClick={e => e.stopPropagation()}>
+              <h3 style={{ margin: '0 0 12px' }}>Cancel Job Posting</h3>
+              <select value={cancelReason} onChange={e => setCancelReason(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14 }}>
+                <option value="">Select reason...</option>
+                <option value="position_filled">Position Filled</option>
+                <option value="budget_cut">Budget Cut</option>
+                <option value="requirements_changed">Requirements Changed</option>
+                <option value="other">Other</option>
+              </select>
+              {cancelReason === 'other' && (
+                <textarea value={customReason} onChange={e => setCustomReason(e.target.value)} placeholder="Enter reason..." style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14, height: 80, resize: 'vertical', fontFamily: 'inherit' }} />
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button className="jpb-btn jpb-btn-outline" onClick={() => setShowCancelModal(null)}>Cancel</button>
+                <button className="jpb-btn jpb-btn-danger" onClick={handleCancelJob} disabled={!cancelReason}>Confirm Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="jpb-page">
       {/* Toast */}
@@ -584,8 +927,10 @@ const JobPostingBuilder: React.FC = () => {
             type="button"
             className="jpb-back-btn" 
             onClick={() => {
-              console.log('[JPB NAV] Back button clicked — token:', !!localStorage.getItem('token'), '| role:', localStorage.getItem('role'));
-              navigate(-1);
+              if (isDirty && !window.confirm('Discard unsaved changes?')) return;
+              setShowForm(false);
+              setEditingId(null);
+              setIsDirty(false);
             }}
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -599,7 +944,7 @@ const JobPostingBuilder: React.FC = () => {
         </div>
         <div className="jpb-topbar-right">
           {isDirty && <span className="jpb-unsaved-badge">Unsaved changes</span>}
-          <button className="jpb-btn jpb-btn-outline" onClick={handleNewPosting}>
+          <button className="jpb-btn jpb-btn-ghost" onClick={handleNewPosting}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New Posting
           </button>
@@ -629,6 +974,28 @@ const JobPostingBuilder: React.FC = () => {
                 onChange={e => setListSearch(e.target.value)}
               />
             </div>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                marginTop: '12px',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#374151',
+                backgroundColor: '#ffffff',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="frozen">Frozen Only</option>
+              <option value="reposted">Reposted Only</option>
+              <option value="cancelled">Cancelled Only</option>
+            </select>
           </div>
           <div className="jpb-sidebar-list">
             {filteredPostings.length === 0 ? (
@@ -637,35 +1004,193 @@ const JobPostingBuilder: React.FC = () => {
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                   <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                 </svg>
-                <p>No job postings yet</p>
-                <span>Create your first posting using the form</span>
+                <p>No {statusFilter === 'all' ? 'job' : statusFilter} postings {statusFilter === 'all' ? 'yet' : 'found'}</p>
+                <span>{statusFilter === 'all' ? 'Create your first posting' : 'Try adjusting your filters'}</span>
               </div>
             ) : (
-              filteredPostings.map(p => (
-                <div
-                  key={p.id}
-                  className={`jpb-posting-card ${editingId === p.id ? 'active' : ''}`}
-                  onClick={() => loadPosting(p)}
-                >
-                  <div className="jpb-posting-card-top">
-                    <h4>{p.job_title}</h4>
-                    <span className={`jpb-status-dot ${p.is_active ? 'active' : 'inactive'}`} />
+              filteredPostings.map(p => {
+                const normalizedStatus = (p.status || '').toLowerCase();
+                return (
+                  <div
+                    key={p.id}
+                    className={`jpb-posting-card ${editingId === p.id ? 'active' : ''}`}
+                    onClick={() => loadPosting(p)}
+                  >
+                    <div className="jpb-posting-card-top">
+                      <h4>{p.job_title}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {p.status && <StatusBadge status={p.status} size="sm" />}
+                      </div>
+                    </div>
+                    <div className="jpb-posting-card-meta">
+                      <span>{p.location || 'No location'}</span>
+                      <span className="jpb-meta-dot">·</span>
+                      <span>{worktypeLabel(p.worktype)}</span>
+                      <span className="jpb-meta-dot">·</span>
+                      <span>{empTypeLabel(p.employment_type)}</span>
+                    </div>
+                    <div className="jpb-posting-card-bottom">
+                      <span className="jpb-posting-vendor">{p.product_vendor}</span>
+                      {p.posting_skills?.length > 0 && (
+                        <span className="jpb-skill-count">{p.posting_skills.length} skill{p.posting_skills.length > 1 ? 's' : ''}</span>
+                      )}
+                    </div>
+                    {/* Lifecycle Control Buttons */}
+                    <div className="jpb-posting-card-actions" style={{
+                      marginTop: '8px',
+                      paddingTop: '8px',
+                      borderTop: '1px solid #e5e7eb',
+                      display: 'flex',
+                      gap: '6px',
+                      flexWrap: 'wrap',
+                    }}>
+                      {/* Duplicate button - always available */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDuplicatePosting(p);
+                        }}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          border: '1px solid #3b82f6',
+                          backgroundColor: '#eff6ff',
+                          color: '#3b82f6',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          minWidth: 'fit-content',
+                        }}
+                        title="Duplicate this posting"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                        Duplicate
+                      </button>
+
+                      {normalizedStatus === 'cancelled' ? (
+                        <div style={{
+                          padding: '6px 8px',
+                          fontSize: '11px',
+                          borderRadius: '4px',
+                          backgroundColor: '#f3f4f6',
+                          color: '#6b7280',
+                          textAlign: 'center',
+                          flex: 1,
+                        }}>
+                          Cancelled: {p.cancellation_reason}
+                        </div>
+                      ) : (
+                        <>
+                          {(normalizedStatus === 'active' || normalizedStatus === 'reposted') ? (
+                            <>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'freeze', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #e5e7eb',
+                                  backgroundColor: '#f9fafb',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                  color: '#374151',
+                                }}
+                                title="Freeze this job posting"
+                              >
+                                Freeze
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowCancelModal(p.id);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ef4444',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Cancel this job posting"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : normalizedStatus === 'frozen' ? (
+                            <>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'reactivate', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #10b981',
+                                  backgroundColor: '#d1fae5',
+                                  color: '#10b981',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Unfreeze this job posting"
+                              >
+                                Unfreeze
+                              </button>
+                              <button
+                                onClick={(e) => handleJobLifecycleAction(p.id, 'repost', e)}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #8b5cf6',
+                                  backgroundColor: '#ede9fe',
+                                  color: '#8b5cf6',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Repost this job posting"
+                              >
+                                Repost
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowCancelModal(p.id);
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  borderRadius: '4px',
+                                  border: '1px solid #ef4444',
+                                  backgroundColor: '#fef2f2',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  fontWeight: 500,
+                                  flex: 1,
+                                }}
+                                title="Cancel this job posting"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="jpb-posting-card-meta">
-                    <span>{p.location || 'No location'}</span>
-                    <span className="jpb-meta-dot">·</span>
-                    <span>{worktypeLabel(p.worktype)}</span>
-                    <span className="jpb-meta-dot">·</span>
-                    <span>{empTypeLabel(p.employment_type)}</span>
-                  </div>
-                  <div className="jpb-posting-card-bottom">
-                    <span className="jpb-posting-vendor">{p.product_vendor}</span>
-                    {p.posting_skills?.length > 0 && (
-                      <span className="jpb-skill-count">{p.posting_skills.length} skill{p.posting_skills.length > 1 ? 's' : ''}</span>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </aside>
@@ -698,6 +1223,21 @@ const JobPostingBuilder: React.FC = () => {
             {/* ======= FORM PANEL ======= */}
             <div className={`jpb-form-panel ${showPreview ? 'hidden-mobile' : ''}`}>
               <form ref={formRef} onSubmit={e => { e.preventDefault(); handleSave(); }}>
+
+                {/* Duplicate Mode Banner */}
+                {isDirty && !editingId && formData.job_title.includes('(Copy)') && (
+                  <div style={{
+                    background: '#fffbeb',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '8px',
+                    padding: '10px 16px',
+                    marginBottom: '16px',
+                    fontSize: '13px',
+                    color: '#92400e'
+                  }}>
+                    📋 You're creating a <strong>duplicate</strong> — this will save as a new job posting.
+                  </div>
+                )}
 
                 {/* SECTION: Metadata */}
                 <div className="jpb-form-section">
@@ -742,43 +1282,22 @@ const JobPostingBuilder: React.FC = () => {
                     <h3>Job Details</h3>
                   </div>
 
-                  {/* Row 1: Product Vendor (locked to Oracle) */}
+                  {/* Dynamic 3-Tier Taxonomy Selection */}
                   <div className="jpb-field jpb-field-full">
-                    <label>Product Vendor</label>
-                    <select name="product_vendor" value={formData.product_vendor} onChange={handleInputChange}>
-                      {PRODUCT_VENDORS.map(v => <option key={v} value={v}>{v}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Row 2: Product Type & Role (cascading) */}
-                  <div className="jpb-form-row">
-                    <div className="jpb-field">
-                      <label>Product Type <span className="jpb-required">*</span></label>
-                      <select
-                        name="product_type"
-                        value={formData.product_type}
-                        onChange={handleInputChange}
-                        className={errors.job_category ? 'jpb-error-input' : ''}
-                      >
-                        <option value="">Select Product</option>
-                        {ORACLE_PRODUCT_LIST.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                      {errors.job_category && <span className="jpb-error-text">{errors.job_category}</span>}
-                    </div>
-                    <div className="jpb-field">
-                      <label>Role <span className="jpb-required">*</span></label>
-                      <select
-                        name="job_role"
-                        value={formData.job_role}
-                        onChange={handleInputChange}
-                        disabled={availableRoles.length === 0}
-                        className={errors.job_role ? 'jpb-error-input' : ''}
-                      >
-                        <option value="">{availableRoles.length === 0 ? 'Select a product first' : 'Select Role'}</option>
-                        {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                      {errors.job_role && <span className="jpb-error-text">{errors.job_role}</span>}
-                    </div>
+                    <CascadingTaxonomySelect
+                      selectedVendor={formData.product_vendor}
+                      selectedProductType={formData.product_type}
+                      selectedRole={formData.job_role}
+                      onVendorChange={(name) => { setSelectedRoleId(null); setFormData(prev => ({ ...prev, product_vendor: name, product_type: '', job_role: '' })); }}
+                      onProductTypeChange={(name) => { setSelectedRoleId(null); setFormData(prev => ({ ...prev, product_type: name, job_role: '' })); }}
+                      onRoleChange={(name, roleId) => { setSelectedRoleId(roleId || null); setFormData(prev => ({ ...prev, job_role: name })); }}
+                      required={true}
+                      errors={{
+                        vendor: errors.product_vendor,
+                        productType: errors.job_category || errors.product_type,
+                        role: errors.job_role,
+                      }}
+                    />
                   </div>
 
                   {/* Row 3: Job Title */}
@@ -1270,6 +1789,149 @@ const JobPostingBuilder: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Cancel Job Confirmation Modal */}
+      {showCancelModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }}>
+            <h2 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: 600, color: '#111827' }}>
+              Cancel Job Posting?
+            </h2>
+            <p style={{ margin: '0 0 20px 0', color: '#6b7280', fontSize: '14px' }}>
+              This action is <strong>permanent</strong> and cannot be undone. The job will no longer accept applications.
+            </p>
+
+            {/* Reason Dropdown */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                Reason for cancellation *
+              </label>
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '14px',
+                }}
+              >
+                <option value="">Select a reason...</option>
+                <option value="Position Filled">Position Filled</option>
+                <option value="Budget Cut">Budget Cut</option>
+                <option value="Requirements Changed">Requirements Changed</option>
+                <option value="Company Restructuring">Company Restructuring</option>
+                <option value="Other">Other (please specify)</option>
+              </select>
+            </div>
+
+            {/* Custom Reason Textarea */}
+            {cancelReason === 'Other' && (
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 500, color: '#374151' }}>
+                  Please specify reason *
+                </label>
+                <textarea
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                  placeholder="Brief explanation..."
+                  maxLength={500}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #d1d5db',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                  }}
+                />
+                <small style={{ fontSize: '11px', color: '#6b7280' }}>
+                  {customReason.length}/500 characters
+                </small>
+              </div>
+            )}
+
+            {/* Info Box */}
+            <div style={{
+              backgroundColor: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '20px',
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#166534', marginBottom: '6px' }}>
+                What you'll still have access to:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px', color: '#15803d' }}>
+                <li>All candidate matches and recommendations</li>
+                <li>All applications received</li>
+                <li>All notes and communications</li>
+                <li>Historical data and analytics</li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowCancelModal(null);
+                  setCancelReason('');
+                  setCustomReason('');
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleCancelJob}
+                disabled={!cancelReason || (cancelReason === 'Other' && !customReason.trim())}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: cancelReason && (cancelReason !== 'Other' || customReason.trim()) ? '#ef4444' : '#d1d5db',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  cursor: cancelReason && (cancelReason !== 'Other' || customReason.trim()) ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Yes, Cancel Job
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

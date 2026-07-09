@@ -4,11 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/Form.css';
 
 const WelcomePage: React.FC = () => {
-  console.log('[COMPONENT MOUNT] WelcomePage loaded');
   const navigate = useNavigate();
   const fullName = localStorage.getItem('full_name') || 'User';
-  console.log('[USER INFO] Welcome page for:', fullName);
-
   return (
     <PageContainer title={`Welcome, ${fullName}!`} subtitle="Let's get you started">
       <div
@@ -28,7 +25,7 @@ const WelcomePage: React.FC = () => {
         </p>
 
         <button
-          onClick={() => { console.log('[NAVIGATION] To Profile Setup'); navigate('/candidate/profile'); }}
+          onClick={() => { navigate('/candidate/profile'); }}
           className="btn btn-primary"
           style={{ padding: '14px 40px', fontSize: '16px', marginRight: '10px' }}
         >
@@ -36,7 +33,7 @@ const WelcomePage: React.FC = () => {
         </button>
         
         <button
-          onClick={() => { console.log('[NAVIGATION] To Dashboard'); navigate('/candidate-dashboard'); }}
+          onClick={() => { navigate('/candidate-dashboard'); }}
           className="btn btn-secondary"
           style={{ padding: '14px 40px', fontSize: '16px' }}
         >

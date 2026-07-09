@@ -1,433 +1,258 @@
 """
-Subscription and billing routes
-Credits, subscription plans, and company billing management
+Subscription management routes
+Endpoints for subscription plans and company subscriptions
 """
 
-import logging
-from datetime import datetime, timedelta
-from fastapi import APIRouter, HTTPException, Depends, status
+from datetime import datetime, timezone, timedelta
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlmodel import Session, select
+
 from app.database import get_session
 from app.models import (
-    Company, User, SubscriptionPlan, CompanySubscription, 
-    CreditTransaction, UserRole
-)
-from app.schemas import (
-    SubscriptionPlanRead, SubscriptionPlanCreate,
-    CompanySubscriptionRead, CompanySubscriptionCreate,
-    CreditTransactionRead, CreditTransactionCreate,
-    CompanyCreditsRead
+    Company, CompanySubscription, CreditTransaction,
+    SubscriptionPlan, User, UserRole,
 )
 from app.security import get_current_user
+from app.core.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/subscriptions", tags=["Subscriptions & Billing"])
+logger = get_logger(__name__)
+router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 
-# ============================================================================
-# SUBSCRIPTION PLAN ENDPOINTS
-# ============================================================================
+# ─── helpers ─────────────────────────────────────────────────────────────────
 
-@router.post("/plans", response_model=dict)
-def create_subscription_plan(
-    plan_data: SubscriptionPlanCreate,
+def _require_company_roles(current_user: dict) -> None:
+    role = (current_user.get("role") or "").lower()
+    if role not in {"admin", "hr", "recruiter"}:
+        raise HTTPException(status_code=403, detail="Company account required")
+
+
+def _get_primary_company(session: Session, user_id: int) -> Company:
+    """Return the primary company for this user (follows parent_company_id chain)."""
+    company = session.exec(select(Company).where(Company.user_id == user_id)).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company profile not found")
+    if company.parent_company_id:
+        parent = session.get(Company, company.parent_company_id)
+        if parent:
+            return parent
+    return company
+
+
+def _require_admin(current_user: dict) -> None:
+    role = (current_user.get("role") or "").lower()
+    if role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+# ─── schemas ──────────────────────────────────────────────────────────────────
+
+class PlanCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float = 0.0
+    currency: str = "USD"
+    credits_included: int = 0
+    job_post_limit: int = 5
+    team_member_limit: int = 1
+
+
+class PlanRead(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    price: float
+    currency: str
+    credits_included: int
+    job_post_limit: int
+    team_member_limit: int
+    is_active: bool
+
+
+class PurchaseRequest(BaseModel):
+    plan_id: int
+    auto_renew: bool = True
+
+
+class SubscriptionRead(BaseModel):
+    id: int
+    company_id: int
+    plan_id: int
+    plan_name: str
+    start_date: str
+    end_date: str
+    status: str
+    auto_renew: bool
+    credits_included: int
+    job_post_limit: int
+    team_member_limit: int
+
+
+# ─── routes ───────────────────────────────────────────────────────────────────
+
+@router.post("/plans", response_model=dict, status_code=status.HTTP_201_CREATED)
+def create_plan(
+    body: PlanCreate,
     current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
-    """Create a new subscription plan (Admin only)"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user or user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can create subscription plans"
-        )
-    
-    # Check if plan already exists
-    existing = session.exec(select(SubscriptionPlan).where(SubscriptionPlan.name == plan_data.name)).first()
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Subscription plan with this name already exists"
-        )
-    
-    plan = SubscriptionPlan(**plan_data.dict())
+    """Create a new subscription plan (system admin only)."""
+    _require_admin(current_user)
+
+    if session.exec(select(SubscriptionPlan).where(SubscriptionPlan.name == body.name)).first():
+        raise HTTPException(status_code=409, detail="Plan with this name already exists")
+
+    plan = SubscriptionPlan(**body.model_dump())
     session.add(plan)
     session.commit()
     session.refresh(plan)
-    
-    logger.info(f"[SUBSCRIPTION] New plan created: {plan.name} (ID: {plan.id})")
-    
-    return {
-        "message": "Subscription plan created successfully",
-        "plan_id": plan.id,
-        "plan_name": plan.name
-    }
+    logger.info(f"[SUBSCRIPTIONS] Plan created: {plan.name} (id={plan.id})")
+    return {"ok": True, "plan_id": plan.id, "name": plan.name}
 
 
-@router.get("/plans", response_model=list[SubscriptionPlanRead])
-def get_subscription_plans(
-    session: Session = Depends(get_session)
+@router.get("/plans", response_model=List[PlanRead])
+def list_plans(
+    session: Session = Depends(get_session),
 ):
-    """Get all active subscription plans"""
-    plans = session.exec(
-        select(SubscriptionPlan).where(SubscriptionPlan.is_active == True)
-    ).all()
-    return plans
-
-
-@router.get("/plans/{plan_id}", response_model=SubscriptionPlanRead)
-def get_subscription_plan(
-    plan_id: int,
-    session: Session = Depends(get_session)
-):
-    """Get a specific subscription plan"""
-    plan = session.get(SubscriptionPlan, plan_id)
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Subscription plan not found"
+    """List all active subscription plans (public)."""
+    plans = session.exec(select(SubscriptionPlan).where(SubscriptionPlan.is_active == True)).all()
+    return [
+        PlanRead(
+            id=p.id,
+            name=p.name,
+            description=p.description,
+            price=p.price,
+            currency=p.currency,
+            credits_included=p.credits_included,
+            job_post_limit=p.job_post_limit,
+            team_member_limit=p.team_member_limit,
+            is_active=p.is_active,
         )
-    return plan
+        for p in plans
+    ]
 
 
-# ============================================================================
-# COMPANY SUBSCRIPTION ENDPOINTS
-# ============================================================================
-
-@router.get("/my", response_model=CompanySubscriptionRead)
-def get_company_subscription(
+@router.get("/my", response_model=Optional[SubscriptionRead])
+def get_my_subscription(
     current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
-    """Get current company's subscription details"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    subscription = session.exec(
-        select(CompanySubscription).where(CompanySubscription.company_id == company.id)
+    """Get current active subscription for the caller's primary company."""
+    _require_company_roles(current_user)
+    company = _get_primary_company(session, current_user["user_id"])
+
+    sub = session.exec(
+        select(CompanySubscription)
+        .where(CompanySubscription.company_id == company.id)
+        .where(CompanySubscription.status == "active")
+        .order_by(CompanySubscription.created_at.desc())
     ).first()
-    
-    if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active subscription found"
-        )
-    
-    return subscription
+
+    if not sub:
+        return None
+
+    plan = session.get(SubscriptionPlan, sub.plan_id)
+    return SubscriptionRead(
+        id=sub.id,
+        company_id=sub.company_id,
+        plan_id=sub.plan_id,
+        plan_name=plan.name if plan else "Unknown",
+        start_date=sub.start_date.isoformat(),
+        end_date=sub.end_date.isoformat(),
+        status=sub.status,
+        auto_renew=sub.auto_renew,
+        credits_included=plan.credits_included if plan else 0,
+        job_post_limit=plan.job_post_limit if plan else 0,
+        team_member_limit=plan.team_member_limit if plan else 1,
+    )
 
 
 @router.post("/purchase", response_model=dict)
 def purchase_subscription(
-    subscription_data: CompanySubscriptionCreate,
+    body: PurchaseRequest,
     current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
-    """Purchase a new subscription for the company (Admin only)"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can purchase subscriptions"
-        )
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    # Check if plan exists
-    plan = session.get(SubscriptionPlan, subscription_data.plan_id)
-    if not plan:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Subscription plan not found"
-        )
-    
-    # Check if company already has an active subscription
+    """Purchase or upgrade a subscription plan (Admin only)."""
+    _require_admin(current_user)
+    company = _get_primary_company(session, current_user["user_id"])
+
+    plan = session.get(SubscriptionPlan, body.plan_id)
+    if not plan or not plan.is_active:
+        raise HTTPException(status_code=404, detail="Subscription plan not found or inactive")
+
+    # Cancel existing active subscription
     existing = session.exec(
-        select(CompanySubscription).where(
-            (CompanySubscription.company_id == company.id) &
-            (CompanySubscription.status == "active")
-        )
+        select(CompanySubscription)
+        .where(CompanySubscription.company_id == company.id)
+        .where(CompanySubscription.status == "active")
     ).first()
-    
     if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Company already has an active subscription"
-        )
-    
-    # Create new subscription
-    start_date = datetime.utcnow()
-    end_date = start_date + timedelta(days=30)  # 30-day trial or monthly subscription
-    
-    subscription = CompanySubscription(
+        existing.status = "cancelled"
+        existing.updated_at = datetime.now(timezone.utc)
+        session.add(existing)
+
+    now = datetime.now(timezone.utc)
+    sub = CompanySubscription(
         company_id=company.id,
         plan_id=plan.id,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=now,
+        end_date=now + timedelta(days=30),
         status="active",
-        auto_renew=subscription_data.auto_renew
+        auto_renew=body.auto_renew,
     )
-    session.add(subscription)
-    
-    # Add credits to company
-    company.current_credits += plan.credits_included
-    
-    # Log credit transaction
-    transaction = CreditTransaction(
-        company_id=company.id,
-        type="purchase",
-        amount=plan.credits_included,
-        description=f"Subscription to {plan.name} plan"
-    )
-    session.add(transaction)
-    
+    session.add(sub)
+
+    # Grant included credits
+    if plan.credits_included > 0:
+        company.current_credits = (company.current_credits or 0) + plan.credits_included
+        session.add(company)
+        txn = CreditTransaction(
+            company_id=company.id,
+            type="subscription_grant",
+            amount=plan.credits_included,
+            description=f"Credits from '{plan.name}' subscription purchase",
+        )
+        session.add(txn)
+
     session.commit()
-    session.refresh(subscription)
-    
-    logger.info(f"[SUBSCRIPTION] Company {company.id} subscribed to plan {plan.name}")
-    
+    session.refresh(sub)
+    logger.info(
+        f"[SUBSCRIPTIONS] Company {company.id} purchased plan '{plan.name}' (sub_id={sub.id})"
+    )
     return {
-        "message": "Subscription purchased successfully",
-        "subscription_id": subscription.id,
-        "plan_name": plan.name,
-        "credits_added": plan.credits_included,
-        "end_date": end_date.isoformat()
+        "ok": True,
+        "subscription_id": sub.id,
+        "plan": plan.name,
+        "end_date": sub.end_date.isoformat(),
+        "credits_granted": plan.credits_included,
     }
 
 
 @router.post("/cancel", response_model=dict)
 def cancel_subscription(
     current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ):
-    """Cancel the company's subscription (Admin only)"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can cancel subscriptions"
-        )
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    subscription = session.exec(
-        select(CompanySubscription).where(CompanySubscription.company_id == company.id)
+    """Cancel the current active subscription (Admin only)."""
+    _require_admin(current_user)
+    company = _get_primary_company(session, current_user["user_id"])
+
+    sub = session.exec(
+        select(CompanySubscription)
+        .where(CompanySubscription.company_id == company.id)
+        .where(CompanySubscription.status == "active")
     ).first()
-    
-    if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active subscription found"
-        )
-    
-    subscription.status = "cancelled"
-    session.add(subscription)
+    if not sub:
+        raise HTTPException(status_code=404, detail="No active subscription found")
+
+    sub.status = "cancelled"
+    sub.auto_renew = False
+    sub.updated_at = datetime.now(timezone.utc)
+    session.add(sub)
     session.commit()
-    
-    logger.info(f"[SUBSCRIPTION] Company {company.id} cancelled subscription")
-    
-    return {"message": "Subscription cancelled successfully"}
-
-
-# ============================================================================
-# CREDITS ENDPOINTS
-# ============================================================================
-
-@router.get("/credits/balance", response_model=CompanyCreditsRead)
-def get_credit_balance(
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Get current company's credit balance"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    subscription = session.exec(
-        select(CompanySubscription).where(CompanySubscription.company_id == company.id)
-    ).first()
-    
-    plan_info = {}
-    if subscription:
-        plan = session.get(SubscriptionPlan, subscription.plan_id)
-        plan_info = {
-            "plan_id": plan.id,
-            "plan_name": plan.name,
-            "credits_included": plan.credits_included,
-            "subscription_status": subscription.status
-        }
-    
-    return CompanyCreditsRead(
-        current_credits=company.current_credits,
-        **plan_info
-    )
-
-
-@router.post("/credits/purchase", response_model=dict)
-def purchase_credits(
-    amount: int,
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Purchase additional credits for the company (Admin only)"""
-    if amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Credit amount must be positive"
-        )
-    
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Check if user is admin
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can purchase credits"
-        )
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    # Add credits
-    company.current_credits += amount
-    
-    # Log transaction
-    transaction = CreditTransaction(
-        company_id=company.id,
-        type="purchase",
-        amount=amount,
-        description=f"Manual credit purchase: {amount} credits"
-    )
-    session.add(transaction)
-    session.commit()
-    
-    logger.info(f"[CREDITS] Company {company.id} purchased {amount} credits")
-    
-    return {
-        "message": "Credits purchased successfully",
-        "credits_added": amount,
-        "new_balance": company.current_credits
-    }
-
-
-@router.get("/credits/transactions", response_model=list[CreditTransactionRead])
-def get_credit_transactions(
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Get credit transaction history for the company"""
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    transactions = session.exec(
-        select(CreditTransaction).where(CreditTransaction.company_id == company.id)
-    ).all()
-    
-    return transactions
-
-
-@router.post("/credits/deduct", response_model=dict)
-def deduct_credits(
-    amount: int,
-    description: str = "Job posting",
-    current_user: dict = Depends(get_current_user),
-    session: Session = Depends(get_session)
-):
-    """Deduct credits from company (internal use for job postings, etc.)"""
-    if amount <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Credit amount must be positive"
-        )
-    
-    user = session.exec(select(User).where(User.email == current_user["email"])).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
-    
-    # Get primary company if this is a team member
-    if company.parent_company_id:
-        company = session.get(Company, company.parent_company_id)
-    
-    # Check if company has enough credits
-    if company.current_credits < amount:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Insufficient credits. Current balance: {company.current_credits}, Required: {amount}"
-        )
-    
-    # Deduct credits
-    company.current_credits -= amount
-    
-    # Log transaction
-    transaction = CreditTransaction(
-        company_id=company.id,
-        type="usage",
-        amount=-amount,
-        description=description
-    )
-    session.add(transaction)
-    session.commit()
-    
-    logger.info(f"[CREDITS] Company {company.id} deducted {amount} credits for {description}")
-    
-    return {
-        "message": "Credits deducted successfully",
-        "credits_deducted": amount,
-        "new_balance": company.current_credits
-    }
+    logger.info(f"[SUBSCRIPTIONS] Company {company.id} cancelled subscription {sub.id}")
+    return {"ok": True, "message": "Subscription cancelled"}

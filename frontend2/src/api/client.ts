@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -45,12 +45,18 @@ export const apiClient = {
   getCurrentUser: () =>
     api.get('/auth/me'),
 
+  searchUsers: (query: string, limit: number = 10) =>
+    api.get('/auth/users/search', { params: { q: query, limit } }),
+
   // Candidates
   createCandidateProfile: (data: any) =>
     api.post('/candidates/profile', data),
   
   getCandidateProfile: () =>
     api.get('/candidates/profile'),
+  
+  getCandidateProfileStatus: () =>
+    api.get('/candidates/profile-status'),
   
   updateCandidateProfile: (data: any) =>
     api.put('/candidates/profile', data),
@@ -70,6 +76,34 @@ export const apiClient = {
   // Skill catalogs for candidate job preferences
   getCandidateSkillCatalogs: () =>
     api.get('/candidates/skill-catalogs'),
+
+  // Resume-assisted onboarding
+  uploadResumeForOnboarding: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/candidates/onboarding/upload-resume', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  // Parse resume for job preferences
+  parseResumeForJobPreferences: (formData: FormData) => {
+    return api.post('/candidates/parse-resume-for-job-preferences', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  getOnboardingDraft: () =>
+    api.get('/candidates/onboarding/draft'),
+
+  updateOnboardingDraft: (data: any) =>
+    api.put('/candidates/onboarding/draft', data),
+
+  finalizeOnboarding: (reviewed: boolean = true) =>
+    api.post('/candidates/onboarding/finalize', { reviewed }),
+
+  deleteOnboardingDraft: () =>
+    api.delete('/candidates/onboarding/draft'),
 
   // Resume uploads
   uploadResume: (file: File) => {
@@ -115,12 +149,33 @@ export const apiClient = {
   updateCompanyProfile: (data: any) =>
     api.put('/company/profile', data),
 
+  // Company Profile Setup
+  setupCompanyProfile: (data: {
+    full_name: string;
+    company_name: string;
+    company_role: string;
+    company_website?: string;
+    company_location?: string;
+    department?: string;
+    phone_number?: string;
+    linkedin_profile?: string;
+    hiring_focus?: string;
+    company_description?: string;
+  }) =>
+    api.post('/company/setup-profile', data),
+
+  getCompanyProfileStatus: () =>
+    api.get('/company/profile-status'),
+
+  updateExtendedCompanyProfile: (data: any) =>
+    api.put('/company/update-profile', data),
+
   // Job Postings
   createJobPosting: (data: any) =>
     api.post('/job-postings', data),
   
-  getJobPostings: () =>
-    api.get('/job-postings'),
+  getJobPostings: (activeOnly: boolean = true) =>
+    api.get('/job-postings', { params: { active_only: activeOnly } }),
   
   getJobPosting: (id: number) =>
     api.get(`/job-postings/${id}`),
@@ -133,6 +188,10 @@ export const apiClient = {
   
   toggleJobPostingActive: (id: number) =>
     api.post(`/job-postings/${id}/toggle-active`),
+
+  // Job Posting Lifecycle Management
+  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'cancel', cancellation_reason?: string) =>
+    api.post(`/job-postings/${id}/status`, { action, cancellation_reason }),
 
   getSkillCatalogs: () =>
     api.get('/job-postings/catalogs'),
@@ -179,6 +238,9 @@ export const apiClient = {
   swipeAskToApply: (jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/ask-to-apply', { job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
   
+  undoSwipe: (jobPostingId: number) =>
+    api.delete(`/swipes/undo/${jobPostingId}`),
+  
   // Recruiter Swipes
   recruiterLike: (candidateId: number, jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/recruiter/like', { candidate_id: candidateId, job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
@@ -188,6 +250,9 @@ export const apiClient = {
   
   recruiterAskToApply: (candidateId: number, jobProfileId: number, jobPostingId: number) =>
     api.post('/swipes/recruiter/ask-to-apply', { candidate_id: candidateId, job_profile_id: jobProfileId, job_posting_id: jobPostingId }),
+  
+  recruiterUndoSwipe: (candidateId: number, jobPostingId: number) =>
+    api.delete(`/swipes/recruiter/undo/${candidateId}/${jobPostingId}`),
   
   // Applications
   applyToJob: (jobPostingId: number, jobProfileId: number) =>
@@ -201,6 +266,26 @@ export const apiClient = {
   
   withdrawApplication: (applicationId: number) =>
     api.delete(`/applications/${applicationId}`),
+  
+  scheduleInterview: (applicationId: number, payload: {
+    date: string;
+    start_time?: string;       // HH:MM 24-hr (preferred)
+    end_time?: string;         // HH:MM 24-hr (preferred)
+    time?: string;             // legacy single-time field (deprecated)
+    timezone: string;
+    meeting_provider?: string; // 'zoom' | 'google_meet' | 'microsoft_teams'
+    meeting_link?: string;     // manual link (used when meeting_provider is omitted)
+    notes_for_candidate?: string;
+    email_subject?: string;
+  }) =>
+    api.post(`/applications/${applicationId}/schedule-interview`, payload),
+  
+  // Update application status and/or recruiter notes (recruiter only)
+  updateApplicationReview: (applicationId: number, payload: {
+    status?: string;
+    recruiter_notes?: string;
+  }) =>
+    api.put(`/applications/${applicationId}/review`, payload),
   
   // Dashboard - Candidate
   getCandidateRecommendations: (jobProfileId: number) =>
@@ -228,50 +313,434 @@ export const apiClient = {
   getRecruiterApplications: (jobPostingId?: number) =>
     api.get('/dashboard/recruiter/applications' + (jobPostingId ? `?job_posting_id=${jobPostingId}` : '')),
   
+  downloadRecruiterApplicationResume: (applicationId: number, resumeId: number) =>
+    api.get(`/dashboard/recruiter/applications/${applicationId}/resumes/${resumeId}/download`, {
+      responseType: 'blob'
+    }),
+  
+  downloadRecruiterApplicationCertification: (applicationId: number, certificationId: number) =>
+    api.get(`/dashboard/recruiter/applications/${applicationId}/certifications/${certificationId}/download`, {
+      responseType: 'blob'
+    }),
+  
   getRecruiterMatches: () =>
     api.get('/dashboard/recruiter/matches'),
+  
+  // Dashboard - Browse All Candidates
+  browseCandidates: (params?: { page?: number; limit?: number; search?: string; work_type?: string; location?: string }) =>
+    api.get('/dashboard/recruiter/candidates', { params }),
+  
+  getCandidateDetail: (candidateId: number) =>
+    api.get(`/dashboard/recruiter/candidate/${candidateId}`),
 
   // Team Management
   getTeamMembers: () =>
     api.get('/dashboard/team-members'),
+
+  // Notifications
+  getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number }) =>
+    api.get('/notifications', { params }),
+  getUnreadCount: () =>
+    api.get('/notifications/unread-count'),
+  markNotificationRead: (id: number) =>
+    api.post(`/notifications/${id}/read`),
+  markAllNotificationsRead: () =>
+    api.post('/notifications/read-all'),
+  deleteNotification: (id: number) =>
+    api.delete(`/notifications/${id}`),
+
+  // Notification Preferences
+  getNotificationPreferences: () =>
+    api.get('/notification-preferences'),
+  getDefaultNotificationPreferences: () =>
+    api.get('/notification-preferences/defaults'),
+  getNotificationRegistry: () =>
+    api.get('/notification-preferences/registry'),
+  createOrUpdateNotificationPreference: (preference: {
+    event_type: string;
+    in_app_enabled: boolean;
+    email_enabled: boolean;
+    in_app_frequency: string;
+    email_frequency: string;
+    priority: string;
+  }) =>
+    api.post('/notification-preferences', preference),
+  updateNotificationPreferenceByEvent: (eventType: string, update: {
+    in_app_enabled?: boolean;
+    email_enabled?: boolean;
+    in_app_frequency?: string;
+    email_frequency?: string;
+    priority?: string;
+  }) =>
+    api.patch(`/notification-preferences/${eventType}`, update),
+  bulkUpdateNotificationPreferences: (preferences: any[]) =>
+    api.post('/notification-preferences/bulk', { preferences }),
+  deleteNotificationPreference: (id: number) =>
+    api.delete(`/notification-preferences/${id}`),
+
+  // Activity Feed (backend source-of-truth audit log)
+  getActivityFeed: (params?: {
+    category?: 'applications' | 'swipes' | 'notifications' | 'matches' | 'profile' | 'job_posting';
+    page?: number;
+    limit?: number;
+    job_id?: number;
+  }) => api.get('/activity-feed', { params }),
+
+  // ── Chat / Messaging ────────────────────────────────────────────────────────
+  createConversation: (candidateId: number, jobPostingId: number) =>
+    api.post('/chat/conversations', { candidate_id: candidateId, job_posting_id: jobPostingId }),
+
+  getConversations: () =>
+    api.get('/chat/conversations'),
+
+  getMessages: (conversationId: number, params?: { limit?: number; before?: number }) =>
+    api.get(`/chat/conversations/${conversationId}/messages`, { params }),
+
+  sendMessage: (conversationId: number, text: string) =>
+    api.post(`/chat/conversations/${conversationId}/messages`, { text }),
+
+  markConversationRead: (conversationId: number) =>
+    api.post(`/chat/conversations/${conversationId}/read`),
+
+  getPresence: (userId: number) =>
+    api.get(`/presence/${userId}`),
+
+  // ── Direct Messaging (WhatsApp-style) ──────────────────────────────────────
+  startConversation: (candidateUserId: number) =>
+    api.post('/messages/conversations/start', { candidate_user_id: candidateUserId }),
+
+  getDirectConversations: () =>
+    api.get('/messages/conversations'),
+
+  getConversationMessages: (conversationId: number, limit?: number, offset?: number) =>
+    api.get(`/messages/conversations/${conversationId}/messages`, { 
+      params: { limit, offset } 
+    }),
+
+  sendDirectMessage: (conversationId: number, content: string) =>
+    api.post(`/messages/conversations/${conversationId}/messages`, { content }),
+
+  markDirectConversationRead: (conversationId: number) =>
+    api.post(`/messages/conversations/${conversationId}/read`),
+
+  // Presence/Online Status
+  sendHeartbeat: () =>
+    api.post('/messages/heartbeat'),
+
+  getUserOnlineStatus: (userId: number) =>
+    api.get(`/messages/user/${userId}/status`),
+
+  // ── Meeting Scheduler (Phase 1 - Core Scheduling) ──────────────────────────
   
-  inviteTeamMember: (email: string, role: string, companyName: string) =>
-    api.post('/company/team/invite', { email, role, company_name: companyName }),
+  // Meeting CRUD
+  createMeeting: (data: {
+    title: string;
+    description?: string;
+    meeting_type: 'interview' | 'screening' | 'follow_up' | 'other';
+    scheduled_start: string; // ISO datetime
+    scheduled_end: string;   // ISO datetime
+    duration_minutes: number;
+    timezone?: string;
+    // Only use participants with name and email (no user IDs needed)
+    participants: Array<{ name: string; email: string; is_required?: boolean }>;
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+    location?: string;
+    video_meeting_url?: string;
+    video_provider?: string;
+  }) =>
+    api.post('/meetings/create', data),
+
+  getMeetings: (params?: { 
+    status?: 'scheduled' | 'cancelled' | 'completed' | 'no_show';
+    upcoming_only?: boolean;
+  }) =>
+    api.get('/meetings/list', { params }),
+
+  getMeeting: (meetingId: number) =>
+    api.get(`/meetings/${meetingId}`),
+
+  updateMeeting: (meetingId: number, data: {
+    title?: string;
+    description?: string;
+    scheduled_start?: string;
+    scheduled_end?: string;
+    duration_minutes?: number;
+    timezone?: string;
+    location?: string;
+    video_meeting_url?: string;
+    participants?: Array<{ name: string; email: string; is_required?: boolean }>;
+  }) =>
+    api.patch(`/meetings/${meetingId}`, data),
+
+  cancelMeeting: (meetingId: number, cancellation_reason: string) =>
+    api.post(`/meetings/${meetingId}/cancel`, { cancellation_reason }),
+
+  markMeetingComplete: (meetingId: number, notes?: string) =>
+    api.post(`/meetings/${meetingId}/complete`, { notes: notes ?? null }),
+
+  markMeetingNoShow: (meetingId: number, notes?: string) =>
+    api.post(`/meetings/${meetingId}/no-show`, { notes: notes ?? null }),
+
+  rescheduleMeeting: (meetingId: number, data: {
+    scheduled_start: string;
+    scheduled_end: string;
+    timezone?: string;
+    reason?: string;
+  }) =>
+    api.post(`/meetings/${meetingId}/reschedule`, data),
+
+  // Availability Slot Management
+  proposeAvailabilitySlots: (slots: Array<{
+    proposed_to_user_id: number;
+    slot_start: string;
+    slot_end: string;
+    timezone?: string;
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+  }>) =>
+    api.post('/meetings/availability/propose', slots),
+
+  getMyAvailabilitySlots: (includeSelected?: boolean) =>
+    api.get('/meetings/availability/my-slots', { 
+      params: { include_selected: includeSelected } 
+    }),
+
+  selectAvailabilitySlot: (slotId: number, title: string, description?: string) =>
+    api.post('/meetings/availability/select', { 
+      slot_id: slotId, 
+      title, 
+      description 
+    }),
+
+  // Scheduling Utilities
+  checkAvailability: (userId: number, startTime: string, endTime: string) =>
+    api.get('/meetings/check-availability', {
+      params: { user_id: userId, start_time: startTime, end_time: endTime }
+    }),
+
+  findCommonSlots: (userIds: number[], durationMinutes: number, startRange: string, endRange: string) =>
+    api.get('/meetings/find-slots', {
+      params: { 
+        user_ids: userIds.join(','), 
+        duration_minutes: durationMinutes,
+        start_range: startRange,
+        end_range: endRange
+      }
+    }),
+
+  // ── Calendar Integration (Phase 2) ──────────────────────────────────────────
   
-  updateTeamMemberRole: (memberId: number, newRole: string) =>
-    api.put(`/company/team/members/${memberId}/role`, { new_role: newRole }),
+  // Calendar OAuth
+  initiateGoogleCalendarAuth: () =>
+    api.get('/calendar/google/authorize'),
+
+  initiateMicrosoftCalendarAuth: () =>
+    api.get('/calendar/microsoft/authorize'),
+
+  // Calendar Account Management
+  getCalendarAccounts: () =>
+    api.get('/calendar/accounts'),
+
+  toggleCalendarSync: (accountId: number, enabled: boolean) =>
+    api.post(`/calendar/accounts/${accountId}/sync`, null, { params: { enabled } }),
+
+  setPrimaryCalendar: (accountId: number) =>
+    api.post(`/calendar/accounts/${accountId}/primary`),
+
+  disconnectCalendar: (accountId: number) =>
+    api.delete(`/calendar/accounts/${accountId}`),
+
+  // Video Provider Account Management
+  createVideoProviderAccount: (data: {
+    provider: 'zoom' | 'microsoft_teams' | 'google_meet' | 'other';
+    api_key?: string;
+    api_secret?: string;
+    access_token?: string;
+    refresh_token?: string;
+    auto_generate_links?: boolean;
+    waiting_room_enabled?: boolean;
+  }) =>
+    api.post('/calendar/video-providers', data),
+
+  getVideoProviderAccounts: () =>
+    api.get('/calendar/video-providers'),
+
+  updateVideoProviderAccount: (accountId: number, data: {
+    api_key?: string;
+    api_secret?: string;
+    auto_generate_links?: boolean;
+    waiting_room_enabled?: boolean;
+  }) =>
+    api.patch(`/calendar/video-providers/${accountId}`, data),
+
+  deleteVideoProviderAccount: (accountId: number) =>
+    api.delete(`/calendar/video-providers/${accountId}`),
+
+  // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
   
-  removeTeamMember: (memberId: number) =>
-    api.delete(`/company/team/members/${memberId}`),
+  // Get overview metrics
+  getAnalyticsOverview: (rangeDays: number = 30) =>
+    api.get('/analytics/overview', { params: { range_days: rangeDays } }),
+
+  // Get funnel metrics
+  getAnalyticsFunnel: (rangeDays: number = 30, jobId?: number) =>
+    api.get('/analytics/funnel', { 
+      params: { 
+        range_days: rangeDays,
+        ...(jobId && { job_id: jobId })
+      } 
+    }),
+
+  // Get job-specific analytics
+  getJobAnalytics: (jobId: number, rangeDays: number = 90) =>
+    api.get(`/analytics/job/${jobId}`, { params: { range_days: rangeDays } }),
+
+  // Track analytics event
+  trackAnalyticsEvent: (data: {
+    event_type: 'view' | 'like' | 'apply' | 'interview_scheduled' | 'interview_completed' | 'offer_made' | 'hire';
+    job_posting_id?: number;
+    candidate_user_id?: number;
+    company_id?: number;
+    metadata?: Record<string, any>;
+  }) =>
+    api.post('/analytics/events', data),
+
+  // Role-scoped analytics endpoints
+  getRecruiterAnalytics: (rangeDays: number = 30) =>
+    api.get('/analytics/recruiter', { params: { range_days: rangeDays } }),
+
+  getHRAnalytics: (rangeDays: number = 30) =>
+    api.get('/analytics/hr', { params: { range_days: rangeDays } }),
+
+  // Team management (HR only)
+  getCompanyTeam: () =>
+    api.get('/company/team'),
+
+  removeTeamMemberHR: (memberUserId: number) =>
+    api.delete(`/company/team/${memberUserId}`),
+
+
+  // ── Product Taxonomy (Vendor/Product/Role) ─────────────────────────────────
   
-  // Subscriptions
+  // Get all vendors
+  getTaxonomyVendors: (search?: string, limit?: number, offset?: number) =>
+    api.get('/product-taxonomy/vendors', { 
+      params: { search, limit, offset } 
+    }),
+
+  // Get vendor with all product types
+  getTaxonomyVendor: (vendorId: number) =>
+    api.get(`/product-taxonomy/vendors/${vendorId}`),
+
+  // Get product types for a vendor
+  getTaxonomyProductTypes: (vendorId: number, search?: string) =>
+    api.get(`/product-taxonomy/vendors/${vendorId}/product-types`, { 
+      params: { search } 
+    }),
+
+  // Get product type with all roles
+  getTaxonomyProductType: (typeId: number) =>
+    api.get(`/product-taxonomy/product-types/${typeId}`),
+
+  // Get roles for a product type
+  getTaxonomyRoles: (typeId: number, search?: string) =>
+    api.get(`/product-taxonomy/product-types/${typeId}/roles`, { 
+      params: { search } 
+    }),
+
+  // Get role-specific skill taxonomy
+  getRoleSkills: (roleId: number) =>
+    api.get(`/product-taxonomy/roles/${roleId}/skills`),
+
+  // Global search across taxonomy
+  searchTaxonomy: (query: string, limit?: number) =>
+    api.get('/product-taxonomy/search', { 
+      params: { q: query, limit } 
+    }),
+
+  // Create custom taxonomy entries (for advanced users)
+  createCustomVendor: (name: string, description?: string) =>
+    api.post('/product-taxonomy/vendors/custom', { name, description }),
+
+  createCustomProductType: (vendorId: number, name: string, description?: string) =>
+    api.post('/product-taxonomy/product-types/custom', { 
+      vendor_id: vendorId, 
+      name, 
+      description 
+    }),
+
+  createCustomRole: (productTypeId: number, name: string, description?: string) =>
+    api.post('/product-taxonomy/roles/custom', { 
+      product_type_id: productTypeId, 
+      name, 
+      description 
+    }),
+
+  // ── Team Management v2 (company-scoped) ────────────────────────────────────
+
+  /** List members via new team router */
+  getTeamMembersV2: () =>
+    api.get('/company/team/members'),
+
+  /** Invite a new team member (Admin/HR) */
+  inviteTeamMember: (data: { email: string; role: string }) =>
+    api.post('/company/team/invite', data),
+
+  /** Validate an invite token (public) */
+  validateInvite: (token: string) =>
+    api.get('/company/team/validate-invite', { params: { token } }),
+
+  /** Accept an invite and create an account (public) */
+  acceptInvite: (data: { token: string; full_name: string; password: string }) =>
+    api.post('/company/team/accept-invite', data),
+
+  /** List pending invitations */
+  getPendingInvites: () =>
+    api.get('/company/team/pending-invites'),
+
+  /** Revoke a pending invitation */
+  revokeInvite: (inviteId: number) =>
+    api.delete(`/company/team/invites/${inviteId}`),
+
+  /** Resend a pending invitation (revokes old, creates fresh token + email) */
+  resendInvite: (email: string, role: string) =>
+    api.post('/company/team/invite', { email, role }),
+
+  /** Update a member's role (Admin only) */
+  updateMemberRole: (userId: number, role: string) =>
+    api.put(`/company/team/members/${userId}/role`, { role }),
+
+  /** Remove (deactivate) a team member (Admin only) */
+  removeTeamMember: (userId: number) =>
+    api.delete(`/company/team/members/${userId}`),
+
+  // ── Subscriptions ───────────────────────────────────────────────────────────
+
   getSubscriptionPlans: () =>
     api.get('/subscriptions/plans'),
-  
-  getSubscriptionPlan: (planId: number) =>
-    api.get(`/subscriptions/plans/${planId}`),
-  
-  getCompanySubscription: () =>
+
+  getMySubscription: () =>
     api.get('/subscriptions/my'),
-  
-  purchaseSubscription: (planId: number) =>
-    api.post('/subscriptions/purchase', { plan_id: planId }),
-  
+
+  purchaseSubscription: (data: { plan_id: number; auto_renew?: boolean }) =>
+    api.post('/subscriptions/purchase', data),
+
   cancelSubscription: () =>
-    api.post('/subscriptions/cancel', {}),
-  
-  // Credits
+    api.post('/subscriptions/cancel'),
+
+  // ── Credits ─────────────────────────────────────────────────────────────────
+
   getCreditBalance: () =>
-    api.get('/subscriptions/credits/balance'),
-  
-  getCreditTransactions: () =>
-    api.get('/subscriptions/credits/transactions'),
-  
-  purchaseCredits: (amount: number) =>
-    api.post('/subscriptions/credits/purchase', { amount }),
-  
-  deductCredits: (amount: number, description: string = 'Job posting') =>
-    api.post('/subscriptions/credits/deduct', { amount, description }),
+    api.get('/credits/balance'),
+
+  purchaseCredits: (data: { amount: number; description?: string }) =>
+    api.post('/credits/purchase', data),
+
+  getCreditTransactions: (limit?: number, offset?: number) =>
+    api.get('/credits/transactions', { params: { limit, offset } }),
 };
 
 export default api;

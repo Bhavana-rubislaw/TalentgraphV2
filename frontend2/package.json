@@ -1,7 +1,7 @@
 {
   "name": "talentgraph-v2",
   "version": "2.0.0",
-  "description": "TalentGraph V2 - Dating-style Talent Marketplace",
+  "description": "TalentGraph - Dating-style Talent Marketplace",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

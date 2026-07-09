@@ -157,6 +157,28 @@ python reset_db.py
 
 ---
 
+## B1.1) Complete reset and reseed (recommended)
+
+**Command**
+```powershell
+python reset_db_clean.py
+```
+
+**Use**
+- Complete database reset in one command:
+  1. Drops and recreates schema
+  2. Recreates all tables
+  3. Creates system admin (talentgraph.interviews@gmail.com)
+  4. Reseeds test data with recruiter2.* emails
+- Recommended over manual reset + seed
+
+**Expected Output**
+- Progress through 4 steps
+- Verification showing 1 ADMIN, 12 RECRUITER, 6 HR, 3 CANDIDATE
+- Confirms no old admin.* emails exist
+
+---
+
 ## B2) Seed DB with test users/companies/jobs
 
 **Command**
@@ -175,6 +197,26 @@ python seed_data_v2.py
 python check_jobs.py
 ```
 Expected: lists job counts per company, total 24.
+
+---
+
+## B2.1) List all users by role (verify seed data)
+
+**Command**
+```powershell
+python list_users_by_role.py
+```
+
+**Use**
+- Shows all users in database grouped by role (ADMIN, RECRUITER, HR, CANDIDATE).
+- Helpful to verify seed data and check for old admin.* emails.
+
+**Expected Output**
+- Formatted list showing:
+  - ADMIN (1 user): talentgraph.interviews@gmail.com
+  - RECRUITER (12 users): recruiter2.*, recruiter.*
+  - HR (6 users): hr.*
+  - CANDIDATE (N users)
 
 ---
 
@@ -286,9 +328,8 @@ print('Done!')
 
 **Command**
 ```powershell
-cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2"
-.\venv\Scripts\Activate.ps1
-uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
+deactivate
+
 ```
 
 **Use**
@@ -306,14 +347,21 @@ curl.exe -s http://127.0.0.1:8001/health
 Expected: `{"status":"ok"}`
 
 ---
-
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2" 
+.\venv\Scripts\Activate.ps1 
+ uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload
 ## C2) Start frontend (Vite)
 
 **Command**
 ```powershell
 cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
+npm run dev -- --port 3002
+
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
 npm run dev -- --port 3003
-```
+
+cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\admin-ui"                                                                                              
+npm run dev -- --port 3004
 
 **Use**
 - Runs React frontend with hot reload.
@@ -321,7 +369,8 @@ npm run dev -- --port 3003
 **Expected Output**
 - Vite prints local URL (example): `http://localhost:3003`
 
-**Test**
+**Test**cd C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\backend2
+python get_google_token.py
 - Open browser: `http://localhost:3003`
 
 ---
@@ -440,16 +489,20 @@ Write-Host "Token received: $($jsonResponse.access_token.Substring(0,20))..."
 
 **Command**
 ```powershell
-$body = '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}'
+$body = '{"email":"recruiter2.jennifer@techcorp.com","password":"Kutty_1304"}'
 $res = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body $body -ContentType "application/json"
 $res | ConvertTo-Json
 ```
 
 **Use**
-- Logs in company user and returns JSON response.
+- Logs in company user (recruiter or HR) and returns JSON response.
 
 **Expected Output**
 - JSON with `access_token`, `role`, `company_name`, etc.
+
+**Note**
+- Admin users must use `/auth/admin/login` endpoint
+- Only one admin exists: `talentgraph.interviews@gmail.com`
 
 ---
 
@@ -625,11 +678,13 @@ for r in router.routes:
 - Confirms which routes exist under candidates router.
 
 **Expected Output**
-- Includes `/candidates/job-profiles`, `/candidates/skill-catalogs`, resume/certifications routes, etc.
+-     Includes `/candidates/job-profiles`, `/candidates/skill-catalogs`, resume/certifications routes, etc.
 
 ---
 
-# H) Quick End‑to‑End Sanity Checklist
+
+                                                                                                                                                                                                                                                                                                                                                                                                                        
+# H) Quick End‑to‑End Sanity Checklist            
 
 ## H1) Backend health
 ```powershell
@@ -645,9 +700,10 @@ Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST
 ```powershell
 curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/dashboard/candidate/matches
 ```
-
+      
 ## H4) Frontend typecheck
 ```powershell
 cd "C:\Users\BhavanaBayya\Documents\WORK\TalentgraphV2\frontend2"
 npx tsc --noEmit
 ```
+                                                                                                                                                                                                           

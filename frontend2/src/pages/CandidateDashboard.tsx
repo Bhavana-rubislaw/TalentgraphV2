@@ -52,17 +52,14 @@ const CandidateDashboard: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleLike = async () => {
-    console.log('Liked:', cards[currentIndex].name);
     setCurrentIndex(currentIndex + 1);
   };
 
   const handlePass = async () => {
-    console.log('Passed:', cards[currentIndex].name);
     setCurrentIndex(currentIndex + 1);
   };
 
   const handleAsk = async () => {
-    console.log('Asked to apply:', cards[currentIndex].name);
     setCurrentIndex(currentIndex + 1);
   };
 

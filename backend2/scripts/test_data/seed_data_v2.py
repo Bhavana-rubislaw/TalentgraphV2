@@ -23,14 +23,14 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from sqlmodel import Session, select
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# Add backend2 directory to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.database import engine
 from app.models import (
     User, UserRole, Candidate, JobProfile, Skill, LocationPreference,
     Resume, Certification, Company, JobPosting, Match, Swipe, Application,
-    WorkType, EmploymentType, VisaStatus, CurrencyType
+    WorkType, EmploymentType, VisaStatus, CurrencyType, Meeting, MeetingParticipant
 )
 from app.security import hash_password
 
@@ -44,7 +44,13 @@ def clear_existing_data(session: Session):
     print("🗑️  Clearing existing seed data...")
     
     # Delete in order to respect foreign key constraints
-    session.exec(select(Application)).all()
+    # MeetingParticipant -> Meeting -> Application
+    for participant in session.exec(select(MeetingParticipant)).all():
+        session.delete(participant)
+    
+    for meeting in session.exec(select(Meeting)).all():
+        session.delete(meeting)
+    
     for app in session.exec(select(Application)).all():
         session.delete(app)
     
@@ -85,27 +91,27 @@ def clear_existing_data(session: Session):
         'michael.chen@email.com',
         'david.kumar@email.com',
         # TechCorp Solutions
-        'admin.jennifer@techcorp.com',
+        'recruiter2.jennifer@techcorp.com',
         'hr.jane@techcorp.com',
         'recruiter.robert@techcorp.com',
         # Global Systems Inc
-        'admin.lisa@globalsystems.com',
+        'recruiter2.lisa@globalsystems.com',
         'hr.mark@globalsystems.com',
         'recruiter.anna@globalsystems.com',
         # Enterprise Solutions LLC
-        'admin.susan@enterprisesol.com',
+        'recruiter2.susan@enterprisesol.com',
         'hr.tom@enterprisesol.com',
         'recruiter.diana@enterprisesol.com',
         # Oracle Consulting Partners
-        'admin.rachel@oraclepartners.com',
+        'recruiter2.rachel@oraclepartners.com',
         'hr.james@oraclepartners.com',
         'recruiter.linda@oraclepartners.com',
         # CloudTech Innovations
-        'admin.emily@cloudtech.com',
+        'recruiter2.emily@cloudtech.com',
         'hr.chris@cloudtech.com',
         'recruiter.brian@cloudtech.com',
         # Digital Transform Group
-        'admin.kevin@digitaltrans.com',
+        'recruiter2.kevin@digitaltrans.com',
         'hr.amanda@digitaltrans.com',
         'recruiter.mike@digitaltrans.com'
     ]
@@ -536,7 +542,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "TechCorp Solutions",
             "users": [
-                {"email": "admin.jennifer@techcorp.com", "full_name": "Jennifer Smith", "role": UserRole.ADMIN},
+                {"email": "recruiter2.jennifer@techcorp.com", "full_name": "Jennifer Smith", "role": UserRole.RECRUITER},
                 {"email": "hr.jane@techcorp.com", "full_name": "Jane Williams", "role": UserRole.HR},
                 {"email": "recruiter.robert@techcorp.com", "full_name": "Robert Johnson", "role": UserRole.RECRUITER}
             ]
@@ -544,7 +550,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "Global Systems Inc",
             "users": [
-                {"email": "admin.lisa@globalsystems.com", "full_name": "Lisa Martinez", "role": UserRole.ADMIN},
+                {"email": "recruiter2.lisa@globalsystems.com", "full_name": "Lisa Martinez", "role": UserRole.RECRUITER},
                 {"email": "hr.mark@globalsystems.com", "full_name": "Mark Thompson", "role": UserRole.HR},
                 {"email": "recruiter.anna@globalsystems.com", "full_name": "Anna Lee", "role": UserRole.RECRUITER}
             ]
@@ -552,7 +558,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "Enterprise Solutions LLC",
             "users": [
-                {"email": "admin.susan@enterprisesol.com", "full_name": "Susan Davis", "role": UserRole.ADMIN},
+                {"email": "recruiter2.susan@enterprisesol.com", "full_name": "Susan Davis", "role": UserRole.RECRUITER},
                 {"email": "hr.tom@enterprisesol.com", "full_name": "Tom Wilson", "role": UserRole.HR},
                 {"email": "recruiter.diana@enterprisesol.com", "full_name": "Diana Moore", "role": UserRole.RECRUITER}
             ]
@@ -560,7 +566,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "Oracle Consulting Partners",
             "users": [
-                {"email": "admin.rachel@oraclepartners.com", "full_name": "Rachel Taylor", "role": UserRole.ADMIN},
+                {"email": "recruiter2.rachel@oraclepartners.com", "full_name": "Rachel Taylor", "role": UserRole.RECRUITER},
                 {"email": "hr.james@oraclepartners.com", "full_name": "James Anderson", "role": UserRole.HR},
                 {"email": "recruiter.linda@oraclepartners.com", "full_name": "Linda Garcia", "role": UserRole.RECRUITER}
             ]
@@ -568,7 +574,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "CloudTech Innovations",
             "users": [
-                {"email": "admin.emily@cloudtech.com", "full_name": "Emily Brown", "role": UserRole.ADMIN},
+                {"email": "recruiter2.emily@cloudtech.com", "full_name": "Emily Brown", "role": UserRole.RECRUITER},
                 {"email": "hr.chris@cloudtech.com", "full_name": "Chris Miller", "role": UserRole.HR},
                 {"email": "recruiter.brian@cloudtech.com", "full_name": "Brian White", "role": UserRole.RECRUITER}
             ]
@@ -576,7 +582,7 @@ def create_companies_and_users(session: Session):
         {
             "company_name": "Digital Transform Group",
             "users": [
-                {"email": "admin.kevin@digitaltrans.com", "full_name": "Kevin Harris", "role": UserRole.ADMIN},
+                {"email": "recruiter2.kevin@digitaltrans.com", "full_name": "Kevin Harris", "role": UserRole.RECRUITER},
                 {"email": "hr.amanda@digitaltrans.com", "full_name": "Amanda Clark", "role": UserRole.HR},
                 {"email": "recruiter.mike@digitaltrans.com", "full_name": "Mike Lewis", "role": UserRole.RECRUITER}
             ]
