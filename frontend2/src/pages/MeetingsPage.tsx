@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect } from 'react';
-import { apiClient } from '../api/client';
 import { Meeting, MeetingStatus, MeetingAvailabilitySlot } from '../types/meeting';
+import { useMeetingsData } from '../hooks/useMeetingsData';
 import {
   AvailabilitySelectorModal,
   CreateMeetingModal,
@@ -18,9 +18,14 @@ type FilterStatus = MeetingStatus | 'all';
 type DateRange = 'all' | 'today' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 export function MeetingsPage() {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [availabilitySlots, setAvailabilitySlots] = useState<MeetingAvailabilitySlot[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    meetings,
+    availabilitySlots,
+    loading,
+    loadMeetings,
+    loadAvailabilitySlots,
+    selectAvailabilitySlot,
+  } = useMeetingsData();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [upcomingOnly, setUpcomingOnly] = useState(false);  // Changed from true to false to show all meetings by default
@@ -33,35 +38,18 @@ export function MeetingsPage() {
   const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
 
+  const getMeetingParams = () => {
+    const params: any = { upcoming_only: upcomingOnly };
+    if (filterStatus !== 'all') {
+      params.status = filterStatus;
+    }
+    return params;
+  };
+
   useEffect(() => {
-    loadMeetings();
+    loadMeetings(getMeetingParams());
     loadAvailabilitySlots();
   }, [filterStatus, upcomingOnly, dateRange, customStartDate, customEndDate]);
-
-  const loadMeetings = async () => {
-    try {
-      setLoading(true);
-      const params: any = { upcoming_only: upcomingOnly };
-      if (filterStatus !== 'all') {
-        params.status = filterStatus;
-      }
-      const response = await apiClient.getMeetings(params);
-      setMeetings(response.data);
-    } catch (error) {
-      console.error('Failed to load meetings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAvailabilitySlots = async () => {
-    try {
-      const response = await apiClient.getMyAvailabilitySlots(false);
-      setAvailabilitySlots(response.data);
-    } catch (error) {
-      console.error('Failed to load availability slots:', error);
-    }
-  };
 
   const handleMeetingClick = (meeting: Meeting) => {
     setSelectedMeeting(meeting);
@@ -69,9 +57,7 @@ export function MeetingsPage() {
 
   const handleSlotSelect = async (slotId: number) => {
     try {
-      await apiClient.selectAvailabilitySlot(slotId, 'Interview Meeting');
-      loadMeetings();
-      loadAvailabilitySlots();
+      await selectAvailabilitySlot(slotId, 'Interview Meeting', getMeetingParams());
     } catch (error) {
       console.error('Failed to select slot:', error);
       alert('Failed to select time slot');
@@ -795,7 +781,7 @@ export function MeetingsPage() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            loadMeetings();
+            loadMeetings(getMeetingParams());
           }}
         />
       )}
@@ -816,7 +802,7 @@ export function MeetingsPage() {
           onClose={() => setSelectedMeeting(null)}
           onUpdate={() => {
             setSelectedMeeting(null);
-            loadMeetings();
+            loadMeetings(getMeetingParams());
           }}
         />
       )}

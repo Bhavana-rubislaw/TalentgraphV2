@@ -5,107 +5,46 @@ Enhanced with comprehensive cancellation, rescheduling, and tokenized email acti
 """
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
-from sqlalchemy import and_, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-import json
 import logging
 
 from app.database import get_session
 from app.security import get_current_user
 from app.models import (
-    User, Meeting, MeetingParticipant, MeetingAvailabilitySlot, MeetingTimelineEvent,
+    User, Meeting, MeetingParticipant, MeetingAvailabilitySlot,
     MeetingStatus, MeetingType, CalendarAccount, VideoProviderAccount, CalendarProvider,
-    Application, MeetingActionToken
 )
 from app.schemas import (
     MeetingCreate, MeetingRead, MeetingUpdate, MeetingCancelRequest, MeetingRescheduleRequest,
     MeetingAvailabilitySlotCreate, MeetingAvailabilitySlotRead, SlotSelectionRequest,
-    MeetingParticipantRead, CandidateRescheduleRequest, RecruiterRescheduleResponse,
+    CandidateRescheduleRequest, RecruiterRescheduleResponse,
     MeetingTimelineEventRead
 )
 from app.routers.notifications import push_notification
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
 from app.services.calendar_providers import CalendarProviderFactory, CalendarProviderError
+from app.services.user_context_service import UserContextService
 
 logger = logging.getLogger(__name__)
 from app.services.meeting_service import MeetingService
 from app.services.meeting_email_service import MeetingEmailService
+from app.services.meeting_update_service import MeetingUpdateService
+from app.services.meeting_cancel_service import MeetingCancelService
+from app.services.meeting_reschedule_service import MeetingRescheduleService
+from app.services.meeting_request_reschedule_service import MeetingRequestRescheduleService
+from app.services.meeting_respond_reschedule_service import MeetingRespondRescheduleService
+from app.services.meeting_conflict_service import MeetingConflictService
+from app.services.meeting_token_action_service import MeetingTokenActionService
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
 
 
 # ============ SCHEDULING ENGINE ============
-
-def check_availability_conflict(
-    session: Session,
-    user_id: int,
-    start_time: datetime,
-    end_time: datetime,
-    exclude_meeting_id: Optional[int] = None
-) -> bool:
-    """
-    Check if user has any scheduling conflicts in the given time range
-    Returns True if there IS a conflict, False if time is available
-    """
-    query = select(Meeting).join(MeetingParticipant).where(
-        and_(
-            MeetingParticipant.user_id == user_id,
-            Meeting.status == MeetingStatus.SCHEDULED,
-            # Check for overlap: (start < their_end) AND (end > their_start)
-            Meeting.scheduled_start < end_time,
-            Meeting.scheduled_end > start_time
-        )
-    )
-    
-    if exclude_meeting_id:
-        query = query.where(Meeting.id != exclude_meeting_id)
-    
-    conflicting_meetings = session.exec(query).all()
-    return len(conflicting_meetings) > 0
-
-
-def find_available_slots(
-    session: Session,
-    user_ids: List[int],
-    duration_minutes: int,
-    start_range: datetime,
-    end_range: datetime,
-    max_slots: int = 10
-) -> List[dict]:
-    """
-    Find available time slots for all participants
-    Returns list of available slots within the date range
-    """
-    # Simple implementation: generate hourly slots and check each
-    slots = []
-    current_slot = start_range
-    slot_duration = timedelta(minutes=duration_minutes)
-    
-    while current_slot + slot_duration <= end_range and len(slots) < max_slots:
-        slot_end = current_slot + slot_duration
-        
-        # Check if ALL users are available
-        all_available = True
-        for user_id in user_ids:
-            if check_availability_conflict(session, user_id, current_slot, slot_end):
-                all_available = False
-                break
-        
-        if all_available:
-            slots.append({
-                "start": current_slot,
-                "end": slot_end,
-                "available": True
-            })
-        
-        # Move to next hour
-        current_slot += timedelta(hours=1)
-    
-    return slots
 
 
 # ============ MEETING CRUD ENDPOINTS ============
@@ -166,7 +105,7 @@ async def create_meeting(
     # Check for conflicts for all participants
     all_participant_ids = participant_user_ids + [current_user["user_id"]]
     for user_id in all_participant_ids:
-        has_conflict = check_availability_conflict(
+        has_conflict = MeetingConflictService.check_availability_conflict(
             session, user_id, meeting_data.scheduled_start, meeting_data.scheduled_end
         )
         if has_conflict:
@@ -296,7 +235,10 @@ async def create_meeting(
     session.commit()
     
     # Get current user for notification
-    current_user_obj = session.get(User, current_user["user_id"])
+    current_user_obj = UserContextService.get_user_by_id_optional(
+        session,
+        current_user["user_id"],
+    )
     user_full_name = current_user_obj.full_name if current_user_obj else current_user.get("email", "Someone")
     
     # Create timeline event for meeting creation
@@ -522,254 +464,12 @@ async def update_meeting(
     
     logger.info(f"PATCH /meetings/{meeting_id} - User: {current_user['email']} (ID: {current_user['user_id']})")
     
-    try:
-        meeting = session.get(Meeting, meeting_id)
-        if not meeting:
-            raise HTTPException(status_code=404, detail="Meeting not found")
-        
-        # Candidates cannot edit meeting details
-        current_user_obj = session.get(User, current_user["user_id"])
-        if current_user_obj and current_user_obj.role == "candidate":
-            raise HTTPException(status_code=403, detail="Candidates cannot edit meeting details")
-        
-        if meeting.organizer_user_id != current_user["user_id"]:
-            raise HTTPException(status_code=403, detail="Only organizer can update meeting")
-        
-        if meeting.status != MeetingStatus.SCHEDULED:
-            raise HTTPException(status_code=400, detail="Can only update scheduled meetings")
-        
-        # Check for conflicts if time is changing
-        new_start = update_data.scheduled_start or meeting.scheduled_start
-        new_end = update_data.scheduled_end or meeting.scheduled_end
-        
-        if new_start != meeting.scheduled_start or new_end != meeting.scheduled_end:
-            # Check conflicts for all participants
-            for participant in meeting.participants:
-                has_conflict = check_availability_conflict(
-                    session, participant.user_id, new_start, new_end, exclude_meeting_id=meeting.id
-                )
-                if has_conflict:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=f"User {participant.user_id} has a scheduling conflict"
-                    )
-        
-        # Handle participant updates if provided
-        if update_data.participants is not None:
-            # Resolve new participants to user IDs
-            new_participant_ids = []
-            for participant_spec in update_data.participants:
-                user = session.exec(
-                    select(User).where(User.email == participant_spec.email)
-                ).first()
-                
-                if not user:
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"User with email '{participant_spec.email}' not found"
-                    )
-                
-                # Verify name matches
-                if user.full_name.lower() != participant_spec.name.lower():
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Name mismatch for email '{participant_spec.email}': expected '{participant_spec.name}' but found '{user.full_name}'"
-                    )
-                
-                new_participant_ids.append(user.id)
-            
-            # Differential update: only add/remove what changed
-            existing_participant_ids = {p.user_id for p in meeting.participants}
-            new_participant_ids_set = set(new_participant_ids)
-            
-            # Calculate what changed
-            participants_to_remove = existing_participant_ids - new_participant_ids_set
-            participants_to_add = new_participant_ids_set - existing_participant_ids
-            
-            logger.debug(f"participants_to_add={participants_to_add}, participants_to_remove={participants_to_remove}")
-            
-            # Remove participants using bulk delete (safer than iterating and deleting)
-            if participants_to_remove:
-                from sqlalchemy import delete as sql_delete
-                stmt = sql_delete(MeetingParticipant).where(
-                    and_(
-                        MeetingParticipant.meeting_id == meeting.id,
-                        MeetingParticipant.user_id.in_(participants_to_remove)
-                    )
-                ).execution_options(synchronize_session=False)
-                session.exec(stmt)
-            
-            # Add new participants
-            if participants_to_add:
-                for user_id in participants_to_add:
-                    new_participant = MeetingParticipant(
-                        meeting_id=meeting.id,
-                        user_id=user_id,
-                        is_required=True,
-                        has_confirmed=(user_id == meeting.organizer_user_id)
-                    )
-                    session.add(new_participant)
-            
-            # Commit participant changes immediately
-            session.commit()
-            
-            # Re-query meeting to get fresh data with updated participants
-            meeting = session.exec(
-                select(Meeting)
-                .where(Meeting.id == meeting.id)
-                .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
-            ).first()
-            
-            logger.debug(f"Re-queried meeting {meeting.id}: title={meeting.title}, participants={len(meeting.participants)}")
-            
-            # Send email notifications for participant changes
-            email_service = MeetingEmailService(queue_mode=True)
-            current_user_obj = session.get(User, current_user["user_id"])
-            
-            # Email newly added participants
-            if participants_to_add:
-                logger.info(f"Sending emails to {len(participants_to_add)} newly added participants")
-                
-                for user_id in participants_to_add:
-                    recipient = session.get(User, user_id)
-                    if recipient and user_id != current_user["user_id"]:
-                        logger.info(f"Sending invitation email to {recipient.email}")
-                        # Generate action tokens for new participant
-                        confirm_token = MeetingService.generate_action_token(
-                            session, meeting.id, user_id, "confirm"
-                        )
-                        cancel_token = MeetingService.generate_action_token(
-                            session, meeting.id, user_id, "cancel"
-                        )
-                        reschedule_token = MeetingService.generate_action_token(
-                            session, meeting.id, user_id, "reschedule"
-                        )
-                        
-                        email_service.send_interview_scheduled_email(
-                            session=session,
-                            meeting=meeting,
-                            recipient_user=recipient,
-                            organizer_user=current_user_obj,
-                            confirm_token=confirm_token,
-                            cancel_token=cancel_token,
-                            reschedule_token=reschedule_token
-                        )
-                        logger.info(f"Email sent to {recipient.email}")
-            
-            # Notify removed participants via email
-            if participants_to_remove:
-                logger.info(f"Sending removal emails to {len(participants_to_remove)} removed participants")
-                for user_id in participants_to_remove:
-                    recipient = session.get(User, user_id)
-                    if recipient and user_id != current_user["user_id"]:
-                        logger.info(f"Sending removal email to {recipient.email}")
-                        # Use cancellation email template for removed participants
-                        email_service.send_interview_cancelled_email(
-                            session=session,
-                            meeting=meeting,
-                            recipient_user=recipient,
-                            cancelled_by_user=current_user_obj,
-                            cancellation_reason=f"You have been removed from this meeting by {current_user_obj.full_name}."
-                        )
-                        logger.info(f"Removal email sent to {recipient.email}")
-        
-        # Always re-query meeting fresh before updating other fields
-        # This ensures we never work with stale SQLAlchemy objects
-        meeting = session.exec(
-            select(Meeting)
-            .where(Meeting.id == meeting_id)
-            .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
-        ).first()
-        
-        # Update other fields - Use model_dump instead of dict for Pydantic v2
-        update_dict = update_data.model_dump(exclude_unset=True, exclude={'participants'})
-
-        # Track whether meaningful fields (time, details) changed before applying them
-        time_or_detail_changed = any(
-            k in update_dict
-            for k in ('scheduled_start', 'scheduled_end', 'duration_minutes',
-                      'timezone', 'title', 'description', 'video_meeting_url', 'location')
-        )
-
-        for key, value in update_dict.items():
-            setattr(meeting, key, value)
-        
-        meeting.updated_at = datetime.utcnow()
-        # Don't call session.add() - meeting is already tracked after query
-        session.commit()
-        
-        # Re-query meeting one final time to ensure clean state
-        meeting = session.exec(
-            select(Meeting)
-            .where(Meeting.id == meeting.id)
-            .options(selectinload(Meeting.participants).selectinload(MeetingParticipant.user))
-        ).first()
-        
-        # Notify ALL participants including organizer
-        current_user_obj_notify = session.get(User, current_user["user_id"])
-        user_full_name_notify = current_user_obj_notify.full_name if current_user_obj_notify else "Organizer"
-        for participant in meeting.participants:
-            push_notification(
-                session=session,
-                user_id=participant.user_id,
-                title="Meeting Updated",
-                message=f"{user_full_name_notify} updated meeting '{meeting.title}'",
-                event_type="meeting_updated",
-                route=f"/meetings/{meeting.id}"
-            )
-        # Also notify organizer if not already in participants list
-        organizer_in_participants = any(p.user_id == meeting.organizer_user_id for p in meeting.participants)
-        if not organizer_in_participants:
-            push_notification(
-                session=session,
-                user_id=meeting.organizer_user_id,
-                title="Meeting Updated",
-                message=f"Meeting '{meeting.title}' has been updated",
-                event_type="meeting_updated",
-                route=f"/meetings/{meeting.id}"
-            )
-
-        # Send updated email to ALL participants (including organizer) when meaningful fields changed
-        if time_or_detail_changed:
-            email_service = MeetingEmailService(queue_mode=True)
-            current_user_obj = session.get(User, current_user["user_id"])
-            # Collect all user IDs to notify (participants + organizer)
-            all_notify_ids = {p.user_id for p in meeting.participants}
-            all_notify_ids.add(meeting.organizer_user_id)
-            for uid in all_notify_ids:
-                recipient = session.get(User, uid)
-                if recipient:
-                    try:
-                        confirm_token = MeetingService.generate_action_token(
-                            session, meeting.id, recipient.id, "confirm"
-                        )
-                        cancel_token = MeetingService.generate_action_token(
-                            session, meeting.id, recipient.id, "cancel"
-                        )
-                        email_service.send_meeting_updated_email(
-                            session=session,
-                            meeting=meeting,
-                            recipient_user=recipient,
-                            editor_user=current_user_obj,
-                            confirm_token=confirm_token,
-                            cancel_token=cancel_token,
-                        )
-                    except Exception as email_err:
-                        logger.warning(
-                            f"Could not send updated-meeting email to {recipient.email}: {email_err}"
-                        )
-        
-        return MeetingRead.from_orm_with_participants(meeting)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"ERROR in PATCH /meetings/{meeting_id}: {type(e).__name__}: {str(e)}", exc_info=True)
-        session.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update meeting: {str(e)}"
-        )
+    return MeetingUpdateService.update_meeting(
+        meeting_id=meeting_id,
+        update_data=update_data,
+        current_user=current_user,
+        session=session,
+    )
 
 
 @router.post("/{meeting_id}/cancel", response_model=MeetingRead)
@@ -789,136 +489,12 @@ async def cancel_meeting(
     - Updates calendar events
     """
     
-    meeting = session.get(Meeting, meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    # Get current user details
-    current_user_obj = session.get(User, current_user["user_id"])
-    if not current_user_obj:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Candidates cannot cancel meetings
-    if current_user_obj.role == "candidate":
-        raise HTTPException(status_code=403, detail="Candidates cannot cancel meetings")
-    
-    # Verify canceller identity if name and email are provided
-    if cancel_data.canceller_name or cancel_data.canceller_email:
-        if cancel_data.canceller_email:
-            if current_user_obj.email.lower() != cancel_data.canceller_email.lower():
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Canceller email '{cancel_data.canceller_email}' does not match authenticated user '{current_user_obj.email}'"
-                )
-        
-        if cancel_data.canceller_name:
-            if current_user_obj.full_name.lower() != cancel_data.canceller_name.lower():
-                raise HTTPException(
-                    status_code=403,
-                    detail=f"Canceller name '{cancel_data.canceller_name}' does not match authenticated user '{current_user_obj.full_name}'"
-                )
-    
-    # Check if user is organizer or participant
-    is_participant = any(p.user_id == current_user["user_id"] for p in meeting.participants)
-    is_organizer = meeting.organizer_user_id == current_user["user_id"]
-    
-    if not (is_participant or is_organizer):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if meeting.status == MeetingStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="Meeting already cancelled")
-    
-    user_full_name = current_user_obj.full_name if current_user_obj else current_user.get("email", "Someone")
-    user_role = current_user_obj.role if current_user_obj else "user"
-    
-    # Cancel meeting
-    meeting.status = MeetingStatus.CANCELLED
-    meeting.cancelled_at = datetime.utcnow()
-    meeting.cancelled_by_user_id = current_user["user_id"]
-    meeting.cancellation_reason = cancel_data.cancellation_reason
-    meeting.updated_at = datetime.utcnow()
-    
-    session.add(meeting)
-    session.commit()
-    
-    # Create timeline event
-    event_type = "recruiter_cancelled" if is_organizer else "candidate_cancelled"
-    MeetingService.create_timeline_event(
+    return MeetingCancelService.cancel_meeting(
+        meeting_id=meeting_id,
+        cancel_data=cancel_data,
+        current_user=current_user,
         session=session,
-        meeting_id=meeting.id,
-        actor_user_id=current_user["user_id"],
-        event_type=event_type,
-        message=f"{user_full_name} cancelled the meeting: {cancel_data.cancellation_reason}",
-        metadata={"reason": cancel_data.cancellation_reason}
     )
-    
-    # Synchronize application status
-    MeetingService.sync_application_status(
-        session=session,
-        meeting=meeting,
-        new_meeting_status=MeetingStatus.CANCELLED,
-        actor_user_id=current_user["user_id"]
-    )
-    
-    # Delete from synced calendars (if organizer)
-    if is_organizer:
-        calendar_accounts = session.exec(
-            select(CalendarAccount).where(
-                CalendarAccount.user_id == current_user["user_id"],
-                CalendarAccount.sync_enabled == True
-            )
-        ).all()
-        
-        for cal_account in calendar_accounts:
-            try:
-                provider = CalendarProviderFactory.get_provider(
-                    provider=cal_account.provider,
-                    access_token=cal_account.access_token,
-                    refresh_token=cal_account.refresh_token
-                )
-                
-                event_id = None
-                if cal_account.provider == CalendarProvider.GOOGLE:
-                    event_id = meeting.google_calendar_event_id
-                else:
-                    event_id = meeting.microsoft_calendar_event_id
-                
-                if event_id:
-                    provider.delete_event(event_id)
-            except CalendarProviderError as e:
-                logger.warning(f"Failed to delete from {cal_account.provider.value} calendar: {str(e)}")
-    
-    # Send notifications to ALL participants (including organizer)
-    notification_title = "Meeting Cancelled"
-    notification_message = f"{user_full_name} cancelled meeting '{meeting.title}': {cancel_data.cancellation_reason}"
-    
-    all_cancel_notify_ids = {p.user_id for p in meeting.participants}
-    all_cancel_notify_ids.add(meeting.organizer_user_id)
-    for uid in all_cancel_notify_ids:
-        push_notification(
-            session=session,
-            user_id=uid,
-            title=notification_title,
-            message=notification_message,
-            event_type="meeting_cancelled",
-            route=f"/meetings/{meeting.id}"
-        )
-    
-    # Send cancellation emails to ALL participants and organizer
-    email_service = MeetingEmailService(queue_mode=True)
-    for uid in all_cancel_notify_ids:
-        recipient = session.get(User, uid)
-        if recipient and uid != current_user["user_id"]:
-            email_service.send_interview_cancelled_email(
-                session=session,
-                meeting=meeting,
-                recipient_user=recipient,
-                cancelled_by_user=current_user_obj,
-                cancellation_reason=cancel_data.cancellation_reason
-            )
-    
-    session.refresh(meeting)
-    return meeting
 
 
 @router.post("/{meeting_id}/reschedule", response_model=MeetingRead)
@@ -936,168 +512,12 @@ async def reschedule_meeting(
     - Keeps application status as scheduled
     - Sends notifications and emails
     """
-    
-    meeting = session.get(Meeting, meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    if meeting.organizer_user_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Only organizer can reschedule. Candidates should use /request-reschedule")
-    
-    if meeting.status not in [MeetingStatus.SCHEDULED, MeetingStatus.RESCHEDULE_REQUESTED]:
-        raise HTTPException(status_code=400, detail="Cannot reschedule completed or cancelled meeting")
-    
-    # Store old times for timeline
-    old_start = meeting.scheduled_start
-    old_end = meeting.scheduled_end
-    
-    # Check conflicts
-    for participant in meeting.participants:
-        has_conflict = check_availability_conflict(
-            session, participant.user_id,
-            reschedule_data.scheduled_start, reschedule_data.scheduled_end,
-            exclude_meeting_id=meeting.id
-        )
-        if has_conflict:
-            raise HTTPException(
-                status_code=409,
-                detail=f"User {participant.user_id} has a scheduling conflict"
-            )
-    
-    # Clear reschedule request fields if this was in response to a request
-    was_reschedule_requested = meeting.status == MeetingStatus.RESCHEDULE_REQUESTED
-    if was_reschedule_requested:
-        meeting.reschedule_requested_at = None
-        meeting.reschedule_requested_by_user_id = None
-        meeting.reschedule_request_reason = None
-        meeting.reschedule_request_preferred_times = None
-    
-    # Update meeting
-    meeting.scheduled_start = reschedule_data.scheduled_start
-    meeting.scheduled_end = reschedule_data.scheduled_end
-    meeting.timezone = reschedule_data.timezone or meeting.timezone
-    meeting.status = MeetingStatus.SCHEDULED
-    meeting.updated_at = datetime.utcnow()
-    
-    session.add(meeting)
-    session.commit()
-    
-    # Create timeline event
-    current_user_obj = session.get(User, current_user["user_id"])
-    user_full_name = current_user_obj.full_name if current_user_obj else "Recruiter"
-    
-    event_type = "recruiter_rescheduled"
-    event_message = f"{user_full_name} rescheduled the meeting"
-    if reschedule_data.reason:
-        event_message += f": {reschedule_data.reason}"
-    
-    MeetingService.create_timeline_event(
+    return MeetingRescheduleService.reschedule_meeting(
+        meeting_id=meeting_id,
+        reschedule_data=reschedule_data,
+        current_user=current_user,
         session=session,
-        meeting_id=meeting.id,
-        actor_user_id=current_user["user_id"],
-        event_type=event_type,
-        message=event_message,
-        metadata={
-            "reason": reschedule_data.reason,
-            "new_start": reschedule_data.scheduled_start.isoformat(),
-            "new_end": reschedule_data.scheduled_end.isoformat()
-        },
-        previous_start=old_start,
-        previous_end=old_end
     )
-    
-    # Synchronize application status (remains scheduled)
-    MeetingService.sync_application_status(
-        session=session,
-        meeting=meeting,
-        new_meeting_status=MeetingStatus.SCHEDULED,
-        actor_user_id=current_user["user_id"]
-    )
-    
-    # Update in synced calendars
-    calendar_accounts = session.exec(
-        select(CalendarAccount).where(
-            CalendarAccount.user_id == current_user["user_id"],
-            CalendarAccount.sync_enabled == True
-        )
-    ).all()
-    
-    for cal_account in calendar_accounts:
-        try:
-            provider = CalendarProviderFactory.get_provider(
-                provider=cal_account.provider,
-                access_token=cal_account.access_token,
-                refresh_token=cal_account.refresh_token
-            )
-            
-            event_id = None
-            if cal_account.provider == CalendarProvider.GOOGLE:
-                event_id = meeting.google_calendar_event_id
-            else:
-                event_id = meeting.microsoft_calendar_event_id
-            
-            if event_id:
-                provider.update_event(
-                    event_id=event_id,
-                    start_time=reschedule_data.scheduled_start,
-                    end_time=reschedule_data.scheduled_end
-                )
-        except CalendarProviderError as e:
-            logger.warning(f"Failed to update {cal_account.provider.value} calendar: {str(e)}")
-    
-    # Notify ALL participants including organizer
-    all_reschedule_notify_ids = {p.user_id for p in meeting.participants}
-    all_reschedule_notify_ids.add(meeting.organizer_user_id)
-    for uid in all_reschedule_notify_ids:
-        push_notification(
-            session=session,
-            user_id=uid,
-            title="Interview Rescheduled",
-            message=f"{user_full_name} rescheduled meeting '{meeting.title}'",
-            event_type="meeting_rescheduled",
-            route=f"/meetings/{meeting.id}"
-        )
-    
-    # Send emails to ALL participants including organizer
-    email_service = MeetingEmailService(queue_mode=True)
-    for uid in all_reschedule_notify_ids:
-        recipient = session.get(User, uid)
-        if recipient:
-            try:
-                # Organizer gets a summary confirmation; others get rescheduled notification
-                if uid == current_user["user_id"]:
-                    participant_user_objs = [
-                        session.get(User, p.user_id)
-                        for p in meeting.participants
-                        if p.user_id != uid
-                    ]
-                    participant_user_objs = [u for u in participant_user_objs if u]
-                    email_service.send_organizer_confirmation_email(
-                        session=session,
-                        meeting=meeting,
-                        organizer_user=recipient,
-                        participant_users=participant_user_objs
-                    )
-                else:
-                    confirm_token = MeetingService.generate_action_token(
-                        session, meeting.id, recipient.id, "confirm"
-                    )
-                    cancel_token = MeetingService.generate_action_token(
-                        session, meeting.id, recipient.id, "cancel"
-                    )
-                    email_service.send_reschedule_approved_email(
-                        session=session,
-                        meeting=meeting,
-                        recipient_user=recipient,
-                        approver_user=current_user_obj,
-                        confirm_token=confirm_token,
-                        cancel_token=cancel_token
-                    )
-            except Exception as email_err:
-                logger.warning(f"Could not send reschedule email to {recipient.email}: {email_err}")
-    
-    session.refresh(meeting)
-    return meeting
 
 
 # ============ CANDIDATE RESCHEDULE REQUEST ENDPOINTS ============
@@ -1116,94 +536,13 @@ async def request_reschedule(
     - Sends notification and email to recruiter
     - Application remains scheduled
     """
-    
-    meeting = session.get(Meeting, meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    # Check if user is a participant (not organizer)
-    is_participant = any(p.user_id == current_user["user_id"] for p in meeting.participants)
-    is_organizer = meeting.organizer_user_id == current_user["user_id"]
-    
-    if not is_participant:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    if is_organizer:
-        raise HTTPException(status_code=400, detail="Organizers should use /reschedule endpoint directly")
-    
-    if meeting.status != MeetingStatus.SCHEDULED:
-        raise HTTPException(status_code=400, detail="Can only request reschedule for scheduled meetings")
-    
-    # Update meeting with reschedule request
-    meeting.status = MeetingStatus.RESCHEDULE_REQUESTED
-    meeting.reschedule_requested_at = datetime.utcnow()
-    meeting.reschedule_requested_by_user_id = current_user["user_id"]
-    meeting.reschedule_request_reason = request_data.reason
-    
-    # Store preferred times as JSON if provided
-    if request_data.preferred_times:
-        meeting.reschedule_request_preferred_times = json.dumps(request_data.preferred_times)
-    
-    meeting.updated_at = datetime.utcnow()
-    session.add(meeting)
-    session.commit()
-    
-    # Create timeline event
-    current_user_obj = session.get(User, current_user["user_id"])
-    user_full_name = current_user_obj.full_name if current_user_obj else "Candidate"
-    
-    event_message = f"{user_full_name} requested to reschedule: {request_data.reason}"
-    if request_data.note:
-        event_message += f" ({request_data.note})"
-    
-    MeetingService.create_timeline_event(
+
+    return MeetingRequestRescheduleService.request_reschedule(
+        meeting_id=meeting_id,
+        request_data=request_data,
+        current_user=current_user,
         session=session,
-        meeting_id=meeting.id,
-        actor_user_id=current_user["user_id"],
-        event_type="candidate_requested_reschedule",
-        message=event_message,
-        metadata={
-            "reason": request_data.reason,
-            "note": request_data.note,
-            "preferred_times": request_data.preferred_times
-        }
     )
-    
-    # Synchronize application status (remains scheduled)
-    MeetingService.sync_application_status(
-        session=session,
-        meeting=meeting,
-        new_meeting_status=MeetingStatus.RESCHEDULE_REQUESTED,
-        actor_user_id=current_user["user_id"]
-    )
-    
-    # Notify organizer
-    organizer = session.get(User, meeting.organizer_user_id)
-    if organizer:
-        push_notification(
-            session=session,
-            user_id=organizer.id,
-            title="Reschedule Request",
-            message=f"{user_full_name} requested to reschedule meeting '{meeting.title}'",
-            event_type="meeting_reschedule_requested",
-            route=f"/meetings/{meeting.id}"
-        )
-        
-        # Send email to organizer
-        email_service = MeetingEmailService(queue_mode=True)
-        preferred_times_str = ", ".join(request_data.preferred_times) if request_data.preferred_times else None
-        
-        email_service.send_reschedule_request_email(
-            session=session,
-            meeting=meeting,
-            recipient_user=organizer,
-            requester_user=current_user_obj,
-            request_reason=request_data.reason,
-            preferred_times=preferred_times_str
-        )
-    
-    session.refresh(meeting)
-    return meeting
 
 
 @router.post("/{meeting_id}/respond-reschedule", response_model=MeetingRead)
@@ -1219,146 +558,12 @@ async def respond_to_reschedule_request(
     - Reject: keep original time, return to SCHEDULED status
     """
     
-    meeting = session.get(Meeting, meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    if meeting.organizer_user_id != current_user["user_id"]:
-        raise HTTPException(status_code=403, detail="Only organizer can respond to reschedule requests")
-    
-    if meeting.status != MeetingStatus.RESCHEDULE_REQUESTED:
-        raise HTTPException(status_code=400, detail="No pending reschedule request")
-    
-    current_user_obj = session.get(User, current_user["user_id"])
-    user_full_name = current_user_obj.full_name if current_user_obj else "Recruiter"
-    
-    requester_id = meeting.reschedule_requested_by_user_id
-    requester = session.get(User, requester_id) if requester_id else None
-    
-    if response_data.approved:
-        # Approve and reschedule
-        if not response_data.scheduled_start or not response_data.scheduled_end:
-            raise HTTPException(status_code=400, detail="New times required when approving reschedule")
-        
-        # Store old times
-        old_start = meeting.scheduled_start
-        old_end = meeting.scheduled_end
-        
-        # Check conflicts
-        for participant in meeting.participants:
-            has_conflict = check_availability_conflict(
-                session, participant.user_id,
-                response_data.scheduled_start, response_data.scheduled_end,
-                exclude_meeting_id=meeting.id
-            )
-            if has_conflict:
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"User {participant.user_id} has a scheduling conflict"
-                )
-        
-        # Update meeting
-        meeting.scheduled_start = response_data.scheduled_start
-        meeting.scheduled_end = response_data.scheduled_end
-        meeting.timezone = response_data.timezone or meeting.timezone
-        meeting.status = MeetingStatus.SCHEDULED
-        meeting.reschedule_requested_at = None
-        meeting.reschedule_requested_by_user_id = None
-        meeting.reschedule_request_reason = None
-        meeting.reschedule_request_preferred_times = None
-        meeting.updated_at = datetime.utcnow()
-        
-        session.add(meeting)
-        session.commit()
-        
-        # Create timeline event
-        event_message = f"{user_full_name} approved reschedule request and set new time"
-        if response_data.response_note:
-            event_message += f": {response_data.response_note}"
-        
-        MeetingService.create_timeline_event(
-            session=session,
-            meeting_id=meeting.id,
-            actor_user_id=current_user["user_id"],
-            event_type="recruiter_approved_reschedule",
-            message=event_message,
-            metadata={
-                "response_note": response_data.response_note,
-                "new_start": response_data.scheduled_start.isoformat(),
-                "new_end": response_data.scheduled_end.isoformat()
-            },
-            previous_start=old_start,
-            previous_end=old_end
-        )
-        
-        # Notify requester
-        if requester:
-            push_notification(
-                session=session,
-                user_id=requester.id,
-                title="Reschedule Approved",
-                message=f"{user_full_name} approved your reschedule request for '{meeting.title}'",
-                event_type="meeting_reschedule_approved",
-                route=f"/meetings/{meeting.id}"
-            )
-            
-            # Send email
-            email_service = MeetingEmailService(queue_mode=True)
-            confirm_token = MeetingService.generate_action_token(
-                session, meeting.id, requester.id, "confirm"
-            )
-            cancel_token = MeetingService.generate_action_token(
-                session, meeting.id, requester.id, "cancel"
-            )
-            
-            email_service.send_reschedule_approved_email(
-                session=session,
-                meeting=meeting,
-                recipient_user=requester,
-                approver_user=current_user_obj,
-                confirm_token=confirm_token,
-                cancel_token=cancel_token
-            )
-    
-    else:
-        # Reject request, keep original time
-        meeting.status = MeetingStatus.SCHEDULED
-        meeting.reschedule_requested_at = None
-        meeting.reschedule_requested_by_user_id = None
-        meeting.reschedule_request_reason = None
-        meeting.reschedule_request_preferred_times = None
-        meeting.updated_at = datetime.utcnow()
-        
-        session.add(meeting)
-        session.commit()
-        
-        # Create timeline event
-        event_message = f"{user_full_name} declined reschedule request"
-        if response_data.response_note:
-            event_message += f": {response_data.response_note}"
-        
-        MeetingService.create_timeline_event(
-            session=session,
-            meeting_id=meeting.id,
-            actor_user_id=current_user["user_id"],
-            event_type="recruiter_rejected_reschedule",
-            message=event_message,
-            metadata={"response_note": response_data.response_note}
-        )
-        
-        # Notify requester
-        if requester:
-            push_notification(
-                session=session,
-                user_id=requester.id,
-                title="Reschedule Request Declined",
-                message=f"{user_full_name} declined your reschedule request for '{meeting.title}'",
-                event_type="meeting_reschedule_rejected",
-                route=f"/meetings/{meeting.id}"
-            )
-    
-    session.refresh(meeting)
-    return meeting
+    return MeetingRespondRescheduleService.respond_to_reschedule_request(
+        meeting_id=meeting_id,
+        response_data=response_data,
+        current_user=current_user,
+        session=session,
+    )
 
 
 # ============ MEETING TIMELINE ENDPOINTS ============
@@ -1396,66 +601,7 @@ async def confirm_meeting_via_token(
 ):
     """Confirm meeting attendance via email token link"""
     
-    # Find token record
-    token_record = session.exec(
-        select(MeetingActionToken).where(
-            and_(
-                MeetingActionToken.token == token,
-                MeetingActionToken.action_type == "confirm",
-                MeetingActionToken.is_used == False,
-                MeetingActionToken.expires_at > datetime.utcnow()
-            )
-        )
-    ).first()
-    
-    if not token_record:
-        raise HTTPException(status_code=404, detail="Invalid or expired token")
-    
-    meeting = session.get(Meeting, token_record.meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    if meeting.status != MeetingStatus.SCHEDULED:
-        raise HTTPException(status_code=400, detail="Meeting is not scheduled")
-    
-    # Mark participant as confirmed
-    participant = session.exec(
-        select(MeetingParticipant).where(
-            and_(
-                MeetingParticipant.meeting_id == meeting.id,
-                MeetingParticipant.user_id == token_record.user_id
-            )
-        )
-    ).first()
-    
-    if participant:
-        participant.has_confirmed = True
-        participant.confirmed_at = datetime.utcnow()
-        session.add(participant)
-    
-    # Mark token as used
-    MeetingService.mark_token_used(session, token_record)
-    
-    # Create timeline event
-    user = session.get(User, token_record.user_id)
-    user_name = user.full_name if user else "Participant"
-    
-    MeetingService.create_timeline_event(
-        session=session,
-        meeting_id=meeting.id,
-        actor_user_id=token_record.user_id,
-        event_type="attendance_confirmed",
-        message=f"{user_name} confirmed attendance"
-    )
-    
-    session.commit()
-    
-    # Return simple HTML confirmation page
-    return {
-        "message": "Attendance confirmed successfully",
-        "meeting_id": meeting.id,
-        "redirect_url": f"/meetings/{meeting.id}"
-    }
+    return MeetingTokenActionService.confirm_meeting_via_token(token=token, session=session)
 
 
 @router.get("/token/{token}/cancel")
@@ -1466,33 +612,7 @@ async def cancel_meeting_via_token(
 ):
     """Cancel meeting via email token link - shows confirmation form"""
     
-    # Validate token
-    token_record = session.exec(
-        select(MeetingActionToken).where(
-            and_(
-                MeetingActionToken.token == token,
-                MeetingActionToken.action_type == "cancel",
-                MeetingActionToken.is_used == False,
-                MeetingActionToken.expires_at > datetime.utcnow()
-            )
-        )
-    ).first()
-    
-    if not token_record:
-        raise HTTPException(status_code=404, detail="Invalid or expired token")
-    
-    meeting = session.get(Meeting, token_record.meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    # Return meeting info for confirmation form (frontend will render this)
-    return {
-        "meeting_id": meeting.id,
-        "token": token,
-        "title": meeting.title,
-        "scheduled_start": meeting.scheduled_start.isoformat(),
-        "action": "cancel"
-    }
+    return MeetingTokenActionService.cancel_meeting_form_via_token(token=token, session=session)
 
 
 @router.post("/token/{token}/cancel")
@@ -1503,92 +623,11 @@ async def cancel_meeting_via_token_confirmed(
 ):
     """Actually cancel meeting after confirmation via token"""
     
-    # Validate token
-    token_record = session.exec(
-        select(MeetingActionToken).where(
-            and_(
-                MeetingActionToken.token == token,
-                MeetingActionToken.action_type == "cancel",
-                MeetingActionToken.is_used == False,
-                MeetingActionToken.expires_at > datetime.utcnow()
-            )
-        )
-    ).first()
-    
-    if not token_record:
-        raise HTTPException(status_code=404, detail="Invalid or expired token")
-    
-    meeting = session.get(Meeting, token_record.meeting_id)
-    if not meeting or meeting.status == MeetingStatus.CANCELLED:
-        raise HTTPException(status_code=400, detail="Meeting already cancelled or not found")
-    
-    user = session.get(User, token_record.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Cancel meeting using same logic as regular cancel
-    meeting.status = MeetingStatus.CANCELLED
-    meeting.cancelled_at = datetime.utcnow()
-    meeting.cancelled_by_user_id = token_record.user_id
-    meeting.cancellation_reason = cancel_data.cancellation_reason
-    meeting.updated_at = datetime.utcnow()
-    
-    session.add(meeting)
-    
-    # Mark token as used
-    MeetingService.mark_token_used(session, token_record)
-    
-    # Create timeline event
-    is_organizer = meeting.organizer_user_id == token_record.user_id
-    event_type = "recruiter_cancelled" if is_organizer else "candidate_cancelled"
-    
-    MeetingService.create_timeline_event(
+    return MeetingTokenActionService.cancel_meeting_via_token_confirmed(
+        token=token,
+        cancel_data=cancel_data,
         session=session,
-        meeting_id=meeting.id,
-        actor_user_id=token_record.user_id,
-        event_type=event_type,
-        message=f"{user.full_name} cancelled the meeting via email: {cancel_data.cancellation_reason}",
-        metadata={"reason": cancel_data.cancellation_reason, "via_email": True}
     )
-    
-    # Sync application status
-    MeetingService.sync_application_status(
-        session=session,
-        meeting=meeting,
-        new_meeting_status=MeetingStatus.CANCELLED,
-        actor_user_id=token_record.user_id
-    )
-    
-    session.commit()
-    
-    # Notify other participants
-    MeetingService.notify_participants(
-        session=session,
-        meeting=meeting,
-        notification_type="meeting_cancelled",
-        title="Meeting Cancelled",
-        message=f"{user.full_name} cancelled meeting '{meeting.title}': {cancel_data.cancellation_reason}",
-        exclude_user_id=token_record.user_id
-    )
-    
-    # Send emails
-    email_service = MeetingEmailService(queue_mode=True)
-    for participant in meeting.participants:
-        if participant.user_id != token_record.user_id:
-            recipient = session.get(User, participant.user_id)
-            if recipient:
-                email_service.send_interview_cancelled_email(
-                    session=session,
-                    meeting=meeting,
-                    recipient_user=recipient,
-                    cancelled_by_user=user,
-                    cancellation_reason=cancel_data.cancellation_reason
-                )
-    
-    return {
-        "message": "Meeting cancelled successfully",
-        "meeting_id": meeting.id
-    }
 
 
 @router.get("/token/{token}/reschedule")
@@ -1599,33 +638,7 @@ async def request_reschedule_via_token(
 ):
     """Show reschedule request form via email token"""
     
-    # Validate token
-    token_record = session.exec(
-        select(MeetingActionToken).where(
-            and_(
-                MeetingActionToken.token == token,
-                MeetingActionToken.action_type == "reschedule",
-                MeetingActionToken.is_used == False,
-                MeetingActionToken.expires_at > datetime.utcnow()
-            )
-        )
-    ).first()
-    
-    if not token_record:
-        raise HTTPException(status_code=404, detail="Invalid or expired token")
-    
-    meeting = session.get(Meeting, token_record.meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    
-    # Return meeting info for reschedule form
-    return {
-        "meeting_id": meeting.id,
-        "token": token,
-        "title": meeting.title,
-        "scheduled_start": meeting.scheduled_start.isoformat(),
-        "action": "reschedule"
-    }
+    return MeetingTokenActionService.reschedule_form_via_token(token=token, session=session)
 
 
 @router.post("/token/{token}/reschedule")
@@ -1636,94 +649,11 @@ async def request_reschedule_via_token_submit(
 ):
     """Submit reschedule request via email token"""
     
-    # Validate token
-    token_record = session.exec(
-        select(MeetingActionToken).where(
-            and_(
-                MeetingActionToken.token == token,
-                MeetingActionToken.action_type == "reschedule",
-                MeetingActionToken.is_used == False,
-                MeetingActionToken.expires_at > datetime.utcnow()
-            )
-        )
-    ).first()
-    
-    if not token_record:
-        raise HTTPException(status_code=404, detail="Invalid or expired token")
-    
-    meeting = session.get(Meeting, token_record.meeting_id)
-    if not meeting or meeting.status != MeetingStatus.SCHEDULED:
-        raise HTTPException(status_code=400, detail="Meeting cannot be rescheduled")
-    
-    user = session.get(User, token_record.user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Update meeting with reschedule request
-    meeting.status = MeetingStatus.RESCHEDULE_REQUESTED
-    meeting.reschedule_requested_at = datetime.utcnow()
-    meeting.reschedule_requested_by_user_id = token_record.user_id
-    meeting.reschedule_request_reason = request_data.reason
-    
-    if request_data.preferred_times:
-        meeting.reschedule_request_preferred_times = json.dumps(request_data.preferred_times)
-    
-    meeting.updated_at = datetime.utcnow()
-    session.add(meeting)
-    
-    # Mark token as used
-    MeetingService.mark_token_used(session, token_record)
-    
-    # Create timeline event
-    event_message = f"{user.full_name} requested to reschedule via email: {request_data.reason}"
-    if request_data.note:
-        event_message += f" ({request_data.note})"
-    
-    MeetingService.create_timeline_event(
+    return MeetingTokenActionService.reschedule_submit_via_token(
+        token=token,
+        request_data=request_data,
         session=session,
-        meeting_id=meeting.id,
-        actor_user_id=token_record.user_id,
-        event_type="candidate_requested_reschedule",
-        message=event_message,
-        metadata={
-            "reason": request_data.reason,
-            "note": request_data.note,
-            "preferred_times": request_data.preferred_times,
-            "via_email": True
-        }
     )
-    
-    session.commit()
-    
-    # Notify organizer
-    organizer = session.get(User, meeting.organizer_user_id)
-    if organizer:
-        push_notification(
-            session=session,
-            user_id=organizer.id,
-            title="Reschedule Request",
-            message=f"{user.full_name} requested to reschedule meeting '{meeting.title}'",
-            event_type="meeting_reschedule_requested",
-            route=f"/meetings/{meeting.id}"
-        )
-        
-        # Send email
-        email_service = MeetingEmailService(queue_mode=True)
-        preferred_times_str = ", ".join(request_data.preferred_times) if request_data.preferred_times else None
-        
-        email_service.send_reschedule_request_email(
-            session=session,
-            meeting=meeting,
-            recipient_user=organizer,
-            requester_user=user,
-            request_reason=request_data.reason,
-            preferred_times=preferred_times_str
-        )
-    
-    return {
-        "message": "Reschedule request submitted successfully",
-        "meeting_id": meeting.id
-    }
 
 
 
@@ -1758,7 +688,10 @@ async def propose_availability_slots(
     
     # Notify recipient
     if slots_data:
-        proposer = session.get(User, current_user["user_id"])
+        proposer = UserContextService.get_user_by_id_optional(
+            session,
+            current_user["user_id"],
+        )
         proposer_name = proposer.full_name if proposer else "A recruiter"
         push_notification(
             session=session,
@@ -1818,7 +751,7 @@ async def select_availability_slot(
         raise HTTPException(status_code=400, detail="Slot already selected")
     
     # Check for conflicts
-    has_conflict = check_availability_conflict(
+    has_conflict = MeetingConflictService.check_availability_conflict(
         session, current_user["user_id"], slot.slot_start, slot.slot_end
     )
     if has_conflict:
@@ -1862,7 +795,10 @@ async def select_availability_slot(
     session.commit()
     
     # Notify organizer
-    selector = session.get(User, current_user["user_id"])
+    selector = UserContextService.get_user_by_id_optional(
+        session,
+        current_user["user_id"],
+    )
     selector_name = selector.full_name if selector else "A candidate"
     push_notification(
         session=session,
@@ -1890,7 +826,12 @@ async def check_user_availability(
 ):
     """Check if a user is available during a time slot"""
     
-    has_conflict = check_availability_conflict(session, user_id, start_time, end_time)
+    has_conflict = MeetingConflictService.check_availability_conflict(
+        session,
+        user_id,
+        start_time,
+        end_time,
+    )
     
     return {
         "user_id": user_id,
@@ -1912,7 +853,7 @@ async def find_common_availability(
 ):
     """Find available time slots for multiple users"""
     
-    slots = find_available_slots(
+    slots = MeetingConflictService.find_available_slots(
         session=session,
         user_ids=user_ids,
         duration_minutes=duration_minutes,
@@ -1989,7 +930,10 @@ async def mark_meeting_complete(
             actor_user_id=current_user["user_id"]
         )
 
-    current_user_obj = session.get(User, current_user["user_id"])
+    current_user_obj = UserContextService.get_user_by_id_optional(
+        session,
+        current_user["user_id"],
+    )
     user_name = current_user_obj.full_name if current_user_obj else "Someone"
 
     MeetingService.create_timeline_event(
@@ -2064,7 +1008,10 @@ async def mark_meeting_no_show(
             actor_user_id=current_user["user_id"]
         )
 
-    current_user_obj = session.get(User, current_user["user_id"])
+    current_user_obj = UserContextService.get_user_by_id_optional(
+        session,
+        current_user["user_id"],
+    )
     user_name = current_user_obj.full_name if current_user_obj else "Someone"
 
     MeetingService.create_timeline_event(

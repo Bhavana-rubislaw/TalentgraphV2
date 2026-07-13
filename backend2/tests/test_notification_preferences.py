@@ -336,10 +336,10 @@ class TestRecruiterNotificationPreferences:
         # Verify recruiter events are present
         expected_events = [
             "application_received",
-            "match_found",
-            "interview_scheduled",
+            "candidate_match",
+            "recruiter_interview_scheduled",
             "interview_confirmed",
-            "message_received",
+            "recruiter_message_received",
             "job_update"
         ]
         
@@ -646,7 +646,7 @@ class TestEndToEndWorkflow:
         response = client.get("/notification-preferences", headers=headers)
         assert response.status_code == 200
         initial_prefs = response.json()
-        assert len(initial_prefs) == 8  # 8 candidate events
+        assert len(initial_prefs) == 9  # 9 candidate events
         
         # Step 2: User wants to reduce email noise - disable emails for low-priority events
         bulk_updates = {

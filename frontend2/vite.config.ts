@@ -7,4 +7,8 @@ export default {
     port: 3001,
     host: 'localhost',
   },
+  test: {
+    include: ['src/__smoke__/**/*.test.ts'],
+    environment: 'node',
+  },
 } as UserConfig;

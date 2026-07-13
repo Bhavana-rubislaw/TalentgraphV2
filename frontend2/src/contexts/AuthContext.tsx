@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
+import { clearAuthStorage, syncAuthUserToStorage } from '../utils/authStorage';
 
 // ── Types ────────────────────────────────────────────────────────
 export interface AuthUser {
@@ -64,23 +65,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(authUser);
         
         // Sync back to localStorage so legacy reads still work
-        localStorage.setItem('user_id', String(authUser.user_id));
-        localStorage.setItem('role', authUser.role);
-        if (authUser.full_name) localStorage.setItem('full_name', authUser.full_name);
-        if (authUser.company_name) localStorage.setItem('company_name', authUser.company_name);
-        if (authUser.email) localStorage.setItem('email', authUser.email);
-        localStorage.setItem('is_profile_complete', String(authUser.is_profile_complete));
+        syncAuthUserToStorage(authUser);
       })
       .catch((err) => {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
           // Token is expired / invalid — hard-clear auth state
-          localStorage.removeItem('token');
-          localStorage.removeItem('role');
-          localStorage.removeItem('email');
-          localStorage.removeItem('full_name');
-          localStorage.removeItem('company_name');
-          localStorage.removeItem('is_profile_complete');
+          clearAuthStorage();
           setUser(null);
         }
         // Network error (status undefined) → keep existing localStorage state;
@@ -92,13 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []); // runs once on app mount
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('email');
-    localStorage.removeItem('full_name');
-    localStorage.removeItem('company_name');
-    localStorage.removeItem('is_profile_complete');
+    clearAuthStorage();
     setUser(null);
   }, []);
 
