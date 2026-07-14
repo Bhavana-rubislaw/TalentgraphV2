@@ -16,7 +16,7 @@ import { MeetingSchedulerTab } from '../components/meetings';
 import { useMeetingsData } from '../hooks/useMeetingsData';
 import { useQueryState, parseEnumParam, parseIntParam } from '../hooks/useQueryState';
 import { useSwipeCarousel } from '../hooks/useSwipeCarousel';
-import{
+import {
   MatchBreakdownBars,
   TopSkillMatches,
   AIMatchReasonBox,
@@ -184,48 +184,31 @@ const FilterPill: React.FC<FilterPillProps> = ({ id, icon, options, value, onCha
 
 const CandidateDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { getParam, setParam } = useQueryState();
 
   // ── Tab: driven from ?tab= URL param (survives refresh) ──────────
-  const rawTab = searchParams.get('tab') || '';
-  const activeTab: string = (CANDIDATE_TABS as readonly string[]).includes(rawTab)
-    ? rawTab
-    : 'recommendations';
+  const activeTab: string = parseEnumParam(getParam('tab'), CANDIDATE_TABS, 'recommendations');
 
   const setActiveTab = useCallback(
     (tab: string) => {
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; }
-        // Don't use replace:true here - we want tab changes in browser history for back button
-      );
+      // Don't use replace:true here - we want tab changes in browser history for back button
+      setParam('tab', tab, { replace: false });
     },
-    [setSearchParams]
+    [setParam]
   );
 
   const [jobProfiles, setJobProfiles] = useState<any[]>([]);
 
-  // ── Selected profile: initialised from ?profile= URL param ───────
-  const [selectedProfileId, setSelectedProfileIdInternal] = useState<number | null>(() => {
-    const p = new URLSearchParams(window.location.search).get('profile');
-    return p ? parseInt(p, 10) : null;
-  });
+  // ── Selected profile: driven from ?profile= URL param ───────
+  const selectedProfileId = parseIntParam(getParam('profile'));
 
   const setSelectedProfileId = useCallback(
     (id: number | null) => {
-      setSelectedProfileIdInternal(id);
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (id != null) next.set('profile', String(id));
-          else next.delete('profile');
-          return next;
-        },
-        { replace: true }
-      );
+      setParam('profile', id != null ? String(id) : null, { replace: true });
     },
-    [setSearchParams]
+    [setParam]
   );
-  
+
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [invites, setInvites] = useState<any[]>([]);
   const [availableJobs, setAvailableJobs] = useState<any[]>([]);
@@ -253,7 +236,6 @@ const CandidateDashboard: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProfileMenu]);
-
   const [jobListTab, setJobListTab] = useState<'liked' | 'applied'>('liked');
   const [drawerJob, setDrawerJob] = useState<any | null>(null);
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
@@ -292,9 +274,9 @@ const CandidateDashboard: React.FC = () => {
 
   // ── Recommendations filter states ──────────────────────────────────
   const [recommendationsMatchFilter, setRecommendationsMatchFilter] = useState<string>('all');
+
   // ── Upcoming Interviews ──────────────────────────────────
   const { meetings: allMeetings, loadMeetings } = useMeetingsData();
-  
   const [upcomingInterviewPage, setUpcomingInterviewPage] = useState(0);
 
   // ── Candidate filter states ──────────────────────────────────
@@ -305,7 +287,6 @@ const CandidateDashboard: React.FC = () => {
   // Filter recommendations based on all criteria
   const filteredRecommendations = useMemo(() => {
     return recommendations.filter(rec => {
-      
       const matchPercentage = rec.match_percentage || 0;
 
       // Match score filter
@@ -331,7 +312,17 @@ const CandidateDashboard: React.FC = () => {
 
       return true;
     });
-  }, [recommendations, recommendationsMatchFilter,]);
+  }, [recommendations, recommendationsMatchFilter]);
+
+  const {
+    index: recCardIndex,
+    setIndex: setRecCardIndex,
+    handleNext: handleNextRec,
+    handlePrevious: handlePreviousRec,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  } = useSwipeCarousel(filteredRecommendations.length, { enableArrowKeys: activeTab === 'recommendations' });
 
   // Reset card index when filter changes
   useEffect(() => {
@@ -383,8 +374,6 @@ const CandidateDashboard: React.FC = () => {
       setCurrentAppliedPage(1);
     }
   }, [appliedLikedRoleFilter, appliedLikedStatusFilter, appliedLikedSort, jobListTab]);
-
-  
 
   const fetchUserProfile = async () => {
     try {
@@ -5505,98 +5494,6 @@ const CandidateDashboard: React.FC = () => {
     </>
   );
 };
-
-  const renderWelcomeCard = () => {
-    const userName = userProfile?.name || userProfile?.full_name || 'User';
-    const userInitial = userName.charAt(0).toUpperCase();
-    const newJobs = availableJobs.filter((job: any) => {
-      const jobDate = new Date(job.created_at);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return jobDate >= weekAgo;
-    }).length;
-
-    return (
-      <div className="welcome-card-modern candidate-welcome">
-        <div className="welcome-content-enhanced">
-          <div className="welcome-header">
-            <div className="welcome-avatar">
-              <div className="user-avatar">{userInitial}</div>
-            </div>
-            <div className="welcome-text">
-              <h1 className="welcome-title-modern">Welcome back, {userName}</h1>
-              <p className="welcome-subtitle-modern">Here's your job search activity overview</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Enhanced KPI Cards with Icons */}
-        <div className="kpi-grid-modern">
-            <div className="kpi-card-enhanced invites">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{invites.length}</div>
-                <div className="kpi-label">Recruiter Invites</div>
-              </div>
-              {invites.length > 0 && (
-                <div className="kpi-trend positive">+{invites.length} new</div>
-              )}
-            </div>
-            
-            <div className="kpi-card-enhanced matches">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{matches.length}</div>
-                <div className="kpi-label">Mutual Matches</div>
-              </div>
-              {matches.length > 0 && (
-                <div className="kpi-change">Ready to connect</div>
-              )}
-            </div>
-            
-            <div className="kpi-card-enhanced new-jobs">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{newJobs}</div>
-                <div className="kpi-label">New Jobs</div>
-              </div>
-              <div className="kpi-change">This week</div>
-            </div>
-            
-            <div className="kpi-card-enhanced applications">
-              <div className="kpi-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14,2 14,8 20,8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10,9 9,9 8,9"/>
-                </svg>
-              </div>
-              <div className="kpi-content">
-                <div className="kpi-value">{appliedLiked.applied_jobs?.length || 0}</div>
-                <div className="kpi-label">Applications</div>
-              </div>
-              <div className="kpi-change">Submitted</div>
-            </div>
-          </div>
-      </div>
-    );
-  };
 
   const renderActiveTab = () => {
     switch (activeTab) {

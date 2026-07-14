@@ -30,7 +30,8 @@ const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches
 
 const RecruiterDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { searchParams, getParam, setParam, setParams } = useQueryState();
+  const { getParam, setParam, setParams } = useQueryState();
+
   // ── Tab: driven from ?tab= URL param ────────────────────────
   const activeTab: string = parseEnumParam(getParam('tab'), RECRUITER_TABS, 'recommendations');
 
@@ -58,7 +59,7 @@ const RecruiterDashboard: React.FC = () => {
     },
     [setParam]
   );
-  
+
   const [recommendations, setRecommendations] = useState<any>(null);
   const [shortlist, setShortlist] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
@@ -68,7 +69,6 @@ const RecruiterDashboard: React.FC = () => {
   const [viewShortlistItem, setViewShortlistItem] = useState<any | null>(null);
   const [viewRecommendationProfile, setViewRecommendationProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
-  const [recCardIndex, setRecCardIndex] = useState(0);
   const [jobAnalytics, setJobAnalytics] = useState<any>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -100,7 +100,7 @@ const RecruiterDashboard: React.FC = () => {
   );
   const setAppJobFilter = useCallback(
     (value: string) => setParam('job', value === 'all' ? null : value, { replace: true }),
-    [setParam] 
+    [setParam]
   );
 
   const setAppStatusFilter = useCallback(
@@ -124,31 +124,55 @@ const RecruiterDashboard: React.FC = () => {
   const [emailTemplate, setEmailTemplate] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
-  // ── Job Postings tab state ─────────────────────────────────────
-  const [jpSearch, setJpSearch] = useState('');
-  const [jpStatusFilter, setJpStatusFilter] = useState('all');
-  const [jpCurrentPage, setJpCurrentPage] = useState(1);
-  const [jpShowCancelModal, setJpShowCancelModal] = useState(false);
-  const { meetings: allMeetings, loadMeetings } = useMeetingsData();
-  const [jpCardMenuOpenId, setJpCardMenuOpenId] = useState<number | null>(null);
-  const JP_PAGE_SIZE = 9;
-
   // ── Filter states ─────────────────────────────────────────────
   const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
   const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
   const [recommendationQuickFilter, setRecommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
   const [recommendationWorkTypeFilter, setRecommendationWorkTypeFilter] = useState<string>('all');
-  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
-  const [allMeetings, setAllMeetings] = useState<any[]>([]);
+  const { meetings: allMeetings, loadMeetings } = useMeetingsData();
+
+  // Recommendations visible after role + quick + work-type filters — the single
+  // source of truth for both the rendered list and card-navigation bounds.
+  const visibleRecommendations = useMemo(() => {
+    if (!recommendations?.recommendations) return [];
+    let visible = recommendationRoleFilter === 'all'
+      ? recommendations.recommendations
+      : recommendations.recommendations.filter((r: any) => {
+          const role =
+            (r.job_profile?.job_role as string | undefined) ||
+            (r.job_posting?.job_title as string | undefined) ||
+            (r.role as string | undefined) ||
+            '';
+          return role === recommendationRoleFilter;
+        });
+    if (recommendationQuickFilter === 'top_picks') {
+      visible = visible.filter((r: any) => (r.match_percentage || 0) >= 80);
+    } else if (recommendationQuickFilter === 'recently_active') {
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      visible = visible.filter((r: any) => r.candidate.created_at && new Date(r.candidate.created_at) >= cutoff);
+    } else if (recommendationQuickFilter === 'open_to_offers') {
+      visible = visible.filter((r: any) =>
+        r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
+      );
+    }
+    if (recommendationWorkTypeFilter !== 'all') {
+      visible = visible.filter((r: any) =>
+        (r.job_profile?.worktype || '').toLowerCase() === recommendationWorkTypeFilter.toLowerCase()
+      );
+    }
+    return visible;
+  }, [recommendations, recommendationRoleFilter, recommendationQuickFilter, recommendationWorkTypeFilter]);
+
   const {
-      index: recCardIndex,
-      setIndex: setRecCardIndex,
-      handleNext: handleNextRec,
-      handlePrevious: handlePreviousRec,
-      onTouchStart,
-      onTouchMove,
-      onTouchEnd,
-    } = useSwipeCarousel(visibleRecommendations.length, { enableArrowKeys: activeTab === 'recommendations' });
+    index: recCardIndex,
+    setIndex: setRecCardIndex,
+    handleNext: handleNextRec,
+    handlePrevious: handlePreviousRec,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  } = useSwipeCarousel(visibleRecommendations.length, { enableArrowKeys: activeTab === 'recommendations' });
+
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
@@ -188,14 +212,6 @@ const RecruiterDashboard: React.FC = () => {
     loadMeetings({});
   }, []);
 
-  // Close card menu when clicking outside
-  useEffect(() => {
-    if (jpCardMenuOpenId === null) return;
-    const handler = () => setJpCardMenuOpenId(null);
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, [jpCardMenuOpenId]);
-
   useEffect(() => {
     if (selectedJobId) {
       fetchRecommendations();
@@ -227,9 +243,6 @@ const RecruiterDashboard: React.FC = () => {
     }
   }, [activeTab, browsePage, debouncedBrowseSearch, browseRole, browseWorkType, browseLocation]);
 
-  // Keyboard navigation for recommendation cards
- 
-
   const fetchJobPostings = async () => {
     try {
       const response = await apiClient.getJobPostings();
@@ -245,7 +258,6 @@ const RecruiterDashboard: React.FC = () => {
       if (response.data.length === 0) return;
       const validIds: number[] = response.data.map((j: any) => j.id);
       // Honour ?job= URL param; validate it exists, else fall back to first
-    
       const parsedId = parseIntParam(getParam('job'));
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedJobId(parsedId);
@@ -536,7 +548,6 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  
   // Helper functions for recommendations
   const getCandidateInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : 'C';
@@ -607,32 +618,7 @@ const RecruiterDashboard: React.FC = () => {
     ).length;
     const topPicksCount = recommendations.recommendations.filter((r: any) => (r.match_percentage || 0) >= 80).length;
 
-    // Filter and sort recommendations — role filter + quick filter
-    let visibleRecs = recommendationRoleFilter === 'all'
-      ? recommendations.recommendations
-      : recommendations.recommendations.filter((r: any) => {
-          const role =
-            (r.job_profile?.job_role as string | undefined) ||
-            (r.job_posting?.job_title as string | undefined) ||
-            (r.role as string | undefined) ||
-            '';
-          return role === recommendationRoleFilter;
-        });
-    if (recommendationQuickFilter === 'top_picks') {
-      visibleRecs = visibleRecs.filter((r: any) => (r.match_percentage || 0) >= 80);
-    } else if (recommendationQuickFilter === 'recently_active') {
-      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      visibleRecs = visibleRecs.filter((r: any) => r.candidate.created_at && new Date(r.candidate.created_at) >= cutoff);
-    } else if (recommendationQuickFilter === 'open_to_offers') {
-      visibleRecs = visibleRecs.filter((r: any) =>
-        r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
-      );
-    }
-    if (recommendationWorkTypeFilter !== 'all') {
-      visibleRecs = visibleRecs.filter((r: any) =>
-        (r.job_profile?.worktype || '').toLowerCase() === recommendationWorkTypeFilter.toLowerCase()
-      );
-    }
+    const visibleRecs = visibleRecommendations;
     const hasActiveRecFilters = recommendationRoleFilter !== 'all' || recommendationQuickFilter !== 'all';
 
     return (
@@ -4727,271 +4713,6 @@ const RecruiterDashboard: React.FC = () => {
         })()}
       </div>
       </>
-    );
-  };
-
-  const renderJobPostings = () => {
-    const worktypeLabel = (wt: string) => ({ remote: 'Remote', hybrid: 'Hybrid', onsite: 'On-site' }[wt] || (wt ? wt.charAt(0).toUpperCase() + wt.slice(1) : ''));
-    const fmtSalary = (min: number, max: number, cur: string) => {
-      const fmt = (v: number) => v >= 1000 ? `${Math.round(v / 1000)}k` : v.toLocaleString();
-      return `${(cur || 'USD').toUpperCase()} ${fmt(min)} – ${fmt(max)}`;
-    };
-    const getJpPageNumbers = (): (number | string)[] => {
-      if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
-      const pages: (number | string)[] = [];
-      if (jpCurrentPage <= 4) { pages.push(1, 2, 3, 4, 5, '...', totalPages); }
-      else if (jpCurrentPage >= totalPages - 3) { pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages); }
-      else { pages.push(1, '...', jpCurrentPage - 1, jpCurrentPage, jpCurrentPage + 1, '...', totalPages); }
-      return pages;
-    };
-
-    const filtered = allJobPostings.filter(p => {
-      const matchSearch = !jpSearch || (p.job_title || p.title || '').toLowerCase().includes(jpSearch.toLowerCase());
-      const matchStatus = jpStatusFilter === 'all' || (p.status || '').toLowerCase() === jpStatusFilter;
-      return matchSearch && matchStatus;
-    });
-    const totalPages = Math.ceil(filtered.length / JP_PAGE_SIZE);
-    const paginated = filtered.slice((jpCurrentPage - 1) * JP_PAGE_SIZE, jpCurrentPage * JP_PAGE_SIZE);
-
-    const handleStatusAction = async (id: number, action: 'freeze' | 'reactivate' | 'cancel', reason?: string) => {
-      try {
-        await apiClient.updateJobPostingStatus(id, action, reason);
-        await fetchJobPostings();
-        const labels: Record<string, string> = { freeze: 'frozen', reactivate: 'reactivated', cancel: 'cancelled' };
-        setToast(`Job ${labels[action] || action} successfully.`);
-      } catch {
-        setToast('Action failed. Please try again.');
-      }
-    };
-
-    const IconPin = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-      </svg>
-    );
-    const IconBuilding = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
-        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 22V12h6v10"/><path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01"/>
-      </svg>
-    );
-    const IconSalary = () => (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 13, height: 13, flexShrink: 0, color: '#9ca3af' }}>
-        <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-      </svg>
-    );
-
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, margin: '-32px', padding: 0, fontFamily: 'var(--cp-font, Inter, sans-serif)' }}>
-        {/* Header: breadcrumb + title + filter bar */}
-        <div style={{ padding: '28px 32px 0' }}>
-          <nav className="cp-breadcrumb" style={{ marginBottom: 8 }}>
-            <span style={{ cursor: 'pointer', color: '#6b7280', fontSize: 13 }} onClick={() => setActiveTab('recommendations')}>Dashboard</span>
-            <span style={{ color: '#d1d5db', fontSize: 12, margin: '0 6px' }}>›</span>
-            <span style={{ color: '#111827', fontWeight: 500, fontSize: 13 }}>Job Postings</span>
-          </nav>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: '#111827', margin: 0, letterSpacing: '-0.5px' }}>Job Postings</h1>
-            <button className="jpb-btn jpb-btn-primary" onClick={() => navigate('/recruiter/job-postings')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: 14, height: 14 }}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              New Posting
-            </button>
-          </div>
-
-          {/* Recruiter Role Responsibilities Banner — Job Postings */}
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderLeft: '4px solid #10b981',
-            borderRadius: 10,
-            padding: '16px 20px',
-            marginBottom: 18,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #10b981, #34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Job Postings — Recruiter Permissions</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>RECRUITER</span>
-                </div>
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Full ownership of the job posting lifecycle</div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Access</span>
-                </div>
-                {['Create new job postings', 'Edit job details', 'Duplicate postings', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
-                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                    <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 10, height: 10 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HR Can Also</span>
-                </div>
-                {['Edit job details', 'Freeze / Unfreeze postings', 'Cancel postings'].map(item => (
-                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <span style={{ fontSize: 12, color: '#475569' }}>{item}</span>
-                  </div>
-                ))}
-                <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #e2e8f0', paddingTop: 6 }}>HR cannot create or duplicate postings.</div>
-              </div>
-            </div>
-          </div>
-          <div className="cp-filter-bar" style={{ marginBottom: 0, paddingBottom: 16, borderBottom: '1px solid #f3f4f6' }}>
-            <div className="cp-search-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" placeholder="Search postings..." value={jpSearch} onChange={e => { setJpSearch(e.target.value); setJpCurrentPage(1); }} />
-            </div>
-            <div className="cp-filter-chips">
-              {(['all', 'active', 'reposted', 'frozen', 'cancelled'] as const).map(s => (
-                <button key={s} className={`cp-filter-chip${jpStatusFilter === s ? ' active' : ''}`} onClick={() => { setJpStatusFilter(s); setJpCurrentPage(1); }}>
-                  {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Card grid */}
-        <div style={{ padding: '20px 32px', flex: 1 }}>
-          {paginated.length === 0 ? (
-            <div className="cp-empty-state">
-              <svg className="cp-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
-              <h3 className="cp-empty-title">No job postings found</h3>
-              <p className="cp-empty-text">Create your first job posting to start hiring.</p>
-              <button className="jpb-btn jpb-btn-primary" onClick={() => navigate('/recruiter/job-postings')}>+ Create First Posting</button>
-            </div>
-          ) : (
-            <div className="cp-main-grid">
-              {paginated.map(p => {
-                const nStatus = (p.status || 'active').toLowerCase();
-                const skills: any[] = Array.isArray(p.posting_skills) ? p.posting_skills : [];
-                const dept = [p.product_vendor, p.product_type].filter(Boolean).join(' · ');
-                return (
-                  <div className="cp-posting-card" key={p.id} style={{ cursor: 'default' }}>
-                    <div className="cp-posting-card-top">
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="cp-posting-card-title">{p.job_title || p.title}</div>
-                        {dept && <div className="cp-posting-card-dept" style={{ marginTop: 2 }}>{dept}</div>}
-                      </div>
-                      <span className={`cp-posting-status ${nStatus}`} style={{ flexShrink: 0 }}>{(p.status || 'active').toUpperCase()}</span>
-                      <button
-                        className="cp-card-menu-btn"
-                        onClick={e => { e.stopPropagation(); setJpCardMenuOpenId(jpCardMenuOpenId === p.id ? null : p.id); }}
-                        title="More actions"
-                      >⋯</button>
-                      {jpCardMenuOpenId === p.id && (
-                        <div className="cp-card-menu-popover">
-                          <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); navigate('/recruiter/job-postings?duplicate=' + p.id); }}>Duplicate</button>
-                          {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
-                            <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); handleStatusAction(p.id, 'freeze'); }}>Freeze</button>
-                          )}
-                          {nStatus === 'frozen' && (
-                            <button className="cp-card-menu-item" onClick={() => { setJpCardMenuOpenId(null); handleStatusAction(p.id, 'reactivate'); }}>Unfreeze</button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {skills.length > 0 && (
-                      <div className="cp-posting-card-skill-tags">
-                        {skills.slice(0, 4).map((s: any, i: number) => <span key={i} className="cp-posting-card-skill-tag">{s.skill_name || s}</span>)}
-                        {skills.length > 4 && <span className="cp-posting-card-skill-tag">+{skills.length - 4}</span>}
-                      </div>
-                    )}
-                    <div className="cp-posting-card-meta">
-                      {p.location && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <IconPin />{p.location}
-                        </span>
-                      )}
-                      {p.worktype && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <IconBuilding />{worktypeLabel(p.worktype)}
-                        </span>
-                      )}
-                      {p.salary_min > 0 && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <IconSalary />{fmtSalary(p.salary_min, p.salary_max, p.salary_currency)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="cp-posting-card-footer">
-                      <div className="cp-posting-card-action-btns">
-                        <button className="cp-posting-action-btn" onClick={() => navigate('/recruiter/job-postings?edit=' + p.id)}>Edit</button>
-                        {nStatus !== 'cancelled' && (
-                          <button className="cp-posting-action-btn cancel" onClick={() => { setJpSelectedId(p.id); setJpShowCancelModal(true); }}>Cancel</button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 0 && (
-          <div className="cp-pagination-footer" style={{ margin: '0 32px 28px', borderRadius: 12 }}>
-            <span className="cp-pagination-info">
-              Showing {filtered.length === 0 ? 0 : (jpCurrentPage - 1) * JP_PAGE_SIZE + 1}–{Math.min(jpCurrentPage * JP_PAGE_SIZE, filtered.length)} of {filtered.length}
-            </span>
-            <div className="cp-pagination-buttons">
-              <button className="cp-pag-btn" disabled={jpCurrentPage === 1} onClick={() => setJpCurrentPage(p => p - 1)}>← Prev</button>
-              {totalPages > 1 && getJpPageNumbers().map((pn, i) =>
-                pn === '...' ? (
-                  <span key={`e${i}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
-                ) : (
-                  <button key={pn} className={`cp-pag-btn${jpCurrentPage === pn ? ' active' : ''}`} onClick={() => setJpCurrentPage(pn as number)}>{pn}</button>
-                )
-              )}
-              <button className="cp-pag-btn" disabled={jpCurrentPage === totalPages || totalPages === 0} onClick={() => setJpCurrentPage(p => p + 1)}>Next →</button>
-            </div>
-          </div>
-        )}
-
-        {/* Cancel modal */}
-        {jpShowCancelModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            onClick={() => setJpShowCancelModal(false)}>
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 420, width: '90%' }} onClick={e => e.stopPropagation()}>
-              <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700 }}>Cancel Job Posting</h3>
-              <select value={jpCancelReason} onChange={e => setJpCancelReason(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: 12, fontSize: 14 }}>
-                <option value="">Select reason...</option>
-                <option value="position_filled">Position Filled</option>
-                <option value="budget_cut">Budget Cut</option>
-                <option value="requirements_changed">Requirements Changed</option>
-                <option value="other">Other</option>
-              </select>
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button className="jpb-btn jpb-btn-outline" onClick={() => { setJpShowCancelModal(false); setJpCancelReason(''); setJpSelectedId(null); }}>Back</button>
-                <button className="jpb-btn jpb-btn-danger" disabled={!jpCancelReason}
-                  onClick={async () => {
-                    if (jpSelectedId) await handleStatusAction(jpSelectedId, 'cancel', jpCancelReason);
-                    setJpShowCancelModal(false);
-                    setJpCancelReason('');
-                    setJpSelectedId(null);
-                  }}
-                >Confirm Cancel</button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     );
   };
 
