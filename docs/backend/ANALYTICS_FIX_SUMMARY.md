@@ -273,7 +273,7 @@ python verify_analytics_fix.py
 # Get token
 curl -X POST http://localhost:8001/auth/company/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}'
+  -d '{"email":"admin.jennifer@techcorp.com","password":"<SEED_PASSWORD>"}'
 
 # Test analytics endpoint
 curl -H "Authorization: Bearer YOUR_TOKEN" \

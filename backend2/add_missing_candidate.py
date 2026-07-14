@@ -1,7 +1,13 @@
 """
 Add missing candidate: bayyakutty02@gmail.com
 """
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole, Candidate, JobProfile, Skill, LocationPreference, Certification, WorkType, EmploymentType, VisaStatus, CurrencyType
 from sqlmodel import Session, select
 from app.security import hash_password
@@ -23,7 +29,7 @@ def main():
             # Create new user
             user = User(
                 email="bayyakutty02@gmail.com",
-                password_hash=hash_password("Kutty_1304"),
+                password_hash=hash_password(get_seed_test_password()),
                 full_name="Bayya Kutty",
                 role=UserRole.CANDIDATE,
                 is_active=True

@@ -1,4 +1,9 @@
 """Verify all 4 accounts are complete with companies and jobs"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from app.database import engine
 from app.models import *
 from sqlmodel import Session, select
@@ -44,4 +49,5 @@ print(f"Total Job Profiles: {len(s.exec(select(JobProfile)).all())}")
 print(f"Total Job Postings: {len(s.exec(select(JobPosting)).all())}")
 print(f"Total Matches: {len(s.exec(select(Match)).all())}")
 
-print("\n[READY] All accounts created. Login at http://localhost:3003 with password: Kutty_1304")
+print("\n[READY] All accounts created. Login at http://localhost:3003 with the shared seed password")
+print("See app/core/seed_credentials.py for the current value.")

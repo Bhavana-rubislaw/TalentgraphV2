@@ -184,7 +184,7 @@ pytest tests/test_resume_parsing.py::TestResumeParsingIntegration -v
 
 3. **Test User:**
    - User: `sarah.anderson@email.com`
-   - Password: `Kutty_1304`
+  - Password: `<SEED_PASSWORD>`
 
 ### Frontend Testing
 1. **Sample Resume Files:**

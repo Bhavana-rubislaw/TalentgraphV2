@@ -4,8 +4,14 @@ Creates candidates, recruiters, job postings, skills, swipes, and matches
 for the specified email addresses with comprehensive data.
 """
 
+import sys
+from pathlib import Path
 from datetime import datetime, timedelta
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import (
     User, Candidate, JobProfile, Skill, Company, JobPosting, 
     Swipe, Match, Application, Resume, Certification,
@@ -16,7 +22,7 @@ from passlib.context import CryptContext
 import random
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-PASSWORD = 'Kutty_1304'  # Common password for all users
+PASSWORD = get_seed_test_password()
 
 def create_or_get_user(session, email, full_name, role):
     """Create user or return existing one"""
@@ -553,7 +559,7 @@ def main():
         print(f"  • Companies: 2")
         print(f"  • Job Postings: {len(jobs1) + len(jobs2)}")
         print(f"  • Swipes, Matches, and Applications created for all interactions")
-        print("\n[Login Credentials (password for all: Kutty_1304)]:")
+        print("\n[Login Credentials (shared seed password; see app/core/seed_credentials.py)]:")
         print("  Candidates:")
         print("    • kuttybayya@gmail.com")
         print("    • bhavanabayya13@gmail.com")

@@ -105,7 +105,7 @@ pytest test_notification_preferences.py -x -v
 
 ### Test candidate login:
 ```powershell
-$body = '{"email":"sarah.anderson@email.com","password":"Kutty_1304"}'
+$body = '{"email":"sarah.anderson@email.com","password":"<SEED_PASSWORD>"}'
 $res = Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST -Body $body -ContentType "application/json"
 $token = $res.access_token
 Write-Host "Token: $token"
@@ -135,7 +135,7 @@ $updated | ConvertTo-Json
 
 ### Test recruiter login:
 ```powershell
-$body = '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}'
+$body = '{"email":"admin.jennifer@techcorp.com","password":"<SEED_PASSWORD>"}'
 $res = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body $body -ContentType "application/json"
 $token = $res.access_token
 Write-Host "Token: $token"

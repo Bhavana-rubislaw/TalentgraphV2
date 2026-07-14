@@ -2,8 +2,15 @@
 Test if candidate job profiles are returning taxonomy data via API
 """
 
+import sys
+from pathlib import Path
+
 import requests
 import json
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from app.core.seed_credentials import get_seed_test_password
 
 def test_taxonomy_in_api():
     base_url = "http://localhost:8001"
@@ -34,7 +41,7 @@ def test_taxonomy_in_api():
             f"{base_url}/auth/login",
             data={
                 "username": "recruiter.anna@globalsystems.com",
-                "password": "Kutty_1304"
+                "password": get_seed_test_password()
             }
         )
         

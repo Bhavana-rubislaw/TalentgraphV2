@@ -471,7 +471,7 @@ Get-Process -Name "python" -ErrorAction SilentlyContinue | Stop-Process -Force
 
 **Command**
 ```powershell
-$loginData = @{email='sarah.anderson@email.com'; password='Kutty_1304'} | ConvertTo-Json
+$loginData = @{email='sarah.anderson@email.com'; password='<SEED_PASSWORD>'} | ConvertTo-Json
 $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8001/auth/candidate/login' -Method POST -Body $loginData -ContentType 'application/json' -UseBasicParsing
 $jsonResponse = $response.Content | ConvertFrom-Json
 Write-Host "Token received: $($jsonResponse.access_token.Substring(0,20))..."
@@ -489,7 +489,7 @@ Write-Host "Token received: $($jsonResponse.access_token.Substring(0,20))..."
 
 **Command**
 ```powershell
-$body = '{"email":"recruiter2.jennifer@techcorp.com","password":"Kutty_1304"}'
+$body = '{"email":"recruiter2.jennifer@techcorp.com","password":"<SEED_PASSWORD>"}'
 $res = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body $body -ContentType "application/json"
 $res | ConvertTo-Json
 ```
@@ -518,7 +518,7 @@ In PowerShell, `curl` is often an alias for `Invoke-WebRequest`, so `-H` behaves
 
 **Command**
 ```powershell
-$login = curl.exe -s -X POST http://localhost:8001/auth/candidate/login -H "Content-Type: application/json" -d '{\"email\":\"sarah.anderson@email.com\",\"password\":\"Kutty_1304\"}' | ConvertFrom-Json
+$login = curl.exe -s -X POST http://localhost:8001/auth/candidate/login -H "Content-Type: application/json" -d '{\"email\":\"sarah.anderson@email.com\",\"password\":\"<SEED_PASSWORD>\"}' | ConvertFrom-Json
 $token = $login.access_token
 $matches = curl.exe -s -H "Authorization: Bearer $token" http://localhost:8001/dashboard/candidate/matches | ConvertFrom-Json
 Write-Host "Matches found: $($matches.Count)"
@@ -693,7 +693,7 @@ curl.exe -s http://127.0.0.1:8001/health
 
 ## H2) Candidate login works
 ```powershell
-Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST -Body '{"email":"sarah.anderson@email.com","password":"Kutty_1304"}' -ContentType "application/json"
+Invoke-RestMethod -Uri "http://localhost:8001/auth/candidate/login" -Method POST -Body '{"email":"sarah.anderson@email.com","password":"<SEED_PASSWORD>"}' -ContentType "application/json"
 ```
 
 ## H3) Authenticated endpoint works (matches)

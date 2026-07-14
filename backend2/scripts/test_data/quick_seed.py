@@ -2,15 +2,21 @@
 Simple script to complete the custom user setup
 Adds the missing users and creates basic interactions
 """
+import sys
+from pathlib import Path
 from datetime import datetime, timedelta
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import *
 from sqlmodel import Session, select
 from passlib.context import CryptContext
 import random
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-PASSWORD = 'Kutty_1304'
+PASSWORD = get_seed_test_password()
 
 print("Creating custom users...")
 
@@ -121,7 +127,7 @@ with Session(engine) as s:
 
 print("\n=== ALL DONE ===")
 print("Login at http://localhost:3003")
-print("Password: Kutty_1304")
+print("Password: shared seed password (see app/core/seed_credentials.py)")
 print("\nAccounts created:")
 print("  Candidates: kuttybayya@gmail.com, bhavanabayya13@gmail.com")
 print("  Recruiters: bayyakutty02@gmail.com, bhavana@rubislawinvest.com")

@@ -1,5 +1,11 @@
 """Add Bhavana Bayya as a new candidate"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import User, Candidate, JobProfile
 from sqlmodel import Session, select
 from passlib.context import CryptContext
@@ -65,7 +71,7 @@ with Session(engine) as session:
         # Create new candidate user
         new_user = User(
             email='bhavanabayya13@gmail.com',
-            password_hash=pwd_context.hash('Kutty_1304'),
+            password_hash=pwd_context.hash(get_seed_test_password()),
             full_name='Bhavana Bayya',
             role='candidate',
             is_active=True
@@ -113,8 +119,8 @@ with Session(engine) as session:
         print(f'✅ Created candidate record (ID: {candidate.id})')
         print(f'✅ Created job profile (ID: {job_profile.id})')
         print(f'   Email: {new_user.email}')
-        print(f'   Password: Kutty_1304')
+        print('   Password: shared seed password (see app/core/seed_credentials.py)')
         print()
         print('You can now login at http://localhost:3003 with:')
         print(f'   Email: bhavanabayya13@gmail.com')
-        print(f'   Password: Kutty_1304')
+        print('   Password: shared seed password (see app/core/seed_credentials.py)')

@@ -292,7 +292,7 @@ const groupedMessages = messages.map((msg, idx) => {
 
 ### 1. Test Candidate Dashboard (Sarah)
 
-1. Log in as **sarah.anderson@email.com** / **Kutty_1304**
+1. Log in as **sarah.anderson@email.com** / **<SEED_PASSWORD>**
 2. Navigate to Messages tab
 3. Open conversation with Jennifer Smith
 4. **Verify**:
@@ -303,7 +303,7 @@ const groupedMessages = messages.map((msg, idx) => {
 
 ### 2. Test Recruiter Dashboard (Jennifer)
 
-1. Log in as **admin.jennifer@techcorp.com** / **Kutty_1304**
+1. Log in as **admin.jennifer@techcorp.com** / **<SEED_PASSWORD>**
 2. Navigate to Messages tab
 3. Open same conversation
 4. **Verify**:

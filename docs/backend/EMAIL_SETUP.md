@@ -51,7 +51,7 @@ Test that email configuration works:
 
 ```powershell
 # Login as recruiter
-$login = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body '{"email":"admin.jennifer@techcorp.com","password":"Kutty_1304"}' -ContentType "application/json"
+$login = Invoke-RestMethod -Uri "http://localhost:8001/auth/company/login" -Method POST -Body '{"email":"admin.jennifer@techcorp.com","password":"<SEED_PASSWORD>"}' -ContentType "application/json"
 $token = $login.access_token
 
 # Check email config (without sending)

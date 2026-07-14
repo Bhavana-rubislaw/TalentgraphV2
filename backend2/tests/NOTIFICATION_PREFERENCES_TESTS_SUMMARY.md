@@ -59,8 +59,8 @@ pytest test_notification_preferences.py -v
    ```
 
 2. **Verify test users exist:**
-   - Candidate: sarah.anderson@email.com / Kutty_1304
-   - Recruiter: admin.jennifer@techcorp.com / Kutty_1304
+   - Candidate: sarah.anderson@email.com / <SEED_PASSWORD>
+   - Recruiter: admin.jennifer@techcorp.com / <SEED_PASSWORD>
 
 3. **Install dependencies (if needed):**
    ```powershell

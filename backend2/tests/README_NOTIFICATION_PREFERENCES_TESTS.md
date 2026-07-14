@@ -52,8 +52,8 @@ This directory contains comprehensive test suites for the Notification Preferenc
    ```
 
 2. **Database seeded with test users:**
-   - Candidate: `sarah.anderson@email.com` / `Kutty_1304`
-   - Recruiter: `admin.jennifer@techcorp.com` / `Kutty_1304`
+  - Candidate: `sarah.anderson@email.com` / `<SEED_PASSWORD>`
+  - Recruiter: `admin.jennifer@techcorp.com` / `<SEED_PASSWORD>`
 
 3. **Python dependencies installed:**
    ```powershell

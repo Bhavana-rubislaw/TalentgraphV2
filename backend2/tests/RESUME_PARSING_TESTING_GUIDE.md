@@ -10,7 +10,7 @@ This document provides comprehensive manual testing procedures for the resume pa
 ### Prerequisites
 - Backend server running on `http://127.0.0.1:8001`
 - Frontend server running on `http://localhost:3003`
-- Test user credentials: `sarah.anderson@email.com` / `Kutty_1304`
+- Test user credentials: `sarah.anderson@email.com` / `<SEED_PASSWORD>`
 - Sample resume files (PDF, DOCX, TXT formats)
 
 ### Browser Requirements

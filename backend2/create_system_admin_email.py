@@ -10,13 +10,19 @@ Run this after database initialization:
     python create_system_admin_email.py
 """
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from sqlmodel import Session, select
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole
 from app.security import hash_password
 
 SYSTEM_ADMIN_EMAIL = "talentgraph.interviews@gmail.com"
-SYSTEM_ADMIN_PASSWORD = "Kutty_1304"
+SYSTEM_ADMIN_PASSWORD = get_seed_test_password()
 SYSTEM_ADMIN_NAME = "TalentGraph System Admin"
 
 
@@ -56,7 +62,7 @@ def create_system_admin():
             
             print(f"[+] System admin created successfully!")
             print(f"   Email: {SYSTEM_ADMIN_EMAIL}")
-            print(f"   Password: {SYSTEM_ADMIN_PASSWORD}")
+            print("   Password: see get_seed_test_password() in app/core/seed_credentials.py")
             print(f"   Role: {system_admin.role}")
             print(f"   User ID: {system_admin.id}")
 

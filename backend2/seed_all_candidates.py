@@ -8,7 +8,7 @@ Run this script to populate the database with all candidate data:
     venv\\Scripts\\Activate.ps1
     python seed_all_candidates.py
 
-Password for all users: Kutty_1304
+Password for all users:-----------------
 """
 
 import sys
@@ -28,8 +28,10 @@ from app.models import (
 from app.security import hash_password
 
 # Universal password for all seed accounts
-SEED_PASSWORD = "Kutty_1304"
 
+from app.core.seed_credentials import get_seed_test_password
+
+SEED_PASSWORD = get_seed_test_password()
 
 def get_taxonomy_ids(session: Session, vendor_name: str, product_type_name: str, role_name: str):
     """
@@ -889,7 +891,7 @@ def main():
         print(f"\n[*] Total candidates processed: {candidate_count}")
         print(f"[*] Plus 3 existing candidates (Sarah, Michael, David)")
         print(f"[*] Grand Total: {candidate_count + 3} candidates")
-        print("\n[KEY] All passwords: Kutty_1304")
+        print(f"\n[KEY] All passwords: {SEED_PASSWORD}")
         print("\n" + "=" * 80)
 
 

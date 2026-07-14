@@ -14,13 +14,18 @@ Quick checks:
 
 import requests
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.core.seed_credentials import get_seed_test_password
 
 
 BASE_URL = "http://127.0.0.1:8001"
 CANDIDATE_EMAIL = "sarah.anderson@email.com"
-CANDIDATE_PASSWORD = "Kutty_1304"
+CANDIDATE_PASSWORD = get_seed_test_password()
 RECRUITER_EMAIL = "admin.jennifer@techcorp.com"
-RECRUITER_PASSWORD = "Kutty_1304"
+RECRUITER_PASSWORD = get_seed_test_password()
 
 
 def test_backend_health():

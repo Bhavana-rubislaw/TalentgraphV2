@@ -7,11 +7,14 @@ import sys
 from pathlib import Path
 from sqlmodel import Session, select
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import User, Candidate, Company, JobPosting, UserRole
 from app.security import hash_password
+
+PASSWORD = get_seed_test_password()
 
 
 def seed_database():
@@ -26,17 +29,17 @@ def seed_database():
             {
                 "email": "sarah.anderson@email.com",
                 "name": "Sarah Anderson",
-                "password": "Kutty_1304"
+                "password": PASSWORD
             },
             {
                 "email": "michael.chen@email.com",
                 "name": "Michael Chen",
-                "password": "Kutty_1304"
+                "password": PASSWORD
             },
             {
                 "email": "david.kumar@email.com",
                 "name": "David Kumar",
-                "password": "Kutty_1304"
+                "password": PASSWORD
             }
         ]
         
@@ -104,7 +107,7 @@ def seed_database():
                     user = User(
                         email=user_data["email"],
                         full_name=user_data["name"],
-                        password_hash=hash_password("Kutty_1304"),
+                        password_hash=hash_password(PASSWORD),
                         role=user_data["role"],
                         is_active=True
                     )
@@ -136,7 +139,7 @@ def seed_database():
         
         print("\n✨ Database seeding completed successfully!")
         print("\n📋 Test Account Credentials:")
-        print("   All passwords: Kutty_1304")
+        print("   All passwords: shared seed password (see app/core/seed_credentials.py)")
         print("\n   Candidates:")
         for cand in candidates_data:
             print(f"     - {cand['email']}")

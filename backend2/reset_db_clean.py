@@ -3,13 +3,17 @@
 
 import sys
 import os
+from pathlib import Path
 
 # Set environment to handle unicode
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 # Import at module level
 from sqlalchemy import text
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import (
     User, UserRole, Candidate, Company, JobPosting, JobProfile,
     Skill, Application, Meeting, MeetingParticipant
@@ -47,7 +51,7 @@ def main():
     print("\n[3/4] Creating system admin account...")
     try:
         SYSTEM_ADMIN_EMAIL = "talentgraph.interviews@gmail.com"
-        SYSTEM_ADMIN_PASSWORD = "Kutty_1304"
+        SYSTEM_ADMIN_PASSWORD = get_seed_test_password()
         SYSTEM_ADMIN_NAME = "TalentGraph System Admin"
         
         with Session(engine) as session:
@@ -140,7 +144,8 @@ def main():
     print("="*80)
     print("\nNext steps:")
     print("  1. Start backend: uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload")
-    print("  2. Test login: talentgraph.interviews@gmail.com / Kutty_1304")
+    print("  2. Test login: talentgraph.interviews@gmail.com / shared seed password")
+    print("     See get_seed_test_password() in app/core/seed_credentials.py")
     print("="*80 + "\n")
     
     return 0

@@ -697,7 +697,7 @@ def run():
 
         print()
         print("Login credentials (all accounts):")
-        print("  Password: Kutty_1304")
+        print("  Password: shared seed password (see app/core/seed_credentials.py)")
         print()
         print("  Recruiters / HR:")
         print("    bhavana@rubislawinvest.com   → http://localhost:3003 (company login)")

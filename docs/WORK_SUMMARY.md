@@ -219,7 +219,7 @@ npm run dev -- --port 3002
 
 # 3. Login as recruiter
 # Email: admin.jennifer@techcorp.com
-# Password: Kutty_1304
+# Password: <SEED_PASSWORD>
 
 # 4. Verify on desktop:
 # - Dashboard fills full width (no narrow column)

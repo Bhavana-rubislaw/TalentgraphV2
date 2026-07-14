@@ -10,12 +10,14 @@ Fix: Changed job.title to job.job_title in analytics.py line 390
 
 import sys
 import os
+from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from fastapi.testclient import TestClient
 from app.main import app
+from app.core.seed_credentials import get_seed_test_password
 from app.database import get_session, engine
 from sqlmodel import Session, select
 from app.models import User, Company, JobPosting
@@ -58,7 +60,7 @@ def test_analytics_job_endpoint_uses_correct_field():
     print("   Authenticating...")
     response = client.post(
         "/auth/company/login",
-        json={"email": "admin.jennifer@techcorp.com", "password": "Kutty_1304"}
+        json={"email": "admin.jennifer@techcorp.com", "password": get_seed_test_password()}
     )
     
     if response.status_code != 200:

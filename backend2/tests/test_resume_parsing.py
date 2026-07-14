@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import pytest
 from fastapi.testclient import TestClient
 from io import BytesIO
+from app.core.seed_credentials import get_seed_test_password
 from app.main import app
 from app.services.resume_parser import ResumeParser
 
@@ -193,7 +194,7 @@ class TestResumeParsingAPI:
         """Get authentication headers for test candidate"""
         response = client.post("/auth/login", json={
             "email": "sarah.anderson@email.com",
-            "password": "Kutty_1304"
+            "password": get_seed_test_password()
         })
         if response.status_code == 200:
             token = response.json()["access_token"]
@@ -359,7 +360,7 @@ class TestResumeParsingIntegration:
         """Get authentication headers"""
         response = client.post("/auth/login", json={
             "email": "sarah.anderson@email.com",
-            "password": "Kutty_1304"
+            "password": get_seed_test_password()
         })
         if response.status_code == 200:
             token = response.json()["access_token"]

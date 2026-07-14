@@ -4,6 +4,11 @@
 import subprocess
 import sys
 import os
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+from app.core.seed_credentials import get_seed_test_password
 
 def run_command(description, command):
     """Run a command and report results."""
@@ -98,8 +103,9 @@ def main():
     print("="*80)
     print("  1. Start backend: uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload")
     print("  2. Start frontend: cd frontend2 && npm run dev -- --port 3002")
-    print("  3. Test admin login: talentgraph.interviews@gmail.com / Kutty_1304")
-    print("  4. Test recruiter: recruiter2.lisa@globalsystems.com / Kutty_1304")
+    print("  3. Test admin login: talentgraph.interviews@gmail.com / shared seed password")
+    print(f"     See get_seed_test_password() in app/core/seed_credentials.py")
+    print("  4. Test recruiter: recruiter2.lisa@globalsystems.com / shared seed password")
     print("="*80 + "\n")
     
     return 0

@@ -4,7 +4,8 @@ Setup Rubislaw Invest team members with correct roles
   ashokkumarbayya@gmail.com    → HR
   bhavana@rubislawinvest.com   → RECRUITER
 
-- Creates users if they don't exist (password: Kutty_1304)
+- Creates users if they don't exist with the shared seed password
+    (see app/core/seed_credentials.py)
 - Corrects role if the user already exists with wrong role
 - Both users share the same Rubislaw Invest company (bhavana is owner/RECRUITER)
 
@@ -21,10 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from sqlmodel import Session, select
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole, Company
 from app.security import hash_password
 
-PASSWORD = "Kutty_1304"
+PASSWORD = get_seed_test_password()
 
 COMPANY_NAME        = "Rubislaw Invest"
 COMPANY_WEBSITE     = "https://www.rubislawinvest.com"

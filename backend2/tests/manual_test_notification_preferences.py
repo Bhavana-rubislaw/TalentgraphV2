@@ -8,22 +8,29 @@ Usage:
 Requirements:
     - Backend server running on http://127.0.0.1:8001
     - Test users seeded in database:
-      * Candidate: sarah.anderson@email.com / Kutty_1304
-      * Recruiter: admin.jennifer@techcorp.com / Kutty_1304
+    * Candidate: sarah.anderson@email.com / shared seed password
+    * Recruiter: admin.jennifer@techcorp.com / shared seed password
 """
+
+import sys
+from pathlib import Path
 
 import requests
 import json
 from typing import Dict, List
 from datetime import datetime
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.core.seed_credentials import get_seed_test_password
+
 
 # Configuration
 BASE_URL = "http://127.0.0.1:8001"
 CANDIDATE_EMAIL = "sarah.anderson@email.com"
-CANDIDATE_PASSWORD = "Kutty_1304"
+CANDIDATE_PASSWORD = get_seed_test_password()
 RECRUITER_EMAIL = "admin.jennifer@techcorp.com"
-RECRUITER_PASSWORD = "Kutty_1304"
+RECRUITER_PASSWORD = get_seed_test_password()
 
 
 class Colors:

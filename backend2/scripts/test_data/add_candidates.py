@@ -3,7 +3,7 @@ Add 10 New Candidates to TalentGraph V2
 ========================================
 Adds 10 diverse candidates with 2 job profiles each (20 total profiles)
 Each profile has skills, location preferences, and certifications.
-All passwords: Kutty_1304
+All passwords: shared seed password (see app/core/seed_credentials.py)
 
 Run:
     cd backend2
@@ -15,16 +15,17 @@ import sys
 from pathlib import Path
 from sqlmodel import Session, select
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.database import engine
+from app.core.seed_credentials import get_seed_test_password
 from app.models import (
     User, UserRole, Candidate, JobProfile, Skill, LocationPreference,
     Certification, WorkType, EmploymentType, VisaStatus, CurrencyType
 )
 from app.security import hash_password
 
-SEED_PASSWORD = "Kutty_1304"
+SEED_PASSWORD = get_seed_test_password()
 
 NEW_CANDIDATES = [
     # ── 1. Emily Zhang ─────────────────────────────────

@@ -1,5 +1,12 @@
 """Test if taxonomy data now appears in API responses with fallback"""
+import sys
+from pathlib import Path
+
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from app.core.seed_credentials import get_seed_test_password
 
 # Backend URL
 BASE_URL = "http://localhost:8001"
@@ -11,7 +18,7 @@ try:
     print("1. Authenticating...")
     login_data = {
         "email": "recruiter.anna@globalsystems.com",
-        "password": "Kutty_1304"
+        "password": get_seed_test_password()
     }
     response = requests.post(
         f"{BASE_URL}/auth/login",
