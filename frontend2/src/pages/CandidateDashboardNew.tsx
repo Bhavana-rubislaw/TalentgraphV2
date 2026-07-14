@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { apiClient } from '../api/client';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/PremiumDashboard.css';
 import '../styles/PremiumDashboardV2.css';
@@ -13,7 +13,10 @@ import '../styles/HorizontalDashboard.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import { MeetingSchedulerTab } from '../components/meetings';
-import {
+import { useMeetingsData } from '../hooks/useMeetingsData';
+import { useQueryState, parseEnumParam, parseIntParam } from '../hooks/useQueryState';
+import { useSwipeCarousel } from '../hooks/useSwipeCarousel';
+import{
   MatchBreakdownBars,
   TopSkillMatches,
   AIMatchReasonBox,
@@ -250,7 +253,7 @@ const CandidateDashboard: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showProfileMenu]);
-  const [recCardIndex, setRecCardIndex] = useState(0);
+
   const [jobListTab, setJobListTab] = useState<'liked' | 'applied'>('liked');
   const [drawerJob, setDrawerJob] = useState<any | null>(null);
   const [applyingJobId, setApplyingJobId] = useState<number | null>(null);
@@ -289,21 +292,12 @@ const CandidateDashboard: React.FC = () => {
 
   // ── Recommendations filter states ──────────────────────────────────
   const [recommendationsMatchFilter, setRecommendationsMatchFilter] = useState<string>('all');
-  const [recSearchTerm, setRecSearchTerm] = useState('');
-  const [recRoleFilter, setRecRoleFilter] = useState('all');
-  const [recWorkTypeFilter, setRecWorkTypeFilter] = useState('all');
-  const [recLocationFilter, setRecLocationFilter] = useState('');
-  const [recStatusFilter, setRecStatusFilter] = useState('all');
-
   // ── Upcoming Interviews ──────────────────────────────────
-  const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
-  const [allMeetings, setAllMeetings] = useState<any[]>([]);
+  const { meetings: allMeetings, loadMeetings } = useMeetingsData();
+  
   const [upcomingInterviewPage, setUpcomingInterviewPage] = useState(0);
 
   // ── Candidate filter states ──────────────────────────────────
-  const [candidateRecRoleFilter, setCandidateRecRoleFilter] = useState<string>('all');
-  const [candidateRecWorktypeFilter, setCandidateRecWorktypeFilter] = useState<string>('all');
-  const [candidateRecMinMatch, setCandidateRecMinMatch] = useState<number>(0);
   const [appliedLikedRoleFilter, setAppliedLikedRoleFilter] = useState<string>('all');
   const [appliedLikedStatusFilter, setAppliedLikedStatusFilter] = useState<string>('all');
   const [appliedLikedSort, setAppliedLikedSort] = useState<'newest' | 'oldest'>('newest');
@@ -311,9 +305,9 @@ const CandidateDashboard: React.FC = () => {
   // Filter recommendations based on all criteria
   const filteredRecommendations = useMemo(() => {
     return recommendations.filter(rec => {
-      const jobPosting = rec.job_posting || {};
-      const matchPercentage = rec.match_percentage || 0;
       
+      const matchPercentage = rec.match_percentage || 0;
+
       // Match score filter
       if (recommendationsMatchFilter !== 'all') {
         switch (recommendationsMatchFilter) {
@@ -334,54 +328,10 @@ const CandidateDashboard: React.FC = () => {
             break;
         }
       }
-      
-      // Search filter — uses correct backend field names: job_title, job_description
-      if (recSearchTerm) {
-        const searchLower = recSearchTerm.toLowerCase();
-        const titleMatch = (jobPosting.job_title || '').toLowerCase().includes(searchLower);
-        const companyMatch = (jobPosting.company_name || '').toLowerCase().includes(searchLower);
-        const descMatch = (jobPosting.job_description || '').toLowerCase().includes(searchLower);
-        const vendorMatch = (jobPosting.product_vendor || '').toLowerCase().includes(searchLower);
-        if (!titleMatch && !companyMatch && !descMatch && !vendorMatch) return false;
-      }
-      
-      // Role filter — match against job_title and job_role
-      if (recRoleFilter !== 'all') {
-        const jobTitle = (jobPosting.job_title || '').toLowerCase();
-        const jobRole  = (jobPosting.job_role  || '').toLowerCase();
-        const roleMatch = jobTitle.includes(recRoleFilter.toLowerCase()) || jobRole.includes(recRoleFilter.toLowerCase());
-        if (!roleMatch) return false;
-      }
-      
-      // Work type filter — backend field is 'worktype', not 'work_type'
-      if (recWorkTypeFilter !== 'all') {
-        const jobWorktype = (jobPosting.worktype || '').toLowerCase();
-        if (jobWorktype !== recWorkTypeFilter.toLowerCase()) return false;
-      }
-      
-      // Location filter
-      if (recLocationFilter) {
-        const locationLower = recLocationFilter.toLowerCase();
-        const jobLocation = (jobPosting.location || '').toLowerCase();
-        if (!jobLocation.includes(locationLower)) return false;
-      }
-      
-      // Status filter — backend only returns active/reposted jobs;
-      // for applied/saved, match against 'job_id' (not 'id') from applied/liked lists
-      if (recStatusFilter !== 'all') {
-        if (recStatusFilter === 'applied') {
-          const isApplied = appliedLiked.applied_jobs?.some((aj: any) => aj.job_id === jobPosting.id);
-          if (!isApplied) return false;
-        }
-        if (recStatusFilter === 'saved') {
-          const isLiked = appliedLiked.liked_jobs?.some((lj: any) => lj.job_id === jobPosting.id);
-          if (!isLiked) return false;
-        }
-      }
-      
+
       return true;
     });
-  }, [recommendations, recommendationsMatchFilter, recSearchTerm, recRoleFilter, recWorkTypeFilter, recLocationFilter, recStatusFilter, appliedLiked]);
+  }, [recommendations, recommendationsMatchFilter,]);
 
   // Reset card index when filter changes
   useEffect(() => {
@@ -400,7 +350,7 @@ const CandidateDashboard: React.FC = () => {
     fetchAvailableJobs();
     fetchAppliedLiked();
     fetchMatches();
-    fetchUpcomingInterviews();
+    loadMeetings({});
   }, []);
 
   // Poll for application status updates every 30 seconds when on Applied tab
@@ -425,22 +375,6 @@ const CandidateDashboard: React.FC = () => {
     }
   }, [selectedProfileId]);
 
-  // Keyboard navigation for recommendation cards
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (activeTab !== 'recommendations' || !filteredRecommendations?.length) return;
-    const total = filteredRecommendations.length;
-    if (e.key === 'ArrowRight') {
-      setRecCardIndex(prev => Math.min(prev + 1, total - 1));
-    } else if (e.key === 'ArrowLeft') {
-      setRecCardIndex(prev => Math.max(prev - 1, 0));
-    }
-  }, [activeTab, filteredRecommendations]);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
   // Reset pagination when filters change in Applied/Liked tabs
   useEffect(() => {
     if (jobListTab === 'liked') {
@@ -450,41 +384,7 @@ const CandidateDashboard: React.FC = () => {
     }
   }, [appliedLikedRoleFilter, appliedLikedStatusFilter, appliedLikedSort, jobListTab]);
 
-  // Navigation handlers for recommendation cards
-  const handlePreviousRec = () => {
-    setRecCardIndex(prev => Math.max(prev - 1, 0));
-  };
-
-  const handleNextRec = () => {
-    setRecCardIndex(prev => Math.min(prev + 1, filteredRecommendations.length - 1));
-  };
-
-  // Touch/swipe gesture support for recommendations
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    if (isLeftSwipe) {
-      handleNextRec();
-    } else if (isRightSwipe) {
-      handlePreviousRec();
-    }
-  };
+  
 
   const fetchUserProfile = async () => {
     try {
@@ -502,8 +402,7 @@ const CandidateDashboard: React.FC = () => {
       if (response.data.length === 0) return;
       const validIds: number[] = response.data.map((p: any) => p.id);
       // Honour ?profile= URL param; validate it exists, else fall back to first
-      const urlProfileId = new URLSearchParams(window.location.search).get('profile');
-      const parsedId = urlProfileId ? parseInt(urlProfileId, 10) : null;
+      const parsedId = parseIntParam(getParam('profile'));
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedProfileId(parsedId);
       } else {
@@ -533,21 +432,6 @@ const CandidateDashboard: React.FC = () => {
       setInvites(response.data);
     } catch (error) {
       console.error('Failed to fetch invites:', error);
-    }
-  };
-
-  const fetchUpcomingInterviews = async () => {
-    try {
-      const allRes = await apiClient.getMeetings({});
-      const allMeetingsData = allRes.data || [];
-      setAllMeetings(allMeetingsData);
-      // derive upcoming list for badge count
-      const now = new Date();
-      setUpcomingInterviews(allMeetingsData.filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled'));
-    } catch (error: any) {
-      console.error('[INTERVIEWS] Error fetching:', error);
-      setUpcomingInterviews([]);
-      setAllMeetings([]);
     }
   };
 

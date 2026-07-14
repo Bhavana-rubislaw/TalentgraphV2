@@ -16,6 +16,7 @@ import secrets
 from pathlib import Path
 
 _LOCAL_PASSWORD_FILE = Path(__file__).resolve().parents[2] / ".seed_admin_password.local"
+_MISSING_ENV_WARNED = False
 
 DEFAULT_SEED_ADMIN_EMAIL = "talentgraph.interviews@gmail.com"
 DEFAULT_SEED_ADMIN_NAME = "TalentGraph System Admin"
@@ -23,11 +24,21 @@ DEFAULT_SEED_ADMIN_NAME = "TalentGraph System Admin"
 
 def get_seed_admin_credentials() -> tuple[str, str, str]:
     """Return (email, password, full_name) for the seeded system admin account."""
+    global _MISSING_ENV_WARNED
+
     email = os.getenv("SEED_ADMIN_EMAIL", DEFAULT_SEED_ADMIN_EMAIL)
     name = os.getenv("SEED_ADMIN_NAME", DEFAULT_SEED_ADMIN_NAME)
 
     password = os.getenv("SEED_ADMIN_PASSWORD")
     if not password:
+        if not _MISSING_ENV_WARNED:
+            print(
+                "[SEED_CREDENTIALS][WARNING] SEED_ADMIN_PASSWORD is not set in the "
+                "environment/.env. Falling back to local cached password. "
+                "Set SEED_ADMIN_PASSWORD in backend2/.env for explicit, repeatable seeding."
+            )
+            _MISSING_ENV_WARNED = True
+
         if _LOCAL_PASSWORD_FILE.exists():
             password = _LOCAL_PASSWORD_FILE.read_text().strip()
         else:

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { apiClient, API_BASE } from '../api/client';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../styles/ModernDashboard.css';
 import '../styles/PremiumDashboard.css';
 import '../styles/PremiumDashboardV2.css';
@@ -14,6 +14,9 @@ import NotificationBellDrawer from '../components/notifications/NotificationBell
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
 import { MeetingSchedulerTab } from '../components/meetings';
+import { useMeetingsData } from '../hooks/useMeetingsData';
+import { useQueryState, parseEnumParam, parseIntParam } from '../hooks/useQueryState';
+import { useSwipeCarousel } from '../hooks/useSwipeCarousel';
 import {
   MatchBreakdownBars,
   TopSkillMatches,
@@ -27,22 +30,16 @@ const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches
 
 const RecruiterDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-
+  const { searchParams, getParam, setParam, setParams } = useQueryState();
   // ── Tab: driven from ?tab= URL param ────────────────────────
-  const rawTab = searchParams.get('tab') || '';
-  const activeTab: string = (RECRUITER_TABS as readonly string[]).includes(rawTab)
-    ? rawTab
-    : 'recommendations';
+  const activeTab: string = parseEnumParam(getParam('tab'), RECRUITER_TABS, 'recommendations');
 
   const setActiveTab = useCallback(
     (tab: string) => {
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); next.set('tab', tab); return next; }
-        // Don't use replace:true here - we want tab changes in browser history for back button
-      );
+      // Don't use replace:true here - we want tab changes in browser history for back button
+      setParam('tab', tab, { replace: false });
     },
-    [setSearchParams]
+    [setParam]
   );
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
@@ -57,17 +54,9 @@ const RecruiterDashboard: React.FC = () => {
   const setSelectedJobId = useCallback(
     (id: number | null) => {
       setSelectedJobIdInternal(id);
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          if (id != null) next.set('job', String(id));
-          else next.delete('job');
-          return next;
-        },
-        { replace: true }
-      );
+      setParam('job', id != null ? String(id) : null, { replace: true });
     },
-    [setSearchParams]
+    [setParam]
   );
   
   const [recommendations, setRecommendations] = useState<any>(null);
@@ -99,45 +88,29 @@ const RecruiterDashboard: React.FC = () => {
   // ── Applications filters: driven from URL params ───────────────
   // ?search=  ?job=all|<jobId>  ?appStatus=all|applied|scheduled|...  ?sort=newest|oldest
   const [selectedAppId, setSelectedAppId] = useState<number | null>(null);
-  const appSearch   = searchParams.get('search') ?? '';
-  const appJobFilter = searchParams.get('job') ?? 'all';
-  const appStatusFilter = searchParams.get('appStatus') ?? 'all';
+  const appSearch   = getParam('search');
+  const appJobFilter = getParam('job', 'all');
+  const appStatusFilter = getParam('appStatus', 'all');
   const appSortOrder: 'newest' | 'oldest' =
-    searchParams.get('sort') === 'oldest' ? 'oldest' : 'newest';
+    getParam('sort') === 'oldest' ? 'oldest' : 'newest';
 
   const setAppSearch = useCallback(
-    (value: string) =>
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); if (value) next.set('search', value); else next.delete('search'); return next; },
-        { replace: true }
-      ),
-    [setSearchParams]
+    (value: string) => setParam('search', value, { replace: true }),
+    [setParam]
   );
   const setAppJobFilter = useCallback(
-    (value: string) =>
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('job', value); else next.delete('job'); return next; },
-        { replace: true }
-      ),
-    [setSearchParams]
+    (value: string) => setParam('job', value === 'all' ? null : value, { replace: true }),
+    [setParam] 
   );
 
   const setAppStatusFilter = useCallback(
-    (value: string) =>
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); if (value && value !== 'all') next.set('appStatus', value); else next.delete('appStatus'); return next; },
-        { replace: true }
-      ),
-    [setSearchParams]
+    (value: string) => setParam('appStatus', value === 'all' ? null : value, { replace: true }),
+    [setParam]
   );
 
   const setAppSortOrder = useCallback(
-    (value: 'newest' | 'oldest') =>
-      setSearchParams(
-        (prev) => { const next = new URLSearchParams(prev); if (value === 'oldest') next.set('sort', 'oldest'); else next.delete('sort'); return next; },
-        { replace: true }
-      ),
-    [setSearchParams]
+    (value: 'newest' | 'oldest') => setParam('sort', value === 'oldest' ? 'oldest' : null, { replace: true }),
+    [setParam]
   );
   const [comboOpen, setComboOpen] = useState(false);
   const [comboSearch, setComboSearch] = useState('');
@@ -156,8 +129,7 @@ const RecruiterDashboard: React.FC = () => {
   const [jpStatusFilter, setJpStatusFilter] = useState('all');
   const [jpCurrentPage, setJpCurrentPage] = useState(1);
   const [jpShowCancelModal, setJpShowCancelModal] = useState(false);
-  const [jpCancelReason, setJpCancelReason] = useState('');
-  const [jpSelectedId, setJpSelectedId] = useState<number | null>(null);
+  const { meetings: allMeetings, loadMeetings } = useMeetingsData();
   const [jpCardMenuOpenId, setJpCardMenuOpenId] = useState<number | null>(null);
   const JP_PAGE_SIZE = 9;
 
@@ -168,7 +140,15 @@ const RecruiterDashboard: React.FC = () => {
   const [recommendationWorkTypeFilter, setRecommendationWorkTypeFilter] = useState<string>('all');
   const [upcomingInterviews, setUpcomingInterviews] = useState<any[]>([]);
   const [allMeetings, setAllMeetings] = useState<any[]>([]);
-
+  const {
+      index: recCardIndex,
+      setIndex: setRecCardIndex,
+      handleNext: handleNextRec,
+      handlePrevious: handlePreviousRec,
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd,
+    } = useSwipeCarousel(visibleRecommendations.length, { enableArrowKeys: activeTab === 'recommendations' });
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
   const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
   const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
@@ -205,7 +185,7 @@ const RecruiterDashboard: React.FC = () => {
     fetchShortlist();
     fetchApplications();
     fetchMatches();
-    fetchUpcomingInterviews();
+    loadMeetings({});
   }, []);
 
   // Close card menu when clicking outside
@@ -248,40 +228,7 @@ const RecruiterDashboard: React.FC = () => {
   }, [activeTab, browsePage, debouncedBrowseSearch, browseRole, browseWorkType, browseLocation]);
 
   // Keyboard navigation for recommendation cards
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (activeTab !== 'recommendations' || !recommendations?.recommendations?.length) return;
-    const total = recommendations.recommendations.length;
-    if (e.key === 'ArrowRight') {
-      setRecCardIndex(prev => Math.min(prev + 1, total - 1));
-    } else if (e.key === 'ArrowLeft') {
-      setRecCardIndex(prev => Math.max(prev - 1, 0));
-    }
-  }, [activeTab, recommendations]);
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  const fetchUpcomingInterviews = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const [upcomingRes, allRes] = await Promise.all([
-        fetch(`${API_BASE}/meetings/list?upcoming_only=true`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${API_BASE}/meetings/list`, { headers: { 'Authorization': `Bearer ${token}` } })
-      ]);
-      if (upcomingRes.ok) {
-        const data = await upcomingRes.json();
-        setUpcomingInterviews(data.slice(0, 5));
-      }
-      if (allRes.ok) {
-        const data = await allRes.json();
-        setAllMeetings(data);
-      }
-    } catch (err) {
-      // silently ignore
-    }
-  };
+ 
 
   const fetchJobPostings = async () => {
     try {
@@ -298,8 +245,8 @@ const RecruiterDashboard: React.FC = () => {
       if (response.data.length === 0) return;
       const validIds: number[] = response.data.map((j: any) => j.id);
       // Honour ?job= URL param; validate it exists, else fall back to first
-      const urlJobId = new URLSearchParams(window.location.search).get('job');
-      const parsedId = urlJobId ? parseInt(urlJobId, 10) : null;
+    
+      const parsedId = parseIntParam(getParam('job'));
       if (parsedId && validIds.includes(parsedId)) {
         setSelectedJobId(parsedId);
       } else if (activeJobs.length > 0) {
@@ -481,12 +428,7 @@ const RecruiterDashboard: React.FC = () => {
       const convId = res.data.conversation.id;
       
       // Navigate to messages tab with conversation
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('tab', 'messages');
-        next.set('c', String(convId));
-        return next;
-      });
+      setParams({ tab: 'messages', c: String(convId) }, { replace: false });
     } catch (err: any) {
       console.error('[MESSAGE ERROR] Failed to start conversation:', err);
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to start conversation';
@@ -506,12 +448,7 @@ const RecruiterDashboard: React.FC = () => {
       const convId = res.data.conversation.id;
       
       // Navigate to messages tab with conversation
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('tab', 'messages');
-        next.set('c', String(convId));
-        return next;
-      });
+      setParams({ tab: 'messages', c: String(convId) }, { replace: false });
     } catch (err: any) {
       console.error('[MESSAGE ERROR] Failed to start conversation:', err);
       const errorMessage = err.response?.data?.detail || err.message || 'Failed to start conversation';
@@ -599,56 +536,7 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  // ── Touch/swipe gesture support for recommendations ────────────
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    if (isLeftSwipe) {
-      handleNextRec();
-    } else if (isRightSwipe) {
-      handlePreviousRec();
-    }
-  };
-
-  // Navigation handlers for recommendations
-  const handleNextRec = () => {
-    if (!recommendations || !recommendations.recommendations) return;
-    const visibleRecs = recommendationRoleFilter === 'all'
-      ? recommendations.recommendations
-      : recommendations.recommendations.filter((r: any) => {
-          const role =
-            (r.job_profile?.job_role as string | undefined) ||
-            (r.job_posting?.job_title as string | undefined) ||
-            (r.role as string | undefined) ||
-            '';
-          return role === recommendationRoleFilter;
-        });
-    if (recCardIndex < visibleRecs.length - 1) {
-      setRecCardIndex(recCardIndex + 1);
-    }
-  };
-
-  const handlePreviousRec = () => {
-    if (recCardIndex > 0) {
-      setRecCardIndex(recCardIndex - 1);
-    }
-  };
-
+  
   // Helper functions for recommendations
   const getCandidateInitial = (name: string) => {
     return name ? name.charAt(0).toUpperCase() : 'C';
