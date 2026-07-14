@@ -98,7 +98,7 @@ def candidate_token_fixture(candidate_user: User):
 
 
 @pytest.fixture(name="recruiter_token")
-def recruiter_token_fixture(recruiter_user: CompanyUser):
+def recruiter_token_fixture(recruiter_user: User):
     """Generate JWT token for recruiter user"""
     token_data = {
         "user_id": recruiter_user.id,

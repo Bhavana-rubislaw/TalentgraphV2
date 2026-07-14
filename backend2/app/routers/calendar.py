@@ -62,7 +62,7 @@ async def google_authorize(
         f"&scope={' '.join(scopes)}"
         f"&access_type=offline"
         f"&prompt=consent"
-        f"&state={current_user["id"]}"  # Include user ID in state for security
+        f"&state={current_user['id']}"  # Include user ID in state for security
     )
     
     return {
@@ -191,7 +191,7 @@ async def microsoft_authorize(
         f"&response_type=code"
         f"&scope={' '.join(scopes)}"
         f"&response_mode=query"
-        f"&state={current_user["id"]}"
+        f"&state={current_user['id']}"
     )
     
     return {
@@ -484,4 +484,3 @@ async def delete_video_provider_account(
     session.commit()
     
     return {"success": True, "message": "Video provider account removed"}
-
