@@ -76,7 +76,8 @@ def main():
     # Step 4: Reseed test data
     if not run_command(
         "Step 4: Reseed test data with corrected emails",
-        r"python scripts\test_data\seed_data_v2.py"
+        # r"python scripts\test_data\seed_data_v2.py"
+        f"{sys.executable} scripts/test_data/seed_data_v2.py"
     ):
         print("\n❌ Failed to seed test data.")
         return 1

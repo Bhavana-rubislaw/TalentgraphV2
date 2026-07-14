@@ -1,8 +1,9 @@
-fastapi==0.95.2
-uvicorn[standard]==0.21.1
-sqlmodel==0.0.8
-sqlalchemy==1.4.41
-pydantic==1.10.13
+# backend2/requirements.txt
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+sqlmodel==0.0.14
+sqlalchemy==2.0.23
+pydantic==2.5.3
 python-dotenv==1.0.0
 python-multipart==0.0.6
 PyJWT==2.8.0
@@ -20,7 +21,7 @@ python-dateutil==2.8.2       # Date/time parsing for interview scheduling
 
 # Security & File Validation
 python-magic==0.4.27         # File type detection via magic bytes
-python-magic-bin==0.4.14     # Windows: bundles native libmagic DLL (no-op on Linux/Mac)
+python-magic-bin==0.4.14; sys_platform == "win32"   # Windows-only: bundles native libmagic DLL
 argon2-cffi==23.1.0          # Secure password hashing
 slowapi==0.1.9               # Rate limiting middleware
 

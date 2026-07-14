@@ -15,19 +15,24 @@ To the documented Phase 2 target state:
 
 Run:
     cd backend2
-    .\\venv\\Scripts\\python.exe seed_phase2_dataset.py
+    python scripts/seed/seed_phase2_dataset.py
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from collections import Counter
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from sqlmodel import Session, select
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from app.database import engine
+
 from app.models import (
     Candidate,
     Company,
