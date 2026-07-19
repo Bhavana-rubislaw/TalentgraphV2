@@ -19,6 +19,9 @@ import { useSwipeCarousel } from '../hooks/useSwipeCarousel';
 import { useOutsideClick } from '../hooks/useOutsideClick';
 import { useCandidateRecommendations } from '../hooks/useCandidateRecommendations';
 import { useCandidateMatches } from '../hooks/useCandidateMatches';
+import { useInvites } from '../hooks/useInvites';
+import { useAvailableJobs } from '../hooks/useAvailableJobs';
+import { useAppliedLiked } from '../hooks/useAppliedLiked';
 import DetailDrawer from '../components/common/DetailDrawer';
 import MatchesTab from '../components/candidate/CandidateMatchesTab';
 import {
@@ -206,9 +209,11 @@ const CandidateDashboard: React.FC = () => {
 
   const { recommendations, setRecommendations, loading, fetchRecommendations } = useCandidateRecommendations(selectedProfileId);
   const { matches, setMatches, fetchMatches } = useCandidateMatches();
-  const [invites, setInvites] = useState<any[]>([]);
-  const [availableJobs, setAvailableJobs] = useState<any[]>([]);
-  const [appliedLiked, setAppliedLiked] = useState<any>({ applied_jobs: [], liked_jobs: [] });
+
+  const { invites, setInvites, fetchInvites } = useInvites();
+  const { availableJobs, setAvailableJobs, fetchAvailableJobs } = useAvailableJobs();
+  const { appliedLiked, fetchAppliedLiked } = useAppliedLiked();
+
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -387,32 +392,6 @@ const CandidateDashboard: React.FC = () => {
     }
   };
 
-  const fetchInvites = async () => {
-    try {
-      const response = await apiClient.getRecruiterInvites();
-      setInvites(response.data);
-    } catch (error) {
-      console.error('Failed to fetch invites:', error);
-    }
-  };
-
-  const fetchAvailableJobs = async () => {
-    try {
-      const response = await apiClient.getAvailableJobs();
-      setAvailableJobs(response.data);
-    } catch (error) {
-      console.error('Failed to fetch available jobs:', error);
-    }
-  };
-
-  const fetchAppliedLiked = async () => {
-    try {
-      const response = await apiClient.getAppliedLikedJobs();
-      setAppliedLiked(response.data);
-    } catch (error) {
-      console.error('❌ Failed to fetch applied/liked jobs:', error);
-    }
-  };
 
   const handleSwipeLike = async (jobPostingId: number) => {
     if (!selectedProfileId) return;
@@ -2861,9 +2840,12 @@ const CandidateDashboard: React.FC = () => {
                     <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
                       {job.company_name || 'Company'}
                     </div>
-                    {job.end_date && (
+                    {/* NOTE: end_date is not part of the /candidate/available-jobs response — this
+                        has always been hidden. Flagging, not fixing: showing a real apply-by date
+                        needs a backend change, a product call outside this refactor. */}
+                    {(job as { end_date?: string }).end_date && (
                       <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                        Apply by {new Date(job.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        Apply by {new Date((job as { end_date?: string }).end_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </div>
                     )}
                   </div>
@@ -3597,7 +3579,8 @@ const CandidateDashboard: React.FC = () => {
               marginBottom: '20px',
               fontWeight: '500'
             }}>
-              {job.job_role || job.department || 'Platform & Tools'}
+              {job.job_role || 'Platform & Tools'}
+            
             </p>
 
             {/* Job Details Grid (2x2) */}
@@ -5075,7 +5058,10 @@ const CandidateDashboard: React.FC = () => {
                 <span className="kpi-badge kpi-badge-orange">submitted</span>
               </div>
               <p className="kpi-subtitle">
-                {appliedLiked.applied_jobs?.filter((job: any) => job.application_status === 'in_review').length || 0} in active review
+                {/* NOTE: was reading job.application_status === 'in_review', neither of which is
+                    a real field/value (applied_jobs uses status: 'under_review') — always showed 0. */}
+                {appliedLiked.applied_jobs?.filter((job) => job.status === 'under_review').length || 0} in active review
+              
               </p>
             </div>
             </div>

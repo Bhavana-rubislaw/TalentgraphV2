@@ -15,11 +15,14 @@ import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
 import { MeetingSchedulerTab } from '../components/meetings';
 import { useMeetingsData } from '../hooks/useMeetingsData';
-import { useQueryState, parseEnumParam, parseIntParam } from '../hooks/useQueryState';
+import { useQueryState, parseEnumParam } from '../hooks/useQueryState';
 import { useSwipeCarousel } from '../hooks/useSwipeCarousel';
 import { useOutsideClick } from '../hooks/useOutsideClick';
 import { useApplications } from '../hooks/useApplications';
 import { useRecruiterMatches } from '../hooks/useRecruiterMatches';
+import { useJobPostings } from '../hooks/useJobPostings';
+import { useShortlist } from '../hooks/useShortlist';
+import { useBrowseCandidates } from '../hooks/useBrowseCandidates';
 import DetailDrawer from '../components/common/DetailDrawer';
 import MatchesTab from '../components/recruiter/RecruiterMatchesTab';
 import {
@@ -50,8 +53,7 @@ const RecruiterDashboard: React.FC = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
   const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
-  const [jobPostings, setJobPostings] = useState<any[]>([]);
-  const [allJobPostings, setAllJobPostings] = useState<any[]>([]); // All jobs including frozen
+
 
   // ── Selected job: driven from ?job= URL param ─────────────────
   // Start as null; fetchJobPostings() validates the URL param against actual jobs
@@ -64,9 +66,10 @@ const RecruiterDashboard: React.FC = () => {
     },
     [setParam]
   );
-
+  const { allJobPostings, jobPostings, fetchJobPostings } = useJobPostings(getParam, setSelectedJobId);
   const [recommendations, setRecommendations] = useState<any>(null);
-  const [shortlist, setShortlist] = useState<any[]>([]);
+  const { shortlist, setShortlist, fetchShortlist } = useShortlist();
+  
   const {
     applications,
     applicationsLoading,
@@ -84,8 +87,7 @@ const RecruiterDashboard: React.FC = () => {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // ── Browse Candidates state ─────────────────────────────────────
-  const [browseCandidates, setBrowseCandidates] = useState<any[]>([]);
-  const [browseTotal, setBrowseTotal] = useState(0);
+  const { browseCandidates, setBrowseCandidates, browseTotal, browseLoading, fetchBrowseCandidates } = useBrowseCandidates();
   const [browsePage, setBrowsePage] = useState(1);
   const [browseLimit] = useState(6);
   const [browseSearch, setBrowseSearch] = useState('');
@@ -94,7 +96,6 @@ const RecruiterDashboard: React.FC = () => {
   const [browseWorkType, setBrowseWorkType] = useState('');
   const [browseLocation, setBrowseLocation] = useState('');
   const [viewCandidateProfile, setViewCandidateProfile] = useState<any | null>(null);
-  const [browseLoading, setBrowseLoading] = useState(false);
 
   // ── Applications filters: driven from URL params ───────────────
   // ?search=  ?job=all|<jobId>  ?appStatus=all|applied|scheduled|...  ?sort=newest|oldest
@@ -241,35 +242,16 @@ const RecruiterDashboard: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'browse') {
-      fetchBrowseCandidates();
+      fetchBrowseCandidates({
+        page: browsePage,
+        limit: browseLimit,
+        search: debouncedBrowseSearch || undefined,
+        work_type: browseWorkType || undefined,
+        location: browseLocation || undefined,
+      });
     }
   }, [activeTab, browsePage, debouncedBrowseSearch, browseRole, browseWorkType, browseLocation]);
 
-  const fetchJobPostings = async () => {
-    try {
-      const response = await apiClient.getJobPostings();
-      setAllJobPostings(response.data); // Store all jobs including frozen
-      
-      // Filter to show only active/reposted jobs in main selector (case-insensitive)
-      const activeJobs = response.data.filter((job: any) => {
-        const status = (job.status || '').toLowerCase();
-        return status === 'active' || status === 'reposted';
-      });
-      setJobPostings(activeJobs);
-      
-      if (response.data.length === 0) return;
-      const validIds: number[] = response.data.map((j: any) => j.id);
-      // Honour ?job= URL param; validate it exists, else fall back to first
-      const parsedId = parseIntParam(getParam('job'));
-      if (parsedId && validIds.includes(parsedId)) {
-        setSelectedJobId(parsedId);
-      } else if (activeJobs.length > 0) {
-        setSelectedJobId(activeJobs[0].id);
-      }
-    } catch (error) {
-      console.error('[API ERROR] Failed to fetch job postings:', error);
-    }
-  };
 
   // ── Fetch Data Functions ─────────────────────────────────────
 
@@ -300,33 +282,7 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  const fetchShortlist = async () => {
-    try {
-      const response = await apiClient.getRecruiterShortlist();
-      setShortlist(response.data);
-    } catch (error) {
-      console.error('[API ERROR] Failed to fetch shortlist:', error);
-    }
-  };
-
-  const fetchBrowseCandidates = async () => {
-    setBrowseLoading(true);
-    try {
-      const response = await apiClient.browseCandidates({
-        page: browsePage,
-        limit: browseLimit,
-        search: debouncedBrowseSearch || undefined,
-        work_type: browseWorkType || undefined,
-        location: browseLocation || undefined
-      });
-      setBrowseCandidates(response.data.items || []);
-      setBrowseTotal(response.data.total || 0);
-    } catch (error) {
-      console.error('Failed to fetch browse candidates:', error);
-    } finally {
-      setBrowseLoading(false);
-    }
-  };
+ 
 
   const handleRecruiterLike = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;
