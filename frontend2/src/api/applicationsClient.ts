@@ -2,12 +2,18 @@ import { apiClient } from './client';
 
 export const applicationsClient = {
   getMyApplications: () => apiClient.getMyApplications(),
+  getRecruiterApplications: (jobPostingId?: number) =>
+    apiClient.getRecruiterApplications(jobPostingId),
   updateApplicationStatus: (applicationId: number, status: string) =>
     apiClient.updateApplicationStatus(applicationId, status),
   updateApplicationReview: (
     applicationId: number,
     payload: { status?: string; recruiter_notes?: string }
   ) => apiClient.updateApplicationReview(applicationId, payload),
+  downloadRecruiterApplicationResume: (applicationId: number, resumeId: number) =>
+    apiClient.downloadRecruiterApplicationResume(applicationId, resumeId),
+  downloadRecruiterApplicationCertification: (applicationId: number, certificationId: number) =>
+    apiClient.downloadRecruiterApplicationCertification(applicationId, certificationId),
   scheduleInterview: (
     applicationId: number,
     payload: {
