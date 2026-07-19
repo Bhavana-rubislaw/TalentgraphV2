@@ -23,7 +23,7 @@ import { useAvailableJobs } from '../hooks/useAvailableJobs';
 import { useAppliedLiked } from '../hooks/useAppliedLiked';
 import DetailDrawer from '../components/common/DetailDrawer';
 import CandidateMatchesTab from '../components/candidate/CandidateMatchesTab';
-import RecommendationsTab from '../components/candidate/RecommendationsTab';
+import CandidateRecommendationsTab from '../components/candidate/CandidateRecommendationsTab';
 import {
   MatchBreakdownBars,
   TopSkillMatches,
@@ -3654,7 +3654,7 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const renderRecommendationsTab = () => (
-    <RecommendationsTab
+    <CandidateRecommendationsTab
       jobProfiles={jobProfiles}
       activeTab={activeTab}
       setActiveTab={setActiveTab}

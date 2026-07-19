@@ -14,7 +14,7 @@ import type { JobPosting } from '../../types/jobPosting';
 import type { Application } from '../../types/application';
 import type { Meeting } from '../../types/meeting';
 
-export interface RecommendationsTabProps {
+export interface RecruiterRecommendationsTabProps {
   jobPostings: JobPosting[];
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -31,7 +31,7 @@ export interface RecommendationsTabProps {
   handleStartMessage: (candidateUserId: number) => Promise<void>;
 }
 
-const RecommendationsTab: React.FC<RecommendationsTabProps> = ({
+const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = ({
   jobPostings,
   activeTab,
   setActiveTab,
@@ -1454,4 +1454,4 @@ const RecommendationsTab: React.FC<RecommendationsTabProps> = ({
   );
 };
 
-export default RecommendationsTab;
+export default RecruiterRecommendationsTab;

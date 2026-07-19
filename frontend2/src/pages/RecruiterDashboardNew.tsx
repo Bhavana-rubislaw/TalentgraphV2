@@ -24,7 +24,7 @@ import { useShortlist } from '../hooks/useShortlist';
 import { useBrowseCandidates } from '../hooks/useBrowseCandidates';
 import DetailDrawer from '../components/common/DetailDrawer';
 import RecruiterMatchesTab from '../components/recruiter/RecruiterMatchesTab';
-import RecommendationsTab from '../components/recruiter/RecommendationsTab';
+import RecruiterRecommendationsTab from '../components/recruiter/RecruiterRecommendationsTab';
 
 const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings'] as const;
 
@@ -2893,7 +2893,7 @@ const RecruiterDashboard: React.FC = () => {
           } : {}}
         >
           <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
-            <RecommendationsTab
+            <RecruiterRecommendationsTab
               jobPostings={jobPostings}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
