@@ -21,7 +21,7 @@ import { useOutsideClick } from '../hooks/useOutsideClick';
 import { useApplications } from '../hooks/useApplications';
 import { useRecruiterMatches } from '../hooks/useRecruiterMatches';
 import DetailDrawer from '../components/common/DetailDrawer';
-import MatchesTab from '../components/recruiter/RecruiterMatchesTab';
+import MatchesTab from '../components/recruiter/MatchesTab';
 import {
   MatchBreakdownBars,
   TopSkillMatches,
@@ -4568,3 +4568,4 @@ const RecruiterDashboard: React.FC = () => {
 };
 
 export default RecruiterDashboard;
+

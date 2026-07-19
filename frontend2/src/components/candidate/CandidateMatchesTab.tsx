@@ -20,7 +20,7 @@ import { useOutsideClick } from '../hooks/useOutsideClick';
 import { useCandidateRecommendations } from '../hooks/useCandidateRecommendations';
 import { useCandidateMatches } from '../hooks/useCandidateMatches';
 import DetailDrawer from '../components/common/DetailDrawer';
-import MatchesTab from '../components/candidate/CandidateMatchesTab';
+import MatchesTab from '../components/candidate/MatchesTab';
 import {
   MatchBreakdownBars,
   TopSkillMatches,
