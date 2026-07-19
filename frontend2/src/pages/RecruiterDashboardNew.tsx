@@ -21,6 +21,8 @@ import { useApplications } from '../hooks/useApplications';
 import { useRecruiterMatches } from '../hooks/useRecruiterMatches';
 import { useJobPostings } from '../hooks/useJobPostings';
 import { useShortlist } from '../hooks/useShortlist';
+import { useRecruiterRecommendations } from '../hooks/useRecruiterRecommendations';
+import { useRecruiterProfile } from '../hooks/useRecruiterProfile';
 import { useBrowseCandidates } from '../hooks/useBrowseCandidates';
 import DetailDrawer from '../components/common/DetailDrawer';
 import RecruiterMatchesTab from '../components/recruiter/RecruiterMatchesTab';
@@ -59,7 +61,7 @@ const RecruiterDashboard: React.FC = () => {
   );
   const { allJobPostings, jobPostings, fetchJobPostings } = useJobPostings(getParam, setSelectedJobId);
 
-  const [recommendations, setRecommendations] = useState<any>(null);
+  const { recommendations, setRecommendations, loading } = useRecruiterRecommendations(selectedJobId);
   const { shortlist, setShortlist, fetchShortlist } = useShortlist();
   const {
     applications,
@@ -72,9 +74,6 @@ const RecruiterDashboard: React.FC = () => {
   } = useApplications();
   const { matches, fetchMatches } = useRecruiterMatches();
   const [viewShortlistItem, setViewShortlistItem] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [jobAnalytics, setJobAnalytics] = useState<any>(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // ── Browse Candidates state ─────────────────────────────────────
   const { browseCandidates, setBrowseCandidates, browseTotal, browseLoading, fetchBrowseCandidates } = useBrowseCandidates();
@@ -131,33 +130,12 @@ const RecruiterDashboard: React.FC = () => {
   const { meetings: allMeetings, loadMeetings } = useMeetingsData();
 
   const userEmail = localStorage.getItem('email') || 'recruiter@company.com';
-  const [userFullName, setUserFullName] = useState(localStorage.getItem('full_name') || '');
-  const [companyName, setCompanyName] = useState(localStorage.getItem('company_name') || '');
-  const [userRole, setUserRole] = useState(localStorage.getItem('role') || 'admin');
+  const { userFullName, companyName, userRole, fetchProfile } = useRecruiterProfile();
 
   const userName = userFullName || userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
   const userInitial = userName.charAt(0).toUpperCase();
 
   useEffect(() => {
-    // Fetch full profile from /auth/me
-    const fetchProfile = async () => {
-      try {
-        const res = await apiClient.getCurrentUser();
-        if (res.data.full_name) {
-          setUserFullName(res.data.full_name);
-          localStorage.setItem('full_name', res.data.full_name);
-        }
-        if (res.data.company_name) {
-          setCompanyName(res.data.company_name);
-          localStorage.setItem('company_name', res.data.company_name);
-        }
-        if (res.data.role) {
-          setUserRole(res.data.role);
-          localStorage.setItem('role', res.data.role);
-        }
-      } catch (err) {
-      }
-    };
     fetchProfile();
   }, []);
 
@@ -167,13 +145,6 @@ const RecruiterDashboard: React.FC = () => {
     fetchMatches();
     loadMeetings({});
   }, []);
-
-  useEffect(() => {
-    if (selectedJobId) {
-      fetchRecommendations();
-      fetchJobAnalytics();
-    }
-  }, [selectedJobId]);
 
   // Debounce search input to avoid API calls on every keystroke
   useEffect(() => {
@@ -197,33 +168,6 @@ const RecruiterDashboard: React.FC = () => {
   }, [activeTab, browsePage, debouncedBrowseSearch, browseRole, browseWorkType, browseLocation]);
 
   // ── Fetch Data Functions ─────────────────────────────────────
-
-  const fetchRecommendations = async () => {
-    if (!selectedJobId) return;
-    setLoading(true);
-    try {
-      const response = await apiClient.getRecruiterRecommendations(selectedJobId);
-      setRecommendations(response.data);
-    } catch (error) {
-      console.error('[API ERROR] Failed to fetch recommendations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchJobAnalytics = async () => {
-    if (!selectedJobId) return;
-    setAnalyticsLoading(true);
-    try {
-      const response = await apiClient.getJobAnalytics(selectedJobId, 90);
-      setJobAnalytics(response.data);
-    } catch (error) {
-      console.error('[API ERROR] Failed to fetch job analytics:', error);
-      setJobAnalytics(null);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  };
 
   const handleRecruiterLike = async (candidateId: number, jobProfileId: number) => {
     if (!selectedJobId) return;

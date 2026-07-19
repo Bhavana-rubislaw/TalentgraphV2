@@ -21,6 +21,8 @@ import { useCandidateMatches } from '../hooks/useCandidateMatches';
 import { useInvites } from '../hooks/useInvites';
 import { useAvailableJobs } from '../hooks/useAvailableJobs';
 import { useAppliedLiked } from '../hooks/useAppliedLiked';
+import { useJobProfiles } from '../hooks/useJobProfiles';
+import { useCandidateProfile } from '../hooks/useCandidateProfile';
 import DetailDrawer from '../components/common/DetailDrawer';
 import CandidateMatchesTab from '../components/candidate/CandidateMatchesTab';
 import CandidateRecommendationsTab from '../components/candidate/CandidateRecommendationsTab';
@@ -50,8 +52,6 @@ const CandidateDashboard: React.FC = () => {
     [setParam]
   );
 
-  const [jobProfiles, setJobProfiles] = useState<any[]>([]);
-
   // ── Selected profile: driven from ?profile= URL param ───────
   const selectedProfileId = parseIntParam(getParam('profile'));
 
@@ -67,7 +67,8 @@ const CandidateDashboard: React.FC = () => {
   const { invites, setInvites, fetchInvites } = useInvites();
   const { availableJobs, setAvailableJobs, fetchAvailableJobs } = useAvailableJobs();
   const { appliedLiked, fetchAppliedLiked } = useAppliedLiked();
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const { jobProfiles, fetchJobProfiles } = useJobProfiles(getParam, setSelectedProfileId);
+  const { userProfile, fetchUserProfile } = useCandidateProfile();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -161,33 +162,6 @@ const CandidateDashboard: React.FC = () => {
       setCurrentAppliedPage(1);
     }
   }, [appliedLikedRoleFilter, appliedLikedStatusFilter, appliedLikedSort, jobListTab]);
-
-  const fetchUserProfile = async () => {
-    try {
-      const response = await apiClient.getCandidateProfile();
-      setUserProfile(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-    }
-  };
-
-  const fetchJobProfiles = async () => {
-    try {
-      const response = await apiClient.getJobProfiles();
-      setJobProfiles(response.data);
-      if (response.data.length === 0) return;
-      const validIds: number[] = response.data.map((p: any) => p.id);
-      // Honour ?profile= URL param; validate it exists, else fall back to first
-      const parsedId = parseIntParam(getParam('profile'));
-      if (parsedId && validIds.includes(parsedId)) {
-        setSelectedProfileId(parsedId);
-      } else {
-        setSelectedProfileId(response.data[0].id);
-      }
-    } catch (error) {
-      console.error('[API ERROR] Failed to fetch job profiles:', error);
-    }
-  };
 
   const handleSwipeLike = async (jobPostingId: number) => {
     if (!selectedProfileId) return;
@@ -3702,7 +3676,7 @@ const CandidateDashboard: React.FC = () => {
   };
 
   // Derive userName and userInitial for top navbar
-  const userName = userProfile?.name || userProfile?.full_name || 'User';
+  const userName = userProfile?.name || 'User';
   const userInitial = userName.charAt(0).toUpperCase();
 
   // Get tab display name
