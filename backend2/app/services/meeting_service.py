@@ -17,7 +17,7 @@ from sqlalchemy import and_
 
 from app.models import (
     Meeting, MeetingTimelineEvent, MeetingActionToken, Application,
-    MeetingStatus, MeetingParticipant, User, Notification
+    MeetingStatus, User
 )
 from app.routers.notifications import push_notification
 

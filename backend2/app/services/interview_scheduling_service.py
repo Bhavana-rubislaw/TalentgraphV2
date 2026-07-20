@@ -12,7 +12,6 @@ from app.emailer import EmailConfigError, send_interview_schedule_email
 from app.models import (
     Application,
     Candidate,
-    Company,
     JobPosting,
     Meeting,
     MeetingParticipant,

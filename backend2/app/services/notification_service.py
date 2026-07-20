@@ -20,14 +20,9 @@ from sqlmodel import Session, select
 
 from app.models import Notification, User, NotificationPreferences
 from app.core.notification_registry import (
-    get_notification_spec,
     validate_event_type,
-    get_default_channels,
-    get_priority,
-    get_category,
     should_deduplicate,
     get_dedup_window,
-    NotificationChannel
 )
 from app.notification_payloads import NotificationPayload
 from app.workers.email_worker import queue_notification_email

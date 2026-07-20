@@ -11,7 +11,6 @@ Handles all email communications for meeting lifecycle:
 
 import os
 import logging
-from datetime import datetime
 from typing import Optional
 from sqlmodel import Session
 

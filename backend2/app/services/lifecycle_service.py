@@ -14,7 +14,6 @@ Should be run daily by lifecycle worker
 
 import logging
 from datetime import datetime, timezone, timedelta, date
-from typing import List, Optional
 
 from sqlmodel import Session, select
 
@@ -601,9 +600,7 @@ class LifecycleService:
         """
         
         logger.info(f"Cleaning up analytics events older than {days_to_keep} days")
-        
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
-        
+
         # This is destructive, so be careful
         # In production, consider archiving instead of deleting
         

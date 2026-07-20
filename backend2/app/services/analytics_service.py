@@ -25,7 +25,7 @@ import logging
 from datetime import datetime, timezone, timedelta, date
 from typing import Dict, Any, Optional, List
 
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
 
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,

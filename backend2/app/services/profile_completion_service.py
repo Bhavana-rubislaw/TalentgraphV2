@@ -2,7 +2,6 @@
 Profile Completion Service
 Centralized logic for checking if user profiles are complete.
 """
-from typing import Optional
 from sqlmodel import Session, select
 from app.models import User, Candidate, Company, UserRole
 

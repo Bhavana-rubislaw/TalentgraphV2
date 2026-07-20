@@ -5,8 +5,6 @@ Matches TalentGraph's existing meeting email styling
 """
 
 import logging
-from datetime import datetime
-from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +297,7 @@ class NotificationEmailTemplates:
             header_gradient="linear-gradient(135deg, #f59e0b, #fbbf24)",
             header_emoji="⏰",
             header_title="Interview Reminder",
-            header_subtitle=f"Your interview is coming up soon",
+            header_subtitle="Your interview is coming up soon",
             body_content=body_content
         )
         

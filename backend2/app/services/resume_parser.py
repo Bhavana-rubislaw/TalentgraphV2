@@ -7,7 +7,6 @@ import re
 import logging
 from typing import Dict, Any, Optional, Tuple
 from pathlib import Path
-import json
 
 logger = logging.getLogger(__name__)
 

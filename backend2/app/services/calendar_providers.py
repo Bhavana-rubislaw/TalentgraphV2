@@ -5,7 +5,7 @@ Handles Google Calendar and Microsoft Calendar OAuth2 and syncing
 
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime
 import requests
 from ..models import CalendarProvider
 
