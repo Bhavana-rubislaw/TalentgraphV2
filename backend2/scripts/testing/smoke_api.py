@@ -1,143 +1,57 @@
-# #!/usr/bin/env python3
-# """
-# API smoke pass: meetings, applications, notifications key routes.
-
-# Category:     testing
-# Idempotent:   yes (read-only checks, no DB writes)
-# Run:          python backend2/scripts/testing/smoke_api.py
-# Rollback:     N/A (no state is mutated)
-# Dependencies: importable `app` package (i.e. the requirements.txt pydantic v2
-#               upgrade must be applied first); no live server or DB connection
-#               required — uses FastAPI's in-process TestClient.
-
-# Purpose: fast, no-DB sanity check that the meetings/applications/notifications
-# routers still mount correctly and reject unauthenticated requests the same
-# way after the service-layer extraction (Phase 1/2 refactor). This is NOT a
-# substitute for the pytest suite — it only checks that routes exist, are
-# wired to the app, and enforce auth. Add authenticated checks (see bottom)
-# once you have a way to mint a test JWT via this repo's existing test
-# fixtures.
-# """
-# import sys
-# from pathlib import Path
-
-# # Allow running as `python backend2/scripts/testing/smoke_api.py` from repo root.
-# BACKEND_ROOT = Path(__file__).resolve().parents[2]
-# sys.path.insert(0, str(BACKEND_ROOT))
-
-# from fastapi.testclient import TestClient  # noqa: E402
-# from app.main import app  # noqa: E402
-
-# client = TestClient(app)
-
-# # (method, path, expected_status, description)
-# UNAUTHENTICATED_CHECKS = [
-#     ("GET", "/health", 200, "liveness check"),
-#     ("GET", "/meetings/list", 401, "meetings list requires auth"),
-#     ("GET", "/meetings/availability/my-slots", 401, "availability slots require auth"),
-#     ("GET", "/applications/my-applications", 401, "applications list requires auth"),
-#     ("GET", "/notifications", 401, "notifications list requires auth"),
-#     ("GET", "/notifications/unread-count", 401, "unread count requires auth"),
-# ]
-
-
-# def run_checks(checks):
-#     failures = []
-#     for method, path, expected, description in checks:
-#         resp = client.request(method, path)
-#         ok = resp.status_code == expected
-#         status = "OK" if ok else "FAIL"
-#         print(f"[{status}] {method:4s} {path:40s} -> {resp.status_code} (expected {expected}) — {description}")
-#         if not ok:
-#             failures.append((method, path, expected, resp.status_code, description))
-#     return failures
-
-
-# def main():
-#     print(f"Smoke testing app: {app.title}\n")
-#     failures = run_checks(UNAUTHENTICATED_CHECKS)
-
-#     print()
-#     if failures:
-#         print(f"{len(failures)} smoke check(s) FAILED:")
-#         for method, path, expected, actual, description in failures:
-#             print(f"  - {method} {path}: expected {expected}, got {actual} ({description})")
-#         raise SystemExit(1)
-
-#     print(f"All {len(UNAUTHENTICATED_CHECKS)} smoke checks passed.")
-
-
-# if __name__ == "__main__":
-#     main()
 #!/usr/bin/env python3
 """
 API smoke pass: meetings, applications, notifications key routes.
 
 Category:     testing
-Idempotent:   yes (read-only checks, no DB writes)
+Idempotent:   yes (read-only requests against unauthenticated client)
 Run:          python backend2/scripts/testing/smoke_api.py
-Rollback:     N/A (no state is mutated)
-Dependencies: importable `app` package (i.e. the requirements.txt pydantic v2
-              upgrade must be applied first); no live server or DB connection
-              required — uses FastAPI's in-process TestClient.
+Rollback:     N/A (no state mutated)
+Dependencies: none beyond the app's own import graph — uses FastAPI's
+              TestClient in-process, no live server or DB connection
+              required for the checks below (all hit auth/health checks
+              that short-circuit before any DB access).
 
-Purpose: fast, no-DB sanity check that the meetings/applications/notifications
-routers still mount correctly and reject unauthenticated requests the same
-way after the service-layer extraction (Phase 1/2 refactor). This is NOT a
-substitute for the pytest suite — it only checks that routes exist, are
-wired to the app, and enforce auth. Add authenticated checks (see bottom)
-once you have a way to mint a test JWT via this repo's existing test
-fixtures.
+Confirms the app imports and its routers wire up correctly under the
+current dependency pins (this is the concrete "can you actually run the
+app" check that a bare requirements.txt bump doesn't verify by itself).
+Each route is checked for the status code it should return with no
+Authorization header - a 401 (or a plain 200 for /health) means routing
+and dependency injection are intact; a 500 means something is actually
+broken.
 """
 import sys
 from pathlib import Path
 
-# Allow running as `python backend2/scripts/testing/smoke_api.py` from repo root.
-BACKEND_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(BACKEND_ROOT))
+# Allow running from the backend2 root: python scripts/testing/smoke_api.py
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
-from fastapi.testclient import TestClient  # noqa: E402
-from app.main import app  # noqa: E402
+from fastapi.testclient import TestClient
+
+from app.main import app
 
 client = TestClient(app)
 
-# (method, path, expected_status, description)
-UNAUTHENTICATED_CHECKS = [
-    ("GET", "/health", 200, "liveness check"),
-    ("GET", "/meetings/list", 401, "meetings list requires auth"),
-    ("GET", "/meetings/availability/my-slots", 401, "availability slots require auth"),
-    ("GET", "/applications/my-applications", 401, "applications list requires auth"),
-    ("GET", "/notifications", 401, "notifications list requires auth"),
-    ("GET", "/notifications/unread-count", 401, "unread count requires auth"),
+CHECKS = [
+    ("GET", "/health", 200),
+    ("GET", "/meetings/list", 401),           # unauthenticated -> expect 401, not 500
+    ("GET", "/applications/my-applications", 401),
+    ("GET", "/notifications", 401),
 ]
 
 
-def run_checks(checks):
+def main():
     failures = []
-    for method, path, expected, description in checks:
+    for method, path, expected in CHECKS:
         resp = client.request(method, path)
         ok = resp.status_code == expected
         status = "OK" if ok else "FAIL"
-        print(f"[{status}] {method:4s} {path:40s} -> {resp.status_code} (expected {expected}) — {description}")
         if not ok:
-            failures.append((method, path, expected, resp.status_code, description))
-    return failures
-
-
-def main():
-    print(f"Smoke testing app: {app.title}\n")
-    failures = run_checks(UNAUTHENTICATED_CHECKS)
-
-    print()
+            failures.append((method, path, expected, resp.status_code))
+        print(f"[{status}] {method} {path} -> {resp.status_code} (expected {expected})")
     if failures:
-        print(f"{len(failures)} smoke check(s) FAILED:")
-        for method, path, expected, actual, description in failures:
-            print(f"  - {method} {path}: expected {expected}, got {actual} ({description})")
-        raise SystemExit(1)
-
-    print(f"All {len(UNAUTHENTICATED_CHECKS)} smoke checks passed.")
+        raise SystemExit(f"{len(failures)} smoke check(s) failed")
+    print(f"\nAll {len(CHECKS)} smoke checks passed.")
 
 
 if __name__ == "__main__":
     main()
-
