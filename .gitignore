@@ -90,6 +90,9 @@ celerybeat.pid
 .env.staging
 .env.development
 .venv
+
+# Locally-generated seed credentials (see app/core/seed_credentials.py)
+.seed_admin_password.local
 env/
 venv/
 ENV/

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Complete database reset and reseed with corrected admin structure."""
-    print("  3. Create the system admin account (talentgraph.interviews@gmail.com)")
-    print("  0. Ensure SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are set in your environment")
 
-    
+
+
 import subprocess
 import sys
 import os
