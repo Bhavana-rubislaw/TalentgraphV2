@@ -10,7 +10,8 @@ def register_api_routers(app, logger, log_change_func) -> None:
         matches,
         recommendations,
         swipes,
-        dashboard,
+        dashboard_candidate,
+        dashboard_recruiter,
         applications,
         notifications,
         activity_feed,
@@ -50,7 +51,8 @@ def register_api_routers(app, logger, log_change_func) -> None:
     app.include_router(matches.router)
     app.include_router(recommendations.router)
     app.include_router(swipes.router)
-    app.include_router(dashboard.router)
+    app.include_router(dashboard_candidate.router)
+    app.include_router(dashboard_recruiter.router)
     app.include_router(applications.router)
     app.include_router(notifications.router)
     app.include_router(notification_preferences.router)  # Notification preference settings
