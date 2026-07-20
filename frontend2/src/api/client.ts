@@ -1,22 +1,9 @@
-import axios from 'axios';
+import { http as api, API_BASE } from './httpClient';
+import { meetingsClient } from './meetingsClient';
+import { applicationsClient } from './applicationsClient';
+import { notificationsClient } from './notificationsClient';
 
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8001';
-
-const api = axios.create({
-  baseURL: API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+export { API_BASE };
 
 export const apiClient = {
   // Candidate Auth
@@ -254,38 +241,13 @@ export const apiClient = {
   recruiterUndoSwipe: (candidateId: number, jobPostingId: number) =>
     api.delete(`/swipes/recruiter/undo/${candidateId}/${jobPostingId}`),
   
-  // Applications
-  applyToJob: (jobPostingId: number, jobProfileId: number) =>
-    api.post('/applications/apply', { job_posting_id: jobPostingId, job_profile_id: jobProfileId }),
-  
-  getMyApplications: () =>
-    api.get('/applications/my-applications'),
-  
-  updateApplicationStatus: (applicationId: number, status: string) =>
-    api.put(`/applications/${applicationId}/status`, { status }),
-  
-  withdrawApplication: (applicationId: number) =>
-    api.delete(`/applications/${applicationId}`),
-  
-  scheduleInterview: (applicationId: number, payload: {
-    date: string;
-    start_time?: string;       // HH:MM 24-hr (preferred)
-    end_time?: string;         // HH:MM 24-hr (preferred)
-    time?: string;             // legacy single-time field (deprecated)
-    timezone: string;
-    meeting_provider?: string; // 'zoom' | 'google_meet' | 'microsoft_teams'
-    meeting_link?: string;     // manual link (used when meeting_provider is omitted)
-    notes_for_candidate?: string;
-    email_subject?: string;
-  }) =>
-    api.post(`/applications/${applicationId}/schedule-interview`, payload),
-  
-  // Update application status and/or recruiter notes (recruiter only)
-  updateApplicationReview: (applicationId: number, payload: {
-    status?: string;
-    recruiter_notes?: string;
-  }) =>
-    api.put(`/applications/${applicationId}/review`, payload),
+  // Applications (real implementation lives in applicationsClient.ts)
+  applyToJob: applicationsClient.applyToJob,
+  getMyApplications: applicationsClient.getMyApplications,
+  updateApplicationStatus: applicationsClient.updateApplicationStatus,
+  withdrawApplication: applicationsClient.withdrawApplication,
+  scheduleInterview: applicationsClient.scheduleInterview,
+  updateApplicationReview: applicationsClient.updateApplicationReview,
   
   // Dashboard - Candidate
   getCandidateRecommendations: (jobProfileId: number) =>
@@ -310,18 +272,9 @@ export const apiClient = {
   getRecruiterShortlist: (jobPostingId?: number) =>
     api.get('/dashboard/recruiter/shortlist' + (jobPostingId ? `?job_posting_id=${jobPostingId}` : '')),
   
-  getRecruiterApplications: (jobPostingId?: number) =>
-    api.get('/dashboard/recruiter/applications' + (jobPostingId ? `?job_posting_id=${jobPostingId}` : '')),
-  
-  downloadRecruiterApplicationResume: (applicationId: number, resumeId: number) =>
-    api.get(`/dashboard/recruiter/applications/${applicationId}/resumes/${resumeId}/download`, {
-      responseType: 'blob'
-    }),
-  
-  downloadRecruiterApplicationCertification: (applicationId: number, certificationId: number) =>
-    api.get(`/dashboard/recruiter/applications/${applicationId}/certifications/${certificationId}/download`, {
-      responseType: 'blob'
-    }),
+  getRecruiterApplications: applicationsClient.getRecruiterApplications,
+  downloadRecruiterApplicationResume: applicationsClient.downloadRecruiterApplicationResume,
+  downloadRecruiterApplicationCertification: applicationsClient.downloadRecruiterApplicationCertification,
   
   getRecruiterMatches: () =>
     api.get('/dashboard/recruiter/matches'),
@@ -337,17 +290,12 @@ export const apiClient = {
   getTeamMembers: () =>
     api.get('/dashboard/team-members'),
 
-  // Notifications
-  getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number }) =>
-    api.get('/notifications', { params }),
-  getUnreadCount: () =>
-    api.get('/notifications/unread-count'),
-  markNotificationRead: (id: number) =>
-    api.post(`/notifications/${id}/read`),
-  markAllNotificationsRead: () =>
-    api.post('/notifications/read-all'),
-  deleteNotification: (id: number) =>
-    api.delete(`/notifications/${id}`),
+  // Notifications (real implementation lives in notificationsClient.ts)
+  getNotifications: notificationsClient.getNotifications,
+  getUnreadCount: notificationsClient.getUnreadCount,
+  markNotificationRead: notificationsClient.markNotificationRead,
+  markAllNotificationsRead: notificationsClient.markAllNotificationsRead,
+  deleteNotification: notificationsClient.deleteNotification,
 
   // Notification Preferences
   getNotificationPreferences: () =>
@@ -431,105 +379,20 @@ export const apiClient = {
     api.get(`/messages/user/${userId}/status`),
 
   // ── Meeting Scheduler (Phase 1 - Core Scheduling) ──────────────────────────
-  
-  // Meeting CRUD
-  createMeeting: (data: {
-    title: string;
-    description?: string;
-    meeting_type: 'interview' | 'screening' | 'follow_up' | 'other';
-    scheduled_start: string; // ISO datetime
-    scheduled_end: string;   // ISO datetime
-    duration_minutes: number;
-    timezone?: string;
-    // Only use participants with name and email (no user IDs needed)
-    participants: Array<{ name: string; email: string; is_required?: boolean }>;
-    job_posting_id?: number;
-    match_id?: number;
-    application_id?: number;
-    location?: string;
-    video_meeting_url?: string;
-    video_provider?: string;
-  }) =>
-    api.post('/meetings/create', data),
-
-  getMeetings: (params?: { 
-    status?: 'scheduled' | 'cancelled' | 'completed' | 'no_show';
-    upcoming_only?: boolean;
-  }) =>
-    api.get('/meetings/list', { params }),
-
-  getMeeting: (meetingId: number) =>
-    api.get(`/meetings/${meetingId}`),
-
-  updateMeeting: (meetingId: number, data: {
-    title?: string;
-    description?: string;
-    scheduled_start?: string;
-    scheduled_end?: string;
-    duration_minutes?: number;
-    timezone?: string;
-    location?: string;
-    video_meeting_url?: string;
-    participants?: Array<{ name: string; email: string; is_required?: boolean }>;
-  }) =>
-    api.patch(`/meetings/${meetingId}`, data),
-
-  cancelMeeting: (meetingId: number, cancellation_reason: string) =>
-    api.post(`/meetings/${meetingId}/cancel`, { cancellation_reason }),
-
-  markMeetingComplete: (meetingId: number, notes?: string) =>
-    api.post(`/meetings/${meetingId}/complete`, { notes: notes ?? null }),
-
-  markMeetingNoShow: (meetingId: number, notes?: string) =>
-    api.post(`/meetings/${meetingId}/no-show`, { notes: notes ?? null }),
-
-  rescheduleMeeting: (meetingId: number, data: {
-    scheduled_start: string;
-    scheduled_end: string;
-    timezone?: string;
-    reason?: string;
-  }) =>
-    api.post(`/meetings/${meetingId}/reschedule`, data),
-
-  // Availability Slot Management
-  proposeAvailabilitySlots: (slots: Array<{
-    proposed_to_user_id: number;
-    slot_start: string;
-    slot_end: string;
-    timezone?: string;
-    job_posting_id?: number;
-    match_id?: number;
-    application_id?: number;
-  }>) =>
-    api.post('/meetings/availability/propose', slots),
-
-  getMyAvailabilitySlots: (includeSelected?: boolean) =>
-    api.get('/meetings/availability/my-slots', { 
-      params: { include_selected: includeSelected } 
-    }),
-
-  selectAvailabilitySlot: (slotId: number, title: string, description?: string) =>
-    api.post('/meetings/availability/select', { 
-      slot_id: slotId, 
-      title, 
-      description 
-    }),
-
-  // Scheduling Utilities
-  checkAvailability: (userId: number, startTime: string, endTime: string) =>
-    api.get('/meetings/check-availability', {
-      params: { user_id: userId, start_time: startTime, end_time: endTime }
-    }),
-
-  findCommonSlots: (userIds: number[], durationMinutes: number, startRange: string, endRange: string) =>
-    api.get('/meetings/find-slots', {
-      params: { 
-        user_ids: userIds.join(','), 
-        duration_minutes: durationMinutes,
-        start_range: startRange,
-        end_range: endRange
-      }
-    }),
+  // Real implementation lives in meetingsClient.ts
+  createMeeting: meetingsClient.createMeeting,
+  getMeetings: meetingsClient.getMeetings,
+  getMeeting: meetingsClient.getMeeting,
+  updateMeeting: meetingsClient.updateMeeting,
+  cancelMeeting: meetingsClient.cancelMeeting,
+  markMeetingComplete: meetingsClient.markMeetingComplete,
+  markMeetingNoShow: meetingsClient.markMeetingNoShow,
+  rescheduleMeeting: meetingsClient.rescheduleMeeting,
+  proposeAvailabilitySlots: meetingsClient.proposeAvailabilitySlots,
+  getMyAvailabilitySlots: meetingsClient.getMyAvailabilitySlots,
+  selectAvailabilitySlot: meetingsClient.selectAvailabilitySlot,
+  checkAvailability: meetingsClient.checkAvailability,
+  findCommonSlots: meetingsClient.findCommonSlots,
 
   // ── Calendar Integration (Phase 2) ──────────────────────────────────────────
   

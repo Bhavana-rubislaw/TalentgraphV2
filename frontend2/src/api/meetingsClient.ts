@@ -1,12 +1,103 @@
-import { apiClient } from './client';
+import { http } from './httpClient';
 
 export type MeetingsQuery = {
-  status?: string;
+  status?: 'scheduled' | 'cancelled' | 'completed' | 'no_show';
   upcoming_only?: boolean;
 };
 
 export const meetingsClient = {
-  getMeetings: (params: MeetingsQuery) => apiClient.getMeetings(params),
-  getMyAvailabilitySlots: (includeSelected = false) => apiClient.getMyAvailabilitySlots(includeSelected),
-  selectAvailabilitySlot: (slotId: number, title: string) => apiClient.selectAvailabilitySlot(slotId, title),
+  createMeeting: (data: {
+    title: string;
+    description?: string;
+    meeting_type: 'interview' | 'screening' | 'follow_up' | 'other';
+    scheduled_start: string; // ISO datetime
+    scheduled_end: string;   // ISO datetime
+    duration_minutes: number;
+    timezone?: string;
+    // Only use participants with name and email (no user IDs needed)
+    participants: Array<{ name: string; email: string; is_required?: boolean }>;
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+    location?: string;
+    video_meeting_url?: string;
+    video_provider?: string;
+  }) =>
+    http.post('/meetings/create', data),
+
+  getMeetings: (params?: MeetingsQuery) =>
+    http.get('/meetings/list', { params }),
+
+  getMeeting: (meetingId: number) =>
+    http.get(`/meetings/${meetingId}`),
+
+  updateMeeting: (meetingId: number, data: {
+    title?: string;
+    description?: string;
+    scheduled_start?: string;
+    scheduled_end?: string;
+    duration_minutes?: number;
+    timezone?: string;
+    location?: string;
+    video_meeting_url?: string;
+    participants?: Array<{ name: string; email: string; is_required?: boolean }>;
+  }) =>
+    http.patch(`/meetings/${meetingId}`, data),
+
+  cancelMeeting: (meetingId: number, cancellation_reason: string) =>
+    http.post(`/meetings/${meetingId}/cancel`, { cancellation_reason }),
+
+  markMeetingComplete: (meetingId: number, notes?: string) =>
+    http.post(`/meetings/${meetingId}/complete`, { notes: notes ?? null }),
+
+  markMeetingNoShow: (meetingId: number, notes?: string) =>
+    http.post(`/meetings/${meetingId}/no-show`, { notes: notes ?? null }),
+
+  rescheduleMeeting: (meetingId: number, data: {
+    scheduled_start: string;
+    scheduled_end: string;
+    timezone?: string;
+    reason?: string;
+  }) =>
+    http.post(`/meetings/${meetingId}/reschedule`, data),
+
+  // Availability Slot Management
+  proposeAvailabilitySlots: (slots: Array<{
+    proposed_to_user_id: number;
+    slot_start: string;
+    slot_end: string;
+    timezone?: string;
+    job_posting_id?: number;
+    match_id?: number;
+    application_id?: number;
+  }>) =>
+    http.post('/meetings/availability/propose', slots),
+
+  getMyAvailabilitySlots: (includeSelected = false) =>
+    http.get('/meetings/availability/my-slots', {
+      params: { include_selected: includeSelected }
+    }),
+
+  selectAvailabilitySlot: (slotId: number, title: string, description?: string) =>
+    http.post('/meetings/availability/select', {
+      slot_id: slotId,
+      title,
+      description
+    }),
+
+  // Scheduling Utilities
+  checkAvailability: (userId: number, startTime: string, endTime: string) =>
+    http.get('/meetings/check-availability', {
+      params: { user_id: userId, start_time: startTime, end_time: endTime }
+    }),
+
+  findCommonSlots: (userIds: number[], durationMinutes: number, startRange: string, endRange: string) =>
+    http.get('/meetings/find-slots', {
+      params: {
+        user_ids: userIds.join(','),
+        duration_minutes: durationMinutes,
+        start_range: startRange,
+        end_range: endRange
+      }
+    }),
 };

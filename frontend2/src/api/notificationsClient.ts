@@ -1,8 +1,18 @@
-import { apiClient } from './client';
+import { http } from './httpClient';
 
 export const notificationsClient = {
   getNotifications: (params?: { unread_only?: boolean; page?: number; limit?: number }) =>
-    apiClient.getNotifications(params),
-  getUnreadCount: () => apiClient.getUnreadCount(),
-  markNotificationRead: (id: number) => apiClient.markNotificationRead(id),
+    http.get('/notifications', { params }),
+
+  getUnreadCount: () =>
+    http.get('/notifications/unread-count'),
+
+  markNotificationRead: (id: number) =>
+    http.post(`/notifications/${id}/read`),
+
+  markAllNotificationsRead: () =>
+    http.post('/notifications/read-all'),
+
+  deleteNotification: (id: number) =>
+    http.delete(`/notifications/${id}`),
 };

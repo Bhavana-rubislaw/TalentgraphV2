@@ -29,8 +29,7 @@ Feature-specific tests that validate API endpoints, business logic, and integrat
 | `test_fixed_analytics.py` | Analytics bug fixes | ✅ Passing |
 | `test_jennifer_api.py` | Jennifer user API tests | ✅ Passing |
 | `test_jennifer_query.py` | Jennifer user query tests | ✅ Passing |
-| `test_logging_system.py` | Logging system v1 | ✅ Passing |
-| `test_logging_system_fixed.py` | Logging system v2 (fixed) | ✅ Passing |
+| `test_logging_system_fixed.py` | Logging system | ✅ Passing |
 | `test_meetings_api.py` | Meetings API endpoints | ✅ Passing |
 | `test_meetings_query.py` | Meeting queries | ✅ Passing |
 | `test_meeting_endpoint.py` | Meeting endpoint integration | ✅ Passing |
@@ -49,7 +48,6 @@ Data integrity checks and validation queries for specific entities.
 | `check_bhavana_email.py` | Bhavana email records | Email integration check |
 | `check_candidate_data.py` | Candidate profile data | Data integrity |
 | `check_column_type.py` | Database column types | Schema validation |
-| `check_enum.py` | Enum values in DB | Type consistency |
 | `check_enum_type.py` | Enum type definitions | Schema check |
 | `check_enum_values.py` | Enum value validation | Data quality |
 | `check_frozen_jobs.py` | Frozen job status | Job lifecycle |
@@ -293,7 +291,7 @@ python -c "from app.database import DATABASE_URL; print(DATABASE_URL)"
 python scripts/test_data/seed_data_v2.py
 
 # Or reset and reseed
-python reset_db.py
+python scripts/operations/reset_db.py
 python scripts/test_data/seed_data_v2.py
 ```
 
