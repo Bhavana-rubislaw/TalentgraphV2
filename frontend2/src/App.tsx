@@ -1,31 +1,24 @@
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './pages/LandingPage';
+import SignupPage from './pages/SignupPage';
+import WelcomePage from './pages/WelcomePage';
+import CandidateProfilePage from './pages/CandidateProfilePage';
+import CandidateProfileSetupPage from './pages/CandidateProfileSetupPage';
+import RecruiterProfilePage from './pages/RecruiterProfilePage';
+import CompanyProfileSetupPage from './pages/CompanyProfileSetupPage';
+import JobPreferencesPage from './pages/JobPreferencesPage';
+import CandidateDashboard from './pages/CandidateDashboardNew';
+import RecruiterDashboard from './pages/RecruiterDashboardNew';
+import HRDashboard from './pages/HRDashboard';
+import JobPostingForm from './pages/JobPostingForm';
+import JobPostingBuilder from './pages/JobPostingBuilder';
+import { MeetingsPage } from './pages/MeetingsPage';
+import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
+import AcceptInvitePage from './pages/AcceptInvitePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './index.css';
-
-// Route-level code splitting: each page is fetched as its own chunk on
-// first visit instead of all being bundled into the initial JS payload.
-const LandingPage = lazy(() => import('./pages/LandingPage'));
-const SignupPage = lazy(() => import('./pages/SignupPage'));
-const WelcomePage = lazy(() => import('./pages/WelcomePage'));
-const CandidateProfilePage = lazy(() => import('./pages/CandidateProfilePage'));
-const CandidateProfileSetupPage = lazy(() => import('./pages/CandidateProfileSetupPage'));
-const RecruiterProfilePage = lazy(() => import('./pages/RecruiterProfilePage'));
-const CompanyProfileSetupPage = lazy(() => import('./pages/CompanyProfileSetupPage'));
-const JobPreferencesPage = lazy(() => import('./pages/JobPreferencesPage'));
-const CandidateDashboard = lazy(() => import('./pages/CandidateDashboardNew'));
-const RecruiterDashboard = lazy(() => import('./pages/RecruiterDashboardNew'));
-const HRDashboard = lazy(() => import('./pages/HRDashboard'));
-const JobPostingForm = lazy(() => import('./pages/JobPostingForm'));
-const JobPostingBuilder = lazy(() => import('./pages/JobPostingBuilder'));
-const MeetingsPage = lazy(() =>
-  import('./pages/MeetingsPage').then((m) => ({ default: m.MeetingsPage }))
-);
-const CalendarSettingsPage = lazy(() =>
-  import('./pages/CalendarSettingsPage').then((m) => ({ default: m.CalendarSettingsPage }))
-);
-const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage'));
 
 // ── Role constants ────────────────────────────────────────────────
 const COMPANY_RECRUITER_ROLES = ['recruiter'];
@@ -218,31 +211,28 @@ const HRDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children })
   return <>{children}</>;
 };
 
-// ── Loading spinner (boot auth check + lazy route chunk fetches) ──
-const LoadingSpinner: React.FC<{ label: string }> = ({ label }) => (
-  <div style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    height: '100vh', flexDirection: 'column', gap: 12,
-    fontFamily: 'system-ui, -apple-system, sans-serif',
-    background: '#f8fafc',
-  }}>
-    <div style={{
-      width: 36, height: 36,
-      border: '3px solid #e2e8f0',
-      borderTopColor: '#6366f1',
-      borderRadius: '50%',
-      animation: 'spin 0.7s linear infinite',
-    }} />
-    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>{label}</p>
-  </div>
-);
-
 // ── Boot spinner while /auth/me is in flight ──────────────────────
 const BootGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { bootStatus } = useAuth();
   if (bootStatus === 'loading') {
-    return <LoadingSpinner label="Loading…" />;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', flexDirection: 'column', gap: 12,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        background: '#f8fafc',
+      }}>
+        <div style={{
+          width: 36, height: 36,
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#6366f1',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: '#94a3b8', fontSize: 14, margin: 0 }}>Loading…</p>
+      </div>
+    );
   }
   return <>{children}</>;
 };
@@ -253,13 +243,12 @@ const App: React.FC = () => {
     <AuthProvider>
       <Router>
         <BootGate>
-          <Suspense fallback={<LoadingSpinner label="Loading page…" />}>
           <Routes>
             {/* Public Routes */}
-            <Route path="/" element={<SignupPage />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/signin" element={<SignupPage />} />
-            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/landing" element={<Navigate to="/" replace />} />
             {/* Public: accept team invitation */}
             <Route path="/accept-invite" element={<AcceptInvitePage />} />
 
@@ -455,7 +444,6 @@ const App: React.FC = () => {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
-          </Suspense>
         </BootGate>
       </Router>
     </AuthProvider>
