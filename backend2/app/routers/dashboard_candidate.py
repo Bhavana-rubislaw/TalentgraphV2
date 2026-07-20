@@ -456,7 +456,10 @@ def get_candidate_matches(
     for match in matches:
         job_posting = session.get(JobPosting, match.job_posting_id)
         company = session.get(Company, match.company_id)
-        company_user = session.get(User, company.user_id) if company else None
+        if job_posting is None or company is None:
+            # Posting or company deleted since the match was made
+            continue
+        company_user = session.get(User, company.user_id)
         
         # Check if candidate already applied to this job
         already_applied = session.exec(
@@ -506,4 +509,6 @@ def get_candidate_matches(
             "matched_at": match.created_at.isoformat(),
             "already_applied": already_applied
         })
-    
+
+    return result
+

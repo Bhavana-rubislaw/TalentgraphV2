@@ -12,12 +12,15 @@ from app.models import User, Company, UserRole
 from app.schemas import (
     UserCreate, UserLogin,
     CandidateSignUp, CandidateLogin,
-    CompanySignUp, CompanyLogin
+    CompanySignUp, CompanyLogin,
+    OtpVerifyRequest, OtpResendRequest
 )
 from app.security import hash_password, verify_password, create_access_token, get_current_user
 from app.auth_constants import LOGIN_FAIL_MSG, SIGNUP_NEUTRAL_MSG
 from app.middleware.rate_limiting import limiter, RATE_LIMITS
 from app.services import login_attempts
+from app.services import email_otp
+from app.services.email_service import EmailService
 from app.core.logging_config import get_logger
 from app.services.profile_completion_service import get_profile_completion_status
 
@@ -27,6 +30,81 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Fixed hash checked against for unknown emails so login timing doesn't reveal
 # whether an account exists.
 _DUMMY_PASSWORD_HASH = hash_password("Dummy_Placeholder_Hash_123")
+
+OTP_FAIL_MSG = "Invalid or expired code"
+OTP_SENT_MSG = "If the details are valid, a verification code has been sent to your email"
+
+
+def _send_otp(session: Session, user: User, purpose: str) -> None:
+    """Issue a fresh OTP for user+purpose and email it. Email failures are
+    logged, not raised - the resend endpoint is the recovery path."""
+    code = email_otp.issue_otp(session, user, purpose)
+    subject, html, text = email_otp.build_otp_email(code, purpose)
+    try:
+        EmailService().send_email(
+            to_email=user.email, subject=subject, html_content=html, plain_content=text
+        )
+    except Exception as e:
+        logger.error(f"[OTP] Failed to send {purpose} code to user {user.id}: {e}")
+
+
+def _notify_existing_account(email_lower: str, full_name: str) -> None:
+    """Signup attempted with an already-registered email: tell the inbox
+    owner privately (the HTTP response stays neutral)."""
+    try:
+        EmailService().send_email(
+            to_email=email_lower,
+            subject="You already have a TalentGraph account",
+            html_content=(
+                f"<p>Hi {full_name},</p><p>Someone (probably you) tried to sign up for TalentGraph "
+                "with this email address, but it's already registered. You can sign in with your "
+                "existing account instead.</p><p>If this wasn't you, you can safely ignore this email.</p>"
+            ),
+            plain_content=(
+                f"Hi {full_name},\n\nSomeone (probably you) tried to sign up for TalentGraph with this "
+                "email address, but it's already registered. You can sign in with your existing account "
+                "instead.\n\nIf this wasn't you, you can safely ignore this email."
+            ),
+        )
+    except Exception as e:
+        logger.error(f"[SIGNUP] Failed to send existing-account notice: {e}")
+
+
+def _otp_pending_response(email_lower: str, user_type: str, message: str) -> dict:
+    return {
+        "ok": True,
+        "otp_required": True,
+        "message": message,
+        "email": email_lower,
+        "user_type": user_type,
+    }
+
+
+def _full_auth_response(session: Session, user: User, message: str) -> dict:
+    token = create_access_token({
+        "sub": user.email,
+        "email": user.email,
+        "user_id": user.id,
+        "role": user.role,
+    })
+    user_type = "candidate" if user.role == UserRole.CANDIDATE else "company"
+    response = {
+        "ok": True,
+        "message": message,
+        "access_token": token,
+        "token": token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+        "user_type": user_type,
+        "is_profile_complete": get_profile_completion_status(session, user),
+    }
+    if user_type == "company":
+        company = session.exec(select(Company).where(Company.user_id == user.id)).first()
+        response["company_name"] = company.company_name if company else ""
+    return response
 
 
 def _authenticate(session: Session, email: str, password: str, allowed_roles: Optional[Set[UserRole]] = None) -> User:
@@ -181,7 +259,8 @@ def candidate_signup(request: Request, user_data: CandidateSignUp, session: Sess
     existing_user = session.exec(select(User).where(User.email == email_lower)).first()
     if existing_user:
         logger.warning("[CANDIDATE_SIGNUP] Signup attempted for an existing email")
-        return {"ok": True, "message": SIGNUP_NEUTRAL_MSG}
+        _notify_existing_account(email_lower, existing_user.full_name or "there")
+        return _otp_pending_response(email_lower, "candidate", SIGNUP_NEUTRAL_MSG)
 
     new_user = User(
         email=email_lower,
@@ -194,55 +273,19 @@ def candidate_signup(request: Request, user_data: CandidateSignUp, session: Sess
     session.refresh(new_user)
     logger.info(f"[CANDIDATE_SIGNUP] User created successfully - ID: {new_user.id}")
 
-    token_data = {
-        "sub": new_user.email,
-        "user_id": new_user.id,
-        "role": new_user.role
-    }
-    token = create_access_token(token_data)
-
-    is_profile_complete = get_profile_completion_status(session, new_user)
-
-    return {
-        "ok": True,
-        "message": SIGNUP_NEUTRAL_MSG,
-        "user_id": new_user.id,
-        "email": new_user.email,
-        "role": new_user.role,
-        "user_type": "candidate",
-        "token": token,
-        "token_type": "bearer",
-        "is_profile_complete": is_profile_complete
-    }
+    _send_otp(session, new_user, email_otp.PURPOSE_SIGNUP)
+    return _otp_pending_response(email_lower, "candidate", SIGNUP_NEUTRAL_MSG)
 
 
 @router.post("/candidate/login", response_model=dict)
 @limiter.limit("10/minute")
 def candidate_login(request: Request, credentials: CandidateLogin, session: Session = Depends(get_session)):
-    """Login for candidate users only"""
+    """Login for candidate users only. Password success triggers an email
+    OTP; the session token is issued by /auth/verify-otp."""
     user = _authenticate(session, credentials.email, credentials.password, allowed_roles={UserRole.CANDIDATE})
 
-    token_data = {
-        "sub": user.email,
-        "email": user.email,
-        "user_id": user.id,
-        "role": user.role
-    }
-    token = create_access_token(token_data)
-
-    is_profile_complete = get_profile_completion_status(session, user)
-
-    return {
-        "message": "Candidate login successful",
-        "access_token": token,
-        "token": token,
-        "token_type": "bearer",
-        "user_id": user.id,
-        "email": user.email,
-        "role": user.role,
-        "user_type": "candidate",
-        "is_profile_complete": is_profile_complete
-    }
+    _send_otp(session, user, email_otp.PURPOSE_LOGIN)
+    return _otp_pending_response(user.email, "candidate", OTP_SENT_MSG)
 
 
 # ============================================================================
@@ -259,7 +302,8 @@ def company_signup(request: Request, user_data: CompanySignUp, session: Session 
     existing_user = session.exec(select(User).where(User.email == email_lower)).first()
     if existing_user:
         logger.warning("[COMPANY_SIGNUP] Signup attempted for an existing email")
-        return {"ok": True, "message": SIGNUP_NEUTRAL_MSG}
+        _notify_existing_account(email_lower, existing_user.full_name or "there")
+        return _otp_pending_response(email_lower, "company", SIGNUP_NEUTRAL_MSG)
 
     role_map = {
         "hr": UserRole.HR,
@@ -288,27 +332,8 @@ def company_signup(request: Request, user_data: CompanySignUp, session: Session 
     session.commit()
     logger.info(f"[COMPANY_SIGNUP] Company profile created for User ID {new_user.id}")
 
-    token_data = {
-        "sub": new_user.email,
-        "email": new_user.email,
-        "user_id": new_user.id,
-        "role": new_user.role
-    }
-    token = create_access_token(token_data)
-
-    is_profile_complete = get_profile_completion_status(session, new_user)
-
-    return {
-        "ok": True,
-        "message": SIGNUP_NEUTRAL_MSG,
-        "user_id": new_user.id,
-        "email": new_user.email,
-        "role": new_user.role,
-        "user_type": "company",
-        "token": token,
-        "token_type": "bearer",
-        "is_profile_complete": is_profile_complete
-    }
+    _send_otp(session, new_user, email_otp.PURPOSE_SIGNUP)
+    return _otp_pending_response(email_lower, "company", SIGNUP_NEUTRAL_MSG)
 
 
 @router.post("/admin/login", response_model=dict)
@@ -337,43 +362,73 @@ def admin_login(request: Request, credentials: CompanyLogin, session: Session = 
         "user_type": "admin",
         "is_profile_complete": True
     }
+    # NOTE: admin login deliberately skips the email OTP step. The admin
+    # account owns the email infrastructure - if SMTP is down, someone must
+    # still be able to sign in and fix it (break-glass access).
+
+
+# ============================================================================
+# EMAIL OTP (signup verification + login 2FA)
+# ============================================================================
+
+@router.post("/verify-otp", response_model=dict)
+@limiter.limit(RATE_LIMITS["auth"])
+def verify_otp(request: Request, data: OtpVerifyRequest, session: Session = Depends(get_session)):
+    """Exchange a valid emailed code for a session token.
+
+    A login-purpose record only exists after a successful password check,
+    so this endpoint cannot be used to skip the password. Every failure
+    mode returns the same generic 401.
+    """
+    email_lower = data.email.lower()
+    user = session.exec(select(User).where(User.email == email_lower)).first()
+
+    if user is None or not email_otp.verify_otp(session, user, data.purpose, data.code):
+        logger.warning(f"[OTP] Failed {data.purpose} verification attempt")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=OTP_FAIL_MSG)
+
+    # Either purpose proves inbox ownership.
+    if not user.is_email_verified:
+        user.is_email_verified = True
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+
+    return _full_auth_response(session, user, "Verification successful")
+
+
+@router.post("/resend-otp", response_model=dict)
+@limiter.limit("3/minute")
+def resend_otp(request: Request, data: OtpResendRequest, session: Session = Depends(get_session)):
+    """Re-issue a pending code. Response is neutral regardless of whether
+    anything was sent, and codes are only re-issued where a flow is
+    actually in progress (unverified signup, or a live login OTP)."""
+    email_lower = data.email.lower()
+    user = session.exec(select(User).where(User.email == email_lower)).first()
+
+    should_send = user is not None and (
+        (data.purpose == email_otp.PURPOSE_SIGNUP and not user.is_email_verified)
+        or (data.purpose == email_otp.PURPOSE_LOGIN and email_otp.has_pending_otp(session, user, email_otp.PURPOSE_LOGIN))
+    )
+    if should_send:
+        _send_otp(session, user, data.purpose)
+
+    return {"ok": True, "message": OTP_SENT_MSG}
 
 
 @router.post("/company/login", response_model=dict)
 @limiter.limit("10/minute")
 def company_login(request: Request, credentials: CompanyLogin, session: Session = Depends(get_session)):
-    """Login for company users (HR and Recruiters only, not Admins)"""
+    """Login for company users (HR and Recruiters only, not Admins).
+    Password success triggers an email OTP; the session token is issued by
+    /auth/verify-otp."""
     user = _authenticate(
         session, credentials.email, credentials.password,
         allowed_roles={UserRole.HR, UserRole.RECRUITER}
     )
 
-    company = session.exec(select(Company).where(Company.user_id == user.id)).first()
-    company_name = company.company_name if company else ""
-
-    token_data = {
-        "sub": user.email,
-        "email": user.email,
-        "user_id": user.id,
-        "role": user.role
-    }
-    token = create_access_token(token_data)
-
-    is_profile_complete = get_profile_completion_status(session, user)
-
-    return {
-        "message": "Company login successful",
-        "access_token": token,
-        "token": token,
-        "token_type": "bearer",
-        "user_id": user.id,
-        "email": user.email,
-        "full_name": user.full_name,
-        "company_name": company_name,
-        "role": user.role,
-        "user_type": "company",
-        "is_profile_complete": is_profile_complete
-    }
+    _send_otp(session, user, email_otp.PURPOSE_LOGIN)
+    return _otp_pending_response(user.email, "company", OTP_SENT_MSG)
 
 
 @router.get("/me", response_model=dict)
