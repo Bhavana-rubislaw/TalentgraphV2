@@ -425,7 +425,7 @@ const JobPostingBuilder: React.FC = () => {
   const handleJobLifecycleAction = async (jobId: number, action: 'freeze' | 'reactivate', e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
     try {
-      const response = await apiClient.updateJobPostingStatus(jobId, action);
+      await apiClient.updateJobPostingStatus(jobId, action);
       alert(`Job ${action}d successfully!`);
       // Refresh job listings
       await fetchPostings();

@@ -55,7 +55,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       </div>
       
       <nav className="sidebar-nav">
-        {sections.map((section, sectionIndex) => (
+        {sections.map((section) => (
           <div key={section.title} style={{ marginBottom: 'var(--space-6)' }}>
             <div style={{
               fontSize: 'var(--text-xs)',

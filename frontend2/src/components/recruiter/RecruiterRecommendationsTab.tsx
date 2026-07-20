@@ -48,8 +48,8 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
   handleStartMessage,
 }) => {
   const navigate = useNavigate();
-  const [recommendationRoleFilter, setRecommendationRoleFilter] = useState<string>('all');
-  const [recommendationQuickFilter, setRecommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
+  const [recommendationRoleFilter] = useState<string>('all');
+  const [recommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
   const [recommendationWorkTypeFilter, setRecommendationWorkTypeFilter] = useState<string>('all');
   const [viewRecommendationProfile, setViewRecommendationProfile] = useState<any | null>(null);
 
@@ -120,11 +120,6 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
     }));
   };
 
-  const getSkillTags = (rec: any) => {
-    const skills = rec.job_profile?.skills || [];
-    return skills.slice(0, 6).map((sk: any) => sk.skill_name);
-  };
-
   if (jobPostings.length === 0) {
     return (
       <div className="empty-state-modern">
@@ -156,23 +151,14 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
   }
 
   // Calculate metrics for KPI cards
-  const totalMatches = recommendations.recommendations.length;
-  const avgMatchScore = totalMatches > 0
-    ? Math.round(recommendations.recommendations.reduce((sum: number, r: any) => sum + r.match_percentage, 0) / totalMatches)
-    : 0;
   const newToday = recommendations.recommendations.filter((r: any) => {
     if (!r.candidate.created_at) return false;
     const createdDate = new Date(r.candidate.created_at);
     const today = new Date();
     return createdDate.toDateString() === today.toDateString();
   }).length;
-  const openToOffers = recommendations.recommendations.filter((r: any) =>
-    r.job_profile?.worktype === 'Remote' || r.job_profile?.employment_type === 'Full-time'
-  ).length;
-  const topPicksCount = recommendations.recommendations.filter((r: any) => (r.match_percentage || 0) >= 80).length;
 
   const visibleRecs = visibleRecommendations;
-  const hasActiveRecFilters = recommendationRoleFilter !== 'all' || recommendationQuickFilter !== 'all';
 
   return (
     <>
@@ -277,7 +263,6 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 const jobProfile = rec.job_profile;
                 const matchPercentage = rec.match_percentage || 0;
                 const matchedSkills = getMatchedSkills(rec);
-                const skillTags = getSkillTags(rec);
 
                 // Build display match details — use real scores when available, else estimate from overall %
                 const rawDetails = rec.match_details || {};
@@ -312,27 +297,6 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
 
                 const compStatus = overlapPct > 70 ? 'high' : overlapPct > 30 ? 'medium' : 'low';
                 const compColor = compStatus === 'high' ? '#10B981' : compStatus === 'medium' ? '#F59E0B' : '#EF4444';
-
-                // Calculate availability risk
-                const availabilityDate = jobProfile.availability_date ? new Date(jobProfile.availability_date) : null;
-                const daysUntilAvailable = availabilityDate
-                  ? Math.ceil((availabilityDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-                  : 0;
-                const availabilityRisk = daysUntilAvailable <= 0 ? 'immediate' : daysUntilAvailable <= 30 ? 'soon' : 'delayed';
-                const availabilityColor = availabilityRisk === 'immediate' ? '#10B981' : availabilityRisk === 'soon' ? '#F59E0B' : '#6B7280';
-                const availabilityLabel = availabilityRisk === 'immediate' ? 'Available Now' :
-                  availabilityRisk === 'soon' ? `${daysUntilAvailable}d notice` :
-                  `${daysUntilAvailable}d notice`;
-
-                // Work authorization status
-                const visaStatus = jobProfile.visa_status || 'unknown';
-                const authStatus = visaStatus.toLowerCase().includes('citizen') || visaStatus.toLowerCase().includes('authorized')
-                  ? 'authorized'
-                  : visaStatus.toLowerCase().includes('sponsorship') || visaStatus.toLowerCase().includes('h1b') || visaStatus.toLowerCase().includes('visa')
-                  ? 'needs_sponsorship'
-                  : 'unknown';
-                const authColor = authStatus === 'authorized' ? '#10B981' : authStatus === 'needs_sponsorship' ? '#F59E0B' : '#6B7280';
-                const authLabel = authStatus === 'authorized' ? '✓ Authorized' : authStatus === 'needs_sponsorship' ? '⚠ Needs Visa' : 'Status Unknown';
 
                 return (
                   <div
@@ -1251,7 +1215,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     Resumes
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {rec.candidate.resumes.map((resume: any, index: number) => (
+                    {rec.candidate.resumes.map((resume: any) => (
                       <a
                         key={resume.id}
                         href={`http://127.0.0.1:8001/uploads/resumes/${resume.storage_path}`}
@@ -1305,7 +1269,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     Certifications
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {rec.candidate.certifications.map((cert: any, index: number) => (
+                    {rec.candidate.certifications.map((cert: any) => (
                       <div key={cert.id}>
                         {cert.storage_path ? (
                           <a

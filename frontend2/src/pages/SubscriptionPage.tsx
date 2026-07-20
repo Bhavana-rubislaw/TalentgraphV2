@@ -133,7 +133,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
     }
   };
 
-  const txnColour = (type: string, amount: number) => {
+  const txnColour = (_type: string, amount: number) => {
     if (amount > 0) return { bg: '#f0fdf4', text: '#16a34a' };
     return { bg: '#fef2f2', text: '#dc2626' };
   };

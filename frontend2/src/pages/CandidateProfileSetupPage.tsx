@@ -242,7 +242,7 @@ const CandidateProfileSetupPage: React.FC = () => {
         await apiClient.updateOnboardingDraft(formData);
         
         // Then finalize
-        const response = await apiClient.finalizeOnboarding(true);
+        await apiClient.finalizeOnboarding(true);
       } else {
         // Manual path - create profile directly
         await apiClient.createCandidateProfile(formData);

@@ -10,7 +10,7 @@ interface Props {
 
 type FilterTab = 'all' | 'applications' | 'messages' | 'system';
 
-const NotificationPanel: React.FC<Props> = ({ role }) => {
+const NotificationPanel: React.FC<Props> = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<FilterTab>('all');
   const [loading, setLoading] = useState(true);
@@ -43,18 +43,6 @@ const NotificationPanel: React.FC<Props> = ({ role }) => {
       setUnreadCount(0);
     } catch (error) {
       console.error('Failed to mark all as read:', error);
-    }
-  };
-
-  const handleMarkRead = async (id: number) => {
-    try {
-      await notificationService.markRead(id);
-      setNotifications(prev =>
-        prev.map(n => (n.id === id ? { ...n, read: true } : n))
-      );
-      setUnreadCount(c => Math.max(0, c - 1));
-    } catch (error) {
-      console.error('Failed to mark as read:', error);
     }
   };
 

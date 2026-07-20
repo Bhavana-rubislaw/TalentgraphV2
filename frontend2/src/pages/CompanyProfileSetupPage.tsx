@@ -71,9 +71,8 @@ const CompanyProfileSetupPage: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Pre-fill email and name from localStorage
+  // Pre-fill name from localStorage
   useEffect(() => {
-    const email = localStorage.getItem('email') || '';
     const fullName = localStorage.getItem('full_name') || '';
     
     setFormData(prev => ({
@@ -130,7 +129,7 @@ const CompanyProfileSetupPage: React.FC = () => {
         hiring_focus: formData.hiring_focus.length > 0 ? JSON.stringify(formData.hiring_focus) : undefined,
         company_description: formData.company_description || undefined,
       };
-      const response = await apiClient.setupCompanyProfile(payload);
+      await apiClient.setupCompanyProfile(payload);
       setSuccess('Profile setup completed successfully!');
 
       // Update localStorage

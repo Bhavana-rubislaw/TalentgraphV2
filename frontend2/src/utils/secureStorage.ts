@@ -11,23 +11,6 @@ interface StorageOptions {
 }
 
 class SecureStorage {
-  private readonly cookieSupported: boolean;
-
-  constructor() {
-    this.cookieSupported = this.checkCookieSupport();
-  }
-
-  private checkCookieSupport(): boolean {
-    try {
-      document.cookie = 'test=1';
-      const supported = document.cookie.indexOf('test=') !== -1;
-      document.cookie = 'test=1; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      return supported;
-    } catch {
-      return false;
-    }
-  }
-
   /**
    * Set a secure item (token)
    * Prefers httpOnly cookies, falls back to sessionStorage

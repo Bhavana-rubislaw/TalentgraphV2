@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Meeting, MeetingStatus, MeetingAvailabilitySlot } from '../types/meeting';
+import { Meeting, MeetingStatus } from '../types/meeting';
 import { useMeetingsData } from '../hooks/useMeetingsData';
 import {
   AvailabilitySelectorModal,
