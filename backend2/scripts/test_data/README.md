@@ -16,7 +16,6 @@ Comprehensive data seeding for different scenarios.
 | Script | Purpose | Data Volume | Use Case |
 |--------|---------|-------------|----------|
 | `seed_data_v2.py` | **Full sample dataset** | ~50-100 records per table | Development, demos |
-| `seed_data.py` | Legacy seed (v1) | Medium | Legacy support |
 | `seed_custom_users.py` | Specific test users | 2-5 users | Targeted testing |
 | `seed_status.py` | Job status values | Status enums | Status workflow testing |
 
@@ -121,7 +120,7 @@ python scripts/test_data/seed_data_v2.py
 ### Fresh Database Setup
 ```bash
 # 1. Reset database (WARNING: Deletes all data)
-python reset_db.py
+python scripts/operations/reset_db.py
 
 # 2. Seed with full dataset
 python scripts/test_data/seed_data_v2.py
@@ -134,7 +133,7 @@ python scripts/testing/check_jobs.py
 ### Minimal Testing Setup
 ```bash
 # 1. Reset database
-python reset_db.py
+python scripts/operations/reset_db.py
 
 # 2. Quick seed (minimal data)
 python scripts/test_data/quick_seed.py
@@ -336,7 +335,7 @@ print("\n[DONE] Seeding complete")
 ### Reset Database (DESTRUCTIVE)
 ```bash
 # WARNING: Deletes all data
-python reset_db.py
+python scripts/operations/reset_db.py
 
 # Then reseed
 python scripts/test_data/seed_data_v2.py
@@ -399,7 +398,7 @@ TRUNCATE TABLE analytics_event CASCADE;
 ### Duplicate Key Errors
 ```bash
 # Reset database before reseeding
-python reset_db.py
+python scripts/operations/reset_db.py
 python scripts/test_data/seed_data_v2.py
 
 # Or check for existing data

@@ -4,11 +4,10 @@
 import subprocess
 import sys
 import os
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from app.core.seed_credentials import get_seed_admin_credentials
 
-from app.core.seed_credentials import get_seed_test_password
 
 def run_command(description, command):
     """Run a command and report results."""
@@ -81,8 +80,7 @@ def main():
     # Step 4: Reseed test data
     if not run_command(
         "Step 4: Reseed test data with corrected emails",
-        # r"python scripts\test_data\seed_data_v2.py"
-        f"{sys.executable} scripts/test_data/seed_data_v2.py"
+        r"python scripts\test_data\seed_data_v2.py"
     ):
         print("\n❌ Failed to seed test data.")
         return 1
@@ -98,14 +96,14 @@ def main():
         'python -c "from app.database import engine; from app.models import User, UserRole; from sqlmodel import Session, select; session = Session(engine); admins = session.exec(select(User).where(User.role == UserRole.ADMIN)).all(); print(f\\"\\\\nTotal ADMIN accounts: {len(admins)}\\"); [print(f\\"  >> {a.email} | {a.full_name}\\") for a in admins]"'
     )
     
+    admin_email, admin_password, _ = get_seed_admin_credentials()
     print("\n" + "="*80)
     print("📋 NEXT STEPS:")
     print("="*80)
     print("  1. Start backend: uvicorn app.main:app --host 127.0.0.1 --port 8001 --reload")
     print("  2. Start frontend: cd frontend2 && npm run dev -- --port 3002")
-    print("  3. Test admin login: talentgraph.interviews@gmail.com / shared seed password")
-    print(f"     See get_seed_test_password() in app/core/seed_credentials.py")
-    print("  4. Test recruiter: recruiter2.lisa@globalsystems.com / shared seed password")
+    print(f"  3. Test admin login: {admin_email} / {admin_password}")
+    print("  4. Test recruiter: recruiter2.lisa@globalsystems.com / (see seed_data_v2.py test account password)")
     print("="*80 + "\n")
     
     return 0

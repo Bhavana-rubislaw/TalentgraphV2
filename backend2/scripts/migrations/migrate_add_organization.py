@@ -9,17 +9,14 @@ Migration: Add Organization model and UserInvitation model
 - Creates the 'user_invitation' table
 - Preserves all existing data
 
-# Run from backend2/ directory with venv activated:
-#     python migrate_add_organization.py
 Run from backend2/ directory with venv activated:
     python scripts/migrations/migrate_add_organization.py
 """
 
 import re
 import sys
-import os
-# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from sqlalchemy import text, inspect as sa_inspect
 from sqlmodel import Session, SQLModel, select

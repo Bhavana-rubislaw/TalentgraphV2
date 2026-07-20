@@ -48,8 +48,8 @@ print("\n✅ Migration complete!")
 
 # Verify
 cursor.execute("""
-    SELECT column_name 
-    FROM information_schema.columns 
+    SELECT column_name
+    FROM information_schema.columns
     WHERE table_name = 'application'
     AND column_name IN ('recruiter_notes', 'last_status_updated_at', 'last_status_updated_by_user_id')
     ORDER BY column_name;

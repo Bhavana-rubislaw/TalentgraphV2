@@ -12,14 +12,13 @@ This provides standardized dropdowns for both:
 Run this script:
     cd backend2
     venv\\Scripts\\Activate.ps1
-    python scripts/seed/seed_product_taxonomy.py
+    python scripts\\seed\\seed_product_taxonomy.py
 """
 
 import sys
 from pathlib import Path
 from sqlmodel import Session, select
 
-# sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from app.database import engine
