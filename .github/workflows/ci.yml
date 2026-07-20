@@ -38,6 +38,22 @@ jobs:
       - name: Create recommender database
         run: PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE talentgraph_recommender;"
 
+      # A handful of tests (resume parsing, meetings) exercise real login
+      # flows against fixed seed accounts (e.g. sarah.anderson@email.com)
+      # rather than mocking auth. The postgres service above starts empty,
+      # so those accounts have to be created before pytest runs. Seeding
+      # and testing must run as the same step/job so the SEED_ADMIN_PASSWORD
+      # below is what both sides resolve to.
+      - name: Initialize schema and seed test data
+        working-directory: backend2
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/talentgraph_v2
+          RECOMMENDER_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/talentgraph_recommender
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD || 'ci-local-test-password-1' }}
+        run: |
+          python -c "from app.database import init_db; init_db()"
+          python scripts/test_data/seed_data_v2.py
+
       - name: Run test suite
         working-directory: backend2
         env:
@@ -45,6 +61,7 @@ jobs:
           RECOMMENDER_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/talentgraph_recommender
           WORKERS_ENABLED: "false"
           RECOMMENDER_ENABLED: "false"
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD || 'ci-local-test-password-1' }}
         run: pytest tests/ -q
 
   frontend:
