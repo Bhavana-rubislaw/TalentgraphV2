@@ -80,6 +80,26 @@ class CompanyLogin(BaseModel):
     password: str
 
 
+# Email OTP (signup verification + login 2FA)
+class OtpVerifyRequest(BaseModel):
+    email: EmailStr
+    purpose: Literal["signup", "login"]
+    code: str
+
+    @field_validator("code")
+    @classmethod
+    def _validate_code(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not (cleaned.isdigit() and len(cleaned) == 6):
+            raise ValueError("Code must be 6 digits")
+        return cleaned
+
+
+class OtpResendRequest(BaseModel):
+    email: EmailStr
+    purpose: Literal["signup", "login"]
+
+
 # Public marketing schemas (unauthenticated landing-page endpoints)
 class DemoRequestCreate(BaseModel):
     full_name: str

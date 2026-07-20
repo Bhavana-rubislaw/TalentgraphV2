@@ -40,6 +40,12 @@ export const apiClient = {
 
   adminLogin: (email: string, password: string) =>
     api.post('/auth/admin/login', { email, password }),
+
+  verifyOtp: (email: string, purpose: 'signup' | 'login', code: string) =>
+    api.post('/auth/verify-otp', { email, purpose, code }),
+
+  resendOtp: (email: string, purpose: 'signup' | 'login') =>
+    api.post('/auth/resend-otp', { email, purpose }),
   
   getCurrentUser: () =>
     api.get('/auth/me'),

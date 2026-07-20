@@ -289,10 +289,29 @@ class User(SQLModel, table=True):
     failed_login_attempts: int = Field(default=0)
     locked_until: Optional[datetime] = Field(default=None)
     last_failed_login_at: Optional[datetime] = Field(default=None)
-    
+
+    # Email ownership proven via OTP (set on signup verification or first
+    # successful login OTP)
+    is_email_verified: bool = Field(default=False)
+
     # Relationships
     candidate: Optional["Candidate"] = Relationship(back_populates="user")
     company: Optional["Company"] = Relationship(back_populates="user")
+
+
+class EmailOTP(SQLModel, table=True):
+    """Pending one-time codes for signup email verification and login 2FA.
+
+    Only the HMAC of the code is stored, never the plaintext. One active
+    record per (user, purpose) - issuing a new code replaces the old one.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    purpose: str = Field(index=True)  # "signup" | "login"
+    otp_hash: str
+    expires_at: datetime
+    attempt_count: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # ============ CANDIDATE MODELS ============

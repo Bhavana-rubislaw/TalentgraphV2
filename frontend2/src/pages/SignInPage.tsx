@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { syncAuthUserToStorage } from '../utils/authStorage';
+import OtpStep from '../components/auth/OtpStep';
 import '../styles/Landing.css';
 import '../styles/Auth.css';
 
@@ -23,6 +24,30 @@ const SignInPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [otpPending, setOtpPending] = useState(false);
+
+  // Shared landing point for both paths that yield a session token:
+  // admin login (no OTP) and OTP verification.
+  const completeAuth = (data: any) => {
+    const isProfileComplete = data.is_profile_complete ?? false;
+    const authUser = {
+      user_id: data.user_id,
+      email: data.email,
+      role: (data.role || '').toLowerCase().trim(),
+      full_name: data.full_name || '',
+      company_name: data.company_name,
+      is_profile_complete: isProfileComplete,
+    };
+    localStorage.setItem('token', data.token);
+    syncAuthUserToStorage(authUser);
+    setUser(authUser);
+
+    if (authUser.role === 'candidate') {
+      navigate(isProfileComplete ? '/candidate-dashboard' : '/candidate-profile-setup');
+    } else {
+      navigate(isProfileComplete ? '/recruiter-dashboard' : '/company-profile-setup');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,25 +85,13 @@ const SignInPage: React.FC = () => {
         ? await apiClient.candidateLogin(email, password)
         : await apiClient.companyLogin(email, password);
 
-      const isProfileComplete = response.data.is_profile_complete ?? false;
-      const authUser = {
-        user_id: response.data.user_id,
-        email: response.data.email,
-        role: (response.data.role || '').toLowerCase().trim(),
-        full_name: response.data.full_name || '',
-        company_name: response.data.company_name,
-        is_profile_complete: isProfileComplete,
-      };
-
-      localStorage.setItem('token', response.data.token);
-      syncAuthUserToStorage(authUser);
-      setUser(authUser);
-
-      if (userType === 'candidate') {
-        navigate(isProfileComplete ? '/candidate-dashboard' : '/candidate-profile-setup');
-      } else {
-        navigate(isProfileComplete ? '/recruiter-dashboard' : '/company-profile-setup');
+      if (response.data.otp_required) {
+        setOtpPending(true);
+        return;
       }
+
+      // Fallback: server issued a token directly (no OTP flow)
+      completeAuth(response.data);
     } catch (err: any) {
       console.error('[AUTH ERROR] Sign in failed:', err);
       if (err.response?.status === 403) {
@@ -112,6 +125,15 @@ const SignInPage: React.FC = () => {
 
       <main className="tg-auth-main">
         <div className="tg-auth-card">
+          {otpPending ? (
+            <OtpStep
+              email={email}
+              purpose="login"
+              onSuccess={completeAuth}
+              onBack={() => { setOtpPending(false); setError(''); }}
+            />
+          ) : (
+          <>
           <h1>Welcome back</h1>
           <p className="tg-auth-sub">Sign in to your TalentGraph account</p>
 
@@ -147,6 +169,8 @@ const SignInPage: React.FC = () => {
           <p className="tg-auth-switch">
             Don't have an account? <a href="/signup" onClick={(e) => { e.preventDefault(); navigate('/signup'); }}>Sign up</a>
           </p>
+          </>
+          )}
         </div>
       </main>
     </div>
