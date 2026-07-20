@@ -61,6 +61,10 @@ jobs:
           RECOMMENDER_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/talentgraph_recommender
           WORKERS_ENABLED: "false"
           RECOMMENDER_ENABLED: "false"
+          # Several tests re-authenticate per test case via TestClient, which
+          # shares one fake IP for all requests - real per-IP login/signup
+          # rate limits would false-positive well before the suite finishes.
+          RATE_LIMITING_ENABLED: "false"
           SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD || 'ci-local-test-password-1' }}
         run: pytest tests/ -q
 

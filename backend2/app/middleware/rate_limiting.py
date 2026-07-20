@@ -4,6 +4,7 @@ Protects API endpoints from brute-force attacks and abuse
 """
 
 import logging
+import os
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -11,8 +12,13 @@ from slowapi.middleware import SlowAPIMiddleware
 
 logger = logging.getLogger(__name__)
 
+# Disabled in CI/automated tests: TestClient requests all share one fake IP,
+# so a real test suite legitimately calls /auth/login far more than any
+# per-IP limit in well under a minute. Real deployments keep this on.
+RATE_LIMITING_ENABLED = os.getenv("RATE_LIMITING_ENABLED", "true").lower() != "false"
+
 # Create limiter instance
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMITING_ENABLED)
 
 # Rate limit configurations for different endpoint types
 RATE_LIMITS = {
