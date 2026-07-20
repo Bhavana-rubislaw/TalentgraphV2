@@ -97,12 +97,12 @@ async def handle_inbound_email(
         ).first()
         
         if not thread_link:
-            logger.warning(f"Thread link not found for token: {token}")
+            logger.warning(f"Thread link not found for token: {token[:8]}...")
             return {"status": "ignored", "reason": "invalid_token"}
-        
+
         # Check token expiration
         if thread_link.token_expires_at < datetime.now(timezone.utc):
-            logger.warning(f"Expired token: {token}")
+            logger.warning(f"Expired token: {token[:8]}...")
             return {"status": "ignored", "reason": "expired_token"}
         
         # Check for duplicate (idempotency)

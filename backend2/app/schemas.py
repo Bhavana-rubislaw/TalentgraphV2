@@ -3,52 +3,109 @@ API Schemas for request/response validation
 Pydantic models mirroring database structure
 """
 
-from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+import re
+from typing import Optional, List, Literal
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 from datetime import datetime
 from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
+from app.security import validate_password_strength
 
 
 # ============ USER SCHEMAS ============
 
+_HTML_TAG_RE = re.compile(r"<[^>]*>")
+
+
+def _sanitize_display_text(value: Optional[str]) -> Optional[str]:
+    """Strip HTML/script tags from free-text auth fields before they reach the DB."""
+    if value is None:
+        return value
+    return _HTML_TAG_RE.sub("", value).strip()
+
+
 class UserBase(BaseModel):
-    email: str
+    email: EmailStr
     full_name: str
     role: UserRole = UserRole.CANDIDATE
 
 
 # Candidate-specific schemas
 class CandidateSignUp(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     full_name: Optional[str] = ""
 
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        is_valid, error_msg = validate_password_strength(value)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return value
+
+    @field_validator("full_name")
+    @classmethod
+    def _sanitize_full_name(cls, value: Optional[str]) -> Optional[str]:
+        return _sanitize_display_text(value)[:200] if value else value
+
 
 class CandidateLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
 # Company-specific schemas
 class CompanySignUp(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     full_name: Optional[str] = ""
-    company_role: str  # "admin", "hr", or "recruiter"
+    company_role: Literal["hr", "recruiter"]  # Admin accounts cannot be created through signup
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        is_valid, error_msg = validate_password_strength(value)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return value
+
+    @field_validator("full_name")
+    @classmethod
+    def _sanitize_full_name(cls, value: Optional[str]) -> Optional[str]:
+        return _sanitize_display_text(value)[:200] if value else value
 
 
 class CompanyLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
 # Legacy unified schemas (backward compatibility)
 class UserCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
-    user_type: str  # "candidate" or "company"
+    user_type: Literal["candidate", "company"]
     full_name: Optional[str] = ""  # Optional for backward compatibility
-    company_role: Optional[str] = None  # "admin", "hr", or "recruiter" (only for company users)
+    company_role: Optional[Literal["admin", "hr", "recruiter"]] = None  # only for company users
+
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        is_valid, error_msg = validate_password_strength(value)
+        if not is_valid:
+            raise ValueError(error_msg)
+        return value
+
+    @field_validator("full_name")
+    @classmethod
+    def _sanitize_full_name(cls, value: Optional[str]) -> Optional[str]:
+        return _sanitize_display_text(value)[:200] if value else value
+
+    @model_validator(mode="after")
+    def _require_company_role_for_company_signup(self):
+        if self.user_type == "company" and not self.company_role:
+            raise ValueError("company_role required for company users")
+        return self
 
 
 class UserRead(UserBase):
@@ -58,7 +115,7 @@ class UserRead(UserBase):
 
 
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 

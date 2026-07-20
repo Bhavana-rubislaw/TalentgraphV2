@@ -69,21 +69,27 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> tuple[bool, Optional[str]]:
     """
-    Verify a plain password against a hash
-    Handles passwords up to MAX_PASSWORD_LENGTH without truncation
+    Verify a plain password against a hash using passlib's constant-time comparison.
+    Handles passwords up to MAX_PASSWORD_LENGTH without truncation.
+
+    Returns (is_valid, new_hash). new_hash is set when the stored hash used a
+    deprecated scheme (e.g. legacy bcrypt) and passlib re-hashed it with the
+    preferred scheme (Argon2) as part of verification - callers should persist
+    it to migrate the user's stored hash without any separate migration step.
     """
     # Validate length but don't truncate
     if len(plain_password) > MAX_PASSWORD_LENGTH:
         logger.warning("Password exceeds maximum length during verification")
-        return False
-    
+        return False, None
+
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        is_valid, new_hash = pwd_context.verify_and_update(plain_password, hashed_password)
+        return is_valid, new_hash
     except Exception as e:
         logger.error(f"Password verification error: {str(e)}")
-        return False
+        return False, None
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:

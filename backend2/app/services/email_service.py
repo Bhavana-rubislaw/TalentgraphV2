@@ -502,7 +502,39 @@ See you soon!
             html_body=html_body,
             text_body=text_body
         )
-    
+
+    def send_account_locked_email(self, to_email: str, lockout_minutes: int = 15) -> str:
+        """Notify a user their account was temporarily locked after repeated failed logins"""
+
+        html_body = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="font-family: sans-serif; line-height: 1.6;">
+            <h2>Account Temporarily Locked</h2>
+            <p>We noticed several failed login attempts on your account.</p>
+            <p>For your security, your account has been temporarily locked for {lockout_minutes} minutes. It will unlock automatically - no action is required.</p>
+            <p>If this wasn't you, please contact support once your account unlocks.</p>
+        </body>
+        </html>
+        """
+
+        text_body = f"""
+Account Temporarily Locked
+
+We noticed several failed login attempts on your account.
+
+For your security, your account has been temporarily locked for {lockout_minutes} minutes. It will unlock automatically - no action is required.
+
+If this wasn't you, please contact support once your account unlocks.
+        """
+
+        return self.provider.send_email(
+            to_email=to_email,
+            subject="Security Alert: Your account was temporarily locked",
+            html_body=html_body,
+            text_body=text_body
+        )
+
     def send_meeting_confirmation(
         self,
         to_email: str,

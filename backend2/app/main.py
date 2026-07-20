@@ -3,8 +3,11 @@ FastAPI main application for TalentGraph V2
 Runs on port 8001
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from app.database import init_db
@@ -12,6 +15,7 @@ from app.middleware.request_id import RequestIdMiddleware
 from app.middleware.rate_limiting import setup_rate_limiting
 from app.core.logging_config import setup_logging, get_logger, log_change
 from app.core.router_registration import register_api_routers
+from app.auth_constants import GENERIC_INPUT_ERROR
 from app.services.startup_service import (
     init_recommender_if_enabled,
     start_workers_if_enabled,
@@ -114,6 +118,22 @@ else:
 logger.info(f"[STARTUP] CORS origins configured: {origins}")
 # Request-ID tracing — must be added AFTER CORSMiddleware
 app.add_middleware(RequestIdMiddleware)
+
+
+@app.exception_handler(RequestValidationError)
+async def auth_validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    Auth endpoints return one generic message for any invalid input, so a
+    caller can't tell which field failed (email format, password strength,
+    role value, etc). The raw invalid values are never logged - only where
+    and from whom the bad request came from.
+    """
+    if request.url.path.startswith("/auth"):
+        client_host = request.client.host if request.client else "unknown"
+        logger.warning(f"[VALIDATION] Rejected input on {request.url.path} from {client_host}")
+        return JSONResponse(status_code=422, content={"detail": GENERIC_INPUT_ERROR})
+    return await request_validation_exception_handler(request, exc)
+
 
 register_api_routers(app, logger, log_change)
 limiter = setup_rate_limiting(app)

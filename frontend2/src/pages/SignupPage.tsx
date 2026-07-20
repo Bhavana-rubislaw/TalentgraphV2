@@ -186,6 +186,15 @@ const SignupPage: React.FC = () => {
         );
       }
 
+      // Signup returns the same neutral response whether or not the email was
+      // already registered, so an existing account never gets a token here -
+      // show the message and let the user sign in instead.
+      if (!response.data.token) {
+        setError(response.data.message || 'If this email is not already registered, your account has been created');
+        setLoading(false);
+        return;
+      }
+
       // Save token and user info
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user_id', String(response.data.user_id));

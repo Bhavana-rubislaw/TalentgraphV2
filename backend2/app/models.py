@@ -284,6 +284,11 @@ class User(SQLModel, table=True):
     last_seen_at: Optional[datetime] = Field(default=None)  # presence tracking
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Account lockout tracking (brute-force protection)
+    failed_login_attempts: int = Field(default=0)
+    locked_until: Optional[datetime] = Field(default=None)
+    last_failed_login_at: Optional[datetime] = Field(default=None)
     
     # Relationships
     candidate: Optional["Candidate"] = Relationship(back_populates="user")
