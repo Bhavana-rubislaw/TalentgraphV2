@@ -9,7 +9,7 @@ This script populates the database with sample data for:
 - 4 Job postings per company (24 total job postings)
 - Initial matches for demonstration
 
-Password for all users: shared seed password (see app/core/seed_credentials.py)
+Password for all users: see SEED_ADMIN_PASSWORD (app/core/seed_credentials.py)
 
 Run this script after database initialization:
     cd backend2
@@ -27,13 +27,13 @@ from sqlmodel import Session, select
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import (
     User, UserRole, Candidate, JobProfile, Skill, LocationPreference,
     Resume, Certification, Company, JobPosting, Match, Swipe, Application,
     WorkType, EmploymentType, VisaStatus, CurrencyType, Meeting, MeetingParticipant
 )
 from app.security import hash_password
+from app.core.seed_credentials import get_seed_test_password
 
 
 # Universal password for all seed accounts

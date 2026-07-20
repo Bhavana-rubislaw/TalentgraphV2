@@ -10,17 +10,16 @@ Fix: Changed job.title to job.job_title in analytics.py line 390
 
 import sys
 import os
-from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi.testclient import TestClient
 from app.main import app
-from app.core.seed_credentials import get_seed_test_password
 from app.database import get_session, engine
 from sqlmodel import Session, select
 from app.models import User, Company, JobPosting
+from app.core.seed_credentials import get_seed_test_password
 
 client = TestClient(app)
 

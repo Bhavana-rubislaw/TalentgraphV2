@@ -1,8 +1,7 @@
 """
 Add ashokkumarbayya@gmail.com as a Recruiter under Rubis Law Invest
 ====================================================================
-- Creates User with role RECRUITER and the shared seed password
-    (see app/core/seed_credentials.py)
+- Creates User with role RECRUITER (password from SEED_ADMIN_PASSWORD / see app/core/seed_credentials.py)
 - Creates Company profile linked to Rubis Law Invest
   (sets parent_company_id to existing bhavana@rubislawinvest.com company if found)
 
@@ -19,9 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from sqlmodel import Session, select
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole, Company
 from app.security import hash_password
+from app.core.seed_credentials import get_seed_test_password
 
 RECRUITER_EMAIL    = "ashokkumarbayya@gmail.com"
 RECRUITER_NAME     = "Ashok Kumar Bayya"

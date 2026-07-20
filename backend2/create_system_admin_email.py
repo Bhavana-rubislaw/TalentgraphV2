@@ -1,8 +1,10 @@
 """
 Create System Admin Account
 ============================
-Creates the single system admin user with email: talentgraph.interviews@gmail.com
-This is the only ADMIN role user in the system.
+Creates the single system admin user. Credentials are resolved from
+SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD (see app/core/seed_credentials.py) -
+set these in your environment or .env, or a random password is generated
+and cached locally on first run.
 
 Run this after database initialization:
     cd backend2
@@ -10,20 +12,13 @@ Run this after database initialization:
     python create_system_admin_email.py
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 from sqlmodel import Session, select
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole
 from app.security import hash_password
+from app.core.seed_credentials import get_seed_admin_credentials
 
-SYSTEM_ADMIN_EMAIL = "talentgraph.interviews@gmail.com"
-SYSTEM_ADMIN_PASSWORD = get_seed_test_password()
-SYSTEM_ADMIN_NAME = "TalentGraph System Admin"
+SYSTEM_ADMIN_EMAIL, SYSTEM_ADMIN_PASSWORD, SYSTEM_ADMIN_NAME = get_seed_admin_credentials()
 
 
 def create_system_admin():
@@ -33,12 +28,12 @@ def create_system_admin():
         existing_admin = session.exec(
             select(User).where(User.email == SYSTEM_ADMIN_EMAIL)
         ).first()
-        
+
         if existing_admin:
             print(f"[+] System admin already exists: {SYSTEM_ADMIN_EMAIL}")
             print(f"   Role: {existing_admin.role}")
             print(f"   Active: {existing_admin.is_active}")
-            
+
             # Update to ensure it's set correctly
             existing_admin.role = UserRole.ADMIN
             existing_admin.full_name = SYSTEM_ADMIN_NAME
@@ -59,10 +54,10 @@ def create_system_admin():
             session.add(system_admin)
             session.commit()
             session.refresh(system_admin)
-            
+
             print(f"[+] System admin created successfully!")
             print(f"   Email: {SYSTEM_ADMIN_EMAIL}")
-            print("   Password: see get_seed_test_password() in app/core/seed_credentials.py")
+            print(f"   Password: {SYSTEM_ADMIN_PASSWORD}")
             print(f"   Role: {system_admin.role}")
             print(f"   User ID: {system_admin.id}")
 

@@ -8,7 +8,7 @@ Run this script to populate the database with all candidate data:
     venv\\Scripts\\Activate.ps1
     python seed_all_candidates.py
 
-Password for all users:-----------------
+Password for all users: see SEED_ADMIN_PASSWORD (app/core/seed_credentials.py)
 """
 
 import sys
@@ -26,12 +26,11 @@ from app.models import (
     ProductVendor, ProductType, ProductRole
 )
 from app.security import hash_password
-
-# Universal password for all seed accounts
-
 from app.core.seed_credentials import get_seed_test_password
 
+# Universal password for all seed accounts
 SEED_PASSWORD = get_seed_test_password()
+
 
 def get_taxonomy_ids(session: Session, vendor_name: str, product_type_name: str, role_name: str):
     """

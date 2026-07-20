@@ -2,13 +2,8 @@
 Test if candidate job profiles are returning taxonomy data via API
 """
 
-import sys
-from pathlib import Path
-
 import requests
 import json
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.core.seed_credentials import get_seed_test_password
 

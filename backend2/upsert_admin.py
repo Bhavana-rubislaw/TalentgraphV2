@@ -1,6 +1,6 @@
 """
-Upsert admin user: talentgrapgh.interviews@gmail.com / shared seed password
-See app/core/seed_credentials.py.
+Upsert the system admin user. Credentials are resolved from
+SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD (see app/core/seed_credentials.py).
 """
 import sys
 import os
@@ -8,13 +8,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from sqlmodel import Session, select
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole
 from app.security import hash_password
+from app.core.seed_credentials import get_seed_admin_credentials
 
-TARGET_EMAIL = "talentgrapgh.interviews@gmail.com"
-TARGET_PASSWORD = get_seed_test_password()
-TARGET_NAME = "TalentGraph Admin"
+TARGET_EMAIL, TARGET_PASSWORD, TARGET_NAME = get_seed_admin_credentials()
 
 with Session(engine) as session:
     user = session.exec(select(User).where(User.email == TARGET_EMAIL)).first()
@@ -45,4 +43,4 @@ with Session(engine) as session:
 
     print("\nDone. You can now log in to the admin portal with:")
     print(f"  Email   : {TARGET_EMAIL}")
-    print("  Password: see get_seed_test_password() in app/core/seed_credentials.py")
+    print(f"  Password: {TARGET_PASSWORD}")

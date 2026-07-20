@@ -1,10 +1,5 @@
 """Test if taxonomy data now appears in API responses with fallback"""
-import sys
-from pathlib import Path
-
 import requests
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.core.seed_credentials import get_seed_test_password
 

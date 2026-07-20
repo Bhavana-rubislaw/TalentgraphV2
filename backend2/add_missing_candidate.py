@@ -1,16 +1,11 @@
 """
 Add missing candidate: bayyakutty02@gmail.com
 """
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, UserRole, Candidate, JobProfile, Skill, LocationPreference, Certification, WorkType, EmploymentType, VisaStatus, CurrencyType
 from sqlmodel import Session, select
 from app.security import hash_password
+from app.core.seed_credentials import get_seed_test_password
 
 def main():
     with Session(engine) as session:

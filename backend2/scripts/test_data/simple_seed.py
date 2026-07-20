@@ -7,39 +7,39 @@ import sys
 from pathlib import Path
 from sqlmodel import Session, select
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, Candidate, Company, JobPosting, UserRole
 from app.security import hash_password
-
-PASSWORD = get_seed_test_password()
+from app.core.seed_credentials import get_seed_test_password
 
 
 def seed_database():
     """Populate database with test data"""
-    
+
     with Session(engine) as session:
         print("🌱 Starting database seeding...")
-        
+
+        seed_password = get_seed_test_password()
+
         # Create Candidates
         print("\n👥 Creating candidate users...")
         candidates_data = [
             {
                 "email": "sarah.anderson@email.com",
                 "name": "Sarah Anderson",
-                "password": PASSWORD
+                "password": seed_password
             },
             {
                 "email": "michael.chen@email.com",
                 "name": "Michael Chen",
-                "password": PASSWORD
+                "password": seed_password
             },
             {
                 "email": "david.kumar@email.com",
                 "name": "David Kumar",
-                "password": PASSWORD
+                "password": seed_password
             }
         ]
         
@@ -107,7 +107,7 @@ def seed_database():
                     user = User(
                         email=user_data["email"],
                         full_name=user_data["name"],
-                        password_hash=hash_password(PASSWORD),
+                        password_hash=hash_password(seed_password),
                         role=user_data["role"],
                         is_active=True
                     )
@@ -139,7 +139,7 @@ def seed_database():
         
         print("\n✨ Database seeding completed successfully!")
         print("\n📋 Test Account Credentials:")
-        print("   All passwords: shared seed password (see app/core/seed_credentials.py)")
+        print(f"   All passwords: {seed_password}")
         print("\n   Candidates:")
         for cand in candidates_data:
             print(f"     - {cand['email']}")

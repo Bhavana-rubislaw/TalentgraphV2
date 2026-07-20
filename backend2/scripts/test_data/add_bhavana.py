@@ -1,16 +1,12 @@
 """Add Bhavana Bayya as a new candidate"""
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-
 from app.database import engine
-from app.core.seed_credentials import get_seed_test_password
 from app.models import User, Candidate, JobProfile
+from app.core.seed_credentials import get_seed_test_password
 from sqlmodel import Session, select
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+SEED_PASSWORD = get_seed_test_password()
 
 with Session(engine) as session:
     # Check if user already exists
@@ -71,7 +67,7 @@ with Session(engine) as session:
         # Create new candidate user
         new_user = User(
             email='bhavanabayya13@gmail.com',
-            password_hash=pwd_context.hash(get_seed_test_password()),
+            password_hash=pwd_context.hash(SEED_PASSWORD),
             full_name='Bhavana Bayya',
             role='candidate',
             is_active=True
@@ -119,8 +115,8 @@ with Session(engine) as session:
         print(f'✅ Created candidate record (ID: {candidate.id})')
         print(f'✅ Created job profile (ID: {job_profile.id})')
         print(f'   Email: {new_user.email}')
-        print('   Password: shared seed password (see app/core/seed_credentials.py)')
+        print(f'   Password: {SEED_PASSWORD}')
         print()
         print('You can now login at http://localhost:3003 with:')
         print(f'   Email: bhavanabayya13@gmail.com')
-        print('   Password: shared seed password (see app/core/seed_credentials.py)')
+        print(f'   Password: {SEED_PASSWORD}')

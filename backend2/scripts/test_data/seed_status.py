@@ -1,10 +1,6 @@
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-
 from app.database import engine
 from app.models import User, Candidate, Company, JobPosting, JobProfile, Match, Application
+from app.core.seed_credentials import get_seed_test_password
 from sqlmodel import Session, select
 
 emails = [
@@ -38,5 +34,5 @@ with Session(engine) as s:
 
 print("\n" + "=" * 70)
 print("Login at: http://localhost:3003")
-print("Password for all users: shared seed password (see app/core/seed_credentials.py)")
+print(f"Password for all users: {get_seed_test_password()}")
 print("=" * 70)

@@ -41,6 +41,7 @@ from app.models import (
     User, Company, Candidate, JobPosting, JobProfile,
     Application, Match, Swipe, Notification,
 )
+from app.core.seed_credentials import get_seed_test_password
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -697,7 +698,7 @@ def run():
 
         print()
         print("Login credentials (all accounts):")
-        print("  Password: shared seed password (see app/core/seed_credentials.py)")
+        print(f"  Password: {get_seed_test_password()}")
         print()
         print("  Recruiters / HR:")
         print("    bhavana@rubislawinvest.com   → http://localhost:3003 (company login)")
