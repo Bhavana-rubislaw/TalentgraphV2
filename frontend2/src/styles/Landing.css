@@ -668,6 +668,17 @@
 .tg-demo-card input::placeholder { color: #64748b; }
 .tg-demo-card select { color-scheme: dark; }
 
+/* Native <option> rendering ignores color-scheme on some browsers (esp.
+   Windows Chrome/Edge), leaving light-on-light text in the open dropdown
+   unless the option colors are set explicitly here. */
+.tg-demo-card select option {
+  background: #0b1220;
+  color: #e2e8f0;
+}
+.tg-demo-card select option:disabled {
+  color: #64748b;
+}
+
 .tg-demo-card button { margin-top: 20px; }
 
 .tg-demo-legal {
