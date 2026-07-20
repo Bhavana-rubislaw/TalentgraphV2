@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -17,7 +18,14 @@ logger = logging.getLogger(__name__)
 
 class MeetingCancelService:
     @staticmethod
-    def cancel_meeting(*, meeting_id: int, cancel_data, current_user: dict, session: Session):
+    def cancel_meeting(
+        *, meeting_id: int, cancel_data, current_user: dict, session: Session,
+        request_id: Optional[str] = None,
+    ):
+        logger.info(
+            "[MEETING_CANCEL] cancel meeting_id=%s user_id=%s request_id=%s",
+            meeting_id, current_user["user_id"], request_id,
+        )
         meeting = session.get(Meeting, meeting_id)
         if not meeting:
             raise HTTPException(status_code=404, detail="Meeting not found")
@@ -122,8 +130,8 @@ class MeetingCancelService:
                         provider.delete_event(event_id)
                 except CalendarProviderError as e:
                     logger.warning(
-                        "[MEETING_CANCEL] calendar_delete_failed meeting_id=%s provider=%s error=%s",
-                        meeting.id, cal_account.provider.value, e,
+                        "[MEETING_CANCEL] calendar_delete_failed meeting_id=%s provider=%s error=%s request_id=%s",
+                        meeting.id, cal_account.provider.value, e, request_id,
                     )
 
         # Send notifications to ALL participants (including organizer)

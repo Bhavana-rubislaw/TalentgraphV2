@@ -25,8 +25,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import text
+from pydantic import BaseModel
 from sqlmodel import Session, select, func, or_
 
 from ..database import get_session
@@ -47,7 +46,6 @@ from ..models import (
     User,
     UserInvitation,
     UserRole,
-    COMPANY_SIZE_VALUES,
 )
 from ..security import get_current_user, hash_password
 from ..core.logging_config import get_logger, log_change

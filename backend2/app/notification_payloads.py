@@ -102,7 +102,7 @@ class NotificationPayload(BaseModel):
         try:
             data = json.loads(json_str)
             return cls(**data)
-        except Exception as e:
+        except Exception:
             # Return minimal valid payload if parsing fails
             return cls(
                 action=NotificationAction(
@@ -163,7 +163,7 @@ def build_interview_payload(
     return NotificationPayload(
         action=NotificationAction(
             type="navigate",
-            route=f"/interviews",
+            route="/interviews",
             label="View Interview",
             params={"meeting_id": meeting_id}
         ),
@@ -184,7 +184,7 @@ def build_message_payload(
     return NotificationPayload(
         action=NotificationAction(
             type="open_drawer",
-            route=f"/messages",
+            route="/messages",
             label="View Message",
             params={"message_id": message_id, "conversation_id": conversation_id}
         ),
@@ -226,7 +226,7 @@ def build_invitation_payload(
     return NotificationPayload(
         action=NotificationAction(
             type="navigate",
-            route=f"/invites",
+            route="/invites",
             label="View Invitation",
             params={"job_posting_id": job_posting_id}
         ),

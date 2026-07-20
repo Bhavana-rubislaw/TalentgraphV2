@@ -28,7 +28,7 @@ from app.database import get_session
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,
     AnalyticsEventType, JobPosting, Company, User, Application,
-    Swipe, Meeting, MeetingStatus, MeetingType, JobPostingStatus
+    Swipe, Meeting, MeetingStatus, JobPostingStatus
 )
 from app.security import get_current_user, require_recruiter_role, require_hr_role
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
@@ -149,7 +149,6 @@ async def get_overview_metrics(
     
     # Aggregate metrics
     total_views = sum(r.jobs_viewed for r in rollups)
-    total_likes = sum(r.jobs_liked for r in rollups)
     total_applications = sum(r.applications_submitted for r in rollups)
     total_interviews = sum(r.interviews_scheduled for r in rollups)
     total_offers = sum(r.offers_made for r in rollups)

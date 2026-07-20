@@ -4,7 +4,7 @@ Like/Pass interactions from candidates
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status, Body, Request
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
 from app.database import get_session
@@ -12,7 +12,6 @@ from app.models import Swipe, Candidate, Company, JobPosting, JobProfile, User, 
 from app.security import get_current_user
 from app.routers.notifications import push_notification
 from app.services.audit import log_activity_event, snap_swipe
-from app.services.notification_service import NotificationService
 from app.services.user_service import UserService
 
 logger = logging.getLogger(__name__)

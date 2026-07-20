@@ -12,7 +12,7 @@ Usage:
 import logging
 import hashlib
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Optional
 from sqlmodel import Session, select
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
@@ -20,7 +20,6 @@ from apscheduler.triggers.date import DateTrigger
 from app.database import engine
 from app.models import EmailDelivery, EmailDeliveryStatus, User
 from app.emailer import send_email
-from app.services.notification_email_service import NotificationEmailTemplates
 
 logger = logging.getLogger(__name__)
 
@@ -219,8 +218,6 @@ def _generate_email_content(event_type: str, recipient_email: str, user: User) -
     
     This is a simplified version. In production, you'd pass full email_data from notification service.
     """
-    templates = NotificationEmailTemplates()
-    
     # Default minimal template
     subject = f"TalentGraph Notification: {event_type.replace('_', ' ').title()}"
     html_body = f"""

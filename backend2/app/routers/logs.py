@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select, and_, or_
 
 from ..database import get_session
-from ..models import SystemLog, User
-from ..core.logging_config import get_logger, log_change
+from ..models import SystemLog
+from ..core.logging_config import get_logger
 from ..security import get_current_user
 
 router = APIRouter(prefix="/api/logs", tags=["Logs"])

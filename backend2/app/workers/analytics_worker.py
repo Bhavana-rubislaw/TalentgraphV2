@@ -9,8 +9,6 @@ Schedule: Daily at 3 AM UTC
 import logging
 from datetime import datetime, timezone, timedelta, date
 
-from sqlmodel import Session
-
 from app.database import get_session
 from app.services.analytics_service import AnalyticsService
 

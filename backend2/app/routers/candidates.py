@@ -5,18 +5,17 @@ Resume parsing endpoint added for job preferences auto-fill
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from sqlmodel import Session, select
 from sqlalchemy import text
 from typing import List, Optional
 from pathlib import Path
-import shutil
 from datetime import datetime
 from app.database import get_session
 from app.models import Candidate, JobProfile, User, Resume, Certification, Skill, LocationPreference
 from app.schemas import (
     CandidateRead, CandidateCreate, JobProfileRead, JobProfileCreate,
-    ResumeRead, CertificationRead, SkillCreate, LocationPreferenceCreate
+    ResumeRead, CertificationRead
 )
 from app.security import get_current_user
 

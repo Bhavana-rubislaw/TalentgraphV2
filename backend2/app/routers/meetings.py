@@ -52,6 +52,7 @@ router = APIRouter(prefix="/meetings", tags=["meetings"])
 @router.post("/create", response_model=MeetingRead)
 async def create_meeting(
     meeting_data: MeetingCreate,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -62,7 +63,8 @@ async def create_meeting(
     - Creates meeting and participant records
     - Sends notifications to all participants
     """
-    
+    request_id = getattr(request.state, "request_id", None)
+
     # Validate time
     if meeting_data.scheduled_end <= meeting_data.scheduled_start:
         raise HTTPException(status_code=400, detail="End time must be after start time")
@@ -261,7 +263,10 @@ async def create_meeting(
         )
     
     # Send notifications to all participants (except organizer)
-    logger.info(f"[MEETING CREATE] Sending notifications for meeting {meeting.id} to {len(participant_user_ids)} participants")
+    logger.info(
+        f"[MEETING CREATE] Sending notifications for meeting {meeting.id} to "
+        f"{len(participant_user_ids)} participants, request_id={request_id}"
+    )
     notifications_sent = 0
     for user_id in participant_user_ids:
         try:
@@ -276,7 +281,10 @@ async def create_meeting(
             notifications_sent += 1
             logger.info(f"✓ Notification sent to user {user_id}, notification ID: {notif.id}")
         except Exception as e:
-            logger.error(f"✗ Failed to send notification to user {user_id}: {e}", exc_info=True)
+            logger.error(
+                f"✗ Failed to send notification to user {user_id}: {e}, request_id={request_id}",
+                exc_info=True,
+            )
 
     # Also send confirmation notification to the organizer
     try:
@@ -291,9 +299,16 @@ async def create_meeting(
         notifications_sent += 1
         logger.info(f"✓ Organizer notification sent to user {current_user['user_id']}, notification ID: {notif.id}")
     except Exception as e:
-        logger.error(f"✗ Failed to send organizer notification to user {current_user['user_id']}: {e}", exc_info=True)
-    
-    logger.info(f"[MEETING CREATE] Sent {notifications_sent}/{len(all_participant_ids)} notifications successfully")
+        logger.error(
+            f"✗ Failed to send organizer notification to user {current_user['user_id']}: {e}, "
+            f"request_id={request_id}",
+            exc_info=True,
+        )
+
+    logger.info(
+        f"[MEETING CREATE] Sent {notifications_sent}/{len(all_participant_ids)} notifications "
+        f"successfully, request_id={request_id}"
+    )
     
     # Send email notifications with action tokens
     email_service = MeetingEmailService(queue_mode=True)
@@ -326,7 +341,10 @@ async def create_meeting(
                 )
                 emails_sent += 1
             except Exception as e:
-                logger.error(f"✗ Failed to send email to {recipient.email}: {e}", exc_info=True)
+                logger.error(
+                    f"✗ Failed to send email to {recipient.email}: {e}, request_id={request_id}",
+                    exc_info=True,
+                )
                 email_failures.append(recipient.email)
 
     # Send organizer confirmation email (lists all participants)
@@ -342,10 +360,17 @@ async def create_meeting(
             )
             emails_sent += 1
         except Exception as e:
-            logger.error(f"✗ Failed to send organizer confirmation email to {current_user_obj.email}: {e}", exc_info=True)
+            logger.error(
+                f"✗ Failed to send organizer confirmation email to {current_user_obj.email}: {e}, "
+                f"request_id={request_id}",
+                exc_info=True,
+            )
             email_failures.append(current_user_obj.email)
-    
-    logger.info(f"[MEETING CREATE] Sent {emails_sent}/{len(all_participant_ids)} emails successfully")
+
+    logger.info(
+        f"[MEETING CREATE] Sent {emails_sent}/{len(all_participant_ids)} emails successfully, "
+        f"request_id={request_id}"
+    )
     if email_failures:
         logger.warning(f"[MEETING CREATE] Email failures for: {', '.join(email_failures)}")
     
@@ -451,6 +476,7 @@ async def get_meeting(
 async def update_meeting(
     meeting_id: int,
     update_data: MeetingUpdate,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -461,14 +487,15 @@ async def update_meeting(
     - Can add/remove participants
     - Notifies all participants of changes
     """
-    
+    request_id = getattr(request.state, "request_id", None)
     logger.info(f"PATCH /meetings/{meeting_id} - User: {current_user['email']} (ID: {current_user['user_id']})")
-    
+
     return MeetingUpdateService.update_meeting(
         meeting_id=meeting_id,
         update_data=update_data,
         current_user=current_user,
         session=session,
+        request_id=request_id,
     )
 
 
@@ -476,6 +503,7 @@ async def update_meeting(
 async def cancel_meeting(
     meeting_id: int,
     cancel_data: MeetingCancelRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -488,12 +516,13 @@ async def cancel_meeting(
     - Sends notifications and emails
     - Updates calendar events
     """
-    
+
     return MeetingCancelService.cancel_meeting(
         meeting_id=meeting_id,
         cancel_data=cancel_data,
         current_user=current_user,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 
@@ -501,6 +530,7 @@ async def cancel_meeting(
 async def reschedule_meeting(
     meeting_id: int,
     reschedule_data: MeetingRescheduleRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -517,6 +547,7 @@ async def reschedule_meeting(
         reschedule_data=reschedule_data,
         current_user=current_user,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 
@@ -526,6 +557,7 @@ async def reschedule_meeting(
 async def request_reschedule(
     meeting_id: int,
     request_data: CandidateRescheduleRequest,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -542,6 +574,7 @@ async def request_reschedule(
         request_data=request_data,
         current_user=current_user,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 
@@ -549,6 +582,7 @@ async def request_reschedule(
 async def respond_to_reschedule_request(
     meeting_id: int,
     response_data: RecruiterRescheduleResponse,
+    request: Request,
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -557,12 +591,13 @@ async def respond_to_reschedule_request(
     - Approve: reschedule to new time
     - Reject: keep original time, return to SCHEDULED status
     """
-    
+
     return MeetingRespondRescheduleService.respond_to_reschedule_request(
         meeting_id=meeting_id,
         response_data=response_data,
         current_user=current_user,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 
@@ -600,8 +635,12 @@ async def confirm_meeting_via_token(
     session: Session = Depends(get_session)
 ):
     """Confirm meeting attendance via email token link"""
-    
-    return MeetingTokenActionService.confirm_meeting_via_token(token=token, session=session)
+
+    return MeetingTokenActionService.confirm_meeting_via_token(
+        token=token,
+        session=session,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @router.get("/token/{token}/cancel")
@@ -611,22 +650,28 @@ async def cancel_meeting_via_token(
     session: Session = Depends(get_session)
 ):
     """Cancel meeting via email token link - shows confirmation form"""
-    
-    return MeetingTokenActionService.cancel_meeting_form_via_token(token=token, session=session)
+
+    return MeetingTokenActionService.cancel_meeting_form_via_token(
+        token=token,
+        session=session,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @router.post("/token/{token}/cancel")
 async def cancel_meeting_via_token_confirmed(
     token: str,
     cancel_data: MeetingCancelRequest,
+    request: Request,
     session: Session = Depends(get_session)
 ):
     """Actually cancel meeting after confirmation via token"""
-    
+
     return MeetingTokenActionService.cancel_meeting_via_token_confirmed(
         token=token,
         cancel_data=cancel_data,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 
@@ -637,22 +682,28 @@ async def request_reschedule_via_token(
     session: Session = Depends(get_session)
 ):
     """Show reschedule request form via email token"""
-    
-    return MeetingTokenActionService.reschedule_form_via_token(token=token, session=session)
+
+    return MeetingTokenActionService.reschedule_form_via_token(
+        token=token,
+        session=session,
+        request_id=getattr(request.state, "request_id", None),
+    )
 
 
 @router.post("/token/{token}/reschedule")
 async def request_reschedule_via_token_submit(
     token: str,
     request_data: CandidateRescheduleRequest,
+    request: Request,
     session: Session = Depends(get_session)
 ):
     """Submit reschedule request via email token"""
-    
+
     return MeetingTokenActionService.reschedule_submit_via_token(
         token=token,
         request_data=request_data,
         session=session,
+        request_id=getattr(request.state, "request_id", None),
     )
 
 

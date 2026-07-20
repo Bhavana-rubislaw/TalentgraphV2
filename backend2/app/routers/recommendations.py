@@ -5,12 +5,11 @@ Enhanced matching algorithm with skills, experience, salary, and location matchi
 """
 
 import logging
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
-from typing import List
 from app.database import get_session
 from app.models import (
-    JobPosting, Candidate, JobProfile, Company, User, Match, Swipe, 
+    JobPosting, JobProfile, Company, User, Match, Swipe,
     Skill, LocationPreference, JobPostingStatus
 )
 from app.security import get_current_user

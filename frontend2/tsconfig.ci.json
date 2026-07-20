@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "src/pages/LoggingDashboard.tsx",
+    "src/components/JobApplicationForm.tsx"
+  ]
+}

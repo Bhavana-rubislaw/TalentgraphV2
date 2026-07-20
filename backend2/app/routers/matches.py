@@ -3,11 +3,11 @@ Matches routes
 Mutual matches between candidates and recruiters
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from typing import List
 from app.database import get_session
-from app.models import Match, Swipe, Candidate, Company, JobProfile, JobPosting, User
+from app.models import Match, Candidate, Company, User
 from app.schemas import MatchRead
 from app.security import get_current_user
 

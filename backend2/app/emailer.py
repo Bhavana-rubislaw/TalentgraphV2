@@ -101,7 +101,7 @@ def send_email(
         
         logger.info(f"[EMAIL] Connecting to SMTP server {MAIL_SERVER}:{MAIL_PORT}")
         with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
-            logger.info(f"[EMAIL] Starting TLS")
+            logger.info("[EMAIL] Starting TLS")
             server.starttls()
             logger.info(f"[EMAIL] Logging in with username: {MAIL_USERNAME}")
             server.login(MAIL_USERNAME, MAIL_PASSWORD)
@@ -113,7 +113,7 @@ def send_email(
         
     except smtplib.SMTPAuthenticationError as e:
         logger.error(f"[EMAIL] [ERROR] SMTP Authentication failed for {MAIL_USERNAME}: {str(e)}")
-        logger.error(f"[EMAIL] Check that SMTP_PASSWORD is a valid Gmail App Password")
+        logger.error("[EMAIL] Check that SMTP_PASSWORD is a valid Gmail App Password")
         raise
     except smtplib.SMTPException as e:
         logger.error(f"[EMAIL] [ERROR] SMTP error sending to {to_email}: {str(e)}")

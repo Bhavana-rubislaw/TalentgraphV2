@@ -1,18 +1,26 @@
+"""
+Confirms X-Request-Id flows end-to-end: RequestIdMiddleware -> meetings router
+-> meeting service call kwargs, for both authenticated and tokenized endpoints.
+"""
+
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.database import get_session
+from app.middleware.request_id import RequestIdMiddleware
 from app.routers import meetings
 from app.schemas import MeetingRead, MeetingStatus, MeetingType
 from app.security import get_current_user
 from app.services.meeting_cancel_service import MeetingCancelService
+from app.services.meeting_token_action_service import MeetingTokenActionService
 
 
 def _build_client():
     app = FastAPI()
     app.include_router(meetings.router)
+    app.add_middleware(RequestIdMiddleware)
 
     class DummySession:
         pass
@@ -51,9 +59,9 @@ def _meeting_read() -> MeetingRead:
         video_provider=None,
         google_calendar_event_id=None,
         microsoft_calendar_event_id=None,
-        cancelled_at=now,
-        cancelled_by_user_id=99,
-        cancellation_reason="Conflict",
+        cancelled_at=None,
+        cancelled_by_user_id=None,
+        cancellation_reason=None,
         reschedule_requested_at=None,
         reschedule_requested_by_user_id=None,
         reschedule_request_reason=None,
@@ -64,57 +72,68 @@ def _meeting_read() -> MeetingRead:
     )
 
 
-def test_cancel_meeting_delegates_to_service(monkeypatch):
-    client, dummy_session = _build_client()
+def test_cancel_meeting_propagates_incoming_request_id(monkeypatch):
+    client, _ = _build_client()
     calls = []
 
     def fake_cancel_meeting(*, meeting_id, cancel_data, current_user, session, request_id=None):
-        calls.append(
-            {
-                "meeting_id": meeting_id,
-                "cancel_data": cancel_data,
-                "current_user": current_user,
-                "session": session,
-            }
-        )
+        calls.append(request_id)
         return _meeting_read()
 
     monkeypatch.setattr(
-        MeetingCancelService,
-        "cancel_meeting",
-        staticmethod(fake_cancel_meeting),
+        MeetingCancelService, "cancel_meeting", staticmethod(fake_cancel_meeting)
     )
 
     response = client.post(
         "/meetings/555/cancel",
-        json={"cancellation_reason": "Conflict"},
+        json={"cancellation_reason": "conflict"},
+        headers={"X-Request-Id": "req-cancel-known"},
     )
 
     assert response.status_code == 200
-    assert response.json()["id"] == 555
-    assert len(calls) == 1
-    assert calls[0]["meeting_id"] == 555
-    assert calls[0]["cancel_data"].cancellation_reason == "Conflict"
-    assert calls[0]["current_user"]["email"] == "recruiter@example.com"
-    assert calls[0]["session"] is dummy_session
+    assert response.headers["x-request-id"] == "req-cancel-known"
+    assert calls == ["req-cancel-known"]
 
 
-def test_cancel_meeting_preserves_http_errors(monkeypatch):
+def test_cancel_meeting_mints_request_id_when_absent(monkeypatch):
     client, _ = _build_client()
+    calls = []
 
     def fake_cancel_meeting(*, meeting_id, cancel_data, current_user, session, request_id=None):
-        raise HTTPException(status_code=400, detail="Meeting already cancelled")
+        calls.append(request_id)
+        return _meeting_read()
 
     monkeypatch.setattr(
-        MeetingCancelService,
-        "cancel_meeting",
-        staticmethod(fake_cancel_meeting),
+        MeetingCancelService, "cancel_meeting", staticmethod(fake_cancel_meeting)
     )
 
-    response = client.post(
-        "/meetings/555/cancel",
-        json={"cancellation_reason": "Conflict"},
+    response = client.post("/meetings/555/cancel", json={"cancellation_reason": "conflict"})
+
+    assert response.status_code == 200
+    minted_id = response.headers["x-request-id"]
+    assert minted_id
+    assert calls == [minted_id]
+
+
+def test_confirm_via_token_propagates_request_id(monkeypatch):
+    client, _ = _build_client()
+    calls = []
+
+    def fake_confirm(*, token, session, request_id=None):
+        calls.append(request_id)
+        return {"message": "ok", "meeting_id": 1, "redirect_url": "/meetings/1"}
+
+    monkeypatch.setattr(
+        MeetingTokenActionService,
+        "confirm_meeting_via_token",
+        staticmethod(fake_confirm),
     )
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Meeting already cancelled"
+    response = client.get(
+        "/meetings/token/tok123/confirm",
+        headers={"X-Request-Id": "req-token-confirm"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["x-request-id"] == "req-token-confirm"
+    assert calls == ["req-token-confirm"]

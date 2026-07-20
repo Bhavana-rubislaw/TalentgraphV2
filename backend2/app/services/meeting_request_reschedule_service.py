@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlmodel import Session
@@ -17,10 +18,13 @@ logger = logging.getLogger(__name__)
 
 class MeetingRequestRescheduleService:
     @staticmethod
-    def request_reschedule(*, meeting_id: int, request_data, current_user: dict, session: Session):
+    def request_reschedule(
+        *, meeting_id: int, request_data, current_user: dict, session: Session,
+        request_id: Optional[str] = None,
+    ):
         logger.info(
-            "[MEETING_REQUEST_RESCHEDULE] request meeting_id=%s requester_user_id=%s",
-            meeting_id, current_user.get('user_id'),
+            "[MEETING_REQUEST_RESCHEDULE] request meeting_id=%s requester_user_id=%s request_id=%s",
+            meeting_id, current_user.get('user_id'), request_id,
         )
         meeting = session.get(Meeting, meeting_id)
         if not meeting:

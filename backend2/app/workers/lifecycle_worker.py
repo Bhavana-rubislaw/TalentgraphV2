@@ -9,8 +9,6 @@ Schedule: Daily at 2 AM UTC
 import logging
 from datetime import datetime, timezone
 
-from sqlmodel import Session
-
 from app.database import get_session
 from app.services.lifecycle_service import run_daily_lifecycle_checks
 

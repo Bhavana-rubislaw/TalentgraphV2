@@ -3,17 +3,17 @@ Authentication routes - signup, login, token management
 With rate limiting for security
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status, Request
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import Session, select
 from app.database import get_session
-from app.models import User, Candidate, Company, UserRole
+from app.models import User, Company, UserRole
 from app.schemas import (
     UserCreate, UserLogin,
     CandidateSignUp, CandidateLogin,
     CompanySignUp, CompanyLogin
 )
 from app.security import hash_password, verify_password, create_access_token, get_current_user
-from app.core.logging_config import get_logger, log_change
+from app.core.logging_config import get_logger
 from app.services.profile_completion_service import get_profile_completion_status
 
 logger = get_logger(__name__)

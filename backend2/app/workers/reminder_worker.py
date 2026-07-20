@@ -9,8 +9,6 @@ Schedule: Hourly
 import logging
 from datetime import datetime, timezone
 
-from sqlmodel import Session
-
 from app.database import get_session
 from app.services.lifecycle_service import run_hourly_reminders
 

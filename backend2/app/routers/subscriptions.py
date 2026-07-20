@@ -13,7 +13,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.models import (
     Company, CompanySubscription, CreditTransaction,
-    SubscriptionPlan, User, UserRole,
+    SubscriptionPlan,
 )
 from app.security import get_current_user
 from app.core.logging_config import get_logger

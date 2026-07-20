@@ -68,7 +68,7 @@ def test_update_meeting_delegates_to_service(monkeypatch):
     client, dummy_session = _build_client()
     calls = []
 
-    def fake_update_meeting(*, meeting_id, update_data, current_user, session):
+    def fake_update_meeting(*, meeting_id, update_data, current_user, session, request_id=None):
         calls.append(
             {
                 "meeting_id": meeting_id,
@@ -99,7 +99,7 @@ def test_update_meeting_delegates_to_service(monkeypatch):
 def test_update_meeting_preserves_http_errors(monkeypatch):
     client, _ = _build_client()
 
-    def fake_update_meeting(*, meeting_id, update_data, current_user, session):
+    def fake_update_meeting(*, meeting_id, update_data, current_user, session, request_id=None):
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     monkeypatch.setattr(

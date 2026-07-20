@@ -22,7 +22,6 @@ from sqlmodel import Session, select
 from app.database import engine as core_engine
 from app.models import (
     Candidate,
-    Company,
     JobPosting,
     JobPostingStatus,
     JobProfile,

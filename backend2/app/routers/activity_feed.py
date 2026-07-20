@@ -15,13 +15,13 @@ job_id      : recruiter-only filter events by a specific job posting entity_id
 
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, desc
 
 from app.database import get_session
-from app.models import ActivityEvent, Candidate, Company, User
+from app.models import ActivityEvent, Company, User
 from app.security import get_current_user
 
 logger = logging.getLogger(__name__)

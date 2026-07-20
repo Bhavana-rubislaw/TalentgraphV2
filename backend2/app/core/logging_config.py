@@ -6,9 +6,10 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from sqlmodel import Session, select
 from ..database import get_session
 from ..models import SystemLog
+
+logger = logging.getLogger(__name__)
 
 class StructuredFormatter(logging.Formatter):
     """Custom formatter that outputs structured JSON logs"""

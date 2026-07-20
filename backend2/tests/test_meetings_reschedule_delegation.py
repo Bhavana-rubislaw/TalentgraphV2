@@ -68,7 +68,7 @@ def test_reschedule_meeting_delegates_to_service(monkeypatch):
     client, dummy_session = _build_client()
     calls = []
 
-    def fake_reschedule_meeting(*, meeting_id, reschedule_data, current_user, session):
+    def fake_reschedule_meeting(*, meeting_id, reschedule_data, current_user, session, request_id=None):
         calls.append(
             {
                 "meeting_id": meeting_id,
@@ -107,7 +107,7 @@ def test_reschedule_meeting_delegates_to_service(monkeypatch):
 def test_reschedule_meeting_preserves_http_errors(monkeypatch):
     client, _ = _build_client()
 
-    def fake_reschedule_meeting(*, meeting_id, reschedule_data, current_user, session):
+    def fake_reschedule_meeting(*, meeting_id, reschedule_data, current_user, session, request_id=None):
         raise HTTPException(status_code=409, detail="User 42 has a scheduling conflict")
 
     monkeypatch.setattr(

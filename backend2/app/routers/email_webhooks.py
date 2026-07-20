@@ -17,17 +17,16 @@ Security:
 
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session, select
-from pydantic import BaseModel
 
 from app.database import get_session
 from app.models import (
     EmailThreadLink, InboundEmailEvent, Message,
-    Conversation, Meeting, User, MeetingStatus
+    Meeting, MeetingStatus
 )
 from app.services.email_service import EmailService, extract_token_from_email, extract_text_from_html
 from app.routers.notifications import push_notification
@@ -254,7 +253,7 @@ async def confirm_meeting_via_token(
             session=session,
             user_id=thread_link.recruiter_user_id,
             title="Meeting confirmed",
-            message=f"Candidate confirmed the interview",
+            message="Candidate confirmed the interview",
             notification_type="meeting",
             entity_id=meeting.id
         )
@@ -298,7 +297,7 @@ async def reschedule_meeting_via_token(
         session=session,
         user_id=thread_link.recruiter_user_id,
         title="Reschedule requested",
-        message=f"Candidate requested to reschedule the interview",
+        message="Candidate requested to reschedule the interview",
         notification_type="meeting",
         entity_id=meeting.id
     )
@@ -348,7 +347,7 @@ async def cancel_meeting_via_token(
         session=session,
         user_id=thread_link.recruiter_user_id,
         title="Meeting cancelled",
-        message=f"Candidate cancelled the interview",
+        message="Candidate cancelled the interview",
         notification_type="meeting",
         entity_id=meeting.id
     )
@@ -451,7 +450,7 @@ def generate_confirmation_page(meeting: Meeting, action: str) -> str:
 
 def generate_reschedule_page(meeting: Meeting) -> str:
     """Generate reschedule request page HTML"""
-    return f"""
+    return """
     <!DOCTYPE html>
     <html>
     <head>

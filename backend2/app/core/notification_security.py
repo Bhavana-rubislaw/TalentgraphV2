@@ -10,8 +10,8 @@ CRITICAL: Always sanitize notification content before sending emails.
 """
 
 import logging
-from typing import Optional, Dict, Any
-from sqlmodel import Session, select
+from typing import Dict, Any
+from sqlmodel import Session
 
 from app.models import User, Application, JobPosting, Meeting
 

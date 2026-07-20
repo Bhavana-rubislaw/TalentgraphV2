@@ -22,7 +22,7 @@ from ..models import (
     Meeting, MeetingStatus, Swipe, ProductVendor, ProductType, ProductRole,
     JobProfile, LocationPreference,
     UserRole, JobPostingStatus,
-    AnalyticsRollupDaily, AnalyticsEvent, AnalyticsEventType,
+    AnalyticsEvent, AnalyticsEventType,
 )
 from ..security import get_current_user
 from ..core.logging_config import get_logger, log_change

@@ -5,7 +5,6 @@ Recommendations, matches, applications, invites, shortlists
 
 import logging
 import json
-import os
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import FileResponse
@@ -1772,7 +1771,6 @@ def browse_all_candidates(
     
     # Apply search filter
     if search:
-        search_lower = search.lower()
         query = query.where(
             or_(
                 Candidate.name.ilike(f"%{search}%"),

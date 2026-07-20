@@ -7,7 +7,7 @@ import os
 import hashlib
 import logging
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import Tuple
 from fastapi import UploadFile, HTTPException
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ class FileValidator:
             if size == 0:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Empty file not allowed"
+                    detail="Empty file not allowed"
                 )
             
             if size > max_size:

@@ -3,8 +3,8 @@ API Schemas for request/response validation
 Pydantic models mirroring database structure
 """
 
-from typing import Optional, List, Any
-from pydantic import BaseModel, EmailStr, Field, computed_field, ConfigDict
+from typing import Optional, List
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
 

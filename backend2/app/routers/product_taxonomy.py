@@ -18,7 +18,7 @@ Endpoints:
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlmodel import Session, select, or_, func
+from sqlmodel import Session, select
 from app.database import get_session
 from app.models import ProductVendor, ProductType, ProductRole, User, TaxonomySkill, RoleSkillLink
 from app.security import get_current_user

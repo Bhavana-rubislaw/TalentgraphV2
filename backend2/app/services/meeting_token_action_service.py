@@ -3,6 +3,7 @@
 import json
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import and_
@@ -42,8 +43,11 @@ class MeetingTokenActionService:
         return token_record
 
     @staticmethod
-    def confirm_meeting_via_token(*, token: str, session: Session):
-        logger.info("[MEETING_TOKEN_ACTION] confirm_via_token token_suffix=%s", _token_suffix(token))
+    def confirm_meeting_via_token(*, token: str, session: Session, request_id: Optional[str] = None):
+        logger.info(
+            "[MEETING_TOKEN_ACTION] confirm_via_token token_suffix=%s request_id=%s",
+            _token_suffix(token), request_id,
+        )
         token_record = MeetingTokenActionService._get_valid_token_record(session, token, "confirm")
 
         meeting = session.get(Meeting, token_record.meeting_id)
@@ -86,8 +90,11 @@ class MeetingTokenActionService:
         }
 
     @staticmethod
-    def cancel_meeting_form_via_token(*, token: str, session: Session):
-        logger.info("[MEETING_TOKEN_ACTION] cancel_form_via_token token_suffix=%s", _token_suffix(token))
+    def cancel_meeting_form_via_token(*, token: str, session: Session, request_id: Optional[str] = None):
+        logger.info(
+            "[MEETING_TOKEN_ACTION] cancel_form_via_token token_suffix=%s request_id=%s",
+            _token_suffix(token), request_id,
+        )
         token_record = MeetingTokenActionService._get_valid_token_record(session, token, "cancel")
         meeting = session.get(Meeting, token_record.meeting_id)
         if not meeting:
@@ -101,8 +108,13 @@ class MeetingTokenActionService:
         }
 
     @staticmethod
-    def cancel_meeting_via_token_confirmed(*, token: str, cancel_data, session: Session):
-        logger.info("[MEETING_TOKEN_ACTION] cancel_confirmed_via_token token_suffix=%s", _token_suffix(token))
+    def cancel_meeting_via_token_confirmed(
+        *, token: str, cancel_data, session: Session, request_id: Optional[str] = None,
+    ):
+        logger.info(
+            "[MEETING_TOKEN_ACTION] cancel_confirmed_via_token token_suffix=%s request_id=%s",
+            _token_suffix(token), request_id,
+        )
         token_record = MeetingTokenActionService._get_valid_token_record(session, token, "cancel")
 
         meeting = session.get(Meeting, token_record.meeting_id)
@@ -166,8 +178,11 @@ class MeetingTokenActionService:
         }
 
     @staticmethod
-    def reschedule_form_via_token(*, token: str, session: Session):
-        logger.info("[MEETING_TOKEN_ACTION] reschedule_form_via_token token_suffix=%s", _token_suffix(token))
+    def reschedule_form_via_token(*, token: str, session: Session, request_id: Optional[str] = None):
+        logger.info(
+            "[MEETING_TOKEN_ACTION] reschedule_form_via_token token_suffix=%s request_id=%s",
+            _token_suffix(token), request_id,
+        )
         token_record = MeetingTokenActionService._get_valid_token_record(session, token, "reschedule")
         meeting = session.get(Meeting, token_record.meeting_id)
         if not meeting:
@@ -181,8 +196,13 @@ class MeetingTokenActionService:
         }
 
     @staticmethod
-    def reschedule_submit_via_token(*, token: str, request_data, session: Session):
-        logger.info("[MEETING_TOKEN_ACTION] reschedule_submit_via_token token_suffix=%s", _token_suffix(token))
+    def reschedule_submit_via_token(
+        *, token: str, request_data, session: Session, request_id: Optional[str] = None,
+    ):
+        logger.info(
+            "[MEETING_TOKEN_ACTION] reschedule_submit_via_token token_suffix=%s request_id=%s",
+            _token_suffix(token), request_id,
+        )
         token_record = MeetingTokenActionService._get_valid_token_record(session, token, "reschedule")
 
         meeting = session.get(Meeting, token_record.meeting_id)

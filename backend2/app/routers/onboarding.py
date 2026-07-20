@@ -5,9 +5,8 @@ Supports manual fill and resume auto-parse paths
 
 import logging
 import json
-from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from sqlmodel import Session, select
-from typing import Optional
 from pathlib import Path
 from datetime import datetime
 import shutil
@@ -18,7 +17,6 @@ from app.schemas import (
     ResumeDraftProfileRead,
     ResumeDraftProfileUpdate,
     ResumeDraftFinalizeRequest,
-    CandidateCreate
 )
 from app.security import get_current_user
 from app.services.resume_parser import ResumeParser

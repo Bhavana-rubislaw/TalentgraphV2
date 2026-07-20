@@ -8,7 +8,7 @@ DO NOT add new event types without updating this registry.
 """
 
 from enum import Enum
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from dataclasses import dataclass
 
 
@@ -51,7 +51,7 @@ class NotificationSpec:
         """Generate action route with parameters"""
         try:
             return self.action_route_template.format(**params)
-        except KeyError as e:
+        except KeyError:
             return self.action_route_template
 
 

@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlmodel import Session, select
@@ -19,7 +20,14 @@ logger = logging.getLogger(__name__)
 
 class MeetingRescheduleService:
     @staticmethod
-    def reschedule_meeting(*, meeting_id: int, reschedule_data, current_user: dict, session: Session):
+    def reschedule_meeting(
+        *, meeting_id: int, reschedule_data, current_user: dict, session: Session,
+        request_id: Optional[str] = None,
+    ):
+        logger.info(
+            "[MEETING_RESCHEDULE] reschedule meeting_id=%s user_id=%s request_id=%s",
+            meeting_id, current_user["user_id"], request_id,
+        )
         meeting = session.get(Meeting, meeting_id)
         if not meeting:
             raise HTTPException(status_code=404, detail="Meeting not found")
@@ -135,8 +143,8 @@ class MeetingRescheduleService:
                     )
             except CalendarProviderError as e:
                 logger.warning(
-                    "[MEETING_RESCHEDULE] calendar_update_failed meeting_id=%s provider=%s error=%s",
-                    meeting.id, cal_account.provider.value, e,
+                    "[MEETING_RESCHEDULE] calendar_update_failed meeting_id=%s provider=%s error=%s request_id=%s",
+                    meeting.id, cal_account.provider.value, e, request_id,
                 )
 
         # Notify ALL participants including organizer
@@ -188,8 +196,8 @@ class MeetingRescheduleService:
                         )
                 except Exception as email_err:
                     logger.warning(
-                        "[MEETING_RESCHEDULE] reschedule_email_failed meeting_id=%s recipient_id=%s error=%s",
-                        meeting.id, uid, email_err,
+                        "[MEETING_RESCHEDULE] reschedule_email_failed meeting_id=%s recipient_id=%s error=%s request_id=%s",
+                        meeting.id, uid, email_err, request_id,
                     )
 
         session.refresh(meeting)

@@ -3,8 +3,6 @@ FastAPI main application for TalentGraph V2
 Runs on port 8001
 """
 
-import logging
-import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -61,6 +59,62 @@ app = FastAPI(
 )
 
 # CORS Configuration - Restrictive for production security
+default_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:3003",
+    "http://127.0.0.1:3003",
+    "http://localhost:3004",
+    "http://127.0.0.1:3004",
+    "http://localhost:3005",
+    "http://127.0.0.1:3005",
+]
+
+# Optional env override: FRONTEND_ORIGINS="http://localhost:3002,https://app.example.com"
+frontend_origins_env = os.getenv("FRONTEND_ORIGINS", "").strip()
+origins = [
+    origin.strip() for origin in frontend_origins_env.split(",") if origin.strip()
+] or default_origins
+
+# Production environment check
+is_production = os.getenv("APP_ENV", "development").lower() == "production"
+
+# Configure CORS with appropriate strictness
+if is_production:
+    # Production: strict CORS - no regex, explicit origins only
+    logger.info("[CORS] Production mode - strict CORS policy")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,  # Explicit whitelist only
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],  # Only expose specific headers
+        max_age=3600,
+    )
+else:
+    # Development: flexible for local testing on various ports
+    logger.info("[CORS] Development mode - flexible CORS for localhost")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        # Allow localhost variations only in development
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1):(300[0-9]|8000|8001|5173)$",
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "Origin", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],  # Limited exposure
+        max_age=3600,
+    )
+
+logger.info(f"[STARTUP] CORS origins configured: {origins}")
+# Request-ID tracing — must be added AFTER CORSMiddleware
+app.add_middleware(RequestIdMiddleware)
+
 register_api_routers(app, logger, log_change)
 limiter = setup_rate_limiting(app)
 

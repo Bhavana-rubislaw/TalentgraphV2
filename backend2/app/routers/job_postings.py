@@ -3,18 +3,17 @@ Job Posting routes
 Recruiter/Admin job creation and management with skills support
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from typing import List
 from datetime import datetime
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 from app.database import get_session
-from app.models import JobPosting, JobPostingSkill, Company, User, JobPostingStatus, Application, Candidate
+from app.models import JobPosting, JobPostingSkill, Company, User, JobPostingStatus
 from app.schemas import (
-    JobPostingRead, JobPostingCreate, JobPostingSkillCreate, JobPostingSkillRead,
+    JobPostingRead, JobPostingCreate, JobPostingSkillCreate,
     JobPostingStatusUpdateRequest, JobPostingStatusUpdateResponse
 )
 from app.security import (
@@ -25,8 +24,6 @@ from app.security import (
     get_user_company_id,
     verify_company_owns_job
 )
-from app.routers.notifications import push_notification
-from app.services.notification_service import NotificationService
 from app.services.job_posting_service import JobPostingService
 
 router = APIRouter(prefix="/job-postings", tags=["Job Postings"])
@@ -421,210 +418,4 @@ def update_job_posting_status(
         action=request.action.lower(),
         user=user,
         cancellation_reason=request.cancellation_reason,
-    )
-    
-    # Validate and execute state transition
-    if action == "freeze":
-        # Prevent actions on cancelled jobs
-        if current_status == JobPostingStatus.CANCELLED:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot freeze a cancelled job. Cancelled jobs are permanently closed."
-            )
-        
-        if current_status not in [JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED]:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Cannot freeze job from '{current_status}' status. Only active or reposted jobs can be frozen."
-            )
-        
-        job_posting.status = JobPostingStatus.FROZEN
-        job_posting.frozen_at = now
-        job_posting.is_active = False  # Legacy field sync
-        message = "Job posting frozen successfully"
-
-        # In-app + email notification to the user who froze the job
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
-        try:
-            NotificationService.send_notification(
-                session=session,
-                user_id=user.id,
-                event_type="job_posting_frozen",
-                title="Job Posting Frozen",
-                message=f"'{job_posting.job_title}' has been frozen and is no longer accepting applications.",
-                payload={"route": "/recruiter/job-postings", "route_context": {"job_id": job_id, "job_title": job_posting.job_title}},
-                email_data={
-                    "recruiter_name": user.full_name or user.email,
-                    "job_title": job_posting.job_title,
-                    "details": "The job posting is no longer visible to candidates. You can reactivate it at any time from your Job Postings dashboard.",
-                    "action_url": f"{frontend_url}/recruiter/job-postings",
-                },
-                notification_type="general",
-                validate_taxonomy=True,
-            )
-        except Exception as _e:
-            logger.warning(f"[JOB FREEZE] Notification failed for job {job_id}: {_e}")
-    
-    elif action == "reactivate":
-        # Prevent actions on cancelled jobs
-        if current_status == JobPostingStatus.CANCELLED:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot reactivate a cancelled job. Cancelled jobs are permanently closed."
-            )
-        
-        if current_status != JobPostingStatus.FROZEN:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Cannot reactivate job from '{current_status}' status. Only frozen jobs can be reactivated."
-            )
-        
-        job_posting.status = JobPostingStatus.REPOSTED
-        job_posting.last_reactivated_at = now
-        job_posting.reposted_at = now
-        job_posting.is_active = True  # Legacy field sync
-        message = "Job posting reactivated successfully"
-
-        # Count previous applicants for context
-        previous_applicants = session.exec(
-            select(Application).where(Application.job_posting_id == job_id)
-        ).all()
-        applicant_msg = f" with {len(previous_applicants)} prior applicant(s)" if previous_applicants else ""
-
-        # In-app + email notification to the user who reactivated the job
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
-        try:
-            NotificationService.send_notification(
-                session=session,
-                user_id=user.id,
-                event_type="job_posting_reactivated",
-                title="Job Posting Reactivated",
-                message=f"'{job_posting.job_title}' has been reactivated and is now accepting applications{applicant_msg}.",
-                payload={"route": "/recruiter/job-postings", "route_context": {"job_id": job_id, "job_title": job_posting.job_title, "applicant_count": len(previous_applicants)}},
-                email_data={
-                    "recruiter_name": user.full_name or user.email,
-                    "job_title": job_posting.job_title,
-                    "details": f"The job posting is now live and accepting applications{applicant_msg}.",
-                    "action_url": f"{frontend_url}/recruiter/job-postings",
-                },
-                notification_type="general",
-                validate_taxonomy=True,
-            )
-        except Exception as _e:
-            logger.warning(f"[JOB REACTIVATE] Notification failed for job {job_id}: {_e}")
-
-        # Notify previous applicants that job has reopened
-        try:
-            from app.services.lifecycle_service import LifecycleService
-            lifecycle = LifecycleService()
-            lifecycle.notify_reopened_jobs(session, job_id)
-            logger.info(f"[JOB REOPEN] Sent applicant notifications for job {job_id}")
-        except Exception as _e:
-            logger.error(f"[JOB REOPEN] Failed to send applicant notifications for job {job_id}: {_e}")
-    
-    elif action == "repost":
-        # Prevent actions on cancelled jobs
-        if current_status == JobPostingStatus.CANCELLED:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot repost a cancelled job. Cancelled jobs are permanently closed."
-            )
-        
-        if current_status not in [JobPostingStatus.FROZEN, JobPostingStatus.ACTIVE]:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Cannot repost job from '{current_status}' status."
-            )
-        
-        job_posting.status = JobPostingStatus.REPOSTED
-        job_posting.reposted_at = now
-        job_posting.is_active = True  # Legacy field sync
-        message = "Job posting reposted successfully"
-
-        # In-app + email notification to the user who reposted the job
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
-        try:
-            NotificationService.send_notification(
-                session=session,
-                user_id=user.id,
-                event_type="job_posting_reposted",
-                title="Job Posting Reposted",
-                message=f"'{job_posting.job_title}' has been reposted and refreshed for increased visibility.",
-                payload={"route": "/recruiter/job-postings", "route_context": {"job_id": job_id, "job_title": job_posting.job_title}},
-                email_data={
-                    "recruiter_name": user.full_name or user.email,
-                    "job_title": job_posting.job_title,
-                    "details": "Your job posting has been refreshed and relisted. Candidates will now see it prominently in their matches.",
-                    "action_url": f"{frontend_url}/recruiter/job-postings",
-                },
-                notification_type="general",
-                validate_taxonomy=True,
-            )
-        except Exception as _e:
-            logger.warning(f"[JOB REPOST] Notification failed for job {job_id}: {_e}")
-
-    elif action == "cancel":
-        # Validate cancellation reason is provided
-        if not request.cancellation_reason or not request.cancellation_reason.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Cancellation reason is required. Please provide a reason for cancelling this job posting."
-            )
-        
-        # Can cancel from any state except already cancelled
-        if current_status == JobPostingStatus.CANCELLED:
-            raise HTTPException(
-                status_code=400,
-                detail="Job posting is already cancelled."
-            )
-        
-        job_posting.status = JobPostingStatus.CANCELLED
-        job_posting.cancelled_at = now
-        job_posting.cancellation_reason = request.cancellation_reason.strip()
-        job_posting.is_active = False  # Legacy field sync
-        message = "Job posting cancelled successfully"
-        
-        # In-app + email notification for cancellation
-        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3003")
-        reason_preview = request.cancellation_reason[:100] + "..." if len(request.cancellation_reason) > 100 else request.cancellation_reason
-        try:
-            NotificationService.send_notification(
-                session=session,
-                user_id=user.id,
-                event_type="job_posting_cancelled",
-                title="Job Posting Cancelled",
-                message=f"'{job_posting.job_title}' has been permanently cancelled. Reason: {reason_preview}",
-                payload={"route": "/recruiter/job-postings", "route_context": {"job_id": job_id, "job_title": job_posting.job_title, "reason": request.cancellation_reason}},
-                email_data={
-                    "recruiter_name": user.full_name or user.email,
-                    "job_title": job_posting.job_title,
-                    "details": f"This job posting has been permanently cancelled and cannot be reactivated.<br/><strong>Reason:</strong> {request.cancellation_reason}",
-                    "action_url": f"{frontend_url}/recruiter/job-postings",
-                },
-                notification_type="alert",
-                validate_taxonomy=True,
-            )
-        except Exception as _e:
-            logger.warning(f"[JOB CANCEL] Notification failed for job {job_id}: {_e}")
-    
-    else:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid action '{action}'. Must be one of: freeze, reactivate, cancel"
-        )
-    
-    job_posting.updated_at = now
-    session.add(job_posting)
-    session.commit()
-    session.refresh(job_posting)
-    
-    return JobPostingStatusUpdateResponse(
-        message=message,
-        job_id=job_posting.id,
-        status=job_posting.status,
-        frozen_at=job_posting.frozen_at,
-        reposted_at=job_posting.reposted_at,
-        last_reactivated_at=job_posting.last_reactivated_at,
-        cancelled_at=job_posting.cancelled_at,
-        cancellation_reason=job_posting.cancellation_reason
     )

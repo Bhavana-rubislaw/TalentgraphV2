@@ -5,14 +5,11 @@ Automatically logs all API requests and responses for comprehensive auditing
 
 import json
 import time
-from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import Message
 
-from ..core.logging_config import get_logger, log_change
-from ..models import User
+from ..core.logging_config import get_logger
 
 logger = get_logger(__name__)
 

@@ -15,7 +15,7 @@ Schedule this job to run daily at off-peak hours.
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any
-from sqlmodel import Session, select, delete
+from sqlmodel import Session, select
 
 from app.database import engine
 from app.models import Notification, EmailDelivery, EmailDeliveryStatus

@@ -2,6 +2,7 @@
 
 import logging
 from datetime import datetime
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import and_, delete as sql_delete
@@ -21,10 +22,13 @@ logger = logging.getLogger(__name__)
 
 class MeetingUpdateService:
     @staticmethod
-    def update_meeting(*, meeting_id: int, update_data, current_user: dict, session: Session):
+    def update_meeting(
+        *, meeting_id: int, update_data, current_user: dict, session: Session,
+        request_id: Optional[str] = None,
+    ):
         logger.info(
-            "[MEETING_UPDATE] patch meeting_id=%s user_email=%s user_id=%s",
-            meeting_id, current_user['email'], current_user['user_id'],
+            "[MEETING_UPDATE] patch meeting_id=%s user_email=%s user_id=%s request_id=%s",
+            meeting_id, current_user['email'], current_user['user_id'], request_id,
         )
 
         try:
@@ -251,8 +255,8 @@ class MeetingUpdateService:
             raise
         except Exception as e:
             logger.error(
-                "[MEETING_UPDATE] patch_failed meeting_id=%s exception_type=%s error=%s",
-                meeting_id, type(e).__name__, e,
+                "[MEETING_UPDATE] patch_failed meeting_id=%s exception_type=%s error=%s request_id=%s",
+                meeting_id, type(e).__name__, e, request_id,
                 exc_info=True,
             )
             session.rollback()

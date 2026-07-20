@@ -14,13 +14,11 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
 from typing import List, Optional
 
 from sqlmodel import Session, select
 
 from app.models import (
-    Candidate,
     Company,
     JobPosting,
     JobPostingStatus,
@@ -34,7 +32,6 @@ from app.recommender.gateway import RecommendationGateway
 from app.recommender.models import (
     RecommendationFeedback,
     FeedbackSignal,
-    RecommendationScoreCache,
 )
 
 logger = logging.getLogger(__name__)

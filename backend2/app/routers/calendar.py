@@ -13,11 +13,11 @@ import requests
 from ..database import get_session
 from ..security import get_current_user
 from ..models import (
-    User, CalendarAccount, CalendarProvider, 
-    VideoProviderAccount, VideoProvider
+    User, CalendarAccount, CalendarProvider,
+    VideoProviderAccount
 )
 from ..schemas import (
-    CalendarAccountCreate, CalendarAccountRead,
+    CalendarAccountRead,
     VideoProviderAccountCreate, VideoProviderAccountRead
 )
 

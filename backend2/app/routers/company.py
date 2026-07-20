@@ -3,7 +3,7 @@ Company routes
 Recruiter/Admin company profile management
 """
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from sqlmodel import Session, select
 from datetime import datetime
 from app.database import get_session
@@ -195,9 +195,6 @@ def update_extended_profile(
 
 
 # ─── Team Management (HR or Admin only) ─────────────────────────────────────
-
-from pydantic import BaseModel
-from typing import Optional
 
 
 @router.get("/team", response_model=list)
