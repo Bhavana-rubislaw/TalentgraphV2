@@ -1,21 +1,22 @@
 """
 Public "Request a Demo" endpoint for the marketing landing page.
 
-Follows the same anti-enumeration policy as /auth/signup (see
-app.auth_constants): this endpoint is public and unauthenticated, so the
-HTTP response is identical regardless of whether the submitted email
-already has a TalentGraph account. That keeps the public form from being
-usable to probe which emails are registered. Behind the scenes:
+Unlike /auth/signup (see app.auth_constants), this endpoint intentionally
+tells the caller when the submitted email already has a TalentGraph
+account - a deliberate product choice, not an oversight. That does mean
+the public, unauthenticated form can be used to check whether a given
+email is registered; accepted as a known tradeoff for clearer UX on this
+form. Behind the scenes:
 
-- Email already registered: we send that inbox a note that an account
-  already exists, rather than paging the team about a "new lead" that
-  isn't one.
+- Email already registered: reject with a 409 naming that, and send that
+  inbox a note pointing at sign-in, rather than paging the team about a
+  "new lead" that isn't one.
 - Email not registered: we send the requester a confirmation and notify
   the TalentGraph team so they can follow up.
 """
 import os
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from app.core.logging_config import get_logger
@@ -35,8 +36,8 @@ ADMIN_NOTIFY_EMAIL = os.getenv("DEMO_REQUEST_NOTIFY_EMAIL") or os.getenv(
     "SEED_ADMIN_EMAIL", DEFAULT_SEED_ADMIN_EMAIL
 )
 
-# Always the same response, whether or not the email is already registered.
 _RESPONSE = {"ok": True, "message": "Thanks! We'll be in touch within one business day."}
+_ALREADY_REGISTERED_MSG = "This email is already registered with us. Please sign in instead."
 
 _ROLE_LABELS = {"recruiter": "Recruiter", "hr": "HR Manager", "admin": "Admin", "candidate": "Candidate"}
 
@@ -146,7 +147,7 @@ def request_demo(request: Request, data: DemoRequestCreate, session: Session = D
             email_service.send_email(to_email=email_lower, subject=subject, html_content=html, plain_content=text)
         except Exception as e:
             logger.error(f"[DEMO REQUEST] Failed to send already-registered notice: {e}")
-        return _RESPONSE
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=_ALREADY_REGISTERED_MSG)
 
     # New lead: confirm to the requester and notify the TalentGraph team.
     subject, html, text = _requester_confirmation_email(data.full_name, data.company)
