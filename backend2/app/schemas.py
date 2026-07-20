@@ -80,6 +80,22 @@ class CompanyLogin(BaseModel):
     password: str
 
 
+# Public marketing schemas (unauthenticated landing-page endpoints)
+class DemoRequestCreate(BaseModel):
+    full_name: str
+    work_email: EmailStr
+    company: str
+    role: Literal["recruiter", "hr", "admin"]
+
+    @field_validator("full_name", "company")
+    @classmethod
+    def _sanitize_and_require(cls, value: str) -> str:
+        cleaned = _sanitize_display_text(value)[:200] if value else ""
+        if not cleaned:
+            raise ValueError("This field is required")
+        return cleaned
+
+
 # Legacy unified schemas (backward compatibility)
 class UserCreate(BaseModel):
     email: EmailStr

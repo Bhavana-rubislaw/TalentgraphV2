@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../api/client';
 import '../styles/Landing.css';
 
 type RoleKey = 'candidates' | 'recruiters' | 'hr' | 'companies';
@@ -237,6 +238,8 @@ const LandingPage: React.FC = () => {
   const [activeRole, setActiveRole] = useState<RoleKey>('candidates');
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoSubmitted, setDemoSubmitted] = useState(false);
+  const [demoSubmitting, setDemoSubmitting] = useState(false);
+  const [demoError, setDemoError] = useState('');
   const role = ROLE_CONTENT[activeRole];
 
   const scrollTo = (href: string) => {
@@ -245,10 +248,24 @@ const LandingPage: React.FC = () => {
     el?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleDemoSubmit = (e: React.FormEvent) => {
+  const handleDemoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setDemoSubmitted(true);
-    setTimeout(() => navigate('/signup?type=company'), 900);
+    setDemoError('');
+    const form = new FormData(e.currentTarget);
+    const fullName = String(form.get('fullName') || '').trim();
+    const workEmail = String(form.get('workEmail') || '').trim();
+    const company = String(form.get('company') || '').trim();
+    const selectedRole = String(form.get('role') || '');
+
+    setDemoSubmitting(true);
+    try {
+      await apiClient.requestDemo(fullName, workEmail, company, selectedRole);
+      setDemoSubmitted(true);
+    } catch (err: any) {
+      setDemoError(err.response?.data?.detail || 'Something went wrong. Please try again.');
+    } finally {
+      setDemoSubmitting(false);
+    }
   };
 
   return (
@@ -481,23 +498,28 @@ const LandingPage: React.FC = () => {
             <h3>Request a Demo</h3>
             <p>See TalentGraph in action with a personalized walkthrough for your team.</p>
             {demoSubmitted ? (
-              <div className="tg-demo-success">Thanks! Taking you to sign up…</div>
+              <div className="tg-demo-success">
+                Thanks! We've sent a confirmation to your email, and our team will be in touch within one business day.
+              </div>
             ) : (
               <form onSubmit={handleDemoSubmit}>
                 <label>Full name</label>
-                <input type="text" placeholder="Alex Johnson" required />
+                <input name="fullName" type="text" placeholder="Alex Johnson" required />
                 <label>Work email</label>
-                <input type="email" placeholder="alex@company.com" required />
+                <input name="workEmail" type="email" placeholder="alex@company.com" required />
                 <label>Company</label>
-                <input type="text" placeholder="Acme Corp" required />
+                <input name="company" type="text" placeholder="Acme Corp" required />
                 <label>Your role</label>
-                <select required defaultValue="">
+                <select name="role" required defaultValue="">
                   <option value="" disabled>Select your role</option>
                   <option value="recruiter">Recruiter</option>
                   <option value="hr">HR Manager</option>
                   <option value="admin">Company / Admin</option>
                 </select>
-                <button type="submit" className="tg-btn tg-btn-primary tg-btn-block">Request Demo →</button>
+                {demoError && <div className="tg-demo-error">{demoError}</div>}
+                <button type="submit" className="tg-btn tg-btn-primary tg-btn-block" disabled={demoSubmitting}>
+                  {demoSubmitting ? 'Sending…' : 'Request Demo →'}
+                </button>
                 <p className="tg-demo-legal">By submitting, you agree to our Privacy Policy and Terms of Service.</p>
               </form>
             )}

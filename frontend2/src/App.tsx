@@ -178,22 +178,7 @@ const CandidateDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ chil
   return <>{children}</>;
 };
 
-// ── Dashboard Guard (Recruiter - must complete) ──────────────────
-// Enforces profile completion before dashboard access
-const RecruiterDashboardGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, bootStatus } = useAuth();
 
-  if (bootStatus === 'loading') return null;
-
-  const isProfileComplete = user?.is_profile_complete ?? 
-    (localStorage.getItem('is_profile_complete') === 'true');
-  // Recruiters must complete profile before accessing dashboard
-  if (!isProfileComplete) {
-    return <Navigate to="/company-profile-setup" replace />;
-  }
-
-  return <>{children}</>;
-};
 
 // ── Dashboard Guard (HR - must complete) ──────────────────
 // Enforces profile completion before HR dashboard access

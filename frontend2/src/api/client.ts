@@ -17,6 +17,15 @@ export const apiClient = {
   candidateLogin: (email: string, password: string) =>
     api.post('/auth/candidate/login', { email, password }),
 
+  // Marketing
+  requestDemo: (fullName: string, workEmail: string, company: string, role: string) =>
+    api.post('/demo-requests', {
+      full_name: fullName,
+      work_email: workEmail,
+      company,
+      role,
+    }),
+
   // Company Auth
   companySignup: (email: string, fullName: string, password: string, companyRole: string) =>
     api.post('/auth/company/signup', { 
@@ -177,7 +186,7 @@ export const apiClient = {
     api.post(`/job-postings/${id}/toggle-active`),
 
   // Job Posting Lifecycle Management
-  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'cancel', cancellation_reason?: string) =>
+  updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost' | 'cancel', cancellation_reason?: string) =>
     api.post(`/job-postings/${id}/status`, { action, cancellation_reason }),
 
   getSkillCatalogs: () =>

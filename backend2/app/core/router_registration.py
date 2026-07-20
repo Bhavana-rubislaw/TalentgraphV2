@@ -30,6 +30,7 @@ def register_api_routers(app, logger, log_change_func) -> None:
         admin_invitations,
         admin_jobs,
         admin_email_deliveries,
+        demo_requests,
     )
     from app.routers.admin_invitations import accept_router as invitations_accept_router
     from app.routers.subscriptions import router as subscriptions_router
@@ -73,6 +74,7 @@ def register_api_routers(app, logger, log_change_func) -> None:
     app.include_router(admin_jobs.router)  # Admin portal — job bulk actions + export (Phase 5-6)
     app.include_router(admin_email_deliveries.router)  # Admin portal — email logs (Phase 7)
     app.include_router(admin.router)  # Admin portal management APIs
+    app.include_router(demo_requests.router)  # Public landing-page "Request a Demo" form
     app.include_router(invitations_accept_router)  # Public invitation acceptance
     app.include_router(subscriptions_router)  # Subscription plans & purchases
     app.include_router(credits_router)  # Credits balance & transactions
