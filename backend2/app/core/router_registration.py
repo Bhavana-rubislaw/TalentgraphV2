@@ -24,11 +24,14 @@ def register_api_routers(app, logger, log_change_func) -> None:
         onboarding,
         product_taxonomy,
         admin,
+        admin_companies,
+        admin_applications,
+        admin_users,
+        admin_invitations,
+        admin_jobs,
+        admin_email_deliveries,
     )
-    from app.routers.admin_extended import (
-        router as admin_extended_router,
-        accept_router as invitations_router,
-    )
+    from app.routers.admin_invitations import accept_router as invitations_accept_router
     from app.routers.subscriptions import router as subscriptions_router
     from app.routers.credits import router as credits_router
     from app.routers.team import router as team_router
@@ -63,9 +66,14 @@ def register_api_routers(app, logger, log_change_func) -> None:
     app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
     app.include_router(logs.router)  # Comprehensive logging system
     app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences
-    app.include_router(admin_extended_router)  # Admin portal — extended features (Phase 2-7)
+    app.include_router(admin_companies.router)  # Admin portal — companies (Phase 2)
+    app.include_router(admin_applications.router)  # Admin portal — applications (Phase 3)
+    app.include_router(admin_users.router)  # Admin portal — user create + bulk actions (Phase 4-5)
+    app.include_router(admin_invitations.router)  # Admin portal — invitations (Phase 4)
+    app.include_router(admin_jobs.router)  # Admin portal — job bulk actions + export (Phase 5-6)
+    app.include_router(admin_email_deliveries.router)  # Admin portal — email logs (Phase 7)
     app.include_router(admin.router)  # Admin portal management APIs
-    app.include_router(invitations_router)  # Public invitation acceptance
+    app.include_router(invitations_accept_router)  # Public invitation acceptance
     app.include_router(subscriptions_router)  # Subscription plans & purchases
     app.include_router(credits_router)  # Credits balance & transactions
     app.include_router(team_router)  # Team invitations & member management
