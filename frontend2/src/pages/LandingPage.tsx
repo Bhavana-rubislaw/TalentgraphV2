@@ -515,7 +515,7 @@ const LandingPage: React.FC = () => {
                   <option value="recruiter">Company-Recruiter</option>
                   <option value="hr">Company-HR Manager</option>
                   <option value="admin">Admin</option>
-                  <option value="admin">Candidate</option>
+                  <option value="candidate">Candidate</option>
                 </select>
                 {demoError && <div className="tg-demo-error">{demoError}</div>}
                 <button type="submit" className="tg-btn tg-btn-primary tg-btn-block" disabled={demoSubmitting}>

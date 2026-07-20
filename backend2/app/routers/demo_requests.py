@@ -38,7 +38,7 @@ ADMIN_NOTIFY_EMAIL = os.getenv("DEMO_REQUEST_NOTIFY_EMAIL") or os.getenv(
 # Always the same response, whether or not the email is already registered.
 _RESPONSE = {"ok": True, "message": "Thanks! We'll be in touch within one business day."}
 
-_ROLE_LABELS = {"recruiter": "Recruiter", "hr": "HR Manager", "admin": "Company / Admin"}
+_ROLE_LABELS = {"recruiter": "Recruiter", "hr": "HR Manager", "admin": "Admin", "candidate": "Candidate"}
 
 _EMAIL_STYLE = """
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #333; }

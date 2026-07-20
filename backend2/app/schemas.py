@@ -85,7 +85,7 @@ class DemoRequestCreate(BaseModel):
     full_name: str
     work_email: EmailStr
     company: str
-    role: Literal["recruiter", "hr", "admin"]
+    role: Literal["recruiter", "hr", "admin", "candidate"]
 
     @field_validator("full_name", "company")
     @classmethod
