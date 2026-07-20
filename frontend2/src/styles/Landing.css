@@ -388,37 +388,10 @@
   margin-top: 6px;
 }
 
-/* ── Trusted by ──────────────────────────────────────── */
-.tg-trusted {
-  padding: 40px 24px;
-  text-align: center;
-  border-top: 1px solid var(--tg-border);
-}
-
-.tg-trusted > p {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--tg-muted-light);
-  margin: 0 0 20px;
-}
-
-.tg-trusted-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 40px;
-  flex-wrap: wrap;
-}
-
-.tg-trusted-row span {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--tg-muted-light);
-}
-
 /* ── Role tabs ───────────────────────────────────────── */
-.tg-roles { background: var(--tg-bg-soft); }
+.tg-roles {
+  background: linear-gradient(180deg, #ffffff 0%, var(--tg-bg-soft) 100px, var(--tg-bg-soft) 100%);
+}
 
 .tg-tabs {
   display: flex;

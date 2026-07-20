@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import SignupPage from './pages/SignupPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
 import WelcomePage from './pages/WelcomePage';
 import CandidateProfilePage from './pages/CandidateProfilePage';
 import CandidateProfileSetupPage from './pages/CandidateProfileSetupPage';
@@ -231,8 +232,8 @@ const App: React.FC = () => {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/signin" element={<SignupPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+            <Route path="/signin" element={<SignInPage />} />
             <Route path="/landing" element={<Navigate to="/" replace />} />
             {/* Public: accept team invitation */}
             <Route path="/accept-invite" element={<AcceptInvitePage />} />

@@ -12,8 +12,6 @@ const NAV_LINKS = [
   { label: 'About', href: '#footer' },
 ];
 
-const TRUSTED_LOGOS = ['Accenture', 'Stripe', 'Notion', 'Figma', 'Vercel', 'Linear'];
-
 const FEATURES = [
   {
     icon: 'brain',
@@ -374,14 +372,6 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Trusted by */}
-      <section className="tg-trusted">
-        <p>TRUSTED BY HIRING TEAMS AT</p>
-        <div className="tg-trusted-row">
-          {TRUSTED_LOGOS.map((name) => <span key={name}>{name}</span>)}
         </div>
       </section>
 

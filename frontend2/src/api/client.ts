@@ -37,6 +37,9 @@ export const apiClient = {
   
   companyLogin: (email: string, password: string) =>
     api.post('/auth/company/login', { email, password }),
+
+  adminLogin: (email: string, password: string) =>
+    api.post('/auth/admin/login', { email, password }),
   
   getCurrentUser: () =>
     api.get('/auth/me'),

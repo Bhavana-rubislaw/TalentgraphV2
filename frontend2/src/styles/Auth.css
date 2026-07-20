@@ -1,0 +1,152 @@
+/* ============================================================================
+   SIGN IN / SIGN UP PAGES
+   Shares design tokens with Landing.css via the .tg-landing wrapper class —
+   this file only adds the auth-page-specific layout on top.
+   ============================================================================ */
+
+.tg-auth-nav-hint {
+  font-size: 14px;
+  color: var(--tg-muted);
+  margin-right: 4px;
+}
+
+.tg-auth-main {
+  min-height: calc(100vh - 61px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background:
+    radial-gradient(circle at 1px 1px, #e2e8f0 1px, transparent 0) 0 0/24px 24px,
+    #fff;
+}
+
+.tg-auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border: 1px solid var(--tg-border);
+  border-radius: 16px;
+  box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.15);
+  padding: 40px 36px;
+}
+
+.tg-auth-card h1 {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.tg-auth-sub {
+  font-size: 14.5px;
+  color: var(--tg-muted);
+  text-align: center;
+  margin: 0 0 28px;
+}
+
+.tg-auth-role-tabs {
+  max-width: none;
+  margin: 0 0 26px;
+  width: 100%;
+}
+
+.tg-auth-role-tabs .tg-tab {
+  flex: 1 1 0;
+  justify-content: center;
+  padding: 9px 6px;
+  white-space: nowrap;
+}
+
+.tg-auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.tg-auth-form label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tg-text);
+  margin: 16px 0 6px;
+}
+
+.tg-auth-form label:first-of-type {
+  margin-top: 0;
+}
+
+.tg-auth-form input {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--tg-border);
+  border-radius: 9px;
+  color: var(--tg-text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 11px 13px;
+}
+
+.tg-auth-form input:focus {
+  outline: none;
+  border-color: var(--tg-blue);
+  box-shadow: 0 0 0 3px var(--tg-blue-light);
+}
+
+.tg-auth-form input::placeholder {
+  color: var(--tg-muted-light);
+}
+
+.tg-auth-form button[type="submit"] {
+  margin-top: 24px;
+}
+
+.tg-auth-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+.tg-auth-label-row label {
+  margin: 0;
+}
+
+.tg-auth-label-row a {
+  font-size: 12.5px;
+  color: var(--tg-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tg-auth-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--tg-muted);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.tg-auth-checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.tg-auth-switch {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--tg-muted);
+  margin: 24px 0 0;
+}
+
+.tg-auth-switch a {
+  color: var(--tg-blue);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (max-width: 480px) {
+  .tg-auth-card { padding: 30px 22px; }
+  .tg-auth-role-tabs { flex-wrap: wrap; }
+}
