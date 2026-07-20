@@ -19,7 +19,6 @@ interface MeetingsPanelProps {
 export const MeetingsPanel: React.FC<MeetingsPanelProps> = ({
   defaultProvider = 'jitsi',
   defaultDuration = 60,
-  defaultReminderMinutes = 15
 }) => {
   // Meeting state
   const [meetingTitle, setMeetingTitle] = useState('');
