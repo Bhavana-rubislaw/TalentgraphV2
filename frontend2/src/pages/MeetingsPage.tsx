@@ -196,7 +196,7 @@ export function MeetingsPage() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       padding: '32px 16px' 
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
@@ -231,7 +231,7 @@ export function MeetingsPage() {
                   padding: '12px 24px',
                   borderRadius: '10px',
                   border: 'none',
-                  background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                  background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                   color: 'white',
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -335,7 +335,7 @@ export function MeetingsPage() {
                     padding: '10px 8px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: viewMode === 'list' ? '#6d28d9' : '#f1f5f9',
+                    background: viewMode === 'list' ? '#1d4ed8' : '#f1f5f9',
                     color: viewMode === 'list' ? 'white' : '#64748b',
                     fontWeight: 600,
                     fontSize: '13px',
@@ -351,7 +351,7 @@ export function MeetingsPage() {
                     padding: '10px 8px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: viewMode === 'timeline' ? '#6d28d9' : '#f1f5f9',
+                    background: viewMode === 'timeline' ? '#1d4ed8' : '#f1f5f9',
                     color: viewMode === 'timeline' ? 'white' : '#64748b',
                     fontWeight: 600,
                     fontSize: '13px',
@@ -542,7 +542,7 @@ export function MeetingsPage() {
                       <span style={{
                         fontSize: '18px',
                         fontWeight: 700,
-                        color: isToday(dayMeetings[0].scheduled_start) ? '#6d28d9' : '#1e293b',
+                        color: isToday(dayMeetings[0].scheduled_start) ? '#1d4ed8' : '#1e293b',
                       }}>
                         {dateKey}
                       </span>
@@ -550,7 +550,7 @@ export function MeetingsPage() {
                         <span style={{
                           padding: '4px 12px',
                           borderRadius: '12px',
-                          background: '#6d28d9',
+                          background: '#1d4ed8',
                           color: 'white',
                           fontSize: '12px',
                           fontWeight: 600,
@@ -571,7 +571,7 @@ export function MeetingsPage() {
                       flexDirection: 'column', 
                       gap: '12px',
                       paddingLeft: '16px',
-                      borderLeft: '3px solid ' + (isToday(dayMeetings[0].scheduled_start) ? '#6d28d9' : '#e2e8f0')
+                      borderLeft: '3px solid ' + (isToday(dayMeetings[0].scheduled_start) ? '#1d4ed8' : '#e2e8f0')
                     }}>
                       {dayMeetings.map((meeting) => (
                         <div
@@ -588,7 +588,7 @@ export function MeetingsPage() {
                             opacity: isPast(meeting.scheduled_start) && meeting.status === 'scheduled' ? 0.7 : 1,
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.borderColor = '#6d28d9';
+                            e.currentTarget.style.borderColor = '#1d4ed8';
                             e.currentTarget.style.boxShadow = '0 4px 12px rgba(109, 40, 217, 0.15)';
                             e.currentTarget.style.transform = 'translateX(4px)';
                           }}
@@ -604,7 +604,7 @@ export function MeetingsPage() {
                                 <span style={{ 
                                   fontSize: '14px', 
                                   fontWeight: 700, 
-                                  color: '#6d28d9',
+                                  color: '#1d4ed8',
                                   minWidth: '60px'
                                 }}>
                                   {formatTime(meeting.scheduled_start)}
@@ -646,7 +646,7 @@ export function MeetingsPage() {
                                   <span>{meeting.participants.length} participants</span>
                                 </div>
                                 {meeting.video_meeting_url && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#6d28d9' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1d4ed8' }}>
                                     <span>🎥</span>
                                     <span>Video call</span>
                                   </div>
@@ -664,7 +664,7 @@ export function MeetingsPage() {
                                 borderRadius: '6px',
                                 border: '1px solid #e2e8f0',
                                 background: 'white',
-                                color: '#6d28d9',
+                                color: '#1d4ed8',
                                 fontWeight: 600,
                                 fontSize: '12px',
                                 cursor: 'pointer',
@@ -695,7 +695,7 @@ export function MeetingsPage() {
                     transition: 'all 0.2s',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#6d28d9';
+                    e.currentTarget.style.borderColor = '#1d4ed8';
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(109, 40, 217, 0.15)';
                   }}
                   onMouseLeave={(e) => {
@@ -741,7 +741,7 @@ export function MeetingsPage() {
                           <span>{meeting.participants.length} participants</span>
                         </div>
                         {meeting.video_meeting_url && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#6d28d9' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1d4ed8' }}>
                             <span>🎥</span>
                             <span>Video call</span>
                           </div>
@@ -759,7 +759,7 @@ export function MeetingsPage() {
                         borderRadius: '8px',
                         border: '1px solid #e2e8f0',
                         background: 'white',
-                        color: '#6d28d9',
+                        color: '#1d4ed8',
                         fontWeight: 600,
                         fontSize: '14px',
                         cursor: 'pointer',

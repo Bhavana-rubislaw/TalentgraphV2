@@ -255,7 +255,7 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                   width: '56px',
                   height: '56px',
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -263,7 +263,7 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                   fontSize: '20px',
                   fontWeight: 600,
                   flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
                 }}>
                   {candidate.full_name.charAt(0).toUpperCase()}
                 </div>
@@ -272,7 +272,7 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                     {candidate.full_name}
                   </h3>
                   {candidate.headline && (
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary, #667eea)', marginBottom: '6px', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary, #3b82f6)', marginBottom: '6px', lineHeight: 1.4 }}>
                       {candidate.headline}
                     </div>
                   )}
@@ -344,7 +344,7 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                         borderRadius: '6px',
                         fontSize: '12px',
                         fontWeight: 500,
-                        color: 'var(--primary, #667eea)'
+                        color: 'var(--primary, #3b82f6)'
                       }}>
                         +{candidate.skills.length - 6} more
                       </span>
@@ -383,12 +383,12 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                     fontSize: '14px',
                     fontWeight: 600,
                     borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                     border: 'none',
                     color: 'white',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 4px rgba(102, 126, 234, 0.2)'
+                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -396,11 +396,11 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(102, 126, 234, 0.3)';
+                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(102, 126, 234, 0.2)';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
                   }}
                 >
                   View Profile
@@ -473,7 +473,7 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                     transition: 'all 0.2s ease',
                     opacity: candidate.already_invited ? 0.6 : 1,
                     cursor: candidate.already_invited ? 'not-allowed' : 'pointer',
-                    background: candidate.already_invited ? '#10b981' : 'var(--primary, #667eea)',
+                    background: candidate.already_invited ? '#10b981' : 'var(--primary, #3b82f6)',
                     color: 'white',
                     border: 'none'
                   }}

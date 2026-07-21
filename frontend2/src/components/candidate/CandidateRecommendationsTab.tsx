@@ -898,7 +898,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               {/* Overall score row */}
               <div className="cal-drawer-field" style={{ marginBottom: '12px' }}>
                 <span className="cal-drawer-field-label">Overall Match</span>
-                <span className="cal-drawer-field-value" style={{ color: '#7B5EA7', fontWeight: 700, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
+                <span className="cal-drawer-field-value" style={{ color: '#1d4ed8', fontWeight: 700, fontSize: '18px' }}>{viewRecommendationJob.match_percentage}%</span>
               </div>
 
               {(() => {

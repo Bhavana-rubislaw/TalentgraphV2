@@ -2,11 +2,11 @@
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 :root {
-  --brand-primary: #6C5CE7;        /* Updated to match design system */
+  --brand-primary: #2563eb;        /* Updated to match design system */
   --brand-primary-dark: #5B45E0;
   --brand-primary-light: #EEF2FF;
 
-  --bubble-mine-bg: #6C5CE7;
+  --bubble-mine-bg: #2563eb;
   --bubble-mine-text: #ffffff;
 
   --bubble-theirs-bg: #f0f0f0;
@@ -19,8 +19,8 @@
   --receipt-read-color: #22c55e;   /* Green — shows Read state */
 
   --sidebar-bg: #ffffff;
-  --sidebar-border: #E4E7EC;
-  --thread-bg: #F5F6FA;
+  --sidebar-border: #e5e7eb;
+  --thread-bg: #f8fafc;
   --header-bg: #ffffff;
 
   --conv-active-bg: #EEF2FF;
@@ -33,11 +33,11 @@
   --font-size-base: 14px;
 
   --compose-bg: #ffffff;
-  --compose-border: #E4E7EC;
-  --compose-focus: #6C5CE7;
+  --compose-border: #e5e7eb;
+  --compose-focus: #2563eb;
 
   --shadow-card: 0px 4px 12px rgba(0,0,0,0.08);
-  --shadow-bubble-mine: 0 2px 8px rgba(108, 92, 231, 0.22);
+  --shadow-bubble-mine: 0 2px 8px rgba(37, 99, 235, 0.22);
 }
 
 /* ── Page layout ────────────────────────────────────────────────────────────── */
@@ -168,7 +168,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5b45e0, #8b5cf6);
+  background: linear-gradient(135deg, #5b45e0, #3b82f6);
   color: #fff;
   font-size: 16px;
   font-weight: 700;
@@ -375,7 +375,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #5b45e0, #8b5cf6);
+  background: linear-gradient(135deg, #5b45e0, #3b82f6);
   color: #fff;
   font-size: 15px;
   font-weight: 700;

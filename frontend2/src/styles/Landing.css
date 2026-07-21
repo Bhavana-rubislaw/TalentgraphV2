@@ -3,16 +3,18 @@
    ============================================================================ */
 
 .tg-landing {
-  --tg-blue: #2563eb;
-  --tg-blue-dark: #1d4ed8;
-  --tg-blue-light: #eff6ff;
-  --tg-navy: #0f172a;
+  /* Aliases onto the shared design tokens in index.css — single source of truth,
+     kept as --tg-* names here so the rest of Landing.css/Auth.css doesn't change. */
+  --tg-blue: var(--purple-500, #2563eb);
+  --tg-blue-dark: var(--purple-600, #1d4ed8);
+  --tg-blue-light: var(--purple-50, #eff6ff);
+  --tg-navy: var(--text-primary, #0f172a);
   --tg-navy-2: #0b1220;
-  --tg-text: #0f172a;
-  --tg-muted: #64748b;
-  --tg-muted-light: #94a3b8;
-  --tg-border: #e5e7eb;
-  --tg-bg-soft: #f8fafc;
+  --tg-text: var(--text-primary, #0f172a);
+  --tg-muted: var(--text-tertiary, #64748b);
+  --tg-muted-light: var(--text-muted, #94a3b8);
+  --tg-border: var(--border-light, #e5e7eb);
+  --tg-bg-soft: var(--bg-app, #f8fafc);
   --tg-purple: #7c3aed;
   --tg-green: #16a34a;
   --tg-orange: #ea580c;

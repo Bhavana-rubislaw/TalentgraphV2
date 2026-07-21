@@ -78,7 +78,7 @@
 }
 
 .kpi-icon-purple {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
 }
 
 .kpi-icon-orange {
@@ -534,7 +534,7 @@
 }
 
 .ai-recs-tune-btn:hover {
-  background: #6d28d9;
+  background: #1d4ed8;
 }
 
 .ai-recs-tune-btn svg {
@@ -795,7 +795,7 @@
 }
 
 .ai-action-btn.apply:hover {
-  background: #6d28d9;
+  background: #1d4ed8;
 }
 
 .ai-action-btn.apply svg {

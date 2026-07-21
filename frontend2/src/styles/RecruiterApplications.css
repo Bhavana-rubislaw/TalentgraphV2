@@ -4,7 +4,7 @@
    Email composer · Status chips · Timeline
    
    VISUAL HIERARCHY SYSTEM:
-   - Page background: Light gray (#F5F6FA)
+   - Page background: Light gray (#f8fafc)
    - Sections: White with shadows for elevation
    - Cards: Left accent borders by status
    - Spacing: 32px sections, 16px cards, 20px padding
@@ -16,13 +16,13 @@
   --ra-accent: #5B8DEF;
   --ra-accent-hover: #4A7ADB;
   --ra-accent-light: #F0ECFA;
-  --ra-bg: #F5F6FA;
+  --ra-bg: #f8fafc;
   --ra-surface: #FFFFFF;
   --ra-surface-hover: #F9FAFD;
   --ra-text-1: #1D2939;
   --ra-text-2: #44495C;
   --ra-text-3: #667085;
-  --ra-border: #E4E7EC;
+  --ra-border: #e5e7eb;
   --ra-border-strong: #D0D5DD;
   --ra-success: #2ECC71;
   --ra-success-bg: #D4F5E2;
@@ -32,7 +32,7 @@
   --ra-danger-bg: #FDDFDC;
   --ra-info: #5B8DEF;
   --ra-info-bg: #E5EDFD;
-  --ra-purple: #6C5CE7;
+  --ra-purple: #2563eb;
   --ra-purple-bg: #F0ECFA;
   --ra-shadow-sm: 0 2px 4px rgba(0,0,0,.06);
   --ra-shadow-md: 0 4px 12px rgba(0,0,0,.08);
@@ -177,7 +177,7 @@
   transform: translateY(-50%);
   width: 15px;
   height: 15px;
-  color: #7B5EA7;
+  color: #1d4ed8;
   pointer-events: none;
 }
 
@@ -197,7 +197,7 @@
 
 .ra-search-input:focus {
   border-color: var(--ra-purple);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   background: #FFFFFF;
 }
 
@@ -232,7 +232,7 @@
 .ra-status-filter:focus {
   outline: none;
   border-color: var(--ra-purple);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .ra-filter-chips {
@@ -306,7 +306,7 @@
   color: var(--ra-purple);
   background: #EEF2FF;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
 .ra-sort-btn svg {
@@ -409,7 +409,7 @@
   background: var(--ra-surface);
   border-left: 4px solid var(--ra-purple);
   border-bottom-color: var(--ra-border);
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.15);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
 }
 
 /* Accent colors by status */
@@ -427,7 +427,7 @@
 }
 
 .ra-card[data-status="scheduled"] {
-  border-left-color: #8B5CF6;
+  border-left-color: #3b82f6;
 }
 
 .ra-card[data-status="offered"],
@@ -449,7 +449,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ra-purple) 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, var(--ra-purple) 0%, #3b82f6 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -458,7 +458,7 @@
   font-weight: 700;
   flex-shrink: 0;
   text-transform: uppercase;
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
   border: 2px solid white;
 }
 
@@ -646,7 +646,7 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ra-purple) 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, var(--ra-purple) 0%, #3b82f6 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -655,7 +655,7 @@
   font-weight: 700;
   flex-shrink: 0;
   text-transform: uppercase;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
   border: 3px solid white;
 }
 
@@ -705,7 +705,7 @@
   background: #EEF2FF;
   color: var(--ra-purple);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(108, 92, 231, 0.15);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
 }
 
 .ra-detail-tag svg {
@@ -750,29 +750,29 @@
 
 /* Primary Button (Schedule Interview) */
 .ra-btn-primary {
-  background: linear-gradient(135deg, var(--ra-purple), #8B5CF6);
+  background: linear-gradient(135deg, var(--ra-purple), #3b82f6);
   color: white;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 .ra-btn-primary:hover {
   background: linear-gradient(135deg, #5B45E0, var(--ra-purple));
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
 }
 
 /* Success Button (Download/Save Notes) */
 .ra-btn-success {
-  background: linear-gradient(135deg, var(--ra-purple), #8B5CF6);
+  background: linear-gradient(135deg, var(--ra-purple), #3b82f6);
   color: white;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.35);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
   border: 1px solid rgba(255,255,255,0.1);
 }
 
 .ra-btn-success:hover {
   background: linear-gradient(135deg, #5B45E0, var(--ra-purple));
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.45);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
 }
 
 /* Light Button (Outline) */
@@ -804,7 +804,7 @@
   color: white;
   border-color: var(--ra-purple);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
 }
 
 .ra-btn-message svg {
@@ -855,7 +855,7 @@
 .ra-detail-status-select:focus {
   outline: none;
   border-color: var(--ra-purple);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   background: #FAFBFC;
 }
 
@@ -884,7 +884,7 @@
 }
 
 .ra-detail-section[data-section="info"] {
-  border-left-color: #8B5CF6;
+  border-left-color: #3b82f6;
 }
 
 .ra-detail-section[data-section="skills"] {
@@ -910,7 +910,7 @@
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(to bottom, #7B5EA7 0%, #B896E0 100%);
+  background: linear-gradient(to bottom, #1d4ed8 0%, #B896E0 100%);
   opacity: 0;
   transition: opacity var(--ra-transition);
 }
@@ -1086,7 +1086,7 @@
   background: #E0E7FF;
   border-color: var(--ra-purple);
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(108, 92, 231, 0.2);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.2);
   color: var(--ra-purple);
 }
 
@@ -1132,7 +1132,7 @@
   color: var(--ra-purple);
   background: #EEF2FF;
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(108, 92, 231, 0.2);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
 }
 
 .ra-social-btn svg {
@@ -1160,7 +1160,7 @@
 
 .ra-notes-textarea:focus {
   border-color: var(--ra-purple);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   background: var(--ra-surface);
 }
 
@@ -1222,7 +1222,7 @@
 
 .ra-timeline-dot.current {
   background: var(--ra-purple);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2), 0 2px 6px rgba(108, 92, 231, 0.4);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 2px 6px rgba(37, 99, 235, 0.4);
   border-color: var(--ra-surface);
   animation: pulse 2s infinite;
 }
@@ -1943,7 +1943,7 @@
   font-size: 22px;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
 .ra-welcome-title {
@@ -2037,7 +2037,7 @@
   align-self: flex-start;
 }
 
-.ra-stat-badge.open    { background: #EDE9FE; color: #6D28D9; }
+.ra-stat-badge.open    { background: #EDE9FE; color: #1d4ed8; }
 .ra-stat-badge.saved   { background: #D1FAE5; color: #065F46; }
 .ra-stat-badge.pending { background: #FEF3C7; color: #92400E; }
 .ra-stat-badge.mutual  { background: #FCE7F3; color: #9D174D; }

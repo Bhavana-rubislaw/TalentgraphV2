@@ -317,7 +317,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
 
                     {/* Candidate Header */}
                     <div className="ai-job-card-header">
-                      <div className="ai-company-logo" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                      <div className="ai-company-logo" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                         {getCandidateInitial(candidate.name)}
                       </div>
                       <div className="ai-company-info">
@@ -695,7 +695,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 const funnelStages = [
                   { label: 'Applications', count: applications.length,                                                                                                                                       color: '#6366F1', status: 'all' },
                   { label: 'Interview',    count: applications.filter((a: any) => ['scheduled','under_review','shortlisted','selected'].includes(a.status)).length, color: '#10B981', status: 'scheduled' },
-                  { label: 'Shortlisted',  count: applications.filter((a: any) => ['shortlisted','selected'].includes(a.status)).length,                           color: '#8B5CF6', status: 'shortlisted' },
+                  { label: 'Shortlisted',  count: applications.filter((a: any) => ['shortlisted','selected'].includes(a.status)).length,                           color: '#3b82f6', status: 'shortlisted' },
                   { label: 'Selected',     count: applications.filter((a: any) => a.status === 'selected').length,                                                 color: '#F59E0B', status: 'selected' },
                   { label: 'Rejected',     count: applications.filter((a: any) => a.status === 'rejected').length,                                                 color: '#EF4444', status: 'rejected' },
                 ];
@@ -1130,7 +1130,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                           alignItems: 'center',
                           gap: '8px',
                           padding: '10px 12px',
-                          background: '#7B5EA7',
+                          background: '#1d4ed8',
                           color: 'white',
                           borderRadius: '6px',
                           textDecoration: 'none',
@@ -1234,14 +1234,14 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#E5E7EB';
-                          e.currentTarget.style.borderColor = '#7B5EA7';
+                          e.currentTarget.style.borderColor = '#1d4ed8';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = '#F3F4F6';
                           e.currentTarget.style.borderColor = '#E5E7EB';
                         }}
                       >
-                        <svg style={{ width: '20px', height: '20px', color: '#7B5EA7', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg style={{ width: '20px', height: '20px', color: '#1d4ed8', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
                         </svg>
                         <div style={{ flex: 1 }}>
@@ -1250,7 +1250,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                             Uploaded {new Date(resume.uploaded_at).toLocaleDateString()}
                           </div>
                         </div>
-                        <svg style={{ width: '18px', height: '18px', color: '#7B5EA7', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg style={{ width: '18px', height: '18px', color: '#1d4ed8', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                       </a>

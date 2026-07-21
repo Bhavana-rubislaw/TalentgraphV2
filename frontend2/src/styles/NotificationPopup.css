@@ -57,7 +57,7 @@
 }
 
 .notif-new-badge {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%);
   color: white;
   font-size: 11px;
   font-weight: 600;
@@ -260,7 +260,7 @@
 
 .notif-popup-icon-message {
   background: #faf5ff;
-  color: #a855f7;
+  color: #2563eb;
 }
 
 .notif-popup-icon-invite {

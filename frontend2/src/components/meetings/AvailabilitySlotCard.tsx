@@ -33,7 +33,7 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
       transition: 'all 0.2s',
     }}
     onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = '#6d28d9';
+      e.currentTarget.style.borderColor = '#1d4ed8';
       e.currentTarget.style.transform = 'translateY(-2px)';
       e.currentTarget.style.boxShadow = '0 8px 24px rgba(109, 40, 217, 0.15)';
     }}
@@ -47,7 +47,7 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
       <div style={{
         fontSize: '12px',
         fontWeight: 700,
-        color: '#6d28d9',
+        color: '#1d4ed8',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
         marginBottom: '8px',
@@ -94,7 +94,7 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
           padding: '12px',
           borderRadius: '8px',
           border: 'none',
-          background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+          background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
           color: 'white',
           fontWeight: 700,
           fontSize: '14px',

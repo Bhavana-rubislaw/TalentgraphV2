@@ -25,7 +25,7 @@ const WEIGHTS = {
 };
 
 const CATEGORY_COLORS: Record<string, { bar: string; text: string }> = {
-  product_match:    { bar: '#7B5EA7', text: '#7B5EA7' },
+  product_match:    { bar: '#1d4ed8', text: '#1d4ed8' },
   skills_match:     { bar: '#10B981', text: '#059669' },
   experience_match: { bar: '#3B82F6', text: '#2563EB' },
   salary_match:     { bar: '#F59E0B', text: '#D97706' },
@@ -228,7 +228,7 @@ export const MatchBreakdownTable: React.FC<MatchBreakdownTableProps> = ({ detail
         <tr style={{ borderTop: '2px solid #E5E7EB', background: '#F9FAFB' }}>
           <td style={{ padding: '8px 8px', fontWeight: 700, color: '#111827' }}>Total Match</td>
           <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 700, color: '#6B7280' }}>100%</td>
-          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 800, color: '#7B5EA7', fontSize: '14px' }}>{overallScore}%</td>
+          <td style={{ padding: '8px 8px', textAlign: 'right', fontWeight: 800, color: '#1d4ed8', fontSize: '14px' }}>{overallScore}%</td>
         </tr>
       </tbody>
     </table>
@@ -329,7 +329,7 @@ export const WhyThisMatch: React.FC<WhyThisMatchProps> = ({ drivers, maxDrivers 
       borderRadius: '10px',
       border: '1px solid #DDD6FE',
     }}>
-      <div style={{ fontSize: '12px', fontWeight: 600, color: '#5B21B6', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e3a8a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
           <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
@@ -366,7 +366,7 @@ export const AIMatchReasonBox: React.FC<AIMatchReasonBoxProps> = ({ reason, vari
         <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style={{ color: '#7C3AED', flexShrink: 0 }}>
           <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
         </svg>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: '#5B21B6' }}>AI Match Reason</span>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e3a8a' }}>AI Match Reason</span>
       </div>
       <p style={{ margin: 0, fontSize: '12px', color: '#4C1D95', lineHeight: 1.5 }}>{reason}</p>
     </div>

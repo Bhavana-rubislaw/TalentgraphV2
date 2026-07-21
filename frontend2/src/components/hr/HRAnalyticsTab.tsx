@@ -48,7 +48,7 @@ const HRAnalyticsTab: React.FC<HRAnalyticsTabProps> = ({
             <KPICard label="Total Jobs"         value={hrAnalytics.total_jobs ?? 0}                          color="#6366f1" stripe="#6366f1" />
             <KPICard label="Pending Approval"   value={hrAnalytics.jobs_pending_approval ?? 0}               color="#f59e0b" stripe="#f59e0b" />
             <KPICard label="Applications"       value={hrAnalytics.hiring_funnel?.total_applications ?? 0}   color="#3b82f6" stripe="#3b82f6" />
-            <KPICard label="Interviews"         value={hrAnalytics.hiring_funnel?.scheduled_interviews ?? 0} color="#8b5cf6" stripe="#8b5cf6" />
+            <KPICard label="Interviews"         value={hrAnalytics.hiring_funnel?.scheduled_interviews ?? 0} color="#3b82f6" stripe="#3b82f6" />
             <KPICard label="Shortlisted"        value={hrAnalytics.hiring_funnel?.shortlisted ?? 0}          color="#06b6d4" stripe="#06b6d4" />
             <KPICard label="Selected"           value={hrAnalytics.hiring_funnel?.selected ?? 0}             color="#10b981" stripe="#10b981" />
             <KPICard label="Meetings Scheduled" value={hrAnalytics.meetings_scheduled ?? 0}                  color="#f97316" stripe="#f97316" />

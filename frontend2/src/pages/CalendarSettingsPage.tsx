@@ -144,7 +144,7 @@ export const CalendarSettingsPage: React.FC = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '24px', color: '#667eea' }}>Loading...</div>
+        <div style={{ fontSize: '24px', color: '#3b82f6' }}>Loading...</div>
       </div>
     );
   }
@@ -152,7 +152,7 @@ export const CalendarSettingsPage: React.FC = () => {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       padding: '40px 20px'
     }}>
       <div style={{
@@ -340,8 +340,8 @@ export const CalendarSettingsPage: React.FC = () => {
                             style={{
                               padding: '8px 16px',
                               background: 'white',
-                              color: '#667eea',
-                              border: '1px solid #667eea',
+                              color: '#3b82f6',
+                              border: '1px solid #3b82f6',
                               borderRadius: '6px',
                               fontSize: '13px',
                               cursor: 'pointer'
@@ -555,7 +555,7 @@ export const CalendarSettingsPage: React.FC = () => {
                   href="https://marketplace.zoom.us/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: '#667eea', textDecoration: 'underline' }}
+                  style={{ color: '#3b82f6', textDecoration: 'underline' }}
                 >
                   Zoom App Marketplace
                 </a>

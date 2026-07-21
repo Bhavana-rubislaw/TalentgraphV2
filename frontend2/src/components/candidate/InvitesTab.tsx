@@ -347,7 +347,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                   alignItems: 'center',
                   gap: '6px',
                   padding: '4px 10px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                   borderRadius: '6px',
                   fontSize: '11px',
                   fontWeight: '600',
@@ -473,7 +473,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                     flex: 1,
                     padding: '10px 16px',
                     border: 'none',
-                    background: invite.already_applied ? '#10b981' : ((applyingJobId === jp.id || withdrawingJobId === jp.id) ? '#94a3b8' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'),
+                    background: invite.already_applied ? '#10b981' : ((applyingJobId === jp.id || withdrawingJobId === jp.id) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'),
                     borderRadius: '8px',
                     fontSize: '14px',
                     fontWeight: '600',
@@ -489,7 +489,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                   onMouseEnter={(e) => {
                     if (applyingJobId !== jp.id && withdrawingJobId !== jp.id) {
                       e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -599,7 +599,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                     height: '40px',
                     border: currentInvitePage === pageNum ? 'none' : '1px solid #e2e8f0',
                     borderRadius: '8px',
-                    background: currentInvitePage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : 'white',
+                    background: currentInvitePage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)' : 'white',
                     color: currentInvitePage === pageNum ? 'white' : '#475569',
                     fontSize: '14px',
                     fontWeight: '600',

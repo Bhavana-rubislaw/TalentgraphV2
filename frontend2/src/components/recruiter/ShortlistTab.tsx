@@ -193,7 +193,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               padding: '6px 12px',
               background: item.already_invited
                 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
               borderRadius: '20px',
               display: 'flex',
               alignItems: 'center',
@@ -201,7 +201,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               color: 'white',
               fontSize: '12px',
               fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
             }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>

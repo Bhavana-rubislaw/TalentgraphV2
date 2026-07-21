@@ -234,7 +234,7 @@ export function CreateMeetingModal({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+          background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
         }}>
           <h2 style={{
             fontSize: '24px',
@@ -666,7 +666,7 @@ export function CreateMeetingModal({
                 padding: '14px',
                 borderRadius: '10px',
                 border: 'none',
-                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                 color: 'white',
                 fontWeight: 700,
                 fontSize: '14px',

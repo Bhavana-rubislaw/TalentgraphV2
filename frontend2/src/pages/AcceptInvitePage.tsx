@@ -22,7 +22,7 @@ const WarningIcon = () => (
 const TalentGraphLogo = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
     <div style={{
-      width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+      width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -158,7 +158,7 @@ const AcceptInvitePage: React.FC = () => {
             <button
               onClick={() => navigate('/signin')}
               style={{
-                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
                 color: '#fff', border: 'none', borderRadius: 10, fontSize: 14,
                 fontWeight: 600, cursor: 'pointer', letterSpacing: '0.1px',
                 boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
@@ -193,7 +193,7 @@ const AcceptInvitePage: React.FC = () => {
             <button
               onClick={() => navigate('/signin')}
               style={{
-                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
                 color: '#fff', border: 'none', borderRadius: 10, fontSize: 14,
                 fontWeight: 600, cursor: 'pointer', letterSpacing: '0.1px',
                 boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
@@ -218,12 +218,12 @@ const AcceptInvitePage: React.FC = () => {
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '4px 12px', borderRadius: 20,
             background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-            color: '#6d28d9', fontSize: 12, fontWeight: 600, marginBottom: 14,
+            color: '#1d4ed8', fontSize: 12, fontWeight: 600, marginBottom: 14,
             letterSpacing: '0.3px', textTransform: 'uppercase',
           }}>
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <circle cx="5" cy="5" r="4" stroke="#6d28d9" strokeWidth="1.5"/>
-              <path d="M3 5l1.5 1.5L7 3.5" stroke="#6d28d9" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              <circle cx="5" cy="5" r="4" stroke="#1d4ed8" strokeWidth="1.5"/>
+              <path d="M3 5l1.5 1.5L7 3.5" stroke="#1d4ed8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             {inviteInfo.role.charAt(0).toUpperCase() + inviteInfo.role.slice(1)} Invitation
           </div>
@@ -345,7 +345,7 @@ const AcceptInvitePage: React.FC = () => {
             disabled={submitting}
             style={{
               width: '100%', padding: '13px',
-              background: submitting ? '#a5b4fc' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: submitting ? '#a5b4fc' : 'linear-gradient(135deg, #6366f1, #3b82f6)',
               color: '#fff', border: 'none', borderRadius: 10,
               fontSize: 15, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
               letterSpacing: '0.1px', transition: 'all 0.2s',

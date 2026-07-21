@@ -432,7 +432,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 padding: '12px',
                 borderRadius: '8px',
                 border: 'none',
-                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                 color: 'white',
                 fontWeight: 600,
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -557,7 +557,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                     <div style={{ fontSize: '14px', fontWeight: 600, color: '#1e293b' }}>
                       {participant.name}
                       {meeting.participants.find(p => p.participant_email === participant.email)?.user_id === meeting.organizer_user_id && (
-                        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#6d28d9' }}>(Organizer)</span>
+                        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#1d4ed8' }}>(Organizer)</span>
                       )}
                     </div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
@@ -634,7 +634,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 padding: '12px',
                 borderRadius: '8px',
                 border: 'none',
-                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                 color: 'white',
                 fontWeight: 600,
                 cursor: loading ? 'not-allowed' : 'pointer',
@@ -651,12 +651,12 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '16px' }}
       onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: '14px', width: '640px', maxWidth: '100%', height: 'auto', maxHeight: '98vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', border: '1px solid #E4E7EC', overflow: 'hidden' }}
+      <div style={{ background: 'white', borderRadius: '14px', width: '640px', maxWidth: '100%', height: 'auto', maxHeight: '98vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.18)', border: '1px solid #e5e7eb', overflow: 'hidden' }}
         onClick={(e) => e.stopPropagation()}>
 
         {/* ── Header ── */}
         <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid #f0f1f4', display: 'flex', alignItems: 'flex-start', gap: '12px', flexShrink: 0 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #6d28d9, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             {getMeetingTypeIcon()}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -666,7 +666,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
             </div>
             <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>
               {meeting.meeting_type.replace('_', ' ').charAt(0).toUpperCase() + meeting.meeting_type.replace('_', ' ').slice(1)}
-              {meeting.participants[0]?.participant_name && <> &middot; <span style={{ color: '#6d28d9', fontWeight: 500 }}>{meeting.participants[0].participant_name.split(' ')[0]}'s Company</span></>}
+              {meeting.participants[0]?.participant_name && <> &middot; <span style={{ color: '#1d4ed8', fontWeight: 500 }}>{meeting.participants[0].participant_name.split(' ')[0]}'s Company</span></>}
             </p>
           </div>
           <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid #e2e8f0', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', flexShrink: 0 }}>
@@ -715,7 +715,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                   <svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" width="10" height="10"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                   Video Link
                 </div>
-                <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', fontWeight: 600, color: '#6d28d9', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', fontWeight: 600, color: '#1d4ed8', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {meeting.video_meeting_url.replace(/^https?:\/\//, '')}
                 </a>
               </div>
@@ -730,7 +730,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                 Participants
               </h3>
               {meeting.status === 'scheduled' && !isCandidate && (
-                <button onClick={() => setShowEditParticipants(true)} style={{ padding: '3px 9px', borderRadius: '5px', border: '1px solid #e2e8f0', background: 'white', color: '#6d28d9', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={() => setShowEditParticipants(true)} style={{ padding: '3px 9px', borderRadius: '5px', border: '1px solid #e2e8f0', background: 'white', color: '#1d4ed8', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
                   Edit
                 </button>
               )}
@@ -739,7 +739,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
               {meeting.participants.map((participant, idx) => {
                 const name = participant.participant_name || `User #${participant.user_id}`;
                 const initials = name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
-                const avatarColors = ['#6d28d9', '#0284c7', '#059669', '#b45309', '#be123c', '#7c3aed'];
+                const avatarColors = ['#1d4ed8', '#0284c7', '#059669', '#b45309', '#be123c', '#7c3aed'];
                 const avatarBg = avatarColors[idx % avatarColors.length];
                 const isOrganizer = participant.user_id === meeting.organizer_user_id;
                 const isConfirmed = participant.has_confirmed;
@@ -756,7 +756,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                     </div>
                     <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                       {isOrganizer && (
-                        <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: '#ede9fe', color: '#6d28d9' }}>Organizer</span>
+                        <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: '#ede9fe', color: '#1d4ed8' }}>Organizer</span>
                       )}
                       <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px',
                         background: isConfirmed ? '#dcfce7' : '#fef3c7',
@@ -806,10 +806,10 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
           )}
           {/* Admin Control Center */}
           {isAdminOrHR && (
-            <div style={{ marginTop: '24px', padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #F3F0FF)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
+            <div style={{ marginTop: '24px', padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #eff6ff)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#5B21B6', margin: 0 }}>Admin Control Center</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Admin Control Center</h3>
                 <span style={{ fontSize: '11px', padding: '2px 8px', background: '#7C3AED', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -828,7 +828,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
               </div>
               {showForceReschedule && (
                 <div style={{ marginTop: '14px', padding: '14px', background: 'white', borderRadius: '12px', border: '1px solid #DDD6FE' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#5B21B6', marginBottom: '10px' }}>Force Reschedule (Admin Override)</div>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e3a8a', marginBottom: '10px' }}>Force Reschedule (Admin Override)</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                     <div>
                       <label style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', display: 'block', marginBottom: '4px' }}>New Date</label>

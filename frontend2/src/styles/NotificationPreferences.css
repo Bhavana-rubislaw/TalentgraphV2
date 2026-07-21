@@ -17,8 +17,8 @@
 .notif-prefs-loading .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid var(--cp-border, #E4E7EC);
-  border-top-color: var(--cp-accent, #6C5CE7);
+  border: 3px solid var(--cp-border, #e5e7eb);
+  border-top-color: var(--cp-accent, #2563eb);
   border-radius: 50%;
   animation: notifSpin 0.8s linear infinite;
 }
@@ -88,7 +88,7 @@
 /* ── Notification Item Card (like resume/cert items) ── */
 .notif-item-card {
   background: #F9FAFB;
-  border: 1px solid var(--cp-border, #E4E7EC);
+  border: 1px solid var(--cp-border, #e5e7eb);
   border-radius: 12px;
   padding: 16px;
   transition: all 0.18s ease;
@@ -230,7 +230,7 @@
 }
 
 .notif-toggle input:checked + .notif-toggle-slider {
-  background-color: var(--cp-accent, #6C5CE7);
+  background-color: var(--cp-accent, #2563eb);
 }
 
 .notif-toggle input:checked + .notif-toggle-slider:before {
@@ -238,7 +238,7 @@
 }
 
 .notif-toggle:hover .notif-toggle-slider {
-  box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.1);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 /* ── Spinner for Save Button ── */
@@ -517,7 +517,7 @@
 .channel-label .channel-icon svg {
   width: 18px;
   height: 18px;
-  color: #6d28d9;
+  color: #1d4ed8;
 }
 
 /* ── Toggle Switch ── */
@@ -559,7 +559,7 @@
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background-color: #6d28d9;
+  background-color: #1d4ed8;
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
@@ -605,7 +605,7 @@
 }
 
 .save-btn.has-changes {
-  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   color: white;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);

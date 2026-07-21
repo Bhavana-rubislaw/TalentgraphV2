@@ -420,7 +420,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                   Video Meeting Provider <span className="schedule-interview-required">*</span>
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -428,7 +428,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       checked={formData.meetingProvider === 'zoom'}
                       onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
-                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🎥 Zoom</div>
@@ -436,7 +436,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -444,7 +444,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       checked={formData.meetingProvider === 'google_meet'}
                       onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
-                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>📹 Google Meet</div>
@@ -452,7 +452,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -460,7 +460,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       checked={formData.meetingProvider === 'microsoft_teams'}
                       onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
-                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>👥 Microsoft Teams</div>
@@ -468,7 +468,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#6d28d9' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -476,7 +476,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       checked={formData.meetingProvider === 'manual'}
                       onChange={(e) => handleInputChange('meetingProvider', e.target.value)}
                       disabled={isSubmitting}
-                      style={{ width: '18px', height: '18px', accentColor: '#6d28d9' }}
+                      style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🔗 Manual Link</div>

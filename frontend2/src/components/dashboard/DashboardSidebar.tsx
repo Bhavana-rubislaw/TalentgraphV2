@@ -83,7 +83,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 {item.special === 'ai' && (
                   <span style={{
                     fontSize: 'var(--text-xs)',
-                    background: 'linear-gradient(90deg, var(--accent-primary), #8b5cf6)',
+                    background: 'linear-gradient(90deg, var(--accent-primary), #3b82f6)',
                     color: 'white',
                     padding: '2px 6px',
                     borderRadius: 'var(--radius-sm)',

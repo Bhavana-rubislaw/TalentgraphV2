@@ -127,7 +127,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ current, selected, meetingD
           let border = 'none';
 
           if (isT && !isSel) { bg = '#dbeafe'; color = '#1d4ed8'; fontWeight = 700; border = '2px solid #3b82f6'; }
-          if (isSel) { bg = 'linear-gradient(135deg,#7c3aed,#6d28d9)'; color = 'white'; fontWeight = 700; border = 'none'; }
+          if (isSel) { bg = 'linear-gradient(135deg,#7c3aed,#1d4ed8)'; color = 'white'; fontWeight = 700; border = 'none'; }
 
           return (
             <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -262,7 +262,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
 
       {/* ── Purple banner ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)',
+        background: 'linear-gradient(135deg, #7c3aed 0%, #1e3a8a 100%)',
         borderRadius: '16px',
         padding: '24px 28px',
         display: 'flex',
@@ -574,7 +574,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                               style={{
                                 padding: '6px 12px', borderRadius: '7px',
                                 border: 'none',
-                                background: 'linear-gradient(135deg,#7c3aed,#6d28d9)',
+                                background: 'linear-gradient(135deg,#7c3aed,#1d4ed8)',
                                 fontSize: '12px', fontWeight: 700, cursor: 'pointer',
                                 color: 'white', textDecoration: 'none',
                                 display: 'flex', alignItems: 'center', gap: '4px',

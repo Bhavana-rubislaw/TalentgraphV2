@@ -206,7 +206,7 @@ export function AvailabilitySelectorModal({
                   alignItems: 'center',
                   marginBottom: '12px',
                 }}>
-                  <span style={{ fontWeight: 600, color: '#6d28d9', fontSize: '14px' }}>
+                  <span style={{ fontWeight: 600, color: '#1d4ed8', fontSize: '14px' }}>
                     Slot {index + 1}
                   </span>
                   {slots.length > 1 && (
@@ -302,7 +302,7 @@ export function AvailabilitySelectorModal({
                 borderRadius: '8px',
                 border: '2px dashed #cbd5e1',
                 background: 'white',
-                color: '#6d28d9',
+                color: '#1d4ed8',
                 fontWeight: 600,
                 fontSize: '14px',
                 cursor: 'pointer',
@@ -354,7 +354,7 @@ export function AvailabilitySelectorModal({
                 padding: '14px',
                 borderRadius: '10px',
                 border: 'none',
-                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
+                background: loading ? '#cbd5e1' : 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
                 color: 'white',
                 fontWeight: 700,
                 fontSize: '14px',

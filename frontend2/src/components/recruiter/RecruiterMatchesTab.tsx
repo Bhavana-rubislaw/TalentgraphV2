@@ -81,7 +81,7 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
           onMouseEnter={(e) => {
             e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
             e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.borderColor = '#A78BDB';
+            e.currentTarget.style.borderColor = '#60a5fa';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
@@ -94,7 +94,7 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
               top: '16px',
               right: '16px',
               padding: '6px 12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
               borderRadius: '20px',
               display: 'flex',
               alignItems: 'center',
@@ -102,7 +102,7 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
               color: 'white',
               fontSize: '12px',
               fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
             }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -502,7 +502,7 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
                   <div style={{ padding: '12px', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', borderRadius: '10px', marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                       <span style={{ fontSize: '28px', fontWeight: 700, color: '#7c3aed' }}>{m.match_percentage}%</span>
-                      <span style={{ fontSize: '14px', color: '#6d28d9', fontWeight: 500 }}>Mutual Match</span>
+                      <span style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 500 }}>Mutual Match</span>
                     </div>
                     <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
                       You liked this candidate, and they liked your job posting — a mutual match!

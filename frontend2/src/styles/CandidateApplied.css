@@ -8,7 +8,7 @@
   max-width: 100%;
   box-sizing: border-box;
   overflow-x: hidden;
-  background: #F5F6FA;
+  background: #f8fafc;
   min-height: 100vh;
   padding: 24px;
 }
@@ -18,7 +18,7 @@
   display: inline-flex;
   gap: 4px;
   background: white;
-  border: 1px solid #E4E7EC;
+  border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 6px;
   margin-bottom: 24px;
@@ -47,8 +47,8 @@
 
 .cal-tab.active {
   background: #EEF2FF;
-  color: #6C5CE7;
-  box-shadow: 0 1px 3px rgba(108, 92, 231, 0.1);
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.1);
 }
 
 .cal-tab-count {
@@ -65,8 +65,8 @@
 }
 
 .cal-tab.active .cal-tab-count {
-  background: rgba(108, 92, 231, 0.15);
-  color: #6C5CE7;
+  background: rgba(37, 99, 235, 0.15);
+  color: #2563eb;
 }
 
 .cal-tab:not(.active) .cal-tab-count {
@@ -98,8 +98,8 @@
 }
 
 .cal-card:hover {
-  border-color: #6C5CE7;
-  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
   transform: translateY(-2px);
 }
 
@@ -277,7 +277,7 @@
 
 /* Primary — Apply */
 .cal-btn-primary {
-  background: linear-gradient(135deg, #7B5EA7, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #9474C4);
   color: #fff;
   box-shadow: 0 2px 6px rgba(123, 94, 167, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
 }
@@ -493,7 +493,7 @@
 
 .cal-drawer-skill-level {
   font-size: 11px;
-  color: #7B5EA7;
+  color: #1d4ed8;
   font-weight: 600;
 }
 
@@ -535,7 +535,7 @@
 .cal-empty-icon svg {
   width: 28px;
   height: 28px;
-  stroke: #7B5EA7;
+  stroke: #1d4ed8;
 }
 
 .cal-empty-title {
@@ -558,7 +558,7 @@
   align-items: center;
   gap: 6px;
   padding: 10px 20px;
-  background: linear-gradient(135deg, #7B5EA7, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #9474C4);
   color: #fff;
   border: none;
   border-radius: 8px;

@@ -5,7 +5,7 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px;
-  background: #F5F6FA;
+  background: #f8fafc;
   min-height: 100vh;
 }
 
@@ -19,13 +19,13 @@
   padding: 28px 32px;
   border-radius: 16px;
   box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-  border: 1px solid #E4E7EC;
+  border: 1px solid #e5e7eb;
 }
 
 .dashboard-header h1 {
   font-size: 30px;
   font-weight: 700;
-  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
@@ -44,7 +44,7 @@
   padding: 8px;
   border-radius: 14px;
   box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
-  border: 1px solid #E4E7EC;
+  border: 1px solid #e5e7eb;
   margin-bottom: 32px;
   overflow-x: auto;
 }
@@ -65,13 +65,13 @@
 
 .dashboard-tab:hover {
   background: #f7fafc;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .dashboard-tab.active {
-  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 /* Stats Grid */
@@ -101,7 +101,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #6C5CE7 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #2563eb 0%, #2563eb 100%);
 }
 
 .stat-card:hover {
@@ -112,7 +112,7 @@
 .stat-value {
   font-size: 36px;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 12px 0;
@@ -161,14 +161,14 @@
   left: 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
 }
 
 .job-card:hover,
 .candidate-card:hover {
   transform: translateY(-6px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12), 0 24px 48px rgba(0, 0, 0, 0.16);
-  border-color: #667eea;
+  border-color: #3b82f6;
 }
 
 .card-header {
@@ -188,7 +188,7 @@
 
 .card-subtitle {
   font-size: 15px;
-  color: #667eea;
+  color: #3b82f6;
   font-weight: 600;
   margin: 0;
 }
@@ -218,7 +218,7 @@
 .meta-item svg {
   width: 16px;
   height: 16px;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .card-footer {
@@ -242,18 +242,18 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  color: #667eea;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+  color: #3b82f6;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .badge-primary {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  color: #667eea;
-  border-color: rgba(102, 126, 234, 0.2);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 .badge-secondary {
@@ -341,8 +341,8 @@
 
 .profile-selector select:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 /* Empty State */
@@ -388,7 +388,7 @@
   width: 48px;
   height: 48px;
   border: 4px solid #e2e8f0;
-  border-top-color: #667eea;
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin: 0 auto 16px;
@@ -400,12 +400,12 @@
 
 /* Analytics Panel */
 .analytics-panel {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   padding: 32px;
   border-radius: 16px;
   color: white;
   margin-bottom: 24px;
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
 }
 
 .analytics-grid {

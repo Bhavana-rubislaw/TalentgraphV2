@@ -184,7 +184,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
         <div>
           {/* Active subscription card */}
           {activeSub ? (
-            <div style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', borderRadius: 12, padding: '20px 24px', color: '#fff', marginBottom: 28 }}>
+            <div style={{ background: 'linear-gradient(135deg,#6366f1,#3b82f6)', borderRadius: 12, padding: '20px 24px', color: '#fff', marginBottom: 28 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.5px' }}>Active Plan</div>

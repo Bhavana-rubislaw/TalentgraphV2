@@ -452,7 +452,7 @@
 }
 
 .send-button-v2:hover:not(:disabled) {
-  background: #6d28d9;
+  background: #1d4ed8;
   transform: translateY(-1px);
 }
 
@@ -544,7 +544,7 @@
 }
 
 .view-posting-link:hover {
-  color: #6d28d9;
+  color: #1d4ed8;
   gap: 6px;
 }
 
@@ -668,8 +668,8 @@
   height: 100%;
   min-height: 600px;
   max-height: calc(100vh - 140px);
-  background: #F5F6FA;
-  border: 1px solid #E4E7EC;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0px 6px 16px rgba(0,0,0,0.1);
@@ -680,15 +680,15 @@
 .conversations-panel {
   width: 360px;
   background: white;
-  border-right: 1px solid #E4E7EC;
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
 }
 
 .conversations-header {
   padding: 20px;
-  border-bottom: 1px solid #E4E7EC;
-  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
 }
 
 .conversations-header h2 {
@@ -718,14 +718,14 @@
 
 .conversation-item.active {
   background: #EEF2FF;
-  border-left: 3px solid #6C5CE7;
+  border-left: 3px solid #2563eb;
 }
 
 .conv-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -777,7 +777,7 @@
 }
 
 .unread-badge {
-  background: #667eea;
+  background: #3b82f6;
   color: white;
   border-radius: 12px;
   padding: 2px 8px;
@@ -811,7 +811,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -877,7 +877,7 @@
 }
 
 .message-bubble.mine .bubble-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border-bottom-right-radius: 4px;
 }
@@ -932,8 +932,8 @@
 
 .message-composer textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .message-composer textarea:disabled {
@@ -943,7 +943,7 @@
 
 .send-button {
   padding: 10px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border: none;
   border-radius: 20px;
@@ -956,7 +956,7 @@
 
 .send-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .send-button:active:not(:disabled) {
@@ -999,7 +999,7 @@
 
 .loading-state {
   font-size: 16px;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 /* ─── Error Banner ────────────────────────────────────────────────────────────── */

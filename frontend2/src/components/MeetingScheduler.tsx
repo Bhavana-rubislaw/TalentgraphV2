@@ -62,8 +62,8 @@ function MiniCalendar({ selectedDate, onSelect, bookedDates = [] }: { selectedDa
           return (
             <button key={d} disabled={disabled} onClick={()=>!disabled&&onSelect(new Date(viewYear,viewMonth,d))}
               style={{position:"relative",width:"100%",aspectRatio:"1",border:"none",borderRadius:7,cursor:disabled?"not-allowed":"pointer",fontSize:12,fontWeight:sel?700:tod?600:400,
-                background:sel?"linear-gradient(135deg,#6d28d9,#8b5cf6)":tod&&!sel?"rgba(109,40,217,0.1)":"transparent",
-                color:sel?"white":disabled?"#cbd5e1":tod?"#6d28d9":"#1e293b",transition:"all 0.15s",outline:"none",
+                background:sel?"linear-gradient(135deg,#1d4ed8,#3b82f6)":tod&&!sel?"rgba(109,40,217,0.1)":"transparent",
+                color:sel?"white":disabled?"#cbd5e1":tod?"#1d4ed8":"#1e293b",transition:"all 0.15s",outline:"none",
                 boxShadow:sel?"0 3px 10px rgba(109,40,217,0.35)":"none"}}>
               {d}
               {booked&&!sel&&<span style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:3,height:3,borderRadius:"50%",background:"#f59e0b",display:"block"}}/>}
@@ -72,7 +72,7 @@ function MiniCalendar({ selectedDate, onSelect, bookedDates = [] }: { selectedDa
         })}
       </div>
       <div style={{display:"flex",gap:12,marginTop:10,paddingTop:10,borderTop:"1px solid #f1f5f9"}}>
-        {[{c:"linear-gradient(135deg,#6d28d9,#8b5cf6)",l:"Selected"},{c:"#f59e0b",l:"Has meetings"},{c:"#cbd5e1",l:"Unavailable"}].map(({c,l})=>(
+        {[{c:"linear-gradient(135deg,#1d4ed8,#3b82f6)",l:"Selected"},{c:"#f59e0b",l:"Has meetings"},{c:"#cbd5e1",l:"Unavailable"}].map(({c,l})=>(
           <div key={l} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#64748b"}}>
             <span style={{width:7,height:7,borderRadius:"50%",background:c,display:"inline-block",flexShrink:0}}/>
             {l}
@@ -168,7 +168,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
         @keyframes fadeStep{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
         .sched-modal{animation:slideUp 0.3s cubic-bezier(.16,1,.3,1)}
         .step-body{animation:fadeStep 0.25s ease}
-        .slot-btn:hover{background:rgba(109,40,217,0.08)!important;border-color:#8b5cf6!important;color:#6d28d9!important}
+        .slot-btn:hover{background:rgba(109,40,217,0.08)!important;border-color:#3b82f6!important;color:#1d4ed8!important}
         .pcard:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.13)!important}
         .dur-btn:hover{opacity:0.85}
         .join-btn:hover{opacity:0.85;transform:scale(1.02)}
@@ -176,7 +176,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
       <div className="sched-modal" style={{background:"#f8fafc",borderRadius:22,width:"100%",maxWidth:760,maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",fontFamily:"'Plus Jakarta Sans',sans-serif",boxShadow:"0 40px 100px rgba(0,0,0,0.3)"}}>
 
         {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#4c1d95 0%,#6d28d9 55%,#7c3aed 100%)",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{background:"linear-gradient(135deg,#4c1d95 0%,#1d4ed8 55%,#7c3aed 100%)",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:36,height:36,borderRadius:10,background:"rgba(255,255,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center"}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -189,7 +189,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <div style={{display:"flex",background:"rgba(255,255,255,0.14)",borderRadius:11,padding:3,gap:2}}>
               {[{id:"schedule" as const,label:"📅 Schedule"},{id:"upcoming" as const,label:`🗓 Upcoming (${meetings.length})`}].map(t=>(
-                <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{padding:"6px 13px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:activeTab===t.id?"white":"transparent",color:activeTab===t.id?"#6d28d9":"rgba(255,255,255,0.85)",transition:"all 0.2s",fontFamily:"inherit"}}>
+                <button key={t.id} onClick={()=>setActiveTab(t.id)} style={{padding:"6px 13px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:activeTab===t.id?"white":"transparent",color:activeTab===t.id?"#1d4ed8":"rgba(255,255,255,0.85)",transition:"all 0.2s",fontFamily:"inherit"}}>
                   {t.label}
                 </button>
               ))}
@@ -266,12 +266,12 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                   return (
                     <div key={label} style={{display:"flex",alignItems:"center",flex:idx<stepLabels.length-1?1:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7}}>
-                        <div style={{width:26,height:26,borderRadius:"50%",background:done?"linear-gradient(135deg,#059669,#10b981)":active?"linear-gradient(135deg,#6d28d9,#8b5cf6)":"#e2e8f0",color:done||active?"white":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0,boxShadow:active?"0 4px 12px rgba(109,40,217,0.3)":"none",transition:"all 0.3s"}}>
+                        <div style={{width:26,height:26,borderRadius:"50%",background:done?"linear-gradient(135deg,#059669,#10b981)":active?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:done||active?"white":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0,boxShadow:active?"0 4px 12px rgba(109,40,217,0.3)":"none",transition:"all 0.3s"}}>
                           {done?"✓":sn}
                         </div>
                         <span style={{fontSize:12,fontWeight:done||active?600:400,color:done||active?"#1e293b":"#94a3b8",whiteSpace:"nowrap"}}>{label}</span>
                       </div>
-                      {idx<stepLabels.length-1&&<div style={{flex:1,height:2,background:done?"linear-gradient(90deg,#10b981,#6d28d9)":"#e2e8f0",margin:"0 10px",borderRadius:2,transition:"all 0.5s"}}/>}
+                      {idx<stepLabels.length-1&&<div style={{flex:1,height:2,background:done?"linear-gradient(90deg,#10b981,#1d4ed8)":"#e2e8f0",margin:"0 10px",borderRadius:2,transition:"all 0.5s"}}/>}
                     </div>
                   );
                 })}
@@ -300,14 +300,14 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                       <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
                         {DURATIONS.map(d=>(
                           <button key={d} className="dur-btn" onClick={()=>setDuration(d)}
-                            style={{padding:"8px 16px",borderRadius:9,border:duration===d?"2px solid #8b5cf6":"2px solid #e2e8f0",background:duration===d?"linear-gradient(135deg,#6d28d9,#8b5cf6)":"white",color:duration===d?"white":"#374151",fontWeight:duration===d?700:500,fontSize:12,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
+                            style={{padding:"8px 16px",borderRadius:9,border:duration===d?"2px solid #3b82f6":"2px solid #e2e8f0",background:duration===d?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"white",color:duration===d?"white":"#374151",fontWeight:duration===d?700:500,fontSize:12,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
                             {d} min
                           </button>
                         ))}
                       </div>
                     </div>
                     <button disabled={!platform} onClick={goNext}
-                      style={{width:"100%",padding:13,borderRadius:12,border:"none",background:platform?"linear-gradient(135deg,#6d28d9,#8b5cf6)":"#e2e8f0",color:platform?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:platform?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:platform?"0 8px 20px rgba(109,40,217,0.3)":"none",transition:"all 0.2s"}}>
+                      style={{width:"100%",padding:13,borderRadius:12,border:"none",background:platform?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:platform?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:platform?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:platform?"0 8px 20px rgba(109,40,217,0.3)":"none",transition:"all 0.2s"}}>
                       Continue to Schedule →
                     </button>
                   </div>
@@ -335,7 +335,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,maxHeight:240,overflowY:"auto"}}>
                             {TIME_SLOTS.map(t=>(
                               <button key={t} className="slot-btn" onClick={()=>setSelectedTime(t)}
-                                style={{padding:"8px 4px",borderRadius:8,border:selectedTime===t?"2px solid #8b5cf6":"2px solid #e2e8f0",background:selectedTime===t?"linear-gradient(135deg,#6d28d9,#8b5cf6)":"white",color:selectedTime===t?"white":"#374151",fontSize:11,fontWeight:selectedTime===t?700:500,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
+                                style={{padding:"8px 4px",borderRadius:8,border:selectedTime===t?"2px solid #3b82f6":"2px solid #e2e8f0",background:selectedTime===t?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"white",color:selectedTime===t?"white":"#374151",fontSize:11,fontWeight:selectedTime===t?700:500,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>
                                 {t}
                               </button>
                             ))}
@@ -346,7 +346,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                     <div style={{display:"flex",gap:9,marginTop:16}}>
                       <button onClick={goBack} style={{flex:1,padding:13,borderRadius:12,border:"2px solid #e2e8f0",background:"white",color:"#64748b",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Back</button>
                       <button disabled={!selectedDate||!selectedTime} onClick={goNext}
-                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:selectedDate&&selectedTime?"linear-gradient(135deg,#6d28d9,#8b5cf6)":"#e2e8f0",color:selectedDate&&selectedTime?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:selectedDate&&selectedTime?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:selectedDate&&selectedTime?"0 8px 20px rgba(109,40,217,0.3)":"none"}}>
+                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:selectedDate&&selectedTime?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:selectedDate&&selectedTime?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:selectedDate&&selectedTime?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:selectedDate&&selectedTime?"0 8px 20px rgba(109,40,217,0.3)":"none"}}>
                         Review Details →
                       </button>
                     </div>
@@ -387,7 +387,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                       <label style={{fontSize:12,fontWeight:600,color:"#374151",display:"block",marginBottom:7}}>Meeting Topic</label>
                       <input value={topic} onChange={e=>setTopic(e.target.value)}
                         style={{width:"100%",padding:"11px 13px",borderRadius:11,border:"2px solid #e2e8f0",fontSize:13,color:"#1e293b",background:"white",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.2s"}}
-                        onFocus={e=>e.currentTarget.style.borderColor="#8b5cf6"} onBlur={e=>e.currentTarget.style.borderColor="#e2e8f0"}/>
+                        onFocus={e=>e.currentTarget.style.borderColor="#3b82f6"} onBlur={e=>e.currentTarget.style.borderColor="#e2e8f0"}/>
                     </div>
                     <div style={{marginBottom:14}}>
                       <label style={{fontSize:12,fontWeight:600,color:"#374151",display:"block",marginBottom:7}}>
@@ -397,7 +397,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                         placeholder="Add discussion points, topics to cover, or preparation instructions..."
                         rows={3}
                         style={{width:"100%",padding:"11px 13px",borderRadius:11,border:"2px solid #e2e8f0",fontSize:12,color:"#1e293b",background:"white",outline:"none",fontFamily:"inherit",boxSizing:"border-box",transition:"border-color 0.2s",resize:"vertical"}}
-                        onFocus={e=>e.currentTarget.style.borderColor="#8b5cf6"} onBlur={e=>e.currentTarget.style.borderColor="#e2e8f0"}/>
+                        onFocus={e=>e.currentTarget.style.borderColor="#3b82f6"} onBlur={e=>e.currentTarget.style.borderColor="#e2e8f0"}/>
                     </div>
                     <div style={{display:"flex",gap:9}}>
                       <button onClick={goBack} style={{flex:1,padding:13,borderRadius:12,border:"2px solid #e2e8f0",background:"white",color:"#64748b",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Back</button>

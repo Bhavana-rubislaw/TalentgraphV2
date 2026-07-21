@@ -60,11 +60,11 @@ const AccentCard: React.FC<{
   sub?: string;
 }> = ({ icon, label, value, sub }) => (
   <div style={{
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
     borderRadius: 16,
     padding: '20px 22px',
     color: '#fff',
-    boxShadow: '0 4px 20px rgba(118,75,162,.30)',
+    boxShadow: '0 4px 20px rgba(37, 99, 235,.30)',
     position: 'relative',
     overflow: 'hidden',
   }}>
@@ -114,7 +114,7 @@ const DashboardPage: React.FC = () => {
 
   const roleData = [
     { label: 'Candidate', count: stats.total_candidates, color: '#6366f1' },
-    { label: 'Recruiter', count: stats.total_recruiters, color: '#764ba2' },
+    { label: 'Recruiter', count: stats.total_recruiters, color: '#2563eb' },
     { label: 'HR',        count: stats.total_hr,         color: '#f59e0b' },
     { label: 'Admin',     count: stats.total_admins,     color: '#d1d5db' },
   ];
@@ -131,13 +131,13 @@ const DashboardPage: React.FC = () => {
 
       {/* ── USERS section ─────────────────────────── */}
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#9599a8', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#667eea', display: 'inline-block' }} />
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
         Users
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
         <MetricCard icon={<IconUsers size={20} color="#6366f1" />}        iconBg="#f0f0ff" label="Total Users"   value={stats.total_users}      sub={`${stats.active_users} active`} />
         <MetricCard icon={<IconTarget size={20} color="#3b82f6" />}        iconBg="#eff6ff" label="Candidates"    value={stats.total_candidates} />
-        <MetricCard icon={<IconBuilding size={20} color="#764ba2" />}      iconBg="#f3f0ff" label="Recruiters"    value={stats.total_recruiters} />
+        <MetricCard icon={<IconBuilding size={20} color="#2563eb" />}      iconBg="#eff6ff" label="Recruiters"    value={stats.total_recruiters} />
         <MetricCard icon={<IconBriefcase size={20} color="#f59e0b" />}     iconBg="#fffbeb" label="HR Managers"   value={stats.total_hr}         />
         <MetricCard icon={<IconShield size={20} color="#ef4444" />}        iconBg="#fef2f2" label="Admins"        value={stats.total_admins}     />
         <AccentCard icon={<IconUserPlus size={20} color="#fff" />}  label="New This Week" value={stats.new_users_last_7d} sub="registered in last 7 days" />
@@ -145,13 +145,13 @@ const DashboardPage: React.FC = () => {
 
       {/* ── JOBS section ──────────────────────────── */}
       <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: '#9599a8', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#667eea', display: 'inline-block' }} />
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3b82f6', display: 'inline-block' }} />
         Jobs &amp; Activity
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
         <MetricCard icon={<IconBriefcase size={20} color="#3b82f6" />}     iconBg="#eff6ff" label="Total Postings" value={stats.total_job_postings}  sub={`${stats.active_job_postings} active`} />
         <MetricCard icon={<IconCheckCircle size={20} color="#22c55e" />}   iconBg="#f0fdf4" label="Active Jobs"    value={stats.active_job_postings} />
-        <MetricCard icon={<IconMail size={20} color="#764ba2" />}          iconBg="#f3f0ff" label="Applications"   value={stats.total_applications}  />
+        <MetricCard icon={<IconMail size={20} color="#2563eb" />}          iconBg="#eff6ff" label="Applications"   value={stats.total_applications}  />
         <MetricCard icon={<IconCalendar size={20} color="#f59e0b" />}      iconBg="#fffbeb" label="Meetings"       value={stats.total_meetings}      />
         <AccentCard icon={<IconBriefcasePlus size={20} color="#fff" />} label="New Jobs This Week" value={stats.new_jobs_last_7d} sub="posted in last 7 days" />
       </div>
@@ -160,7 +160,7 @@ const DashboardPage: React.FC = () => {
       <div style={{ background: '#fff', border: '1px solid #e8eaed', borderRadius: 16, padding: '24px 28px', boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <IconPieChart size={20} color="#667eea" />
+            <IconPieChart size={20} color="#3b82f6" />
             <span style={{ fontSize: 16, fontWeight: 700, color: '#1a1d2b' }}>User Role Distribution</span>
           </div>
           <span style={{ fontSize: 12, color: '#9599a8' }}>{stats.total_users} total users</span>

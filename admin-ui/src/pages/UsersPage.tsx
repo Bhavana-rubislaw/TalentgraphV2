@@ -604,7 +604,7 @@ const UsersPage: React.FC = () => {
                     onClick={() => setNewRole(r)}
                   >
                     <div className="role-option-icon">
-                      {r === 'admin' ? <IconShield size={20} color="#ef4444" /> : r === 'recruiter' ? <IconBuilding size={20} color="#764ba2" /> : r === 'hr' ? <IconBriefcase size={20} color="#f59e0b" /> : <IconTarget size={20} color="#3b82f6" />}
+                      {r === 'admin' ? <IconShield size={20} color="#ef4444" /> : r === 'recruiter' ? <IconBuilding size={20} color="#2563eb" /> : r === 'hr' ? <IconBriefcase size={20} color="#f59e0b" /> : <IconTarget size={20} color="#3b82f6" />}
                     </div>
                     <div className="role-option-name">{r.charAt(0).toUpperCase() + r.slice(1)}</div>
                   </div>

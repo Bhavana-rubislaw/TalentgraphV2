@@ -200,7 +200,7 @@ const JobPostingsPage: React.FC = () => {
               onClick={() => { setStatusFilter(s); setOffset(0); }}
               style={{
                 padding: '6px 14px', borderRadius: 20, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
-                background: statusFilter === s ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#f3f4f6',
+                background: statusFilter === s ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#f3f4f6',
                 color: statusFilter === s ? '#fff' : 'var(--text-secondary)',
                 transition: 'all 0.15s',
               }}

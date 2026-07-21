@@ -193,7 +193,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.borderColor = '#A78BDB';
+          e.currentTarget.style.borderColor = '#60a5fa';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
@@ -410,7 +410,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
         onMouseEnter={(e) => {
           e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
           e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.borderColor = '#A78BDB';
+          e.currentTarget.style.borderColor = '#60a5fa';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.boxShadow = '';
@@ -643,7 +643,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
               padding: '12px 20px',
               borderRadius: '8px',
               border: 'none',
-              background: isApplied ? '#10b981' : 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+              background: isApplied ? '#10b981' : 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)',
               color: 'white',
               fontSize: '14px',
               fontWeight: '600',
@@ -978,7 +978,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
               width: '48px',
               height: '48px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1254,7 +1254,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                         height: '40px',
                         border: currentPage === pageNum ? 'none' : '1px solid #e2e8f0',
                         borderRadius: '8px',
-                        background: currentPage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : 'white',
+                        background: currentPage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)' : 'white',
                         color: currentPage === pageNum ? 'white' : '#475569',
                         fontSize: '14px',
                         fontWeight: '600',

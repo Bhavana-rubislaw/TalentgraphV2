@@ -3,19 +3,19 @@
    ============================================ */
 
 :root {
-  --jpb-primary: #6C5CE7;
+  --jpb-primary: #2563eb;
   --jpb-primary-hover: #5B45E0;
-  --jpb-primary-light: rgba(108, 92, 231, 0.1);
+  --jpb-primary-light: rgba(37, 99, 235, 0.1);
   --jpb-success: #2ECC71;
   --jpb-success-light: rgba(46, 204, 113, 0.1);
   --jpb-warning: #F0A830;
   --jpb-danger: #E74C3C;
   --jpb-danger-light: rgba(231, 76, 60, 0.1);
-  --jpb-bg: #F5F6FA;
+  --jpb-bg: #f8fafc;
   --jpb-surface: #ffffff;
   --jpb-surface-2: #F9FAFB;
-  --jpb-border: #E4E7EC;
-  --jpb-border-focus: #6C5CE7;
+  --jpb-border: #e5e7eb;
+  --jpb-border-focus: #2563eb;
   --jpb-text: #1D2939;
   --jpb-text-secondary: #44495C;
   --jpb-text-muted: #667085;
@@ -355,7 +355,7 @@
 
 .jpb-posting-card.active {
   background: var(--jpb-primary-light);
-  border-color: rgba(108, 92, 231, 0.3);
+  border-color: rgba(37, 99, 235, 0.3);
   border-left: 3px solid var(--jpb-primary);
   padding-left: 13px;
 }
@@ -790,7 +790,7 @@
 }
 
 .jpb-skill-dot.tech, .jpb-skill-dot.technical { background: #5B8DEF; }
-.jpb-skill-dot.soft { background: #7B5EA7; }
+.jpb-skill-dot.soft { background: #1d4ed8; }
 
 .jpb-skills-list {
   margin-top: 20px;

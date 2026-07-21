@@ -114,7 +114,7 @@ const LogsPage: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
           {[
             { icon: <IconList size={18} color="#3b82f6" />,     label: 'TOTAL LOGS',     value: stats.total_logs.toLocaleString(),           iconBg: '#eff6ff' },
-            { icon: <IconClock size={18} color="#764ba2" />,    label: 'LAST 24H',       value: stats.last_24h.toLocaleString(),             iconBg: '#f3f0ff' },
+            { icon: <IconClock size={18} color="#2563eb" />,    label: 'LAST 24H',       value: stats.last_24h.toLocaleString(),             iconBg: '#eff6ff' },
             { icon: <IconXCircle size={18} color="#ef4444" />,  label: 'RECENT ERRORS',  value: stats.recent_errors,                         iconBg: '#fef2f2' },
             { icon: <IconBarChart size={18} color="#f59e0b" />, label: 'ERROR RATE',     value: `${(stats.error_rate * 100).toFixed(1)}%`,   iconBg: '#fffbeb' },
           ].map((s) => (

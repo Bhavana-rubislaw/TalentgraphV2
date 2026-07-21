@@ -67,7 +67,7 @@
 
 .hr-section-pill.pending  { background: #fef3c7; color: #b45309; }
 .hr-section-pill.active   { background: #d1fae5; color: #065f46; }
-.hr-section-pill.frozen   { background: #ede9fe; color: #6d28d9; }
+.hr-section-pill.frozen   { background: #ede9fe; color: #1d4ed8; }
 .hr-section-pill.closed   { background: #f1f5f9; color: #475569; }
 
 /* ─── Job Card ───────────────────────────────────────────────── */
@@ -484,7 +484,7 @@
 .hr-app-badge.selected    { background: #d1fae5; color: #065f46; }
 .hr-app-badge.rejected    { background: #fee2e2; color: #991b1b; }
 .hr-app-badge.shortlisted { background: #dbeafe; color: #1d4ed8; }
-.hr-app-badge.scheduled   { background: #ede9fe; color: #6d28d9; }
+.hr-app-badge.scheduled   { background: #ede9fe; color: #1d4ed8; }
 .hr-app-badge.default     { background: #f1f5f9; color: #475569; }
 
 /* ─── Loading / empty states ─────────────────────────────────── */

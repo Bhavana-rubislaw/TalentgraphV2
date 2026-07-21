@@ -45,7 +45,7 @@ const COLORS = {
   closed:    '#e5e7eb',
 };
 
-const FUNNEL_COLORS = ['#4f46e5', '#7c3aed', '#a855f7', '#c084fc'];
+const FUNNEL_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#c084fc'];
 const PIE_COLORS   = [COLORS.active, '#c7d2fe'];
 
 // ── Helpers ───────────────────────────────────────────────────

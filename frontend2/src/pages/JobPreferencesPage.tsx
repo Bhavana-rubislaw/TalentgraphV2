@@ -771,7 +771,7 @@ const JobPreferencesPage: React.FC = () => {
 
             {/* Resume Upload Section */}
             {!editingId && (
-              <div className="cp-resume-assist-banner" style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem' }}>
+              <div className="cp-resume-assist-banner" style={{ marginBottom: '1.5rem', padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', borderRadius: '12px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                   <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <span style={{ width: 22, height: 22, display: 'flex' }}>{I.file}</span>
@@ -784,7 +784,7 @@ const JobPreferencesPage: React.FC = () => {
                 <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <input ref={fileInputRef} type="file" accept=".pdf,.docx" onChange={handleResumeUpload} disabled={resumeParsing} style={{ display: 'none' }} id="resume-upload-input" />
-                    <label htmlFor="resume-upload-input" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'white', color: '#667eea', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: resumeParsing ? 'not-allowed' : 'pointer', opacity: resumeParsing ? 0.7 : 1, whiteSpace: 'nowrap' }}>
+                    <label htmlFor="resume-upload-input" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', background: 'white', color: '#3b82f6', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', cursor: resumeParsing ? 'not-allowed' : 'pointer', opacity: resumeParsing ? 0.7 : 1, whiteSpace: 'nowrap' }}>
                       {resumeParsing ? 'Parsing...' : <>{I.plus} Upload Resume</>}
                     </label>
                     {parsedFields.size > 0 && (
@@ -1207,7 +1207,7 @@ const JobPreferencesPage: React.FC = () => {
                   {[
                     { value: 'remote',  label: 'Remote',  dot: '#10b981' },
                     { value: 'hybrid',  label: 'Hybrid',  dot: '#6b7280' },
-                    { value: 'onsite',  label: 'On-site', dot: '#8b5cf6' },
+                    { value: 'onsite',  label: 'On-site', dot: '#3b82f6' },
                   ].map(({ value, label, dot }) => (
                     <button key={value} className={`cp-filter-chip ${filterWork===value?'active':''}`} onClick={() => setFilterWork(filterWork===value?null:value)}>
                       <span className="cp-filter-dot" style={{ background: dot }} />
