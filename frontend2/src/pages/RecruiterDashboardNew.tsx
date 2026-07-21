@@ -103,7 +103,7 @@ const RecruiterDashboard: React.FC = () => {
 
   const userName = userFullName || userEmail.split('@')[0].charAt(0).toUpperCase() + userEmail.split('@')[0].slice(1);
   const userInitial = userName.charAt(0).toUpperCase();
-
+  const isRecommendationsTab = activeTab === 'recommendations';
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -441,183 +441,197 @@ const RecruiterDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="talentgraph-main-content">
-        <div className={activeTab === 'recommendations' ? 'recruiter-dashboard-grid' : undefined}>
-        {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
-        {activeTab === 'recommendations' && <aside className="welcome-banner-modern recruiter-kpi-rail" aria-label="Recruiter KPI summary">
-          <div className="welcome-header-compact">
-            <div className="welcome-avatar-compact">
-              <div className="avatar-circle-compact">{userInitial}</div>
-            </div>
-            <div className="welcome-text-compact">
-              <h1 className="welcome-title-compact">Welcome back, {userName}</h1>
-              <p className="welcome-subtitle-compact">Manage your recruitment pipeline • {companyName}</p>
-            </div>
-          </div>
-
-          {/* KPI Banner */}
-          <div className="kpi-banner-container">
-            <div className="kpi-card kpi-card-green">
-              <div className="kpi-card-top">
-                <span className="kpi-title">ACTIVE JOBS</span>
-                <div className="kpi-icon-wrapper kpi-icon-green">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" strokeWidth="2" fill="none"/>
-                    <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" strokeWidth="2" fill="none"/>
-                  </svg>
+        <div className={isRecommendationsTab ? 'recruiter-dashboard-grid' : 'recruiter-dashboard-stack'}>
+          {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
+          {isRecommendationsTab && (
+            <aside className="welcome-banner-modern recruiter-kpi-rail" aria-label="Recruiter KPI summary">
+              <div className="welcome-header-compact">
+                <div className="welcome-avatar-compact">
+                  <div className="avatar-circle-compact">{userInitial}</div>
+                </div>
+                <div className="welcome-text-compact">
+                  <h1 className="welcome-title-compact">Welcome back, {userName}</h1>
+                  <p className="welcome-subtitle-compact">
+                    Manage your recruitment pipeline • {companyName}
+                  </p>
                 </div>
               </div>
-              <div className="kpi-value-row">
-                <span className="kpi-value">{jobPostings.length}</span>
-                <span className="kpi-badge kpi-badge-green">open</span>
-              </div>
-              <p className="kpi-subtitle">{allJobPostings.filter(j => (j.status || '').toLowerCase() === 'frozen').length} frozen positions</p>
-            </div>
 
-            <div className="kpi-card kpi-card-blue">
-              <div className="kpi-card-top">
-                <span className="kpi-title">SHORTLISTED</span>
-                <div className="kpi-icon-wrapper kpi-icon-blue">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
+              <div className="kpi-banner-container">
+                <div className="kpi-card kpi-card-green">
+                  <div className="kpi-card-top">
+                    <span className="kpi-title">ACTIVE JOBS</span>
+                    <div className="kpi-icon-wrapper kpi-icon-green">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                        <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" strokeWidth="2" fill="none" />
+                        <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" strokeWidth="2" fill="none" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="kpi-value-row">
+                    <span className="kpi-value">{jobPostings.length}</span>
+                    <span className="kpi-badge kpi-badge-green">open</span>
+                  </div>
+                  <p className="kpi-subtitle">
+                    {allJobPostings.filter((job) => (job.status || '').toLowerCase() === 'frozen').length} frozen positions
+                  </p>
+                </div>
+
+                <div className="kpi-card kpi-card-blue">
+                  <div className="kpi-card-top">
+                    <span className="kpi-title">SHORTLISTED</span>
+                    <div className="kpi-icon-wrapper kpi-icon-blue">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="kpi-value-row">
+                    <span className="kpi-value">{shortlist.length}</span>
+                    <span className="kpi-badge kpi-badge-blue">saved</span>
+                  </div>
+                  <p className="kpi-subtitle">Top talent candidates</p>
+                </div>
+
+                <div className="kpi-card kpi-card-purple">
+                  <div className="kpi-card-top">
+                    <span className="kpi-title">APPLICATIONS</span>
+                    <div className="kpi-icon-wrapper kpi-icon-purple">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="1" fill="none" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="kpi-value-row">
+                    <span className="kpi-value">{applications.length}</span>
+                    <span className="kpi-badge kpi-badge-purple">pending</span>
+                  </div>
+                  <p className="kpi-subtitle">Awaiting review</p>
+                </div>
+
+                <div className="kpi-card kpi-card-orange">
+                  <div className="kpi-card-top">
+                    <span className="kpi-title">MATCHES</span>
+                    <div className="kpi-icon-wrapper kpi-icon-orange">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="kpi-value-row">
+                    <span className="kpi-value">{matches.length}</span>
+                    <span className="kpi-badge kpi-badge-orange">mutual</span>
+                  </div>
+                  <p className="kpi-subtitle">Both parties interested</p>
                 </div>
               </div>
-              <div className="kpi-value-row">
-                <span className="kpi-value">{shortlist.length}</span>
-                <span className="kpi-badge kpi-badge-blue">saved</span>
-              </div>
-              <p className="kpi-subtitle">Top talent candidates</p>
+            </aside>
+          )}
+
+          {/* Content Panel */}
+          <div className="content-panel-horizontal">
+            <div style={{ display: isRecommendationsTab ? 'block' : 'none' }}>
+              <RecruiterRecommendationsTab
+                jobPostings={jobPostings}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                selectedJobId={selectedJobId}
+                setSelectedJobId={setSelectedJobId}
+                loading={loading}
+                recommendations={recommendations}
+                applications={applications}
+                setAppStatusFilter={setAppStatusFilter}
+                allMeetings={allMeetings}
+                handleRecruiterLike={handleRecruiterLike}
+                handleRecruiterPass={handleRecruiterPass}
+                handleAskToApply={handleAskToApply}
+                handleStartMessage={handleStartMessage}
+              />
             </div>
 
-            <div className="kpi-card kpi-card-purple">
-              <div className="kpi-card-top">
-                <span className="kpi-title">APPLICATIONS</span>
-                <div className="kpi-icon-wrapper kpi-icon-purple">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="1" fill="none"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="kpi-value-row">
-                <span className="kpi-value">{applications.length}</span>
-                <span className="kpi-badge kpi-badge-purple">pending</span>
-              </div>
-              <p className="kpi-subtitle">Awaiting review</p>
+            <div style={{ display: activeTab === 'shortlist' ? 'block' : 'none' }}>
+              <ShortlistTab
+                shortlist={shortlist}
+                applications={applications}
+                handleAskToApply={handleAskToApply}
+                handleStartMessage={handleStartMessage}
+                setSelectedAppForSchedule={setSelectedAppForSchedule}
+                setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
+              />
             </div>
 
-            <div className="kpi-card kpi-card-orange">
-              <div className="kpi-card-top">
-                <span className="kpi-title">MATCHES</span>
-                <div className="kpi-icon-wrapper kpi-icon-orange">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                </div>
-              </div>
-              <div className="kpi-value-row">
-                <span className="kpi-value">{matches.length}</span>
-                <span className="kpi-badge kpi-badge-orange">mutual</span>
-              </div>
-              <p className="kpi-subtitle">Both parties interested</p>
+            <div style={{ display: activeTab === 'applications' ? 'block' : 'none' }}>
+              <ApplicationsTab
+                applications={applications}
+                applicationsLoading={applicationsLoading}
+                jobPostings={jobPostings}
+                companyName={companyName}
+                userName={userName}
+                getParam={getParam}
+                setParam={setParam}
+                updateApplicationStatus={updateApplicationStatus}
+                saveApplicationNotes={saveApplicationNotes}
+                downloadResume={downloadResume}
+                downloadCertification={downloadCertification}
+                handleStartDirectMessage={handleStartDirectMessage}
+                setSelectedAppForSchedule={setSelectedAppForSchedule}
+                setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
+                toast={toast}
+                showToast={showToast}
+              />
+            </div>
+
+            <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
+              <RecruiterMatchesTab
+                matches={matches}
+                applications={applications}
+                setActiveTab={setActiveTab}
+                handleStartMessage={handleStartMessage}
+                handleStartDirectMessage={handleStartDirectMessage}
+                setSelectedAppForSchedule={setSelectedAppForSchedule}
+                setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
+              />
+            </div>
+
+            <div style={{ display: activeTab === 'browse' ? 'block' : 'none' }}>
+              <BrowseCandidatesTab
+                browseCandidates={browseCandidates}
+                browseTotal={browseTotal}
+                browseLoading={browseLoading}
+                browsePage={browsePage}
+                setBrowsePage={setBrowsePage}
+                browseLimit={browseLimit}
+                browseSearch={browseSearch}
+                setBrowseSearch={setBrowseSearch}
+                browseRole={browseRole}
+                setBrowseRole={setBrowseRole}
+                browseWorkType={browseWorkType}
+                setBrowseWorkType={setBrowseWorkType}
+                browseLocation={browseLocation}
+                setBrowseLocation={setBrowseLocation}
+                handleRecruiterLike={handleRecruiterLike}
+                handleAskToApply={handleAskToApply}
+                handleStartDirectMessage={handleStartDirectMessage}
+                handleStartMessage={handleStartMessage}
+              />
+            </div>
+
+            <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
+              <ChatWindow />
+            </div>
+
+            <div
+              style={{
+                display: activeTab === 'meetings' ? 'block' : 'none',
+                paddingBottom: 0,
+                marginBottom: 0,
+              }}
+            >
+              {activeTab === 'meetings' && <MeetingSchedulerTab role="recruiter" />}
             </div>
           </div>
-
-        </aside>}
-
-        {/* Content Panel */}
-        <div
-          className="content-panel-horizontal"
-        >
-          <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
-            <RecruiterRecommendationsTab
-              jobPostings={jobPostings}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              selectedJobId={selectedJobId}
-              setSelectedJobId={setSelectedJobId}
-              loading={loading}
-              recommendations={recommendations}
-              applications={applications}
-              setAppStatusFilter={setAppStatusFilter}
-              allMeetings={allMeetings}
-              handleRecruiterLike={handleRecruiterLike}
-              handleRecruiterPass={handleRecruiterPass}
-              handleAskToApply={handleAskToApply}
-              handleStartMessage={handleStartMessage}
-            />
-          </div>
-          <div style={{ display: activeTab === 'shortlist' ? 'block' : 'none' }}>
-            <ShortlistTab
-              shortlist={shortlist}
-              applications={applications}
-              handleAskToApply={handleAskToApply}
-              handleStartMessage={handleStartMessage}
-              setSelectedAppForSchedule={setSelectedAppForSchedule}
-              setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
-            />
-          </div>
-          <div style={{ display: activeTab === 'applications' ? 'block' : 'none' }}>
-            <ApplicationsTab
-              applications={applications}
-              applicationsLoading={applicationsLoading}
-              jobPostings={jobPostings}
-              companyName={companyName}
-              userName={userName}
-              getParam={getParam}
-              setParam={setParam}
-              updateApplicationStatus={updateApplicationStatus}
-              saveApplicationNotes={saveApplicationNotes}
-              downloadResume={downloadResume}
-              downloadCertification={downloadCertification}
-              handleStartDirectMessage={handleStartDirectMessage}
-              setSelectedAppForSchedule={setSelectedAppForSchedule}
-              setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
-              toast={toast}
-              showToast={showToast}
-            />
-          </div>
-          <div style={{ display: activeTab === 'matches' ? 'block' : 'none' }}>
-            <RecruiterMatchesTab
-              matches={matches}
-              applications={applications}
-              setActiveTab={setActiveTab}
-              handleStartMessage={handleStartMessage}
-              handleStartDirectMessage={handleStartDirectMessage}
-              setSelectedAppForSchedule={setSelectedAppForSchedule}
-              setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
-            />
-          </div>
-          <div style={{ display: activeTab === 'browse' ? 'block' : 'none' }}>
-            <BrowseCandidatesTab
-              browseCandidates={browseCandidates}
-              browseTotal={browseTotal}
-              browseLoading={browseLoading}
-              browsePage={browsePage}
-              setBrowsePage={setBrowsePage}
-              browseLimit={browseLimit}
-              browseSearch={browseSearch}
-              setBrowseSearch={setBrowseSearch}
-              browseRole={browseRole}
-              setBrowseRole={setBrowseRole}
-              browseWorkType={browseWorkType}
-              setBrowseWorkType={setBrowseWorkType}
-              browseLocation={browseLocation}
-              setBrowseLocation={setBrowseLocation}
-              handleRecruiterLike={handleRecruiterLike}
-              handleAskToApply={handleAskToApply}
-              handleStartDirectMessage={handleStartDirectMessage}
-              handleStartMessage={handleStartMessage}
-            />
-          </div>
-          <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
-            <ChatWindow />
-          </div>
-          <div style={{ display: activeTab === 'meetings' ? 'block' : 'none', paddingBottom: 0, marginBottom: 0 }}>
-            {activeTab === 'meetings' && <MeetingSchedulerTab role="recruiter" />}
-          </div>
-        </div>
         </div>
       </div>
 
