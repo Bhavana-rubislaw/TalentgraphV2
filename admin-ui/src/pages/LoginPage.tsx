@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminLogin } from '../api/client';
-import { useAuth } from '../contexts/AuthContext';import { IconAlertTriangle } from '../components/Icons';
+import { useAuth } from '../contexts/AuthContext';
+import { IconAlertTriangle } from '../components/Icons';
+import '../styles/Landing.css';
+import '../styles/Auth.css';
+
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -47,30 +51,33 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="auth-shell">
-      <div className="auth-card">
-        {/* Logo */}
-        <div className="auth-logo">
-          <div className="auth-logo-mark">TG</div>
-          <div className="auth-logo-text">
-            <div className="auth-logo-name">TalentGraph</div>
-            <div className="auth-logo-badge">Admin Portal</div>
+    <div className="tg-landing tg-auth">
+      <header className="tg-nav">
+        <div className="tg-nav-inner">
+          <div className="tg-logo" onClick={() => navigate('/')} role="button" tabIndex={0}>
+            <span className="tg-logo-mark">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />
+              </svg>
+            </span>
+            TalentGraph
+            <span className="tg-badge tg-badge-blue" style={{ marginLeft: 8 }}>Admin</span>
+          </div>
+          <div className="tg-nav-actions">
+            <span className="tg-auth-nav-hint">Restricted access — administrators only</span>
           </div>
         </div>
+      </header>
 
-        <div className="auth-title">Administrator Sign In</div>
-        <div className="auth-subtitle">
-          Restricted access — system administrators only.
-        </div>
+      <main className="tg-auth-main">
+        <div className="tg-auth-card">
+          <h1>Administrator Sign In</h1>
+          <p className="tg-auth-sub">Sign in to the TalentGraph admin console</p>
 
-        {error && <div className="auth-error"><IconAlertTriangle size={15} color="currentColor" style={{ marginRight: 6 }} />{error}</div>}
-
-        <form onSubmit={handleSubmit} autoComplete="on">
-          <div className="auth-field">
+          <form onSubmit={handleSubmit} className="tg-auth-form" autoComplete="on">
             <label htmlFor="email">Email address</label>
             <input
               id="email"
-              className="input"
               type="email"
               autoComplete="username"
               placeholder="admin@example.com"
@@ -78,31 +85,31 @@ const LoginPage: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-          </div>
 
-          <div className="auth-field">
             <label htmlFor="password">Password</label>
             <input
               id="password"
-              className="input"
               type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
+              placeholder="••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-          </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary auth-submit btn-lg"
-            disabled={loading}
-          >
-            {loading ? <><span className="spinner" /> Signing in…</> : 'Sign in to Admin Portal'}
-          </button>
-        </form>
-      </div>
+            {error && (
+              <div className="tg-demo-error">
+                <IconAlertTriangle size={15} color="currentColor" style={{ marginRight: 6 }} />
+                {error}
+              </div>
+            )}
+
+            <button type="submit" className="tg-btn tg-btn-primary tg-btn-lg tg-btn-block" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign In to Admin Portal'}
+            </button>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };

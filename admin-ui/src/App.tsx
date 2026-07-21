@@ -7,6 +7,7 @@ import {
 } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AdminLayout from './components/AdminLayout';
+import AdminLandingPage from './pages/AdminLandingPage';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import UsersPage from './pages/UsersPage';
@@ -57,6 +58,8 @@ const RedirectIfAuthed: React.FC<{ children: React.ReactNode }> = ({ children })
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<AdminLandingPage />} />
+
       <Route
         path="/login"
         element={

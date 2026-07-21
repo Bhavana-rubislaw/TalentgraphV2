@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "frontend2",
       "port": 5173
+    },
+    {
+      "name": "admin-ui",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "admin-ui",
+      "port": 5174
     }
   ]
 }
