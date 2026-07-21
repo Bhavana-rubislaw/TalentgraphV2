@@ -38,7 +38,7 @@ interface SubscriptionPageProps {
 }
 
 const PLAN_COLOURS: string[] = ['#e0e7ff', '#d1fae5', '#fef3c7', '#fce7f3'];
-const PLAN_ACCENT: string[] = ['#6366f1', '#10b981', '#f59e0b', '#ec4899'];
+const PLAN_ACCENT: string[] = ['#2563eb', '#10b981', '#f59e0b', '#ec4899'];
 
 const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
   const isAdmin = userRole === 'admin';
@@ -157,7 +157,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
             style={{
               padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600,
               border: activeSection === s ? 'none' : '1px solid #e2e8f0',
-              background: activeSection === s ? '#6366f1' : '#fff',
+              background: activeSection === s ? '#2563eb' : '#fff',
               color: activeSection === s ? '#fff' : '#64748b',
               cursor: 'pointer',
             }}
@@ -184,7 +184,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
         <div>
           {/* Active subscription card */}
           {activeSub ? (
-            <div style={{ background: 'linear-gradient(135deg,#6366f1,#3b82f6)', borderRadius: 12, padding: '20px 24px', color: '#fff', marginBottom: 28 }}>
+            <div style={{ background: 'linear-gradient(135deg,#2563eb,#3b82f6)', borderRadius: 12, padding: '20px 24px', color: '#fff', marginBottom: 28 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontSize: 11, opacity: 0.8, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '.5px' }}>Active Plan</div>
@@ -286,7 +286,7 @@ const SubscriptionPage: React.FC<SubscriptionPageProps> = ({ userRole }) => {
         <div>
           {/* Balance card */}
           <div style={{
-            background: 'linear-gradient(135deg,#0ea5e9,#6366f1)', borderRadius: 12,
+            background: 'linear-gradient(135deg,#0ea5e9,#2563eb)', borderRadius: 12,
             padding: '20px 24px', color: '#fff', marginBottom: 24, display: 'flex',
             justifyContent: 'space-between', alignItems: 'center',
           }}>

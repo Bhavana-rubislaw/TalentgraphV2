@@ -97,7 +97,7 @@
   outline: none;
   background: #FFFFFF;
   border-color: #7C3AED;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .talentgraph-search-input::placeholder {
@@ -424,12 +424,12 @@
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
 .talentgraph-btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(124, 58, 237, 0.3);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
 }
 
 .talentgraph-btn-primary svg {
@@ -534,7 +534,7 @@
   justify-content: center;
   font-weight: 700;
   font-size: 16px;
-  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
 
 .welcome-text-compact {

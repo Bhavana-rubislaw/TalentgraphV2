@@ -62,9 +62,9 @@ function MiniCalendar({ selectedDate, onSelect, bookedDates = [] }: { selectedDa
           return (
             <button key={d} disabled={disabled} onClick={()=>!disabled&&onSelect(new Date(viewYear,viewMonth,d))}
               style={{position:"relative",width:"100%",aspectRatio:"1",border:"none",borderRadius:7,cursor:disabled?"not-allowed":"pointer",fontSize:12,fontWeight:sel?700:tod?600:400,
-                background:sel?"linear-gradient(135deg,#1d4ed8,#3b82f6)":tod&&!sel?"rgba(109,40,217,0.1)":"transparent",
+                background:sel?"linear-gradient(135deg,#1d4ed8,#3b82f6)":tod&&!sel?"rgba(29, 78, 216,0.1)":"transparent",
                 color:sel?"white":disabled?"#cbd5e1":tod?"#1d4ed8":"#1e293b",transition:"all 0.15s",outline:"none",
-                boxShadow:sel?"0 3px 10px rgba(109,40,217,0.35)":"none"}}>
+                boxShadow:sel?"0 3px 10px rgba(29, 78, 216,0.35)":"none"}}>
               {d}
               {booked&&!sel&&<span style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:3,height:3,borderRadius:"50%",background:"#f59e0b",display:"block"}}/>}
             </button>
@@ -160,7 +160,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
   const stepLabels = ["Platform","Schedule","Confirm"];
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(15,12,41,0.7)",backdropFilter:"blur(10px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(11, 18, 32,0.7)",backdropFilter:"blur(10px)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -168,7 +168,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
         @keyframes fadeStep{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
         .sched-modal{animation:slideUp 0.3s cubic-bezier(.16,1,.3,1)}
         .step-body{animation:fadeStep 0.25s ease}
-        .slot-btn:hover{background:rgba(109,40,217,0.08)!important;border-color:#3b82f6!important;color:#1d4ed8!important}
+        .slot-btn:hover{background:rgba(29, 78, 216,0.08)!important;border-color:#3b82f6!important;color:#1d4ed8!important}
         .pcard:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.13)!important}
         .dur-btn:hover{opacity:0.85}
         .join-btn:hover{opacity:0.85;transform:scale(1.02)}
@@ -266,7 +266,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                   return (
                     <div key={label} style={{display:"flex",alignItems:"center",flex:idx<stepLabels.length-1?1:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:7}}>
-                        <div style={{width:26,height:26,borderRadius:"50%",background:done?"linear-gradient(135deg,#059669,#10b981)":active?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:done||active?"white":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0,boxShadow:active?"0 4px 12px rgba(109,40,217,0.3)":"none",transition:"all 0.3s"}}>
+                        <div style={{width:26,height:26,borderRadius:"50%",background:done?"linear-gradient(135deg,#059669,#10b981)":active?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:done||active?"white":"#94a3b8",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,flexShrink:0,boxShadow:active?"0 4px 12px rgba(29, 78, 216,0.3)":"none",transition:"all 0.3s"}}>
                           {done?"✓":sn}
                         </div>
                         <span style={{fontSize:12,fontWeight:done||active?600:400,color:done||active?"#1e293b":"#94a3b8",whiteSpace:"nowrap"}}>{label}</span>
@@ -307,7 +307,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                       </div>
                     </div>
                     <button disabled={!platform} onClick={goNext}
-                      style={{width:"100%",padding:13,borderRadius:12,border:"none",background:platform?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:platform?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:platform?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:platform?"0 8px 20px rgba(109,40,217,0.3)":"none",transition:"all 0.2s"}}>
+                      style={{width:"100%",padding:13,borderRadius:12,border:"none",background:platform?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:platform?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:platform?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:platform?"0 8px 20px rgba(29, 78, 216,0.3)":"none",transition:"all 0.2s"}}>
                       Continue to Schedule →
                     </button>
                   </div>
@@ -346,7 +346,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
                     <div style={{display:"flex",gap:9,marginTop:16}}>
                       <button onClick={goBack} style={{flex:1,padding:13,borderRadius:12,border:"2px solid #e2e8f0",background:"white",color:"#64748b",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>← Back</button>
                       <button disabled={!selectedDate||!selectedTime} onClick={goNext}
-                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:selectedDate&&selectedTime?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:selectedDate&&selectedTime?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:selectedDate&&selectedTime?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:selectedDate&&selectedTime?"0 8px 20px rgba(109,40,217,0.3)":"none"}}>
+                        style={{flex:2,padding:13,borderRadius:12,border:"none",background:selectedDate&&selectedTime?"linear-gradient(135deg,#1d4ed8,#3b82f6)":"#e2e8f0",color:selectedDate&&selectedTime?"white":"#94a3b8",fontWeight:700,fontSize:13,cursor:selectedDate&&selectedTime?"pointer":"not-allowed",fontFamily:"inherit",boxShadow:selectedDate&&selectedTime?"0 8px 20px rgba(29, 78, 216,0.3)":"none"}}>
                         Review Details →
                       </button>
                     </div>

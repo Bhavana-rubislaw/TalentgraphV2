@@ -4,7 +4,7 @@
 
 :root {
   --jpb-primary: #2563eb;
-  --jpb-primary-hover: #5B45E0;
+  --jpb-primary-hover: #2563eb;
   --jpb-primary-light: rgba(37, 99, 235, 0.1);
   --jpb-success: #2ECC71;
   --jpb-success-light: rgba(46, 204, 113, 0.1);
@@ -284,7 +284,7 @@
 .jpb-search-box:focus-within {
   border-color: var(--jpb-primary);
   background: var(--jpb-surface);
-  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .jpb-search-box svg {
@@ -568,7 +568,7 @@
 .jpb-field select:focus,
 .jpb-field textarea:focus {
   border-color: var(--jpb-primary);
-  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .jpb-field textarea {
@@ -667,7 +667,7 @@
 
 .jpb-multi-input-wrap:focus-within {
   border-color: var(--jpb-primary);
-  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .jpb-multi-input-wrap input {
@@ -721,7 +721,7 @@
 
 .jpb-skill-search-input:focus {
   border-color: var(--jpb-primary);
-  box-shadow: 0 0 0 3px rgba(123, 94, 167, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .jpb-dropdown-list {
@@ -819,7 +819,7 @@
 }
 
 .jpb-skill-item:hover {
-  border-color: rgba(123, 94, 167, 0.25);
+  border-color: rgba(37, 99, 235, 0.25);
   background: var(--jpb-primary-light);
 }
 
@@ -962,7 +962,7 @@
 
 .jpb-preview-header {
   padding: 28px 28px 20px;
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.06) 0%, rgba(123, 94, 167, 0.02) 100%);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(37, 99, 235, 0.02) 100%);
   border-bottom: 1px solid var(--jpb-border);
 }
 

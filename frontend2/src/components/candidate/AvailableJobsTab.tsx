@@ -204,7 +204,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 onChange={(e) => setJobSearchTerm(e.target.value)}
                 onFocus={(e) => {
                   e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#6366f1';
+                  e.currentTarget.style.borderColor = '#2563eb';
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.background = '#F9FAFB';
@@ -234,7 +234,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
               }}
               value={selectedJobRole}
               onChange={(e) => setSelectedJobRole(e.target.value)}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#6366f1'}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
               onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
             >
               <option value="">All Roles</option>
@@ -264,7 +264,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
               }}
               value={jobLocationFilter}
               onChange={(e) => setJobLocationFilter(e.target.value)}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#6366f1'}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
               onBlur={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
             >
               <option value="">Any Location</option>
@@ -288,7 +288,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 padding: '10px 20px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === '' ? 'none' : '1px solid #E5E7EB',
-                background: selectedJobWorkType === '' ? '#6366f1' : 'white',
+                background: selectedJobWorkType === '' ? '#2563eb' : 'white',
                 color: selectedJobWorkType === '' ? 'white' : '#6b7280',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -314,7 +314,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 padding: '10px 20px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Remote' ? 'none' : '1px solid #E5E7EB',
-                background: selectedJobWorkType === 'Remote' ? '#6366f1' : 'white',
+                background: selectedJobWorkType === 'Remote' ? '#2563eb' : 'white',
                 color: selectedJobWorkType === 'Remote' ? 'white' : '#6b7280',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -340,7 +340,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 padding: '10px 20px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Hybrid' ? 'none' : '1px solid #E5E7EB',
-                background: selectedJobWorkType === 'Hybrid' ? '#6366f1' : 'white',
+                background: selectedJobWorkType === 'Hybrid' ? '#2563eb' : 'white',
                 color: selectedJobWorkType === 'Hybrid' ? 'white' : '#6b7280',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -366,7 +366,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 padding: '10px 20px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Onsite' ? 'none' : '1px solid #E5E7EB',
-                background: selectedJobWorkType === 'Onsite' ? '#6366f1' : 'white',
+                background: selectedJobWorkType === 'Onsite' ? '#2563eb' : 'white',
                 color: selectedJobWorkType === 'Onsite' ? 'white' : '#6b7280',
                 fontSize: '14px',
                 fontWeight: '600',
@@ -396,7 +396,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 borderRadius: '10px',
                 border: 'none',
                 background: 'transparent',
-                color: '#6366f1',
+                color: '#2563eb',
                 fontSize: '14px',
                 fontWeight: '600',
                 cursor: 'pointer',
@@ -593,7 +593,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
               style={{
                 fontSize: '13px',
                 fontWeight: 600,
-                color: '#6366f1',
+                color: '#2563eb',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -669,18 +669,18 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                 borderRadius: '16px',
                 padding: '24px',
                 transition: 'all 0.2s',
-                boxShadow: '0 2px 8px rgba(123, 94, 167, 0.06)',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
                 e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = '#A78BDB';
+                e.currentTarget.style.borderColor = '#60a5fa';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.borderColor = '#E2E4EC';
               }}>
@@ -968,7 +968,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                     justifyContent: 'center',
                     border: currentJobPage === page ? 'none' : '1px solid #e2e8f0',
                     borderRadius: '8px',
-                    background: currentJobPage === page ? '#6366f1' : 'white',
+                    background: currentJobPage === page ? '#2563eb' : 'white',
                     color: currentJobPage === page ? 'white' : '#475569',
                     fontSize: '14px',
                     fontWeight: currentJobPage === page ? 600 : 500,

@@ -27,7 +27,7 @@ interface TeamManagerProps {
 }
 
 const ROLE_BADGE: Record<string, string> = {
-  ADMIN: '#6366f1',
+  ADMIN: '#2563eb',
   HR: '#0ea5e9',
   RECRUITER: '#10b981',
 };
@@ -174,12 +174,12 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
             onClick={() => setShowInviteForm(!showInviteForm)}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 16px', background: '#6366f1', color: '#fff',
+              padding: '8px 16px', background: '#2563eb', color: '#fff',
               border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
               cursor: 'pointer', transition: 'background 0.2s',
             }}
-            onMouseOver={e => (e.currentTarget.style.background = '#4f46e5')}
-            onMouseOut={e => (e.currentTarget.style.background = '#6366f1')}
+            onMouseOver={e => (e.currentTarget.style.background = '#1d4ed8')}
+            onMouseOut={e => (e.currentTarget.style.background = '#2563eb')}
           >
             + Invite Member
           </button>
@@ -234,7 +234,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
               type="submit"
               disabled={inviting}
               style={{
-                padding: '8px 18px', background: '#6366f1', color: '#fff',
+                padding: '8px 18px', background: '#2563eb', color: '#fff',
                 border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 600,
                 cursor: inviting ? 'not-allowed' : 'pointer', opacity: inviting ? 0.7 : 1,
               }}
@@ -282,7 +282,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                   display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 180px',
                   gap: 12, padding: '14px 16px', alignItems: 'center',
                   borderTop: '1px solid var(--border-light, #e2e8f0)',
-                  background: member.is_self ? 'rgba(99,102,241,0.04)' : 'transparent',
+                  background: member.is_self ? 'rgba(37, 99, 235,0.04)' : 'transparent',
                 }}
               >
                 {/* Name / email */}
@@ -311,7 +311,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                         <option value="hr">HR</option>
                         <option value="recruiter">Recruiter</option>
                       </select>
-                      <button onClick={() => handleRoleUpdate(member.user_id)} style={{ padding: '4px 8px', background: '#6366f1', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✓</button>
+                      <button onClick={() => handleRoleUpdate(member.user_id)} style={{ padding: '4px 8px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✓</button>
                       <button onClick={() => setEditingMember(null)} style={{ padding: '4px 8px', background: 'none', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✕</button>
                     </div>
                   ) : (
@@ -342,7 +342,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                         color: '#475569', fontWeight: 600, whiteSpace: 'nowrap',
                         transition: 'border-color 0.15s',
                       }}
-                      onMouseOver={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                      onMouseOver={e => (e.currentTarget.style.borderColor = '#2563eb')}
                       onMouseOut={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
@@ -438,7 +438,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                     disabled={resendingInvite === inv.invitee_email}
                     title="Resend invitation email"
                     style={{
-                      fontSize: 12, color: '#6366f1', background: 'none',
+                      fontSize: 12, color: '#2563eb', background: 'none',
                       border: '1px solid #c7d2fe', borderRadius: 6, padding: '4px 10px',
                       cursor: resendingInvite === inv.invitee_email ? 'not-allowed' : 'pointer',
                       opacity: resendingInvite === inv.invitee_email ? 0.6 : 1,

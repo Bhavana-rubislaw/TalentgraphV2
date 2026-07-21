@@ -359,7 +359,7 @@ export function AvailabilitySelectorModal({
                 fontWeight: 700,
                 fontSize: '14px',
                 cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: !loading ? '0 4px 12px rgba(109, 40, 217, 0.3)' : 'none',
+                boxShadow: !loading ? '0 4px 12px rgba(29, 78, 216, 0.3)' : 'none',
               }}
             >
               {loading ? 'Proposing...' : `Propose ${slots.length} Time${slots.length > 1 ? 's' : ''}`}

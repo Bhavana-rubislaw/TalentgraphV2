@@ -35,17 +35,17 @@ type RangeDays = 7 | 30 | 90;
 
 // ── Color palette ────────────────────────────────────────────
 const COLORS = {
-  primary:   '#4f46e5',
+  primary:   '#1d4ed8',
   secondary: '#7c3aed',
   success:   '#059669',
   warning:   '#d97706',
   danger:    '#dc2626',
   muted:     '#6b7280',
-  active:    '#4f46e5',
+  active:    '#1d4ed8',
   closed:    '#e5e7eb',
 };
 
-const FUNNEL_COLORS = ['#4f46e5', '#7c3aed', '#2563eb', '#c084fc'];
+const FUNNEL_COLORS = ['#1d4ed8', '#7c3aed', '#2563eb', '#c084fc'];
 const PIE_COLORS   = [COLORS.active, '#c7d2fe'];
 
 // ── Helpers ───────────────────────────────────────────────────

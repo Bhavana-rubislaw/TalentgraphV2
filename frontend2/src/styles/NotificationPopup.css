@@ -78,7 +78,7 @@
   gap: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #6366f1;
+  color: #2563eb;
   background: transparent;
   border: none;
   padding: 6px 10px;
@@ -152,7 +152,7 @@
 
 .notif-tab-btn.active {
   background: #f0f1ff;
-  color: #6366f1;
+  color: #2563eb;
   font-weight: 600;
 }
 
@@ -232,7 +232,7 @@
   top: 20px;
   width: 8px;
   height: 8px;
-  background: #6366f1;
+  background: #2563eb;
   border-radius: 50%;
   border: 2px solid white;
 }
@@ -312,14 +312,14 @@
 }
 
 .notif-btn-review {
-  background: #6366f1;
+  background: #2563eb;
   color: white;
-  border-color: #6366f1;
+  border-color: #2563eb;
 }
 
 .notif-btn-review:hover {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .notif-btn-dismiss {
@@ -393,7 +393,7 @@
   gap: 5px;
   font-size: 12px;
   font-weight: 500;
-  color: #6366f1;
+  color: #2563eb;
   background: transparent;
   border: 1px solid #e0e7ff;
   padding: 5px 10px;
@@ -454,7 +454,7 @@
   width: 32px;
   height: 32px;
   border: 3px solid #e2e8f0;
-  border-top-color: #6366f1;
+  border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -485,7 +485,7 @@
   gap: 8px;
   font-size: 13px;
   font-weight: 600;
-  color: #6366f1;
+  color: #2563eb;
   background: transparent;
   border: none;
   padding: 10px;

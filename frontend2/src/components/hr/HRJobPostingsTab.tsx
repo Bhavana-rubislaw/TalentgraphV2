@@ -102,9 +102,9 @@ const HRJobPostingsTab: React.FC<HRJobPostingsTabProps> = ({
 
           {/* KPI Banner */}
           <div className="hr-kpi-grid" style={{ marginBottom: 20 }}>
-            <KPICard label="Total"     value={allJobs.length}                                                               color="#6366f1" stripe="#6366f1" />
+            <KPICard label="Total"     value={allJobs.length}                                                               color="#2563eb" stripe="#2563eb" />
             <KPICard label="Active"    value={allJobs.filter(j => (j.status || '').toLowerCase() === 'active').length}     color="#10b981" stripe="#10b981" />
-            <KPICard label="Frozen"    value={allJobs.filter(j => (j.status || '').toLowerCase() === 'frozen').length}     color="#6366f1" stripe="#6366f1" />
+            <KPICard label="Frozen"    value={allJobs.filter(j => (j.status || '').toLowerCase() === 'frozen').length}     color="#2563eb" stripe="#2563eb" />
             <KPICard label="Reposted"  value={allJobs.filter(j => (j.status || '').toLowerCase() === 'reposted').length}   color="#3b82f6" stripe="#3b82f6" />
             <KPICard label="Cancelled" value={allJobs.filter(j => (j.status || '').toLowerCase() === 'cancelled').length}  color="#ef4444" stripe="#ef4444" />
           </div>
@@ -113,20 +113,20 @@ const HRJobPostingsTab: React.FC<HRJobPostingsTabProps> = ({
           <div style={{
             background: '#ffffff',
             border: '1px solid #e5e7eb',
-            borderLeft: '4px solid #6366f1',
+            borderLeft: '4px solid #2563eb',
             borderRadius: 10,
             padding: '16px 20px',
             marginBottom: 18,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #6366f1, #818cf8)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #2563eb, #60a5fa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Job Postings — HR Permissions</span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', background: '#eef2ff', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>HR MANAGER</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#2563eb', background: '#eef2ff', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>HR MANAGER</span>
                 </div>
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>What you can and cannot do with job postings</div>
               </div>

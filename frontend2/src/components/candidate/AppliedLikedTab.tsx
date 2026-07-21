@@ -184,19 +184,19 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
           borderRadius: '16px',
           padding: '24px',
           transition: 'all 0.2s',
-          boxShadow: '0 2px 8px rgba(123, 94, 167, 0.06)',
+          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.borderColor = '#60a5fa';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.borderColor = '#E2E4EC';
         }}>
@@ -408,7 +408,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
           marginBottom: '24px'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+          e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
           e.currentTarget.style.transform = 'translateY(-2px)';
           e.currentTarget.style.borderColor = '#60a5fa';
         }}
@@ -432,7 +432,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
             <div style={{
               height: '100%',
               width: `${(stage / 4) * 100}%`,
-              background: stage === 4 ? '#10b981' : stage === 3 ? '#6366f1' : stage === 2 ? '#f59e0b' : '#94a3b8',
+              background: stage === 4 ? '#10b981' : stage === 3 ? '#2563eb' : stage === 2 ? '#f59e0b' : '#94a3b8',
               transition: 'width 0.3s ease'
             }} />
           </div>
@@ -485,7 +485,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  background: stage >= 1 ? '#6366f1' : '#e2e8f0',
+                  background: stage >= 1 ? '#2563eb' : '#e2e8f0',
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
@@ -499,7 +499,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   Submitted
                 </span>
               </div>
-              <div style={{ width: '24px', height: '2px', background: stage >= 2 ? '#6366f1' : '#e2e8f0' }} />
+              <div style={{ width: '24px', height: '2px', background: stage >= 2 ? '#2563eb' : '#e2e8f0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                 <div style={{
                   width: '28px',
@@ -519,13 +519,13 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   In Review
                 </span>
               </div>
-              <div style={{ width: '24px', height: '2px', background: stage >= 3 ? '#6366f1' : '#e2e8f0' }} />
+              <div style={{ width: '24px', height: '2px', background: stage >= 3 ? '#2563eb' : '#e2e8f0' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
                 <div style={{
                   width: '28px',
                   height: '28px',
                   borderRadius: '50%',
-                  background: stage >= 3 ? '#6366f1' : '#e2e8f0',
+                  background: stage >= 3 ? '#2563eb' : '#e2e8f0',
                   color: 'white',
                   display: 'flex',
                   alignItems: 'center',
@@ -658,7 +658,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
             onMouseEnter={(e) => {
               if (!isApplying && withdrawingJobId !== job.job_id) {
                 e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(124, 58, 237, 0.4)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.4)';
               }
             }}
             onMouseLeave={(e) => {
@@ -1042,7 +1042,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
               width: '48px',
               height: '48px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1364,7 +1364,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                         justifyContent: 'center',
                         border: currentLikedPage === page ? 'none' : '1px solid #e2e8f0',
                         borderRadius: '8px',
-                        background: currentLikedPage === page ? '#6366f1' : 'white',
+                        background: currentLikedPage === page ? '#2563eb' : 'white',
                         color: currentLikedPage === page ? 'white' : '#475569',
                         fontSize: '14px',
                         fontWeight: currentLikedPage === page ? 600 : 500,

@@ -567,7 +567,7 @@
 }
 
 .toggle-switch:hover .toggle-slider {
-  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.1);
 }
 
 /* ── Footer ── */
@@ -608,12 +608,12 @@
   background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   color: white;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
 }
 
 .save-btn.has-changes:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.4);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.4);
 }
 
 .save-btn.has-changes:active {

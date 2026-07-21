@@ -261,7 +261,7 @@ const JobPostingsPage: React.FC = () => {
         const isActive = job.status === 'active';
         const isFrozen = job.status === 'frozen';
         return (
-          <div key={job.id} style={{ background: '#fff', border: `1px solid ${selected.has(job.id) ? '#6366f1' : '#e8eaed'}`, borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,.05)', position: 'relative' }}>
+          <div key={job.id} style={{ background: '#fff', border: `1px solid ${selected.has(job.id) ? '#2563eb' : '#e8eaed'}`, borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,.05)', position: 'relative' }}>
             {/* Checkbox */}
             <div style={{ position: 'absolute', top: 20, left: 16 }}>
               <input

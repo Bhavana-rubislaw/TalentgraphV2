@@ -113,7 +113,7 @@ const DashboardPage: React.FC = () => {
   if (!stats) return null;
 
   const roleData = [
-    { label: 'Candidate', count: stats.total_candidates, color: '#6366f1' },
+    { label: 'Candidate', count: stats.total_candidates, color: '#2563eb' },
     { label: 'Recruiter', count: stats.total_recruiters, color: '#2563eb' },
     { label: 'HR',        count: stats.total_hr,         color: '#f59e0b' },
     { label: 'Admin',     count: stats.total_admins,     color: '#d1d5db' },
@@ -135,7 +135,7 @@ const DashboardPage: React.FC = () => {
         Users
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <MetricCard icon={<IconUsers size={20} color="#6366f1" />}        iconBg="#f0f0ff" label="Total Users"   value={stats.total_users}      sub={`${stats.active_users} active`} />
+        <MetricCard icon={<IconUsers size={20} color="#2563eb" />}        iconBg="#f0f0ff" label="Total Users"   value={stats.total_users}      sub={`${stats.active_users} active`} />
         <MetricCard icon={<IconTarget size={20} color="#3b82f6" />}        iconBg="#eff6ff" label="Candidates"    value={stats.total_candidates} />
         <MetricCard icon={<IconBuilding size={20} color="#2563eb" />}      iconBg="#eff6ff" label="Recruiters"    value={stats.total_recruiters} />
         <MetricCard icon={<IconBriefcase size={20} color="#f59e0b" />}     iconBg="#fffbeb" label="HR Managers"   value={stats.total_hr}         />

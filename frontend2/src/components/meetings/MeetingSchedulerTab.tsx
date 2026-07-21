@@ -269,7 +269,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: '20px',
-        boxShadow: '0 4px 20px rgba(124,58,237,0.3)',
+        boxShadow: '0 4px 20px rgba(37, 99, 235,0.3)',
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -476,7 +476,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                           cursor: 'pointer',
                           transition: 'all 0.15s',
                         }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#a78bfa'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(124,58,237,0.1)'; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#a78bfa'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(37, 99, 235,0.1)'; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                       >
                         {/* Time column */}
@@ -579,7 +579,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                                 color: 'white', textDecoration: 'none',
                                 display: 'flex', alignItems: 'center', gap: '4px',
                                 whiteSpace: 'nowrap',
-                                boxShadow: '0 2px 6px rgba(109,40,217,0.3)',
+                                boxShadow: '0 2px 6px rgba(29, 78, 216,0.3)',
                               }}
                             >
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>

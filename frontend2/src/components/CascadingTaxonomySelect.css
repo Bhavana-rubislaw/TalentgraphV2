@@ -5,10 +5,10 @@
 
 /* ── Design tokens (mirrors CandidatePages.css) ── */
 :root {
-  --cts-border:        #E4E7EC;
+  --cts-border:        #e5e7eb;
   --cts-border-hover:  #D0D5DD;
   --cts-accent:        #2563eb;
-  --cts-accent-focus:  rgba(108, 92, 231, 0.2);
+  --cts-accent-focus:  rgba(37, 99, 235, 0.2);
   --cts-danger:        #E74C3C;
   --cts-danger-focus:  rgba(231, 76, 60, 0.1);
   --cts-text-primary:  #1D2939;

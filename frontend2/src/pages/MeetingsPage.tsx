@@ -236,7 +236,7 @@ export function MeetingsPage() {
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontSize: '14px',
-                  boxShadow: '0 4px 12px rgba(109, 40, 217, 0.3)',
+                  boxShadow: '0 4px 12px rgba(29, 78, 216, 0.3)',
                 }}
               >
                 ➕ Schedule Meeting
@@ -589,7 +589,7 @@ export function MeetingsPage() {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.borderColor = '#1d4ed8';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(109, 40, 217, 0.15)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.15)';
                             e.currentTarget.style.transform = 'translateX(4px)';
                           }}
                           onMouseLeave={(e) => {
@@ -696,7 +696,7 @@ export function MeetingsPage() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#1d4ed8';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(109, 40, 217, 0.15)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.15)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = '#e2e8f0';

@@ -44,7 +44,7 @@
 .auth-blur-shape {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.4) 0%, transparent 70%);
   filter: blur(80px);
 }
 
@@ -109,7 +109,7 @@
 }
 
 .auth-brand-logo-small path {
-  stroke: #6366f1 !important;
+  stroke: #2563eb !important;
 }
 
 .auth-brand-name {
@@ -257,7 +257,7 @@
 }
 
 .auth-logo-icon path {
-  stroke: #6366f1 !important;
+  stroke: #2563eb !important;
 }
 
 /* Header */
@@ -339,7 +339,7 @@
 
 .auth-forgot-link {
   font-size: 13px;
-  color: #6366f1;
+  color: #2563eb;
   text-decoration: none;
   font-weight: 600;
 }
@@ -378,9 +378,9 @@
 }
 
 .auth-role-select-button.active {
-  border-color: #6366f1;
+  border-color: #2563eb;
   background: #eef2ff;
-  color: #6366f1;
+  color: #2563eb;
 }
 
 .auth-role-select-button svg {
@@ -403,8 +403,8 @@
 
 .auth-form-input:focus {
   outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
 }
 
 .auth-form-input::placeholder {
@@ -458,19 +458,19 @@
   padding: 14px 24px;
   border: none;
   border-radius: 10px;
-  background: #6366f1;
+  background: #2563eb;
   color: white;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
 .auth-submit-button:hover {
-  background: #4f46e5;
+  background: #1d4ed8;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
 }
 
 .auth-submit-button:active {

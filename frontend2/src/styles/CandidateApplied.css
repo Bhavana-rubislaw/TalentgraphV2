@@ -167,7 +167,7 @@
 }
 
 .cal-status-chip.reviewed {
-  background: rgba(123, 94, 167, 0.12);
+  background: rgba(37, 99, 235, 0.12);
   color: #6A4F99;
 }
 
@@ -279,12 +279,12 @@
 .cal-btn-primary {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .cal-btn-primary:hover {
   background: linear-gradient(135deg, #6A4F99, #8566B8);
-  box-shadow: 0 4px 12px rgba(123, 94, 167, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .cal-btn-primary:disabled {
@@ -483,12 +483,12 @@
   align-items: center;
   gap: 5px;
   padding: 5px 12px;
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   color: #6A4F99;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid rgba(123, 94, 167, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
 }
 
 .cal-drawer-skill-level {
@@ -525,7 +525,7 @@
   width: 64px;
   height: 64px;
   border-radius: 16px;
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -566,7 +566,7 @@
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255,255,255,0.12);
 }
 
 .cal-empty-link:hover {

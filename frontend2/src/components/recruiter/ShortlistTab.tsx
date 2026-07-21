@@ -168,19 +168,19 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               borderRadius: '16px',
               padding: '24px',
               transition: 'all 0.2s',
-              boxShadow: '0 2px 8px rgba(123, 94, 167, 0.06)',
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
               position: 'relative'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(123, 94, 167, 0.14)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = '#A78BDB';
+              e.currentTarget.style.borderColor = '#60a5fa';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(123, 94, 167, 0.06)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.borderColor = '#E2E4EC';
             }}

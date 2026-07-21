@@ -4,7 +4,7 @@ import { KPICard, FunnelRate } from './HRDashboardCards';
 const STATUS_COLOURS: Record<string, string> = {
   draft:    '#f59e0b',
   active:   '#10b981',
-  frozen:   '#6366f1',
+  frozen:   '#2563eb',
   cancelled:'#ef4444',
   closed:   '#6b7280',
 };
@@ -45,7 +45,7 @@ const HRAnalyticsTab: React.FC<HRAnalyticsTabProps> = ({
         <>
           {/* KPI Grid */}
           <div className="hr-kpi-grid">
-            <KPICard label="Total Jobs"         value={hrAnalytics.total_jobs ?? 0}                          color="#6366f1" stripe="#6366f1" />
+            <KPICard label="Total Jobs"         value={hrAnalytics.total_jobs ?? 0}                          color="#2563eb" stripe="#2563eb" />
             <KPICard label="Pending Approval"   value={hrAnalytics.jobs_pending_approval ?? 0}               color="#f59e0b" stripe="#f59e0b" />
             <KPICard label="Applications"       value={hrAnalytics.hiring_funnel?.total_applications ?? 0}   color="#3b82f6" stripe="#3b82f6" />
             <KPICard label="Interviews"         value={hrAnalytics.hiring_funnel?.scheduled_interviews ?? 0} color="#3b82f6" stripe="#3b82f6" />

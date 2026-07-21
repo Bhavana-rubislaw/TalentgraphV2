@@ -354,7 +354,7 @@
   outline: none;
   border-color: #7c3aed;
   background: white;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .rec-search-input::placeholder {
@@ -403,7 +403,7 @@
   outline: none;
   border-color: #7c3aed;
   background: white;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .rec-filter-select {
@@ -779,13 +779,13 @@
 }
 
 .ai-action-btn.save {
-  color: #6366f1;
+  color: #2563eb;
   border-color: #c7d2fe;
 }
 
 .ai-action-btn.save:hover {
   background: #eef2ff;
-  border-color: #6366f1;
+  border-color: #2563eb;
 }
 
 .ai-action-btn.apply {

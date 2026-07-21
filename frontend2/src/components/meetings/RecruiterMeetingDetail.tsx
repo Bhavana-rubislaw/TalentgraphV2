@@ -169,9 +169,9 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
-      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)', border: '1px solid #E4E7EC', maxWidth: '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+      <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0px 4px 12px rgba(0,0,0,0.08)', border: '1px solid #e5e7eb', maxWidth: '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
         {/* Header */}
-        <div style={{ position: 'sticky', top: 0, background: 'white', borderBottom: '1px solid #E4E7EC', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '16px 16px 0 0' }}>
+        <div style={{ position: 'sticky', top: 0, background: 'white', borderBottom: '1px solid #e5e7eb', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '16px 16px 0 0' }}>
           <div>
             <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1D2939', margin: 0 }}>{meeting.title}</h2>
             <p style={{ fontSize: '13px', color: '#667085', marginTop: '4px', marginBottom: 0 }}>
@@ -183,7 +183,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               )}
             </p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: '1px solid #E4E7EC', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085' }}>
+          <button onClick={onClose} style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: '8px', width: '32px', height: '32px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#667085' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
@@ -239,7 +239,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
           )}
 
           {/* Meeting Details Card */}
-          <div style={{ background: '#F5F6FA', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
               <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Date &amp; Time</p>
               <p style={{ fontWeight: 600, color: '#1D2939', margin: 0 }}>{formatDateTime(meeting.scheduled_start)}</p>
@@ -303,10 +303,10 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
           {/* Admin Control Center */}
           {isAdminOrHR && (
-            <div style={{ padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #F3F0FF)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
+            <div style={{ padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #eff6ff)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#5B21B6', margin: 0 }}>Admin Control Center</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e40af', margin: 0 }}>Admin Control Center</h3>
                 <span style={{ fontSize: '11px', padding: '2px 8px', background: '#7C3AED', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -322,7 +322,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
           )}
 
           {/* Timeline */}
-          <div style={{ borderTop: '1px solid #E4E7EC', paddingTop: '20px' }}>
+          <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
             <MeetingTimeline meetingId={meeting.id} />
           </div>
         </div>
@@ -335,7 +335,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               <p style={{ fontSize: '13px', color: '#667085', margin: '0 0 16px' }}>The application will automatically move to <strong>Under Review</strong> status.</p>
               <textarea value={outcomeNotes} onChange={(e) => setOutcomeNotes(e.target.value)}
                 placeholder="Optional notes about how the interview went..."
-                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowCompleteModal(false)} disabled={outcomeLoading}
                   style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
@@ -358,7 +358,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               <p style={{ fontSize: '13px', color: '#667085', margin: '0 0 16px' }}>The candidate did not attend. The application stays in <strong>Scheduled</strong> — you can then reject or reschedule.</p>
               <textarea value={outcomeNotes} onChange={(e) => setOutcomeNotes(e.target.value)}
                 placeholder="Optional notes about the no-show..."
-                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '80px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowNoShowModal(false)} disabled={outcomeLoading}
                   style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
@@ -380,7 +380,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#1D2939', margin: '0 0 16px' }}>Cancel Interview</h3>
               <textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)}
                 placeholder="Please provide a reason for cancellation..."
-                style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '100px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
+                style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px', marginBottom: '16px', minHeight: '100px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box' }} />
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowCancelModal(false)}
                   style={{ flex: 1, padding: '10px', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
@@ -405,19 +405,19 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New Start Time</label>
                   <input type="datetime-local" value={rescheduleData.scheduled_start}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_start: e.target.value })}
-                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New End Time</label>
                   <input type="datetime-local" value={rescheduleData.scheduled_end}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_end: e.target.value })}
-                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>Reason (optional)</label>
                   <textarea value={rescheduleData.reason}
                     onChange={(e) => setRescheduleData({ ...rescheduleData, reason: e.target.value })}
-                    style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
+                    style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -455,13 +455,13 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
                     <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New Start Time *</label>
                     <input type="datetime-local" value={responseData.scheduled_start}
                       onChange={(e) => setResponseData({ ...responseData, scheduled_start: e.target.value })}
-                      style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
+                      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
                   </div>
                   <div>
                     <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>New End Time *</label>
                     <input type="datetime-local" value={responseData.scheduled_end}
                       onChange={(e) => setResponseData({ ...responseData, scheduled_end: e.target.value })}
-                      style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
+                      style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} required />
                   </div>
                 </div>
               )}
@@ -469,7 +469,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
                 <label style={{ fontSize: '12px', fontWeight: 600, color: '#667085', display: 'block', marginBottom: '4px' }}>Note to Candidate (optional)</label>
                 <textarea value={responseData.response_note}
                   onChange={(e) => setResponseData({ ...responseData, response_note: e.target.value })}
-                  style={{ width: '100%', border: '1px solid #E4E7EC', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
+                  style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '8px 10px', fontSize: '14px', boxSizing: 'border-box' }} rows={2} />
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowRespondModal(false)}

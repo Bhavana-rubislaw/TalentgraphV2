@@ -22,7 +22,7 @@ const WarningIcon = () => (
 const TalentGraphLogo = () => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 28 }}>
     <div style={{
-      width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+      width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -117,7 +117,7 @@ const AcceptInvitePage: React.FC = () => {
     padding: '40px 40px 36px',
     maxWidth: 460,
     width: '100%',
-    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 20px 60px -10px rgba(99,102,241,0.15)',
+    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 20px 60px -10px rgba(37, 99, 235,0.15)',
     border: '1px solid rgba(226,232,240,0.8)',
   };
 
@@ -129,7 +129,7 @@ const AcceptInvitePage: React.FC = () => {
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
             <div style={{
               width: 36, height: 36, border: '3px solid #e0e7ff',
-              borderTopColor: '#6366f1', borderRadius: '50%',
+              borderTopColor: '#2563eb', borderRadius: '50%',
               animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
             }} />
             <p style={{ color: '#64748b', fontSize: 14, margin: 0 }}>Validating your invitation…</p>
@@ -158,10 +158,10 @@ const AcceptInvitePage: React.FC = () => {
             <button
               onClick={() => navigate('/signin')}
               style={{
-                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                padding: '11px 28px', background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
                 color: '#fff', border: 'none', borderRadius: 10, fontSize: 14,
                 fontWeight: 600, cursor: 'pointer', letterSpacing: '0.1px',
-                boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235,0.35)',
               }}
             >
               Back to Sign In
@@ -193,10 +193,10 @@ const AcceptInvitePage: React.FC = () => {
             <button
               onClick={() => navigate('/signin')}
               style={{
-                padding: '11px 28px', background: 'linear-gradient(135deg, #6366f1, #3b82f6)',
+                padding: '11px 28px', background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
                 color: '#fff', border: 'none', borderRadius: 10, fontSize: 14,
                 fontWeight: 600, cursor: 'pointer', letterSpacing: '0.1px',
-                boxShadow: '0 4px 14px rgba(99,102,241,0.35)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235,0.35)',
               }}
             >
               Sign In to Your Account
@@ -232,7 +232,7 @@ const AcceptInvitePage: React.FC = () => {
           </h2>
           <p style={{ margin: 0, color: '#64748b', fontSize: 14, lineHeight: 1.6 }}>
             You've been invited as{' '}
-            <strong style={{ color: '#6366f1' }}>{inviteInfo.role}</strong>.{' '}
+            <strong style={{ color: '#2563eb' }}>{inviteInfo.role}</strong>.{' '}
             Complete your profile to accept.
           </p>
         </div>
@@ -276,7 +276,7 @@ const AcceptInvitePage: React.FC = () => {
                 boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit',
                 transition: 'border-color 0.2s',
               }}
-              onFocus={e => (e.target.style.borderColor = '#6366f1')}
+              onFocus={e => (e.target.style.borderColor = '#2563eb')}
               onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -299,7 +299,7 @@ const AcceptInvitePage: React.FC = () => {
                 boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit',
                 transition: 'border-color 0.2s',
               }}
-              onFocus={e => (e.target.style.borderColor = '#6366f1')}
+              onFocus={e => (e.target.style.borderColor = '#2563eb')}
               onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -321,7 +321,7 @@ const AcceptInvitePage: React.FC = () => {
                 boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit',
                 transition: 'border-color 0.2s',
               }}
-              onFocus={e => (e.target.style.borderColor = '#6366f1')}
+              onFocus={e => (e.target.style.borderColor = '#2563eb')}
               onBlur={e => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
@@ -345,11 +345,11 @@ const AcceptInvitePage: React.FC = () => {
             disabled={submitting}
             style={{
               width: '100%', padding: '13px',
-              background: submitting ? '#a5b4fc' : 'linear-gradient(135deg, #6366f1, #3b82f6)',
+              background: submitting ? '#93c5fd' : 'linear-gradient(135deg, #2563eb, #3b82f6)',
               color: '#fff', border: 'none', borderRadius: 10,
               fontSize: 15, fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
               letterSpacing: '0.1px', transition: 'all 0.2s',
-              boxShadow: submitting ? 'none' : '0 4px 14px rgba(99,102,241,0.35)',
+              boxShadow: submitting ? 'none' : '0 4px 14px rgba(37, 99, 235,0.35)',
             }}
           >
             {submitting ? 'Creating Account…' : 'Accept Invitation & Create Account'}
@@ -360,7 +360,7 @@ const AcceptInvitePage: React.FC = () => {
           Already have an account?{' '}
           <span
             onClick={() => navigate('/signin')}
-            style={{ color: '#6366f1', cursor: 'pointer', fontWeight: 600 }}
+            style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 600 }}
           >
             Sign in here
           </span>

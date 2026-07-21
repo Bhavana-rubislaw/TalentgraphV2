@@ -7,7 +7,7 @@
 :root {
   /* Primary Colors - Rich Glossy Purple */
   --primary-color: #2563eb;
-  --primary-hover: #5B45E0;
+  --primary-hover: #2563eb;
   --primary-light: #EEF2FF;
   
   /* Neutral Colors */
@@ -431,7 +431,7 @@ body {
   border-radius: var(--radius-lg);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
-  box-shadow: 0 8px 32px rgba(106, 79, 153, 0.3), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.15);
   color: #FFFFFF;
 }
 
@@ -879,7 +879,7 @@ body {
   color: #FFFFFF;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(106, 79, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .welcome-card-modern::before {
@@ -969,7 +969,7 @@ body {
 .kpi-card-enhanced:hover {
   background: rgba(255, 255, 255, 1);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(123, 94, 167, 0.15), inset 0 1px 0 rgba(255,255,255,0.6);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15), inset 0 1px 0 rgba(255,255,255,0.6);
 }
 
 .kpi-card-enhanced::before {
@@ -984,12 +984,12 @@ body {
 }
 
 /* Vibrant color palette for KPI cards */
-.kpi-card-enhanced.active-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
+.kpi-card-enhanced.active-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
 .kpi-card-enhanced.shortlisted { --accent-color: #7C3AED; } /* Vibrant Purple */
 .kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
 .kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
 .kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
-.kpi-card-enhanced.new-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
+.kpi-card-enhanced.new-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
 
 .kpi-icon {
   width: 48px !important;
@@ -1423,13 +1423,13 @@ body {
 .action-btn.primary {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
   color: white;
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .action-btn.primary:hover {
   background: linear-gradient(135deg, #6A4F99, #8566B8);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(123, 94, 167, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .action-btn.light {
@@ -1449,10 +1449,10 @@ body {
 .action-btn.success {
   background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8);
   color: white;
-  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
               inset 0 2px 4px rgba(255,255,255,0.25),
               inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 20px rgba(148, 116, 196, 0.3);
+              0 0 20px rgba(59, 130, 246, 0.3);
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   border: 1px solid rgba(255,255,255,0.1);
 }
@@ -1460,28 +1460,28 @@ body {
 .action-btn.success:hover {
   background: linear-gradient(135deg, #6B4E97, #8464B4, #1d4ed8);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(123, 94, 167, 0.6), 
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.6), 
               inset 0 2px 5px rgba(255,255,255,0.3),
               inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 30px rgba(148, 116, 196, 0.4);
+              0 0 30px rgba(59, 130, 246, 0.4);
 }
 
 /* Message Action Button */
 .action-btn.message {
   background: #EEF2FF;
-  color: #5B45E0;
-  border: 1.5px solid #5B45E0;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
   font-weight: 600;
   position: relative;
   overflow: visible;
 }
 
 .action-btn.message:hover {
-  background: #5B45E0;
+  background: #2563eb;
   color: white;
-  border-color: #5B45E0;
+  border-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(91, 69, 224, 0.3);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3);
 }
 
 .action-btn.message svg {
@@ -1578,9 +1578,9 @@ body {
 }
 
 .rec-status-chip.liked {
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.12), rgba(148, 116, 196, 0.12));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(59, 130, 246, 0.12));
   color: #1d4ed8;
-  border: 1px solid rgba(123, 94, 167, 0.3);
+  border: 1px solid rgba(37, 99, 235, 0.3);
 }
 
 .rec-status-chip.applied {
@@ -1615,10 +1615,10 @@ body {
 .action-btn.applied-done {
   background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8) !important;
   color: white;
-  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
               inset 0 2px 4px rgba(255,255,255,0.25),
               inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 20px rgba(148, 116, 196, 0.3);
+              0 0 20px rgba(59, 130, 246, 0.3);
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   border: 1px solid rgba(255,255,255,0.1);
   cursor: default;
@@ -1671,7 +1671,7 @@ body {
 
 .candidate-card-modern.shortlisted:hover {
   border-color: #9474C4;
-  box-shadow: 0 8px 24px rgba(123, 94, 167, 0.15);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
 }
 
 .action-status-badge {
@@ -1690,7 +1690,7 @@ body {
 .action-status-badge.shortlisted {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
   color: white;
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.25);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
 
 .action-status-badge.matched {
@@ -1707,7 +1707,7 @@ body {
 /* ====== CANDIDATE DASHBOARD SPECIFIC ====== */
 .welcome-card-modern.candidate-welcome {
   background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
-  box-shadow: 0 8px 32px rgba(106, 79, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .welcome-card-modern.candidate-welcome::before {
@@ -1717,7 +1717,7 @@ body {
 /* Candidate Dashboard KPI Colors */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #4F46E5; } /* Deep Indigo */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
 
 /* Ensure KPI icons are visible in welcome card */
@@ -1754,7 +1754,7 @@ body {
 
 /* Candidate-scoped accent overrides (#7C73B6 palette) */
 .candidate-dashboard .nav-item.active {
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   color: #1d4ed8;
 }
 
@@ -1768,27 +1768,27 @@ body {
 
 .candidate-dashboard .action-btn.primary {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .candidate-dashboard .action-btn.primary:hover {
   background: linear-gradient(135deg, #6A4F99, #8566B8);
-  box-shadow: 0 6px 18px rgba(123, 94, 167, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .candidate-dashboard .action-btn.success {
   background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8);
-  box-shadow: 0 6px 16px rgba(123, 94, 167, 0.5), 
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
               inset 0 2px 4px rgba(255,255,255,0.25),
               inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 20px rgba(148, 116, 196, 0.3);
+              0 0 20px rgba(59, 130, 246, 0.3);
   text-shadow: 0 2px 4px rgba(0,0,0,0.3);
   border: 1px solid rgba(255,255,255,0.1);
 }
 
 .candidate-dashboard .match-badge-modern {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.3);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .candidate-dashboard .content-panel {
@@ -1839,23 +1839,23 @@ body {
 .job-card-modern.invite-card {
   border-color: #E2E4EC;
   background: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.06);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
 }
 
 .job-card-modern.invite-card:hover {
   border-color: #60a5fa;
-  box-shadow: 0 6px 20px rgba(123, 94, 167, 0.14);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.14);
 }
 
 .job-card-modern.match-card {
   border-color: #E2E4EC;
   background: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.06);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
 }
 
 .job-card-modern.match-card:hover {
   border-color: #60a5fa;
-  box-shadow: 0 6px 20px rgba(123, 94, 167, 0.14);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.14);
 }
 
 /* ====== JOB CARD HEADERS ====== */
@@ -1931,7 +1931,7 @@ body {
 
 .invite-badge-header {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.3);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
 .match-badge-header {
@@ -2246,7 +2246,7 @@ body {
   background: linear-gradient(135deg, #1d4ed8, #9474C4);
   border-color: #1d4ed8;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(123, 94, 167, 0.35);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
   transform: scale(1.05);
 }
 
@@ -2458,7 +2458,7 @@ body {
   justify-content: center;
   font-size: 32px;
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(123, 94, 167, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .profile-info-details {
@@ -2497,7 +2497,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   width: fit-content;
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.25);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
 
 /* Team Management Section */
@@ -2542,7 +2542,7 @@ body {
 .btn-add-member:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(123, 94, 167, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
 /* Team Table */
@@ -2580,7 +2580,7 @@ body {
 }
 
 .team-table-row.is-self {
-  background: rgba(123, 94, 167, 0.05);
+  background: rgba(37, 99, 235, 0.05);
   border-left: 3px solid var(--primary-color);
 }
 
@@ -2602,7 +2602,7 @@ body {
   font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(123, 94, 167, 0.25);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
 
 .team-member-name {
@@ -2620,7 +2620,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   color: var(--primary-color);
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   padding: 4px 10px;
   border-radius: 20px;
   width: fit-content;
@@ -2638,7 +2638,7 @@ body {
 
 .team-role-tag.role-recruiter {
   color: var(--primary-color);
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
 }
 
 .self-tag {
@@ -2646,7 +2646,7 @@ body {
   font-size: 10px;
   font-weight: 700;
   color: var(--primary-color);
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   padding: 1px 6px;
   border-radius: 8px;
   margin-left: 6px;
@@ -2710,7 +2710,7 @@ body {
 .team-action-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
-  background: rgba(123, 94, 167, 0.07);
+  background: rgba(37, 99, 235, 0.07);
 }
 
 /* ============================================
@@ -2729,8 +2729,8 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-4) var(--spacing-6);
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.06) 0%, rgba(46, 204, 113, 0.06) 100%);
-  border: 1px solid rgba(123, 94, 167, 0.12);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(46, 204, 113, 0.06) 100%);
+  border: 1px solid rgba(37, 99, 235, 0.12);
   border-radius: var(--radius-lg);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
 }
@@ -2750,7 +2750,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 3px 10px rgba(123, 94, 167, 0.3);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
 }
 
 .matches-header-icon svg {
@@ -2789,12 +2789,12 @@ body {
   overflow: hidden;
   transition: var(--transition-base);
   transition-property: transform, box-shadow, border-color;
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.06);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.06);
 }
 
 .match-card-modern:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 28px rgba(123, 94, 167, 0.16);
+  box-shadow: 0 8px 28px rgba(37, 99, 235, 0.16);
   border-color: #60a5fa;
 }
 
@@ -2828,7 +2828,7 @@ body {
   font-weight: 700;
   flex-shrink: 0;
   letter-spacing: -0.02em;
-  box-shadow: 0 3px 10px rgba(123, 94, 167, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .match-candidate-info {
@@ -3100,7 +3100,7 @@ body {
 }
 
 .match-secondary:hover {
-  background: rgba(123, 94, 167, 0.08);
+  background: rgba(37, 99, 235, 0.08);
   color: #1d4ed8;
 }
 
@@ -3116,7 +3116,7 @@ body {
 }
 
 .match-tertiary:hover {
-  background: rgba(123, 94, 167, 0.08);
+  background: rgba(37, 99, 235, 0.08);
   color: #1d4ed8;
 }
 
@@ -3272,7 +3272,7 @@ body {
   justify-content: center;
   font-size: 22px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(123, 94, 167, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .vp-name {
@@ -3441,12 +3441,12 @@ body {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.1), rgba(123, 94, 167, 0.05));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
   color: #6A4F99;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid rgba(123, 94, 167, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
 }
 
 .vp-skill-pill .vp-skill-level {
@@ -3490,7 +3490,7 @@ body {
 }
 
 .vp-social-link:hover {
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   border-color: #C6B8E6;
   color: #6A4F99;
 }
@@ -3569,7 +3569,7 @@ body {
   width: 32px;
   height: 32px;
   border: none;
-  background: rgba(123, 94, 167, 0.12);
+  background: rgba(37, 99, 235, 0.12);
   color: #1d4ed8;
   border-radius: 8px;
   cursor: pointer;
@@ -3578,7 +3578,7 @@ body {
 }
 
 .vp-doc-download:hover {
-  background: rgba(123, 94, 167, 0.22);
+  background: rgba(37, 99, 235, 0.22);
 }
 
 .vp-doc-download svg {
@@ -3662,7 +3662,7 @@ body {
 }
 
 .match-view-profile:hover {
-  background: rgba(123, 94, 167, 0.08);
+  background: rgba(37, 99, 235, 0.08);
   color: #1d4ed8;
 }
 
@@ -3682,12 +3682,12 @@ body {
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  background: linear-gradient(135deg, rgba(123, 94, 167, 0.1), rgba(123, 94, 167, 0.05));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
   color: #6A4F99;
   border-radius: 100px;
   font-size: 12px;
   font-weight: 500;
-  border: 1px solid rgba(123, 94, 167, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
 }
 
 .vp-status-badge {
@@ -3760,13 +3760,13 @@ body {
 .vp-btn-primary {
   background: linear-gradient(135deg, #1d4ed8, #9D7BC7);
   color: #fff;
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
 .vp-btn-primary:hover {
   background: linear-gradient(135deg, #6A4F99, #8A6AB8);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(123, 94, 167, 0.35);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
 .vp-btn-success {
@@ -3784,16 +3784,16 @@ body {
 /* Profile Drawer Message Button */
 .vp-btn-message {
   background: #EEF2FF;
-  color: #5B45E0;
-  border: 1.5px solid #5B45E0;
+  color: #2563eb;
+  border: 1.5px solid #2563eb;
 }
 
 .vp-btn-message:hover {
-  background: #5B45E0;
+  background: #2563eb;
   color: white;
-  border-color: #5B45E0;
+  border-color: #2563eb;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(91, 69, 224, 0.3);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3);
 }
 
 .vp-btn-message svg {
@@ -4077,7 +4077,7 @@ body {
   background: #f5f6f7;
   border: 1px solid var(--border-light, #E2E4EC);
   border-radius: var(--radius-lg, 12px);
-  box-shadow: 0 2px 8px rgba(123, 94, 167, 0.07), 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.07), 0 1px 3px rgba(0,0,0,0.04);
   padding: 12px 16px;
   margin-bottom: 20px;
 }
@@ -4110,13 +4110,13 @@ body {
 .rec-filter-pill:hover {
   border-color: #1d4ed8;
   background: #1d4ed8;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.10);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
 }
 
 /* Focus ring on the pill itself (not focus-within) */
 .rec-filter-pill:focus {
   border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
   outline: none;
 }
 
@@ -4130,7 +4130,7 @@ body {
 .rec-filter-pill--open {
   border-color: #7c3aed;
   background: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.13);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.13);
 }
 
 /* Icon wrapper */
@@ -4192,7 +4192,7 @@ body {
   overflow-y: auto;
   background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(123, 94, 167, 0.10);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(37, 99, 235, 0.10);
   border: 1px solid rgba(226, 228, 236, 0.8);
   list-style: none;
   padding: 6px;

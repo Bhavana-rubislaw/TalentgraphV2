@@ -348,7 +348,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         marginTop: '8px',
                         fontSize: '12px'
                       }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" width="16" height="16">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" width="16" height="16">
                           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                           <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
                           <line x1="12" y1="22.08" x2="12" y2="12"/>
@@ -477,11 +477,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                           gap: '8px',
                           marginBottom: '12px'
                         }}>
-                          <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" width="20" height="20">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" width="20" height="20">
                             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
                           </svg>
-                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#4338CA' }}>
+                          <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1e3a8a' }}>
                             Job Posting Preview
                           </h4>
                         </div>
@@ -693,7 +693,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {(() => {
                 const funnelStages = [
-                  { label: 'Applications', count: applications.length,                                                                                                                                       color: '#6366F1', status: 'all' },
+                  { label: 'Applications', count: applications.length,                                                                                                                                       color: '#2563eb', status: 'all' },
                   { label: 'Interview',    count: applications.filter((a: any) => ['scheduled','under_review','shortlisted','selected'].includes(a.status)).length, color: '#10B981', status: 'scheduled' },
                   { label: 'Shortlisted',  count: applications.filter((a: any) => ['shortlisted','selected'].includes(a.status)).length,                           color: '#3b82f6', status: 'shortlisted' },
                   { label: 'Selected',     count: applications.filter((a: any) => a.status === 'selected').length,                                                 color: '#F59E0B', status: 'selected' },

@@ -8,7 +8,7 @@
 :root {
   /* ═══ PRIMARY PALETTE (UPDATED PURPLE) ═══ */
   --accent-primary: #2563eb;           /* Updated to match design system */
-  --accent-primary-hover: #5B45E0;
+  --accent-primary-hover: #2563eb;
   --accent-primary-light: #EEF2FF;
   --accent-primary-translucent: rgba(37, 99, 235, 0.1);
 
@@ -328,7 +328,7 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.8);
   color: #1a202c !important; /* Dark text for better contrast on light purple background */
   font-weight: var(--font-bold);
-  box-shadow: 0 6px 20px rgba(183, 148, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 6px 20px rgba(147, 197, 253, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
   transform: translateY(-2px);
 }
 
@@ -424,7 +424,7 @@ body {
   color: white;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(106, 79, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .welcome-card-modern::before {
@@ -539,7 +539,7 @@ body {
 
 /* Vibrant gradient backgrounds for KPI card accents */
 .kpi-card-enhanced.active-jobs::before {
-  background: linear-gradient(90deg, #4F46E5, #6366F1);
+  background: linear-gradient(90deg, #1d4ed8, #2563eb);
 }
 
 .kpi-card-enhanced.shortlisted::before {
@@ -580,7 +580,7 @@ body {
 }
 
 .kpi-card-enhanced.active-jobs:hover .kpi-icon {
-  background: rgba(123, 94, 167, 0.1);
+  background: rgba(37, 99, 235, 0.1);
   stroke: #1d4ed8;
 }
 

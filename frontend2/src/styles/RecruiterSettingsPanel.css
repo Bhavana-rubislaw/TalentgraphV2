@@ -81,7 +81,7 @@
 }
 
 .provider-icon {
-  background: linear-gradient(135deg, #2563eb 0%, #5B45E0 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #2563eb 100%);
 }
 
 .provider-icon svg {

@@ -86,7 +86,7 @@ function DbBadge({ value }: { value: string }) {
 
 function ModeBadge({ mode }: { mode: string }) {
   const colors: Record<string, string> = {
-    local: '#4f46e5',
+    local: '#1d4ed8',
     standalone: '#7c3aed',
     shadow: '#d97706',
   };
@@ -439,7 +439,7 @@ const styles: Record<string, React.CSSProperties> = {
   formRow:     { display: 'flex', alignItems: 'center', gap: 12 },
   label:       { width: 200, fontSize: 13, color: '#374151', flexShrink: 0 },
   input:       { flex: 1, border: '1px solid #d1d5db', borderRadius: 6, padding: '6px 10px', fontSize: 13 },
-  btnPrimary:  { background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 },
+  btnPrimary:  { background: '#1d4ed8', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 },
   btnSecondary:{ background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontSize: 13 },
   btnWarning:  { background: '#d97706', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 16px', cursor: 'pointer', fontWeight: 600, fontSize: 13 },
   btnSmall:    { background: '#f3f4f6', color: '#374151', border: '1px solid #d1d5db', borderRadius: 4, padding: '3px 10px', cursor: 'pointer', fontSize: 12 },

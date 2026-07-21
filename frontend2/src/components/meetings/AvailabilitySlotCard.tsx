@@ -35,7 +35,7 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
     onMouseEnter={(e) => {
       e.currentTarget.style.borderColor = '#1d4ed8';
       e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 8px 24px rgba(109, 40, 217, 0.15)';
+      e.currentTarget.style.boxShadow = '0 8px 24px rgba(29, 78, 216, 0.15)';
     }}
     onMouseLeave={(e) => {
       e.currentTarget.style.borderColor = '#e2e8f0';
@@ -103,7 +103,7 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(109, 40, 217, 0.4)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(29, 78, 216, 0.4)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'scale(1)';
