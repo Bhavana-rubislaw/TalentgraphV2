@@ -127,7 +127,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ current, selected, meetingD
           let border = 'none';
 
           if (isT && !isSel) { bg = '#dbeafe'; color = '#1d4ed8'; fontWeight = 700; border = '2px solid #3b82f6'; }
-          if (isSel) { bg = 'linear-gradient(135deg,#7c3aed,#1d4ed8)'; color = 'white'; fontWeight = 700; border = 'none'; }
+          if (isSel) { bg = 'linear-gradient(135deg,#2563eb,#1d4ed8)'; color = 'white'; fontWeight = 700; border = 'none'; }
 
           return (
             <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -150,7 +150,7 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ current, selected, meetingD
                 {day}
               </button>
               {hasMtg && (
-                <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#7c3aed', marginTop: 1 }} />
+                <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#2563eb', marginTop: 1 }} />
               )}
             </div>
           );
@@ -262,7 +262,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
 
       {/* ── Purple banner ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #7c3aed 0%, #1e3a8a 100%)',
+        background: 'linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%)',
         borderRadius: '16px',
         padding: '24px 28px',
         display: 'flex',
@@ -301,7 +301,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                 padding: '10px 18px', borderRadius: '10px',
                 border: 'none',
                 background: 'white',
-                color: '#7c3aed', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+                color: '#2563eb', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: '6px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                 transition: 'all 0.15s',
@@ -328,7 +328,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
               padding: '10px 20px',
               border: 'none',
               background: 'transparent',
-              color: subTab === key ? '#7c3aed' : '#64748b',
+              color: subTab === key ? '#2563eb' : '#64748b',
               fontWeight: subTab === key ? 700 : 500,
               fontSize: '14px',
               cursor: 'pointer',
@@ -340,7 +340,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
             {key === 'upcoming' && upcomingMeetings.length > 0 && (
               <span style={{
                 marginLeft: 6,
-                background: '#ede9fe', color: '#7c3aed',
+                background: '#dbeafe', color: '#2563eb',
                 borderRadius: '10px', padding: '2px 7px',
                 fontSize: '11px', fontWeight: 700,
               }}>{upcomingMeetings.length}</span>
@@ -348,7 +348,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
             {subTab === key && (
               <div style={{
                 position: 'absolute', bottom: -2, left: 0, right: 0,
-                height: 2, background: '#7c3aed', borderRadius: '1px',
+                height: 2, background: '#2563eb', borderRadius: '1px',
               }} />
             )}
           </button>
@@ -371,7 +371,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                   padding: '6px 14px',
                   borderRadius: '20px',
                   border: filterStatus === s ? 'none' : '1px solid #e2e8f0',
-                  background: filterStatus === s ? '#7c3aed' : 'white',
+                  background: filterStatus === s ? '#2563eb' : 'white',
                   color: filterStatus === s ? 'white' : '#64748b',
                   fontSize: '13px', fontWeight: filterStatus === s ? 700 : 500,
                   cursor: 'pointer', transition: 'all 0.15s',
@@ -408,7 +408,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                 onClick={() => setUpcomingOnly(v => !v)}
                 style={{
                   width: 36, height: 20, borderRadius: '10px',
-                  background: upcomingOnly ? '#7c3aed' : '#e2e8f0',
+                  background: upcomingOnly ? '#2563eb' : '#e2e8f0',
                   position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
                   flexShrink: 0,
                 }}
@@ -448,7 +448,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                     <span style={{ fontWeight: 700, fontSize: '14px', color: '#1e293b' }}>{dateKey}</span>
                     {isToday(dayMeetings[0].scheduled_start) && (
                       <span style={{
-                        background: '#7c3aed', color: 'white',
+                        background: '#2563eb', color: 'white',
                         borderRadius: '6px', padding: '2px 8px',
                         fontSize: '11px', fontWeight: 700, letterSpacing: '0.3px',
                       }}>TODAY</span>
@@ -476,7 +476,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                           cursor: 'pointer',
                           transition: 'all 0.15s',
                         }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#a78bfa'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(37, 99, 235,0.1)'; }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#60a5fa'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(37, 99, 235,0.1)'; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
                       >
                         {/* Time column */}
@@ -574,7 +574,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                               style={{
                                 padding: '6px 12px', borderRadius: '7px',
                                 border: 'none',
-                                background: 'linear-gradient(135deg,#7c3aed,#1d4ed8)',
+                                background: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
                                 fontSize: '12px', fontWeight: 700, cursor: 'pointer',
                                 color: 'white', textDecoration: 'none',
                                 display: 'flex', alignItems: 'center', gap: '4px',
@@ -651,8 +651,8 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {availabilitySlots.slice(0, 3).map(slot => (
-                  <div key={slot.id} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #ede9fe', background: '#faf5ff' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#7c3aed' }}>
+                  <div key={slot.id} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #dbeafe', background: '#eff6ff' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb' }}>
                       {fmtShortDate(slot.slot_start)} · {fmtTime(slot.slot_start)}
                     </div>
                     {slot.proposed_by_user_id && (
@@ -660,7 +660,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                         onClick={() => handleSlotSelect(slot.id)}
                         style={{
                           marginTop: '6px', padding: '4px 10px', borderRadius: '6px',
-                          background: '#7c3aed', color: 'white', border: 'none',
+                          background: '#2563eb', color: 'white', border: 'none',
                           fontSize: '11px', fontWeight: 700, cursor: 'pointer', width: '100%',
                         }}
                       >
@@ -705,17 +705,17 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                         border: '1px solid #f1f5f9', cursor: 'pointer',
                         transition: 'all 0.15s', background: 'white',
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#a78bfa'; (e.currentTarget as HTMLElement).style.background = '#faf5ff'; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#60a5fa'; (e.currentTarget as HTMLElement).style.background = '#eff6ff'; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#f1f5f9'; (e.currentTarget as HTMLElement).style.background = 'white'; }}
                     >
                       {/* Date block */}
                       <div style={{
                         width: 38, height: 38, borderRadius: '8px',
-                        background: '#ede9fe', display: 'flex', flexDirection: 'column',
+                        background: '#dbeafe', display: 'flex', flexDirection: 'column',
                         alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                       }}>
-                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#7c3aed', letterSpacing: '0.5px' }}>{monthAbbr}</span>
-                        <span style={{ fontSize: '16px', fontWeight: 800, color: '#7c3aed', lineHeight: 1 }}>{dayNum}</span>
+                        <span style={{ fontSize: '9px', fontWeight: 800, color: '#2563eb', letterSpacing: '0.5px' }}>{monthAbbr}</span>
+                        <span style={{ fontSize: '16px', fontWeight: 800, color: '#2563eb', lineHeight: 1 }}>{dayNum}</span>
                       </div>
 
                       {/* Info */}

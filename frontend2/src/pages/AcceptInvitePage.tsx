@@ -106,7 +106,7 @@ const AcceptInvitePage: React.FC = () => {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(145deg, #f0f4ff 0%, #faf5ff 50%, #f0fdf4 100%)',
+    background: 'linear-gradient(145deg, #f0f4ff 0%, #eff6ff 50%, #f0fdf4 100%)',
     padding: 20,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   };
@@ -217,7 +217,7 @@ const AcceptInvitePage: React.FC = () => {
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
             padding: '4px 12px', borderRadius: 20,
-            background: 'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+            background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
             color: '#1d4ed8', fontSize: 12, fontWeight: 600, marginBottom: 14,
             letterSpacing: '0.3px', textTransform: 'uppercase',
           }}>

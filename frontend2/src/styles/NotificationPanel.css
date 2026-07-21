@@ -71,7 +71,7 @@
 }
 
 .notif-mark-all-read:hover:not(:disabled) {
-  background: #f5f3ff;
+  background: #eff6ff;
 }
 
 .notif-mark-all-read:disabled {
@@ -267,7 +267,7 @@
 }
 
 .notif-item.unread:hover {
-  background: #f5f3ff;
+  background: #eff6ff;
 }
 
 .notif-unread-indicator {
@@ -401,8 +401,8 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: #eff6ff;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 600;
   border-radius: 6px;
@@ -487,7 +487,7 @@
 }
 
 .notif-view-all-btn:hover {
-  background: #f5f3ff;
+  background: #eff6ff;
 }
 
 .notif-view-all-btn svg {

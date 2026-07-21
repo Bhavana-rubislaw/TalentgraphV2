@@ -830,8 +830,8 @@ const CandidateDashboard: React.FC = () => {
                         background: 'white'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#7c3aed';
-                        e.currentTarget.style.background = '#faf5ff';
+                        e.currentTarget.style.borderColor = '#2563eb';
+                        e.currentTarget.style.background = '#eff6ff';
                         e.currentTarget.style.transform = 'translateX(4px)';
                       }}
                       onMouseLeave={(e) => {
@@ -908,7 +908,7 @@ const CandidateDashboard: React.FC = () => {
                           fill="none" 
                           stroke="currentColor" 
                           strokeWidth="2"
-                          style={{ width: '20px', height: '20px', color: '#7c3aed', flexShrink: 0, marginLeft: '12px' }}
+                          style={{ width: '20px', height: '20px', color: '#2563eb', flexShrink: 0, marginLeft: '12px' }}
                         >
                           <polyline points="9 18 15 12 9 6"/>
                         </svg>

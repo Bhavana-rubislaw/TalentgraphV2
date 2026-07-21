@@ -252,7 +252,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               <div>
                 <p style={{ fontSize: '12px', color: '#667085', margin: '0 0 2px' }}>Meeting Link</p>
                 <a href={meeting.video_meeting_url} target="_blank" rel="noopener noreferrer"
-                  style={{ color: '#7C3AED', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>
+                  style={{ color: '#2563eb', fontWeight: 500, fontSize: '14px', textDecoration: 'none' }}>
                   {meeting.video_meeting_url}
                 </a>
               </div>
@@ -290,7 +290,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
               {/* Reschedule / Cancel row */}
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowRescheduleModal(true)}
-                  style={{ flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px 16px', background: 'linear-gradient(135deg, #2563eb, #60a5fa)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   📅 Reschedule
                 </button>
                 <button onClick={() => setShowCancelModal(true)}
@@ -303,18 +303,18 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
 
           {/* Admin Control Center */}
           {isAdminOrHR && (
-            <div style={{ padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #eff6ff)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
+            <div style={{ padding: '18px', background: 'linear-gradient(135deg, #dbeafe, #eff6ff)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e40af', margin: 0 }}>Admin Control Center</h3>
-                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#7C3AED', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
+                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#2563eb', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button onClick={() => setShowRescheduleModal(true)}
-                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: 'white', color: '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #93c5fd', background: 'white', color: '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                   Force Reschedule
                 </button>
-                <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: 'white', color: '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                <button style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #93c5fd', background: 'white', color: '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                   Manage Participants
                 </button>
               </div>
@@ -426,7 +426,7 @@ export const RecruiterMeetingDetail: React.FC<RecruiterMeetingDetailProps> = ({
                   Cancel
                 </button>
                 <button onClick={handleReschedule}
-                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg, #2563eb, #60a5fa)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                   Reschedule
                 </button>
               </div>

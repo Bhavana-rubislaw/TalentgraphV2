@@ -206,13 +206,13 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
               width: '56px',
               height: '56px',
               borderRadius: '12px',
-              background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '24px',
               fontWeight: '700',
-              color: '#7c3aed',
+              color: '#2563eb',
               marginBottom: '8px'
             }}>
               {companyInitial}
@@ -643,7 +643,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
               padding: '12px 20px',
               borderRadius: '8px',
               border: 'none',
-              background: isApplied ? '#10b981' : 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)',
+              background: isApplied ? '#10b981' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
               color: 'white',
               fontSize: '14px',
               fontWeight: '600',
@@ -1254,7 +1254,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                         height: '40px',
                         border: currentPage === pageNum ? 'none' : '1px solid #e2e8f0',
                         borderRadius: '8px',
-                        background: currentPage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)' : 'white',
+                        background: currentPage === pageNum ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'white',
                         color: currentPage === pageNum ? 'white' : '#475569',
                         fontSize: '14px',
                         fontWeight: '600',

@@ -252,7 +252,7 @@ body {
 /* ═══ SIDEBAR (STRENGTHENED & PROFESSIONAL WITH PURPLE GRADIENT) ═══ */
 .sidebar {
   width: 320px; /* Increased width for full button text */
-  background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 40%, #60a5fa 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   padding: var(--space-6);
   display: flex;
@@ -324,7 +324,7 @@ body {
 }
 
 .nav-item.active {
-  background: #b794f6; /* Light purple to complement gradient theme */
+  background: #60a5fa; /* Light blue to complement gradient theme */
   border: 2px solid rgba(255, 255, 255, 0.8);
   color: #1a202c !important; /* Dark text for better contrast on light purple background */
   font-weight: var(--font-bold);
@@ -416,7 +416,7 @@ body {
 
 /* ═══ WELCOME SECTION (RESTORED PURPLE GRADIENT) ═══ */
 .welcome-card-modern {
-  background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 40%, #60a5fa 100%);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-2xl);
   padding: var(--space-8);
@@ -543,7 +543,7 @@ body {
 }
 
 .kpi-card-enhanced.shortlisted::before {
-  background: linear-gradient(90deg, #7C3AED, #A78BFA);
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
 }
 
 .kpi-card-enhanced.applications::before {

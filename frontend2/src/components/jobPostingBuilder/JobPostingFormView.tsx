@@ -330,7 +330,7 @@ const JobPostingFormView: React.FC<JobPostingFormViewProps> = ({
                                   fontSize: '11px',
                                   borderRadius: '4px',
                                   border: '1px solid #3b82f6',
-                                  backgroundColor: '#ede9fe',
+                                  backgroundColor: '#dbeafe',
                                   color: '#3b82f6',
                                   cursor: 'pointer',
                                   fontWeight: 500,

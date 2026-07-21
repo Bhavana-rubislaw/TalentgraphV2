@@ -161,8 +161,8 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
               {/* NOTE: message is not part of the /candidate/recruiter-invites response — this
                   "Recruiter's Message" block has always been hidden. Flagging, not fixing. */}
               {(viewInviteJob as any).message && (
-                <div style={{ marginTop: '12px', padding: '12px', background: '#f8f9ff', borderRadius: '8px', borderLeft: '3px solid #7c3aed' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#7c3aed', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter's Message</div>
+                <div style={{ marginTop: '12px', padding: '12px', background: '#f8f9ff', borderRadius: '8px', borderLeft: '3px solid #2563eb' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter's Message</div>
                   <div style={{ fontSize: '14px', color: '#475569', lineHeight: 1.6 }}>{(viewInviteJob as any).message}</div>
                 </div>
               )}
@@ -599,7 +599,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                     height: '40px',
                     border: currentInvitePage === pageNum ? 'none' : '1px solid #e2e8f0',
                     borderRadius: '8px',
-                    background: currentInvitePage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)' : 'white',
+                    background: currentInvitePage === pageNum ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'white',
                     color: currentInvitePage === pageNum ? 'white' : '#475569',
                     fontSize: '14px',
                     fontWeight: '600',

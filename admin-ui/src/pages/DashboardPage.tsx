@@ -33,21 +33,21 @@ const MetricCard: React.FC<{
   <div style={{
     background: '#fff',
     border: '1px solid #e8eaed',
-    borderRadius: 16,
-    padding: '20px 22px',
-    boxShadow: '0 1px 4px rgba(0,0,0,.06)',
-    transition: 'box-shadow .15s',
+    borderRadius: 14,
+    padding: '18px 20px',
+    boxShadow: '0 1px 2px rgba(15,23,42,.04)',
+    transition: 'box-shadow .15s, transform .15s, border-color .15s',
   }}
-    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,.10)')}
-    onMouseLeave={e => (e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,.06)')}
+    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 20px rgba(15,23,42,.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 2px rgba(15,23,42,.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}
   >
     <div style={{
-      width: 38, height: 38, borderRadius: 10, background: iconBg,
+      width: 36, height: 36, borderRadius: 10, background: iconBg,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      marginBottom: 14,
+      marginBottom: 12,
     }}>{icon}</div>
-    <div style={{ fontSize: 30, fontWeight: 800, color: '#1a1d2b', letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
-    <div style={{ fontSize: 12, fontWeight: 600, color: '#9599a8', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: 6 }}>{label}</div>
+    <div style={{ fontSize: 26, fontWeight: 700, color: '#1a1d2b', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+    <div style={{ fontSize: 11, fontWeight: 600, color: '#9599a8', textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: 6 }}>{label}</div>
     {sub && <div style={{ fontSize: 11, color: '#b0b4c4', marginTop: 4 }}>{sub}</div>}
   </div>
 );
@@ -61,8 +61,8 @@ const AccentCard: React.FC<{
 }> = ({ icon, label, value, sub }) => (
   <div style={{
     background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-    borderRadius: 16,
-    padding: '20px 22px',
+    borderRadius: 14,
+    padding: '18px 20px',
     color: '#fff',
     boxShadow: '0 4px 20px rgba(37, 99, 235,.30)',
     position: 'relative',
@@ -73,16 +73,16 @@ const AccentCard: React.FC<{
       width: 80, height: 80, borderRadius: '50%',
       background: 'rgba(255,255,255,.08)',
     }} />
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
       <div style={{
-        width: 38, height: 38, borderRadius: 10,
+        width: 36, height: 36, borderRadius: 10,
         background: 'rgba(255,255,255,.2)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>{icon}</div>
       <IconTrendingUp size={18} color="rgba(255,255,255,0.9)" />
     </div>
-    <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: '-1px', lineHeight: 1 }}>{value}</div>
-    <div style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: 6, opacity: 0.85 }}>{label}</div>
+    <div style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+    <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', marginTop: 6, opacity: 0.85 }}>{label}</div>
     {sub && <div style={{ fontSize: 11, marginTop: 4, opacity: 0.7 }}>{sub}</div>}
   </div>
 );
@@ -135,7 +135,7 @@ const DashboardPage: React.FC = () => {
         Users
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
-        <MetricCard icon={<IconUsers size={20} color="#2563eb" />}        iconBg="#f0f0ff" label="Total Users"   value={stats.total_users}      sub={`${stats.active_users} active`} />
+        <MetricCard icon={<IconUsers size={20} color="#2563eb" />}        iconBg="#eff6ff" label="Total Users"   value={stats.total_users}      sub={`${stats.active_users} active`} />
         <MetricCard icon={<IconTarget size={20} color="#3b82f6" />}        iconBg="#eff6ff" label="Candidates"    value={stats.total_candidates} />
         <MetricCard icon={<IconBuilding size={20} color="#2563eb" />}      iconBg="#eff6ff" label="Recruiters"    value={stats.total_recruiters} />
         <MetricCard icon={<IconBriefcase size={20} color="#f59e0b" />}     iconBg="#fffbeb" label="HR Managers"   value={stats.total_hr}         />

@@ -110,17 +110,17 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               alignItems: 'center',
               gap: '6px',
               padding: '5px 12px',
-              background: '#EDE9FE',
-              color: '#7C3AED',
+              background: '#DBEAFE',
+              color: '#2563eb',
               borderRadius: '20px',
               fontSize: '13px',
               fontWeight: 500,
-              border: '1px solid #C4B5FD'
+              border: '1px solid #93c5fd'
             }}>
               Role: {shortlistRoleFilter}
               <button
                 onClick={() => setShortlistRoleFilter('all')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#7C3AED', lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#2563eb', lineHeight: 1 }}
                 title="Remove filter"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="13" height="13"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -215,13 +215,13 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
                 width: '56px',
                 height: '56px',
                 borderRadius: '12px',
-                background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '24px',
                 fontWeight: '700',
-                color: '#7c3aed',
+                color: '#2563eb',
                 marginBottom: '8px'
               }}>
                 {candidateInitial}
@@ -619,8 +619,8 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
                   {/* NOTE: notes is not part of the /recruiter/shortlist response — this "Recruiter
                       Notes" block has always been hidden. Flagging, not fixing: needs a backend change. */}
                   {itm.notes && (
-                    <div style={{ marginTop: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', borderLeft: '3px solid #7c3aed' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#7c3aed', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter Notes</div>
+                    <div style={{ marginTop: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', borderLeft: '3px solid #2563eb' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter Notes</div>
                       <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{itm.notes}</div>
                     </div>
                   )}

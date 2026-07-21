@@ -657,7 +657,7 @@ const JobPreferencesPage: React.FC = () => {
     const statusMap: Record<string, { label: string; bg: string; color: string }> = {
       remote:  { label: 'REMOTE',  bg: '#ecfdf5', color: '#059669' },
       hybrid:  { label: 'HYBRID',  bg: '#f3f4f6', color: '#374151' },
-      onsite:  { label: 'ON-SITE', bg: '#faf5ff', color: '#7c3aed' },
+      onsite:  { label: 'ON-SITE', bg: '#eff6ff', color: '#2563eb' },
     };
     const status = statusMap[p.worktype] || statusMap.hybrid;
 

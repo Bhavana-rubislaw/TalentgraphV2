@@ -153,13 +153,13 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
                 width: '56px',
                 height: '56px',
                 borderRadius: '12px',
-                background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '24px',
                 fontWeight: '700',
-                color: '#7c3aed',
+                color: '#2563eb',
                 marginBottom: '8px'
               }}>
                 {companyInitial}
@@ -258,7 +258,7 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
                   flex: 1,
                   padding: '12px 16px',
                   borderRadius: '10px',
-                  border: '2px solid #E2E4EC',
+                  border: '1px solid #E2E4EC',
                   background: 'white',
                   color: '#111827',
                   fontSize: '14px',
@@ -272,8 +272,8 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#7c3aed';
-                  e.currentTarget.style.color = '#7c3aed';
+                  e.currentTarget.style.borderColor = '#2563eb';
+                  e.currentTarget.style.color = '#2563eb';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'white';
@@ -405,7 +405,7 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
                   height: '40px',
                   border: currentMatchPage === pageNum ? 'none' : '1px solid #e2e8f0',
                   borderRadius: '8px',
-                  background: currentMatchPage === pageNum ? 'linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%)' : 'white',
+                  background: currentMatchPage === pageNum ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'white',
                   color: currentMatchPage === pageNum ? 'white' : '#475569',
                   fontSize: '14px',
                   fontWeight: '600',
@@ -593,9 +593,9 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 Match Details
               </div>
-              <div style={{ padding: '12px', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', borderRadius: '10px', marginBottom: '12px' }}>
+              <div style={{ padding: '12px', background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', borderRadius: '10px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 700, color: '#7c3aed' }}>{viewMatchJob.match_percentage}%</span>
+                  <span style={{ fontSize: '28px', fontWeight: 700, color: '#2563eb' }}>{viewMatchJob.match_percentage}%</span>
                   <span style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 500 }}>Mutual Match</span>
                 </div>
                 <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>

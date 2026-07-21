@@ -2862,7 +2862,7 @@
 }
 .cp-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--cp-accent), #8B7AE6);
+  background: linear-gradient(90deg, var(--cp-accent), #60a5fa);
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -3602,7 +3602,7 @@
 }
 
 .cp-pag-btn.active {
-  background: linear-gradient(135deg, #7c3aed 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
   color: white;
   border-color: transparent;
   box-shadow: 0 2px 6px rgba(29, 78, 216, 0.35);

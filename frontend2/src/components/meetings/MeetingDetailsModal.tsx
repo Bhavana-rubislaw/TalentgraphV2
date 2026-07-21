@@ -756,7 +756,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                     </div>
                     <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                       {isOrganizer && (
-                        <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: '#ede9fe', color: '#1d4ed8' }}>Organizer</span>
+                        <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>Organizer</span>
                       )}
                       <span style={{ padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px',
                         background: isConfirmed ? '#dcfce7' : '#fef3c7',
@@ -791,7 +791,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
               {!isCandidate && (
                 <>
                   <button onClick={() => setShowRescheduleModal(true)}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #7C3AED, #A78BFA)', color: 'white', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #2563eb, #60a5fa)', color: 'white', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" width="12" height="12"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
                     Reschedule
                   </button>
@@ -808,20 +808,20 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
           {isAdminOrHR && (
             <div style={{ marginTop: '24px', padding: '18px', background: 'linear-gradient(135deg, #EDE9FE, #eff6ff)', borderRadius: '16px', border: '1px solid #DDD6FE' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1e3a8a', margin: 0 }}>Admin Control Center</h3>
-                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#7C3AED', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
+                <span style={{ fontSize: '11px', padding: '2px 8px', background: '#2563eb', color: 'white', borderRadius: '10px', fontWeight: 600 }}>{currentUserRole.toUpperCase()}</span>
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => setShowForceReschedule(!showForceReschedule)}
-                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: showForceReschedule ? '#7C3AED' : 'white', color: showForceReschedule ? 'white' : '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #93c5fd', background: showForceReschedule ? '#2563eb' : 'white', color: showForceReschedule ? 'white' : '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Force Reschedule
                 </button>
                 <button
                   onClick={() => setShowEditParticipants(true)}
-                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #C4B5FD', background: 'white', color: '#7C3AED', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #93c5fd', background: 'white', color: '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   Manage Participants
                 </button>
@@ -853,7 +853,7 @@ export function MeetingDetailsModal({ meeting, onClose, onUpdate }: MeetingDetai
                       setShowRescheduleModal(true);
                       setShowForceReschedule(false);
                     }}
-                    style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#7C3AED', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#2563eb', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                     Apply Override
                   </button>
                 </div>

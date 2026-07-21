@@ -13,9 +13,9 @@
 
 /* ====== VARIABLES ====== */
 :root {
-  --ra-accent: #5B8DEF;
-  --ra-accent-hover: #4A7ADB;
-  --ra-accent-light: #F0ECFA;
+  --ra-accent: #2563eb;
+  --ra-accent-hover: #1d4ed8;
+  --ra-accent-light: #EFF6FF;
   --ra-bg: #f8fafc;
   --ra-surface: #FFFFFF;
   --ra-surface-hover: #F9FAFD;
@@ -33,7 +33,7 @@
   --ra-info: #5B8DEF;
   --ra-info-bg: #E5EDFD;
   --ra-purple: #2563eb;
-  --ra-purple-bg: #F0ECFA;
+  --ra-purple-bg: #DBEAFE;
   --ra-shadow-sm: 0 2px 4px rgba(0,0,0,.06);
   --ra-shadow-md: 0 4px 12px rgba(0,0,0,.08);
   --ra-shadow-lg: 0 8px 24px rgba(0,0,0,.12);
@@ -108,9 +108,9 @@
 }
 
 .ra-kpi-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: var(--stat-icon-size, 36px);
+  height: var(--stat-icon-size, 36px);
+  border-radius: var(--stat-icon-radius, 10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,8 +118,8 @@
 }
 
 .ra-kpi-icon svg {
-  width: 16px;
-  height: 16px;
+  width: var(--stat-icon-svg, 17px);
+  height: var(--stat-icon-svg, 17px);
 }
 
 .ra-kpi-icon.total { background: var(--ra-info-bg); color: var(--ra-info); }
@@ -183,7 +183,7 @@
 
 .ra-search-input {
   width: 100%;
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 12px 0 40px;
   border: 1px solid var(--ra-border);
   border-radius: 10px;
@@ -208,10 +208,10 @@
 
 /* Status Filter Dropdown (Enhanced) */
 .ra-status-filter {
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 30px 0 12px;
   border: 1px solid var(--ra-border);
-  border-radius: 10px;
+  border-radius: var(--control-radius, 10px);
   font-size: 13px;
   font-weight: 500;
   color: var(--ra-text-1);
@@ -283,7 +283,7 @@
 }
 
 .ra-sort-btn {
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 14px;
   border: 1px solid var(--ra-border);
   border-radius: 10px;
@@ -839,7 +839,7 @@
   background: var(--ra-surface);
   cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236C5CE7' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   transition: all var(--ra-transition);
@@ -910,7 +910,7 @@
   left: 0;
   width: 4px;
   height: 100%;
-  background: linear-gradient(to bottom, #1d4ed8 0%, #B896E0 100%);
+  background: linear-gradient(to bottom, #2563eb 0%, #93c5fd 100%);
   opacity: 0;
   transition: opacity var(--ra-transition);
 }
@@ -1367,7 +1367,7 @@
 
 .ra-field-input {
   flex: 1;
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 14px;
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
@@ -1389,7 +1389,7 @@
 }
 
 .ra-template-select {
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 32px 0 12px;
   border: 1px solid var(--ra-border);
   border-radius: var(--ra-radius-sm);
@@ -1581,9 +1581,9 @@
 
 /* ── Trigger (closed state) — Enhanced ── */
 .ra-combo-trigger {
-  height: 38px;
+  height: var(--control-height, 40px);
   padding: 0 10px 0 12px;
-  border: 1.5px solid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 10px;
   background: var(--ra-surface);
   font-size: 13px;
@@ -1935,7 +1935,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ra-purple) 0%, #a29bfe 100%);
+  background: linear-gradient(135deg, var(--ra-purple) 0%, #60a5fa 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -1971,26 +1971,26 @@
 .ra-stat-card {
   background: var(--ra-surface);
   border: 1px solid var(--ra-border);
-  border-radius: 14px;
-  padding: 18px 20px;
+  border-radius: var(--stat-card-radius, 14px);
+  padding: var(--stat-card-padding, 18px 20px);
   display: flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: var(--entity-card-shadow, 0 1px 2px rgba(15, 23, 42, 0.04));
   transition: all var(--ra-transition);
   position: relative;
   overflow: hidden;
 }
 
 .ra-stat-card:hover {
-  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+  box-shadow: var(--entity-card-shadow-hover, 0 8px 20px rgba(15, 23, 42, 0.08));
   transform: translateY(-2px);
 }
 
 .ra-stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: var(--stat-icon-size, 36px);
+  height: var(--stat-icon-size, 36px);
+  border-radius: var(--stat-icon-radius, 10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1998,8 +1998,8 @@
 }
 
 .ra-stat-icon svg {
-  width: 20px;
-  height: 20px;
+  width: var(--stat-icon-svg, 17px);
+  height: var(--stat-icon-svg, 17px);
 }
 
 .ra-stat-icon.jobs   { background: #E0E7FF; color: #1d4ed8; }
@@ -2037,7 +2037,7 @@
   align-self: flex-start;
 }
 
-.ra-stat-badge.open    { background: #EDE9FE; color: #1d4ed8; }
+.ra-stat-badge.open    { background: #DBEAFE; color: #1d4ed8; }
 .ra-stat-badge.saved   { background: #D1FAE5; color: #065F46; }
 .ra-stat-badge.pending { background: #FEF3C7; color: #92400E; }
 .ra-stat-badge.mutual  { background: #FCE7F3; color: #9D174D; }

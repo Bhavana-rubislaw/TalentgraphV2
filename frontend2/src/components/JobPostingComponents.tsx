@@ -12,7 +12,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, size = 'md' })
   const styles: Record<string, { bg: string; color: string; label: string }> = {
     active: { bg: '#ECFDF5', color: '#059669', label: 'Active' },
     frozen: { bg: '#F3F4F6', color: '#6B7280', label: 'Frozen' },
-    reposted: { bg: '#EDE9FE', color: '#7C3AED', label: 'Reposted' },
+    reposted: { bg: '#dbeafe', color: '#2563eb', label: 'Reposted' },
     cancelled: { bg: '#FEE2E2', color: '#DC2626', label: 'Cancelled' },
   };
 
@@ -85,7 +85,7 @@ export const FormProgressBar: React.FC<FormProgressBarProps> = ({ percentage }) 
         <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
           Form Completion
         </span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#7C3AED' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: '#2563eb' }}>
           {percentage}%
         </span>
       </div>
@@ -98,7 +98,7 @@ export const FormProgressBar: React.FC<FormProgressBarProps> = ({ percentage }) 
         <div style={{
           height: '100%',
           width: `${percentage}%`,
-          backgroundColor: '#7C3AED',
+          backgroundColor: '#2563eb',
           transition: 'width 0.3s ease',
           borderRadius: '3px',
         }} />
@@ -180,16 +180,16 @@ export const LifecycleActions: React.FC<LifecycleActionsProps> = ({
           onClick={onRepost}
           style={{
             ...buttonStyle,
-            backgroundColor: '#EDE9FE',
-            color: '#7C3AED',
-            border: '1px solid #C4B5FD',
+            backgroundColor: '#dbeafe',
+            color: '#2563eb',
+            border: '1px solid #93c5fd',
             flex: 1,
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = '#DDD6FE';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#EDE9FE';
+            e.currentTarget.style.backgroundColor = '#dbeafe';
           }}
         >
           Repost

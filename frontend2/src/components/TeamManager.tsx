@@ -290,7 +290,7 @@ const TeamManager: React.FC<TeamManagerProps> = ({ userRole }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontWeight: 600, fontSize: 14, color: '#1e293b' }}>{member.name}</span>
                     {member.is_self && (
-                      <span style={{ fontSize: 10, background: '#ede9fe', color: '#1d4ed8', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>You</span>
+                      <span style={{ fontSize: 10, background: '#dbeafe', color: '#1d4ed8', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>You</span>
                     )}
                     {member.is_primary_account && (
                       <span style={{ fontSize: 10, background: '#fef3c7', color: '#d97706', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>Owner</span>

@@ -176,7 +176,7 @@ export default function MeetingScheduler({ candidateName, onClose }: MeetingSche
       <div className="sched-modal" style={{background:"#f8fafc",borderRadius:22,width:"100%",maxWidth:760,maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",fontFamily:"'Plus Jakarta Sans',sans-serif",boxShadow:"0 40px 100px rgba(0,0,0,0.3)"}}>
 
         {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#4c1d95 0%,#1d4ed8 55%,#7c3aed 100%)",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+        <div style={{background:"linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%)",padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:36,height:36,borderRadius:10,background:"rgba(255,255,255,0.18)",display:"flex",alignItems:"center",justifyContent:"center"}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>

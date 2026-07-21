@@ -708,7 +708,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
               const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
-              const avatarBg = ['#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+              const avatarBg = ['#2563eb', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
               const getMeetingTypeLabel = (m: any): string => {
                 if (m.video_provider) {
                   const p = m.video_provider.toLowerCase();
@@ -797,7 +797,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                           <span
                             key={i}
                             onClick={() => setUpcomingInterviewPage(i)}
-                            style={{ width: i === safeUpcomingPage ? 18 : 6, height: 6, borderRadius: 3, background: i === safeUpcomingPage ? '#7C3AED' : '#D1D5DB', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block' }}
+                            style={{ width: i === safeUpcomingPage ? 18 : 6, height: 6, borderRadius: 3, background: i === safeUpcomingPage ? '#2563eb' : '#D1D5DB', cursor: 'pointer', transition: 'all 0.2s', display: 'inline-block' }}
                           />
                         ))}
                       </div>

@@ -325,7 +325,7 @@ export const WhyThisMatch: React.FC<WhyThisMatchProps> = ({ drivers, maxDrivers 
     <div style={{
       marginBottom: '16px',
       padding: '12px',
-      background: 'linear-gradient(135deg, #EDE9FE, #F5F3FF)',
+      background: 'linear-gradient(135deg, #dbeafe, #eff6ff)',
       borderRadius: '10px',
       border: '1px solid #DDD6FE',
     }}>
@@ -337,7 +337,7 @@ export const WhyThisMatch: React.FC<WhyThisMatchProps> = ({ drivers, maxDrivers 
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
         {top.map((d, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#4C1D95' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#1e3a8a' }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" width="14" height="14">
               <path d="M20 6L9 17l-5-5"/>
             </svg>
@@ -356,19 +356,19 @@ export const AIMatchReasonBox: React.FC<AIMatchReasonBoxProps> = ({ reason, vari
   return (
     <div style={{
       background: isRecruiter
-        ? 'linear-gradient(135deg, #EDE9FE, #F5F3FF)'
-        : 'linear-gradient(135deg, #F5F3FF, #EDE9FE)',
-      border: `1px solid ${isRecruiter ? '#DDD6FE' : '#C4B5FD'}`,
+        ? 'linear-gradient(135deg, #dbeafe, #eff6ff)'
+        : 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+      border: `1px solid ${isRecruiter ? '#DDD6FE' : '#93c5fd'}`,
       borderRadius: '10px',
       padding: '12px 14px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style={{ color: '#7C3AED', flexShrink: 0 }}>
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style={{ color: '#2563eb', flexShrink: 0 }}>
           <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
         </svg>
         <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e3a8a' }}>AI Match Reason</span>
       </div>
-      <p style={{ margin: 0, fontSize: '12px', color: '#4C1D95', lineHeight: 1.5 }}>{reason}</p>
+      <p style={{ margin: 0, fontSize: '12px', color: '#1e3a8a', lineHeight: 1.5 }}>{reason}</p>
     </div>
   );
 };

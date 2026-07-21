@@ -690,13 +690,13 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                     width: '56px',
                     height: '56px',
                     borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%)',
+                    background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '24px',
                     fontWeight: '700',
-                    color: '#7c3aed',
+                    color: '#2563eb',
                     marginBottom: '8px'
                   }}>
                     {companyInitial}
@@ -793,7 +793,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                       flex: 1,
                       padding: '12px 16px',
                       borderRadius: '10px',
-                      border: '2px solid #E2E4EC',
+                      border: '1px solid #E2E4EC',
                       background: 'white',
                       color: '#111827',
                       fontSize: '14px',
@@ -807,8 +807,8 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.background = '#f9fafb';
-                      e.currentTarget.style.borderColor = '#7c3aed';
-                      e.currentTarget.style.color = '#7c3aed';
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.color = '#2563eb';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.background = 'white';

@@ -427,7 +427,7 @@ body {
 
 /* ====== WELCOME CARD ====== */
 .welcome-card {
-  background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 40%, #60a5fa 100%);
   border-radius: var(--radius-lg);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
@@ -872,7 +872,7 @@ body {
 
 /* ====== ENHANCED WELCOME SECTION ====== */
 .welcome-card-modern {
-  background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 40%, #60a5fa 100%);
   border-radius: var(--radius-xl);
   padding: var(--spacing-4);
   margin-bottom: var(--spacing-4);
@@ -985,10 +985,10 @@ body {
 
 /* Vibrant color palette for KPI cards */
 .kpi-card-enhanced.active-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
-.kpi-card-enhanced.shortlisted { --accent-color: #7C3AED; } /* Vibrant Purple */
+.kpi-card-enhanced.shortlisted { --accent-color: #2563eb; } /* Vibrant Purple */
 .kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
 .kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
-.kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
+.kpi-card-enhanced.invites { --accent-color: #2563eb; } /* Vibrant Purple */
 .kpi-card-enhanced.new-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
 
 .kpi-icon {
@@ -1043,12 +1043,12 @@ body {
 
 /* ====== JOB SELECTOR MODERN ====== */
 .job-selector-modern {
-  background: #f5f6f7;
+  background: #ffffff;
   border-radius: var(--radius-lg);
   padding: var(--spacing-3);
   margin-bottom: var(--spacing-3);
-  border: 2px solid var(--border-light);
-  box-shadow: var(--shadow-purple-md);
+  border: 1px solid var(--border-light);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .selector-header {
@@ -1068,28 +1068,35 @@ body {
 .selector-count {
   font-size: 14px;
   color: var(--text-secondary);
-  background: #E5E5ED;
+  background: #F1F5F9;
   padding: 4px 12px;
   border-radius: var(--radius-sm);
 }
 
 .job-select-modern {
   width: 100%;
-  padding: 14px 16px;
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-md);
-  background: #EDEDF5;
+  height: var(--control-height, 40px);
+  padding: var(--control-padding, 0 14px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--control-radius, 10px);
+  background: #F9FAFB;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), background var(--transition-base);
   cursor: pointer;
+}
+
+.job-select-modern:hover {
+  border-color: var(--border-medium);
+  background: #FFFFFF;
 }
 
 .job-select-modern:focus {
   outline: none;
+  background: #FFFFFF;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 /* ====== ANALYTICS PANEL MODERN ====== */
@@ -1194,18 +1201,18 @@ body {
 
 .candidate-card-modern {
   background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 2px solid var(--border-light);
+  border-radius: 16px;
+  border: 1px solid var(--border-light);
   overflow: hidden;
-  transition: all var(--transition-base);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   position: relative;
-  box-shadow: var(--shadow-purple-md);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .candidate-card-modern:hover {
-  box-shadow: var(--shadow-purple-xl);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
-  border-color: var(--primary-color);
+  border-color: #d1d5db;
 }
 
 .candidate-header-modern {
@@ -1421,56 +1428,46 @@ body {
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: #2563eb;
   color: white;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.24);
 }
 
 .action-btn.primary:hover {
-  background: linear-gradient(135deg, #6A4F99, #8566B8);
+  background: #1d4ed8;
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
 }
 
 .action-btn.light {
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  background: #ffffff;
   color: #495057;
   border: 1px solid #e0e0e0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.5);
 }
 
 .action-btn.light:hover {
-  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  background: #f8f9fa;
   border-color: #d0d0d0;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255,255,255,0.5);
   transform: translateY(-1px);
 }
 
 .action-btn.success {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8);
+  background: #2563eb;
   color: white;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
-              inset 0 2px 4px rgba(255,255,255,0.25),
-              inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 20px rgba(59, 130, 246, 0.3);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.24);
 }
 
 .action-btn.success:hover {
-  background: linear-gradient(135deg, #6B4E97, #8464B4, #1d4ed8);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.6), 
-              inset 0 2px 5px rgba(255,255,255,0.3),
-              inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 30px rgba(59, 130, 246, 0.4);
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.28);
 }
 
 /* Message Action Button */
 .action-btn.message {
   background: #EEF2FF;
   color: #2563eb;
-  border: 1.5px solid #2563eb;
+  border: 1px solid #2563eb;
   font-weight: 600;
   position: relative;
   overflow: visible;
@@ -1608,19 +1605,15 @@ body {
 }
 
 .action-btn.liked-done {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4) !important;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
   color: white;
 }
 
 .action-btn.applied-done {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8) !important;
+  background: #2563eb !important;
   color: white;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
-              inset 0 2px 4px rgba(255,255,255,0.25),
-              inset 0 -2px 4px rgba(0,0,0,0.15),
-              0 0 20px rgba(59, 130, 246, 0.3);
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.24);
+  border: 1px solid transparent;
   cursor: default;
 }
 
@@ -1644,7 +1637,7 @@ body {
 }
 
 .vp-btn-done-like {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4) !important;
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
   color: white;
   border-color: transparent !important;
 }
@@ -1670,7 +1663,7 @@ body {
 }
 
 .candidate-card-modern.shortlisted:hover {
-  border-color: #9474C4;
+  border-color: #3b82f6;
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
 }
 
@@ -1688,7 +1681,7 @@ body {
 }
 
 .action-status-badge.shortlisted {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   color: white;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
 }
@@ -1706,7 +1699,7 @@ body {
 
 /* ====== CANDIDATE DASHBOARD SPECIFIC ====== */
 .welcome-card-modern.candidate-welcome {
-  background: linear-gradient(135deg, #6A4F99 0%, #1d4ed8 40%, #9B7ED8 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1d4ed8 40%, #60a5fa 100%);
   box-shadow: 0 8px 32px rgba(29, 78, 216, 0.3), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
@@ -1715,7 +1708,7 @@ body {
 }
 
 /* Candidate Dashboard KPI Colors */
-.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #7C3AED; } /* Vibrant Purple */
+.welcome-card-modern.candidate-welcome .kpi-card-enhanced.invites { --accent-color: #2563eb; } /* Vibrant Purple */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.matches { --accent-color: #EA580C; } /* Vibrant Orange */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.new-jobs { --accent-color: #1d4ed8; } /* Deep Indigo */
 .welcome-card-modern.candidate-welcome .kpi-card-enhanced.applications { --accent-color: #059669; } /* Deep Emerald */
@@ -1767,17 +1760,17 @@ body {
 }
 
 .candidate-dashboard .action-btn.primary {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25), inset 0 1px 0 rgba(255,255,255,0.15);
 }
 
 .candidate-dashboard .action-btn.primary:hover {
-  background: linear-gradient(135deg, #6A4F99, #8566B8);
+  background: linear-gradient(135deg, #1d4ed8, #1d4ed8);
   box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 .candidate-dashboard .action-btn.success {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4, #8B6FB8);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6, #3b82f6);
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5), 
               inset 0 2px 4px rgba(255,255,255,0.25),
               inset 0 -2px 4px rgba(0,0,0,0.15),
@@ -1787,7 +1780,7 @@ body {
 }
 
 .candidate-dashboard .match-badge-modern {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
@@ -1930,7 +1923,7 @@ body {
 }
 
 .invite-badge-header {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
@@ -2243,7 +2236,7 @@ body {
 }
 
 .carousel-arrow-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   border-color: #1d4ed8;
   color: #fff;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
@@ -2451,7 +2444,7 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1d4ed8 0%, #B896E0 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #93c5fd 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -2490,7 +2483,7 @@ body {
 
 .profile-role-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #1d4ed8 0%, #B896E0 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #93c5fd 100%);
   color: white;
   padding: 3px 12px;
   border-radius: 20px;
@@ -2594,7 +2587,7 @@ body {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1d4ed8, #B896E0);
+  background: linear-gradient(135deg, #1d4ed8, #93c5fd);
   color: white;
   display: flex;
   align-items: center;
@@ -2819,7 +2812,7 @@ body {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1d4ed8, #B896E0);
+  background: linear-gradient(135deg, #1d4ed8, #93c5fd);
   color: white;
   display: flex;
   align-items: center;
@@ -3021,7 +3014,7 @@ body {
 
 .match-info-link:hover {
   text-decoration: underline;
-  color: #6A4F99;
+  color: #1d4ed8;
 }
 
 .match-info-text {
@@ -3076,7 +3069,7 @@ body {
 
 /* Primary action — Send Email */
 .match-primary {
-  background: linear-gradient(135deg, #1d4ed8, #9474C4);
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6);
   color: white;
   border-right: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0 0 0 var(--radius-lg);
@@ -3084,7 +3077,7 @@ body {
 }
 
 .match-primary:hover {
-  background: linear-gradient(135deg, #6A4F99, #8566B8);
+  background: linear-gradient(135deg, #1d4ed8, #1d4ed8);
   color: white;
 }
 
@@ -3265,7 +3258,7 @@ body {
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #1d4ed8, #B896E0);
+  background: linear-gradient(135deg, #1d4ed8, #93c5fd);
   color: #fff;
   display: flex;
   align-items: center;
@@ -3442,7 +3435,7 @@ body {
   gap: 6px;
   padding: 5px 12px;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-  color: #6A4F99;
+  color: #1d4ed8;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 500;
@@ -3492,7 +3485,7 @@ body {
 .vp-social-link:hover {
   background: rgba(37, 99, 235, 0.1);
   border-color: #C6B8E6;
-  color: #6A4F99;
+  color: #1d4ed8;
 }
 
 .vp-social-link svg {
@@ -3683,7 +3676,7 @@ body {
   gap: 6px;
   padding: 4px 10px;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
-  color: #6A4F99;
+  color: #1d4ed8;
   border-radius: 100px;
   font-size: 12px;
   font-weight: 500;
@@ -3758,13 +3751,13 @@ body {
 }
 
 .vp-btn-primary {
-  background: linear-gradient(135deg, #1d4ed8, #9D7BC7);
+  background: #2563eb;
   color: #fff;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
 
 .vp-btn-primary:hover {
-  background: linear-gradient(135deg, #6A4F99, #8A6AB8);
+  background: #1d4ed8;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
@@ -3785,7 +3778,7 @@ body {
 .vp-btn-message {
   background: #EEF2FF;
   color: #2563eb;
-  border: 1.5px solid #2563eb;
+  border: 1px solid #2563eb;
 }
 
 .vp-btn-message:hover {
@@ -4098,8 +4091,8 @@ body {
   gap: 8px;
   padding: 0 16px 0 13px;
   height: 42px;
-  background: #7c3aed;
-  border: 1.5px solid #7c3aed;
+  background: #2563eb;
+  border: 1.5px solid #2563eb;
   border-radius: 999px;
   cursor: pointer;
   user-select: none;
@@ -4115,7 +4108,7 @@ body {
 
 /* Focus ring on the pill itself (not focus-within) */
 .rec-filter-pill:focus {
-  border-color: #7c3aed;
+  border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
   outline: none;
 }
@@ -4128,8 +4121,8 @@ body {
 
 /* Open state */
 .rec-filter-pill--open {
-  border-color: #7c3aed;
-  background: #7c3aed;
+  border-color: #2563eb;
+  background: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.13);
 }
 
@@ -4224,12 +4217,12 @@ body {
 }
 
 .rec-filter-menu__option--focused {
-  background: #f5f3ff;
+  background: #eff6ff;
 }
 
 .rec-filter-menu__option--selected {
-  background: #ede8f8;
-  color: #5a3d8a;
+  background: #dbeafe;
+  color: #1d4ed8;
   font-weight: 600;
 }
 
@@ -4287,8 +4280,8 @@ body {
 }
 
 .rec-filter-clear:hover {
-  background: #f0ecfa;
-  color: #5a3d8a;
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .rec-filter-clear:active {

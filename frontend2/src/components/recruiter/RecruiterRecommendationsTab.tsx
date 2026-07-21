@@ -172,7 +172,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 <span style={{
                   fontSize: '11px',
                   fontWeight: 600,
-                  background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                  background: 'linear-gradient(135deg, #2563eb, #60a5fa)',
                   color: 'white',
                   padding: '2px 8px',
                   borderRadius: '10px'
@@ -610,7 +610,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         width: '100%',
                         marginTop: '20px',
                         padding: '12px',
-                        background: rec.action_taken === 'ask_to_apply' ? '#10B981' : 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+                        background: rec.action_taken === 'ask_to_apply' ? '#10B981' : 'linear-gradient(135deg, #2563eb, #60a5fa)',
                         border: 'none',
                         borderRadius: '8px',
                         color: 'white',
@@ -737,7 +737,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
             const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
-            const avatarBg = ['#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
+            const avatarBg = ['#2563eb', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444'];
             const getMeetingTypeLabel = (m: any): string => {
               if (m.video_provider) {
                 const p = m.video_provider.toLowerCase();

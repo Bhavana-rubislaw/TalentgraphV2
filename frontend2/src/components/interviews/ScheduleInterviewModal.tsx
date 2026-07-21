@@ -420,7 +420,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                   Video Meeting Provider <span className="schedule-interview-required">*</span>
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'zoom' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'zoom' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -436,7 +436,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -452,7 +452,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
@@ -468,7 +468,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                     </div>
                   </label>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#f5f3ff' : 'white', transition: 'all 0.2s' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
                       name="meetingProvider"
