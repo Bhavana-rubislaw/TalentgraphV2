@@ -260,7 +260,7 @@ const RecruiterDashboard: React.FC = () => {
   };
 
   return (
-    <div className="horizontal-dashboard">
+    <div className="horizontal-dashboard recruiter-dashboard">
       {/* Top Navigation Bar */}
       <div className="talentgraph-topnav">
         <div className="talentgraph-topnav-left">
@@ -441,8 +441,9 @@ const RecruiterDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="talentgraph-main-content">
+        <div className={activeTab === 'recommendations' ? 'recruiter-dashboard-grid' : undefined}>
         {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
-        {activeTab === 'recommendations' && <div className="welcome-banner-modern">
+        {activeTab === 'recommendations' && <aside className="welcome-banner-modern recruiter-kpi-rail" aria-label="Recruiter KPI summary">
           <div className="welcome-header-compact">
             <div className="welcome-avatar-compact">
               <div className="avatar-circle-compact">{userInitial}</div>
@@ -523,17 +524,11 @@ const RecruiterDashboard: React.FC = () => {
             </div>
           </div>
 
-        </div>}
+        </aside>}
 
         {/* Content Panel */}
         <div
           className="content-panel-horizontal"
-          style={activeTab === 'recommendations' ? {
-            background: '#F8F9FA',
-            boxShadow: 'none',
-            borderRadius: 0,
-            padding: 0
-          } : {}}
         >
           <div style={{ display: activeTab === 'recommendations' ? 'block' : 'none' }}>
             <RecruiterRecommendationsTab
@@ -622,6 +617,7 @@ const RecruiterDashboard: React.FC = () => {
           <div style={{ display: activeTab === 'meetings' ? 'block' : 'none', paddingBottom: 0, marginBottom: 0 }}>
             {activeTab === 'meetings' && <MeetingSchedulerTab role="recruiter" />}
           </div>
+        </div>
         </div>
       </div>
 

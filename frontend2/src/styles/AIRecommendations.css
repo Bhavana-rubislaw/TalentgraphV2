@@ -1135,3 +1135,90 @@
     min-width: calc(50% - 6px);
   }
 }
+
+/* ====== RECRUITER RECOMMENDATIONS FIT-TO-SCREEN BOARD ====== */
+.recruiter-dashboard .content-panel-horizontal > div[style*="display: block"] {
+  height: 100%;
+  min-height: 0;
+}
+
+.recruiter-dashboard .ai-recommendations-container {
+  height: calc(100% - 86px);
+  max-width: none;
+  margin: 0;
+  padding: 12px 16px 10px;
+  gap: 16px;
+  min-height: 0;
+}
+
+.recruiter-dashboard .ai-recs-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.recruiter-dashboard .ai-job-card {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.86);
+  backdrop-filter: blur(14px);
+  scrollbar-width: thin;
+}
+
+.recruiter-dashboard .ai-job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.recruiter-dashboard .ai-pagination {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+.recruiter-dashboard .ai-pagination-arrow,
+.recruiter-dashboard .ai-action-btn,
+.recruiter-dashboard .job-select-modern,
+.recruiter-dashboard select {
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.recruiter-dashboard .ai-action-btn {
+  border-radius: 999px;
+}
+
+.recruiter-dashboard .ai-match-badge,
+.recruiter-dashboard .ai-pagination-dot.active,
+.recruiter-dashboard .talentgraph-tab-badge-ai {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255,255,255,0.28);
+}
+
+.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] {
+  width: min(320px, 24vw) !important;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] > div {
+  background: rgba(255, 255, 255, 0.84) !important;
+  border: 1px solid rgba(226, 232, 240, 0.94) !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.82);
+  backdrop-filter: blur(14px);
+}
+
+.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] > div:nth-child(2) {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .recruiter-dashboard .ai-recommendations-container { height: auto; flex-direction: column; }
+  .recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] { width: 100% !important; height: auto; }
+  .recruiter-dashboard .ai-job-card { max-height: none; }
+}
