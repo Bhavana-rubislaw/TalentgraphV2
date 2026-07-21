@@ -18,6 +18,12 @@ api.interceptors.request.use((config) => {
 export const adminLogin = (email: string, password: string) =>
   api.post('/auth/admin/login', { email, password });
 
+export const verifyOtp = (email: string, purpose: 'login' | 'signup', code: string) =>
+  api.post('/auth/verify-otp', { email, purpose, code });
+
+export const resendOtp = (email: string, purpose: 'login' | 'signup') =>
+  api.post('/auth/resend-otp', { email, purpose });
+
 export const getMe = () => api.get('/auth/me');
 
 // ─── Admin: Overview ─────────────────────────────────────────────

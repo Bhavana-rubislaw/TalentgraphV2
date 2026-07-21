@@ -26,8 +26,8 @@ const SignInPage: React.FC = () => {
   const [error, setError] = useState('');
   const [otpPending, setOtpPending] = useState(false);
 
-  // Shared landing point for both paths that yield a session token:
-  // admin login (no OTP) and OTP verification.
+  // Shared landing point once a session token is issued — every role
+  // (candidate, company, admin) authenticates via OTP verification.
   const completeAuth = (data: any) => {
     const isProfileComplete = data.is_profile_complete ?? false;
     const authUser = {
@@ -44,6 +44,8 @@ const SignInPage: React.FC = () => {
 
     if (authUser.role === 'candidate') {
       navigate(isProfileComplete ? '/candidate-dashboard' : '/candidate-profile-setup');
+    } else if (authUser.role === 'admin') {
+      navigate('/admin/logs');
     } else {
       navigate(isProfileComplete ? '/recruiter-dashboard' : '/company-profile-setup');
     }
@@ -62,28 +64,11 @@ const SignInPage: React.FC = () => {
 
       if (isAdminLogin) {
         response = await apiClient.adminLogin(email, password);
-        localStorage.setItem('token', response.data.token);
-        syncAuthUserToStorage({
-          user_id: response.data.user_id,
-          email: response.data.email,
-          role: 'admin',
-          full_name: response.data.full_name || '',
-          is_profile_complete: true,
-        });
-        setUser({
-          user_id: response.data.user_id,
-          email: response.data.email,
-          role: 'admin',
-          full_name: response.data.full_name || '',
-          is_profile_complete: true,
-        });
-        navigate('/admin/logs');
-        return;
+      } else {
+        response = userType === 'candidate'
+          ? await apiClient.candidateLogin(email, password)
+          : await apiClient.companyLogin(email, password);
       }
-
-      response = userType === 'candidate'
-        ? await apiClient.candidateLogin(email, password)
-        : await apiClient.companyLogin(email, password);
 
       if (response.data.otp_required) {
         setOtpPending(true);

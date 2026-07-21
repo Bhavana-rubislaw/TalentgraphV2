@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminLogin } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
 import { IconAlertTriangle } from '../components/Icons';
+import OtpStep from '../components/OtpStep';
 import '../styles/Landing.css';
 import '../styles/Auth.css';
 
@@ -13,6 +14,27 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpPending, setOtpPending] = useState(false);
+
+  const completeLogin = (data: any) => {
+    const token = data.token || data.access_token;
+    const role = (data.role ?? '').toLowerCase();
+
+    if (!token || role !== 'admin') {
+      setError('Access denied. This portal is for administrators only.');
+      setOtpPending(false);
+      return;
+    }
+
+    login(token, {
+      user_id: data.user_id,
+      email: data.email,
+      full_name: data.full_name || '',
+      role,
+    });
+
+    navigate('/dashboard');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,23 +43,14 @@ const LoginPage: React.FC = () => {
 
     try {
       const res = await adminLogin(email.trim(), password);
-      const data = res.data;
-      const token = data.token || data.access_token;
-      const role = (data.role ?? '').toLowerCase();
 
-      if (!token || role !== 'admin') {
-        setError('Access denied. This portal is for administrators only.');
+      if (res.data.otp_required) {
+        setOtpPending(true);
         return;
       }
 
-      login(token, {
-        user_id: data.user_id,
-        email: data.email,
-        full_name: data.full_name || '',
-        role,
-      });
-
-      navigate('/dashboard');
+      // Fallback: server issued a token directly (no OTP flow)
+      completeLogin(res.data);
     } catch (err: any) {
       const detail = err?.response?.data?.detail;
       if (typeof detail === 'string') {
@@ -71,6 +84,14 @@ const LoginPage: React.FC = () => {
 
       <main className="tg-auth-main">
         <div className="tg-auth-card">
+          {otpPending ? (
+            <OtpStep
+              email={email}
+              onSuccess={completeLogin}
+              onBack={() => { setOtpPending(false); setError(''); }}
+            />
+          ) : (
+          <>
           <h1>Administrator Sign In</h1>
           <p className="tg-auth-sub">Sign in to the TalentGraph admin console</p>
 
@@ -108,6 +129,8 @@ const LoginPage: React.FC = () => {
               {loading ? 'Signing in…' : 'Sign In to Admin Portal'}
             </button>
           </form>
+          </>
+          )}
         </div>
       </main>
     </div>

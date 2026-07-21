@@ -87,7 +87,13 @@ def _full_auth_response(session: Session, user: User, message: str) -> dict:
         "user_id": user.id,
         "role": user.role,
     })
-    user_type = "candidate" if user.role == UserRole.CANDIDATE else "company"
+    if user.role == UserRole.CANDIDATE:
+        user_type = "candidate"
+    elif user.role == UserRole.ADMIN:
+        user_type = "admin"
+    else:
+        user_type = "company"
+
     response = {
         "ok": True,
         "message": message,
@@ -99,7 +105,8 @@ def _full_auth_response(session: Session, user: User, message: str) -> dict:
         "full_name": user.full_name,
         "role": user.role,
         "user_type": user_type,
-        "is_profile_complete": get_profile_completion_status(session, user),
+        # Admins have no candidate/company profile to complete.
+        "is_profile_complete": True if user_type == "admin" else get_profile_completion_status(session, user),
     }
     if user_type == "company":
         company = session.exec(select(Company).where(Company.user_id == user.id)).first()
@@ -339,32 +346,13 @@ def company_signup(request: Request, user_data: CompanySignUp, session: Session 
 @router.post("/admin/login", response_model=dict)
 @limiter.limit("10/minute")
 def admin_login(request: Request, credentials: CompanyLogin, session: Session = Depends(get_session)):
-    """Login for system admin only"""
+    """Login for system admin only. Password success triggers an email
+    OTP, same as candidate/company login; the session token is issued by
+    /auth/verify-otp."""
     user = _authenticate(session, credentials.email, credentials.password, allowed_roles={UserRole.ADMIN})
 
-    token_data = {
-        "sub": user.email,
-        "email": user.email,
-        "user_id": user.id,
-        "role": user.role
-    }
-    token = create_access_token(token_data)
-
-    return {
-        "message": "Admin login successful",
-        "access_token": token,
-        "token": token,
-        "token_type": "bearer",
-        "user_id": user.id,
-        "email": user.email,
-        "full_name": user.full_name,
-        "role": user.role,
-        "user_type": "admin",
-        "is_profile_complete": True
-    }
-    # NOTE: admin login deliberately skips the email OTP step. The admin
-    # account owns the email infrastructure - if SMTP is down, someone must
-    # still be able to sign in and fix it (break-glass access).
+    _send_otp(session, user, email_otp.PURPOSE_LOGIN)
+    return _otp_pending_response(user.email, "admin", OTP_SENT_MSG)
 
 
 # ============================================================================
