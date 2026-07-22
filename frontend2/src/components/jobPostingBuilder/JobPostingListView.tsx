@@ -158,9 +158,10 @@ const JobPostingListView: React.FC<JobPostingListViewProps> = ({
                           >⋯</button>
                           {cardMenuOpenId === p.id && (
                             <div className="cp-card-menu-popover">
+                              <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); loadPosting(p); }}>Edit</button>
                               <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleDuplicatePosting(p); setShowForm(true); }}>Duplicate</button>
-                              {nStatus !== 'cancelled' && nStatus !== 'frozen' && (
-                                <button className="cp-card-menu-item" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); handleJobLifecycleAction(p.id, 'freeze', e); }}>Freeze</button>
+                              {nStatus !== 'cancelled' && (
+                                <button className="cp-card-menu-item danger" onClick={e => { e.stopPropagation(); setCardMenuOpenId(null); setShowCancelModal(p.id); }}>Cancel</button>
                               )}
                             </div>
                           )}
@@ -226,10 +227,6 @@ const JobPostingListView: React.FC<JobPostingListViewProps> = ({
                             >
                               View Applicants
                             </button>
-                            <button className="cp-posting-action-btn" onClick={(e) => { e.stopPropagation(); loadPosting(p); }}>Edit</button>
-                            {nStatus !== 'cancelled' && (
-                              <button className="cp-posting-action-btn cancel" onClick={(e) => { e.stopPropagation(); setShowCancelModal(p.id); }}>Cancel</button>
-                            )}
                           </div>
                           {closesDate && <span className="cp-posting-card-closes">Closes {closesDate}</span>}
                         </div>
