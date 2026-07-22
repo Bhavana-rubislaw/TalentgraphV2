@@ -14,6 +14,13 @@
       "runtimeArgs": ["run", "dev"],
       "cwd": "admin-ui",
       "port": 5174
+    },
+    {
+      "name": "backend2",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8001"],
+      "cwd": "backend2",
+      "port": 8001
     }
   ]
 }
