@@ -3241,13 +3241,29 @@
 .cp-posting-card-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   padding: 14px 22px;
   border-top: 1px solid var(--cp-border);
   background: #fafbfc;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: auto;
+}
+
+.cp-posting-card-closes {
+  font-size: 12px;
+  color: var(--cp-text-secondary);
+  white-space: nowrap;
+}
+
+.cp-posting-action-btn.primary {
+  border-color: var(--cp-accent);
+  background: var(--cp-accent);
+  color: #ffffff;
+}
+.cp-posting-action-btn.primary:hover {
+  background: var(--cp-accent-hover, var(--cp-accent));
+  filter: brightness(1.05);
 }
 
 .cp-posting-card-apps {

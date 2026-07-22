@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { apiClient } from '../api/client';
 import { useNavigate } from 'react-router-dom';
 import '../styles/JobPostingBuilder.css';
+import '../styles/AIRecommendations.css';
 import type { JobPostingFormData, JobPosting, Catalogs } from '../types/jobPostingBuilderTypes';
 import { EMPLOYMENT_TYPES } from '../constants/jobPostingBuilderConstants';
 import JobPostingListView from '../components/jobPostingBuilder/JobPostingListView';
 import JobPostingFormView from '../components/jobPostingBuilder/JobPostingFormView';
+import { useApplications } from '../hooks/useApplications';
+import { useRecruiterMatches } from '../hooks/useRecruiterMatches';
 
 // ============ CONSTANTS ============
 // NOTE: dropdown option lists (SENIORITY_LEVELS, TRAVEL_OPTIONS, VISA_OPTIONS,
@@ -69,6 +72,15 @@ const JobPostingBuilder: React.FC = () => {
   const PAGE_SIZE_POSTINGS = 9;
   const [currentPostPage, setCurrentPostPage] = useState(1);
   const [cardMenuOpenId, setCardMenuOpenId] = useState<number | null>(null);
+
+  // Live applicant / AI-match counts per job posting, for the summary cards
+  // and per-card stats row. Reuses the same hooks/endpoints the recruiter
+  // dashboard's Applications and Matches tabs already use — no new API calls.
+  const { applications } = useApplications();
+  const { matches, fetchMatches } = useRecruiterMatches();
+  useEffect(() => {
+    fetchMatches();
+  }, [fetchMatches]);
 
   // Skills state
   const [skillSearchTech, setSkillSearchTech] = useState('');
@@ -542,6 +554,34 @@ const JobPostingBuilder: React.FC = () => {
     );
   }, [postings, listSearch, statusFilter]);
 
+  // ============ LIVE JOB STATS (applicants / AI matches / match rate) ============
+  // matchRate = AI Matches ÷ Applicants for that job (0 when there are no
+  // applicants yet, since a rate needs a denominator). avgMatchScore is the
+  // average match_percentage across that job's AI-matched candidates.
+  const jobStats = useMemo(() => {
+    const stats: Record<number, { applicants: number; aiMatches: number; matchRate: number; avgMatchScore: number }> = {};
+    for (const p of postings) {
+      const applicantCount = applications.filter(a => a.job_posting?.id === p.id).length;
+      const jobMatches = matches.filter(m => m.job_posting?.id === p.id);
+      const aiMatchesCount = jobMatches.length;
+      const matchRate = applicantCount > 0 ? Math.round((aiMatchesCount / applicantCount) * 100) : 0;
+      const avgMatchScore = aiMatchesCount > 0
+        ? Math.round(jobMatches.reduce((sum, m) => sum + (m.match_percentage || 0), 0) / aiMatchesCount)
+        : 0;
+      stats[p.id] = { applicants: applicantCount, aiMatches: aiMatchesCount, matchRate, avgMatchScore };
+    }
+    return stats;
+  }, [postings, applications, matches]);
+
+  const summaryStats = useMemo(() => ({
+    activeJobs: postings.filter(p => {
+      const s = (p.status || 'active').toLowerCase();
+      return s === 'active' || s === 'reposted';
+    }).length,
+    totalApplicants: applications.length,
+    totalAiMatches: matches.length,
+  }), [postings, applications, matches]);
+
   // ============ PAGINATION ============
 
   const totalPostPages = Math.ceil(filteredPostings.length / PAGE_SIZE_POSTINGS);
@@ -623,6 +663,8 @@ const JobPostingBuilder: React.FC = () => {
         paginatedPostings={paginatedPostings}
         getPostPageNumbers={getPostPageNumbers}
         setShowForm={setShowForm}
+        jobStats={jobStats}
+        summaryStats={summaryStats}
       />
     );
   }

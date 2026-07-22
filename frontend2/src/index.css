@@ -201,7 +201,11 @@ body {
   color: var(--text-primary);
   background: var(--bg-app);
   min-height: 100vh;
-  overflow-x: hidden;
+  /* overflow-x is already handled on <html> above. Setting it here too forces
+     overflow-y to an implicit "auto" (per spec, pairing a non-visible axis
+     with visible), which turns <body> into its own scroll container and
+     breaks position: sticky for every descendant relative to the real page
+     scroll. Do not re-add overflow here. */
 }
 
 #root {

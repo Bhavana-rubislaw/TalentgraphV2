@@ -52,6 +52,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
   const [recommendationQuickFilter] = useState<'all' | 'top_picks' | 'recently_active' | 'open_to_offers'>('all');
   const [recommendationWorkTypeFilter, setRecommendationWorkTypeFilter] = useState<string>('all');
   const [viewRecommendationProfile, setViewRecommendationProfile] = useState<any | null>(null);
+  const [interviewCardIndex, setInterviewCardIndex] = useState(0);
 
   // Recommendations visible after role + quick + work-type filters — the single
   // source of truth for both the rendered list and card-navigation bounds.
@@ -164,8 +165,8 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
     <>
       {/* Header */}
       <div style={{ marginBottom: '16px', padding: '16px 20px 0 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <div>
+        <div className="ai-recs-header-row">
+          <div className="ai-recs-header-title">
             <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               AI Candidate Recommendations
               {newToday > 0 && (
@@ -186,51 +187,44 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             </p>
           </div>
 
+          <div className="ai-recs-header-filters">
+            {/* Job Selector */}
+            <select
+              className="job-select-modern"
+              style={{ padding: '7px 12px', fontSize: '13px' }}
+              value={selectedJobId || ''}
+              onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
+            >
+              <option value="" disabled>Choose a position...</option>
+              {jobPostings.map(job => (
+                <option key={job.id} value={job.id}>
+                  {job.job_title} • {job.location || 'Remote'}
+                  {(job.status || '').toLowerCase() === 'reposted' ? ' [REOPENED]' : ''}
+                </option>
+              ))}
+            </select>
+
+            {/* Work Type Filter */}
+            <select
+              value={recommendationWorkTypeFilter}
+              onChange={(e) => setRecommendationWorkTypeFilter(e.target.value)}
+              style={{
+                padding: '7px 12px',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                fontSize: '13px',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#374151',
+              }}
+            >
+              <option value="all">All Work Types</option>
+              <option value="Remote">Remote</option>
+              <option value="Onsite">Onsite</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
+          </div>
         </div>
-
-        {/* Job Selector */}
-        <div style={{ marginBottom: '8px' }}>
-          <select
-            className="job-select-modern"
-            style={{ width: '100%', padding: '7px 12px', fontSize: '13px' }}
-            value={selectedJobId || ''}
-            onChange={(e) => setSelectedJobId(parseInt(e.target.value))}
-          >
-            <option value="" disabled>Choose a position...</option>
-            {jobPostings.map(job => (
-              <option key={job.id} value={job.id}>
-                {job.job_title} • {job.location || 'Remote'}
-                {(job.status || '').toLowerCase() === 'reposted' ? ' [REOPENED]' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Work Type Filter */}
-        <div style={{ display: 'inline-flex', flexDirection: 'row', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-          <span style={{ fontSize: '10px', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.6px', whiteSpace: 'nowrap' }}>Work Type</span>
-          <select
-            value={recommendationWorkTypeFilter}
-            onChange={(e) => setRecommendationWorkTypeFilter(e.target.value)}
-            style={{
-              padding: '4px 8px',
-              border: '1px solid #E5E7EB',
-              borderRadius: '6px',
-              fontSize: '12px',
-              background: 'white',
-              cursor: 'pointer',
-              color: '#374151',
-              minWidth: '120px'
-            }}
-          >
-            <option value="all">All Work Types</option>
-            <option value="Remote">Remote</option>
-            <option value="Onsite">Onsite</option>
-            <option value="Hybrid">Hybrid</option>
-          </select>
-        </div>
-
-
       </div>
 
       {/* Main Content: Swipe Card + Sidebar */}
@@ -305,16 +299,6 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     onTouchMove={onTouchMove}
                     onTouchEnd={onTouchEnd}
                   >
-                    {/* Match Badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                      <div className="ai-match-badge">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        {matchPercentage}% Match
-                      </div>
-                    </div>
-
                     {/* Candidate Header */}
                     <div className="ai-job-card-header">
                       <div className="ai-company-logo" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
@@ -328,6 +312,14 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                           </svg>
                           {jobProfile.job_role || 'Professional'}
                         </div>
+                      </div>
+                      {/* Match Badge */}
+                      <div
+                        className="ai-match-ring"
+                        style={{ '--pct': matchPercentage } as React.CSSProperties}
+                        title={`${matchPercentage}% Match`}
+                      >
+                        <span className="ai-match-ring-value">{matchPercentage}%</span>
                       </div>
                     </div>
 
@@ -359,56 +351,42 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                       </div>
                     )}
 
-                    {/* AI Match Reason */}
-                    <div style={{ marginTop: '12px', marginBottom: '12px' }}>
-                      <AIMatchReasonBox
-                        variant="recruiter"
-                        reason={generateRecruiterMatchReason(
-                          displayDetails,
-                          {
-                            productVendor: rec.job_profile?.product_vendor,
-                            topSkill: displayDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
-                            jobTitle: rec.job_posting?.job_title || recommendations?.job_title,
-                            yearsExp: rec.job_profile?.years_of_experience,
-                            candidateName: candidate.name,
-                          }
+                    {/* Match Breakdown + Top Matched Skills (left) / AI Match Reason (right) */}
+                    <div className="ai-match-breakdown-reason-grid">
+                      <div className="ai-match-breakdown-col">
+                        <div className="ai-match-breakdown-heading">Match Breakdown</div>
+                        <MatchBreakdownBars details={displayDetails} compact />
+                        {((displayDetails.matched_skills?.length ?? 0) > 0 || matchedSkills.length > 0) && (
+                          <div style={{ marginTop: '16px' }}>
+                            <TopSkillMatches
+                              matchedSkills={
+                                (displayDetails.matched_skills?.length ?? 0) > 0
+                                  ? displayDetails.matched_skills
+                                  : matchedSkills.map((s: any) => s.name || s.skill_name || s)
+                              }
+                              maxSkills={6}
+                            />
+                          </div>
                         )}
-                      />
-                    </div>
-
-                    {/* Match Breakdown */}
-                    <div style={{ marginTop: '4px', marginBottom: '16px' }}>
-                      <MatchBreakdownBars details={displayDetails} compact />
-                    </div>
-
-                    {/* Top Matched Skills */}
-                    {(displayDetails.matched_skills?.length > 0 || matchedSkills.length > 0) && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <TopSkillMatches
-                          matchedSkills={
-                            displayDetails.matched_skills?.length > 0
-                              ? displayDetails.matched_skills
-                              : matchedSkills.map((s: any) => s.name || s.skill_name || s)
-                          }
-                          maxSkills={6}
+                      </div>
+                      <div className="ai-match-reason-col">
+                        {/* Reason text is generated by generateRecruiterMatchReason() from the
+                            real match_details/job_profile data below — not static copy. */}
+                        <AIMatchReasonBox
+                          variant="recruiter"
+                          reason={generateRecruiterMatchReason(
+                            displayDetails,
+                            {
+                              productVendor: rec.job_profile?.product_vendor,
+                              topSkill: displayDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name,
+                              jobTitle: rec.job_posting?.job_title || recommendations?.job_title,
+                              yearsExp: rec.job_profile?.years_of_experience,
+                              candidateName: candidate.name,
+                            }
+                          )}
                         />
                       </div>
-                    )}
-
-                    {/* Why this match? */}
-                    {(() => {
-                      const drivers: string[] = [];
-                      const matchedSkill = displayDetails.matched_skills?.[0] || (rec.job_profile?.skills as any[])?.[0]?.skill_name;
-                      if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
-                      const yoe = rec.job_profile?.years_of_experience;
-                      if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
-                      const loc = (candidate as any).location_state;
-                      if (loc) drivers.push(`Located in ${loc}`);
-                      const vendor = rec.job_profile?.product_vendor;
-                      if (vendor && (displayDetails.product_match ?? 0) > 0 && drivers.length < 3) drivers.push(`Product: ${vendor}`);
-                      if ((displayDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
-                      return <WhyThisMatch drivers={drivers} />;
-                    })()}
+                    </div>
 
                     {/* Candidate Details Grid */}
                     <div className="ai-job-details">
@@ -506,57 +484,6 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         </div>
                       </div>
                     )}
-
-                    {/* Candidate's Job Preferences */}
-                    <div style={{
-                      background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
-                      padding: '16px',
-                      borderRadius: '12px',
-                      marginTop: '24px',
-                      border: '1px solid #FCD34D'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '12px'
-                      }}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" width="20" height="20">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                          <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#92400E' }}>
-                          Candidate's Job Preferences
-                        </h4>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
-                          {jobProfile.preferred_job_titles && (
-                            <div style={{ color: '#78350F', gridColumn: '1 / -1' }}>
-                              <span style={{ fontWeight: 500 }}>🎯 Preferred Roles:</span> {jobProfile.preferred_job_titles}
-                            </div>
-                          )}
-                          <div style={{ color: '#78350F' }}>
-                            <span style={{ fontWeight: 500 }}>💼 Work Type:</span> {jobProfile.worktype || 'Any'}
-                          </div>
-                          <div style={{ color: '#78350F' }}>
-                            <span style={{ fontWeight: 500 }}>📍 Location:</span> {jobProfile.desired_job_locations || 'Flexible'}
-                          </div>
-                          {jobProfile.relocation_willingness && (
-                            <div style={{ color: '#78350F' }}>
-                              <span style={{ fontWeight: 500 }}>🚚 Relocation:</span> {jobProfile.relocation_willingness}
-                            </div>
-                          )}
-                          {jobProfile.notice_period && (
-                            <div style={{ color: '#78350F' }}>
-                              <span style={{ fontWeight: 500 }}>📅 Notice Period:</span> {jobProfile.notice_period}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-
 
                     {/* Action Buttons */}
                     <div className="ai-action-buttons" style={{ marginTop: '20px' }}>
@@ -720,20 +647,18 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
           {(() => {
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const weekStart = new Date(todayStart);
-            weekStart.setDate(todayStart.getDate() - todayStart.getDay());
             const upcomingList = allMeetings
               .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
-              .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime())
-              .slice(0, 5);
+              .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
             const pastList = allMeetings
               .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
               .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
               .slice(0, 3);
-            const pastThisWeek = allMeetings.filter((m: any) => {
-              const d = m.scheduled_start ? new Date(m.scheduled_start) : null;
-              return d && d >= weekStart && d < todayStart;
-            }).length;
+            const interviewCards = [
+              ...upcomingList.map((m: any) => ({ meeting: m, dimmed: false })),
+              ...pastList.map((m: any) => ({ meeting: m, dimmed: true })),
+            ];
+            const cardIndex = interviewCards.length ? Math.min(interviewCardIndex, interviewCards.length - 1) : 0;
             const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
             const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
@@ -758,10 +683,12 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             const getInitials = (name: string) =>
               name ? name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
             const renderCard = (m: any, dimmed: boolean) => (
-              <div key={m.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '3px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', lineHeight: '1.35', flex: 1 }}>{m.title || 'Interview'}</span>
-                  <span style={{ color: '#9CA3AF', fontSize: '18px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋮</span>
+                  {dimmed && (
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#9CA3AF', background: '#F3F4F6', padding: '2px 6px', borderRadius: '8px', textTransform: 'uppercase' as const, letterSpacing: '0.4px', flexShrink: 0 }}>Past</span>
+                  )}
                 </div>
                 {m.description && (
                   <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', lineHeight: '1.3' }}>{m.description}</div>
@@ -808,27 +735,40 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                   </div>
                   <button onClick={() => setActiveTab('meetings')} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>View All →</button>
                 </div>
-                {upcomingList.length === 0 && pastList.length === 0 && (
+
+                {interviewCards.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
                 )}
-                {upcomingList.map((m: any) => renderCard(m, false))}
-                {pastList.length > 0 && (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 10px 0' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Recent Past</span>
-                      {pastThisWeek > 0 && (
-                        <span style={{ fontSize: '10px', fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: '10px' }}>{pastThisWeek} this week</span>
-                      )}
-                    </div>
-                    {pastList.map((m: any) => renderCard(m, true))}
-                  </>
+
+                {interviewCards.length > 0 && renderCard(interviewCards[cardIndex].meeting, interviewCards[cardIndex].dimmed)}
+
+                {interviewCards.length > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>
+                    <button
+                      onClick={() => setInterviewCardIndex(Math.max(cardIndex - 1, 0))}
+                      disabled={cardIndex === 0}
+                      style={{ width: '26px', height: '26px', borderRadius: '999px', border: '1px solid #E5E7EB', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: cardIndex === 0 ? 'default' : 'pointer', opacity: cardIndex === 0 ? 0.4 : 1 }}
+                      aria-label="Previous interview"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <span style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: 600 }}>{cardIndex + 1} of {interviewCards.length}</span>
+                    <button
+                      onClick={() => setInterviewCardIndex(Math.min(cardIndex + 1, interviewCards.length - 1))}
+                      disabled={cardIndex === interviewCards.length - 1}
+                      style={{ width: '26px', height: '26px', borderRadius: '999px', border: '1px solid #E5E7EB', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: cardIndex === interviewCards.length - 1 ? 'default' : 'pointer', opacity: cardIndex === interviewCards.length - 1 ? 0.4 : 1 }}
+                      aria-label="Next interview"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                  </div>
                 )}
               </div>
             );
           })()}
 
           {/* Recruiter Tip */}
-          <div style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: '12px', padding: '16px', border: '1px solid #FCD34D' }}>
+          <div className="ai-pro-tip-card" style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: '12px', padding: '16px', border: '1px solid #FCD34D' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
               <div style={{ fontSize: '20px' }}>💡</div>
               <div>
@@ -1000,11 +940,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 </div>
 
                 {/* Top Matched Skills */}
-                {(drawerDetails.matched_skills?.length > 0 || rec.job_profile?.skills?.length > 0) && (
+                {((drawerDetails.matched_skills?.length ?? 0) > 0 || (rec.job_profile?.skills?.length ?? 0) > 0) && (
                   <div style={{ marginBottom: '14px' }}>
                     <TopSkillMatches
                       matchedSkills={
-                        drawerDetails.matched_skills?.length > 0
+                        (drawerDetails.matched_skills?.length ?? 0) > 0
                           ? drawerDetails.matched_skills
                           : (rec.job_profile?.skills || []).map((s: any) => s.skill_name || s)
                       }
@@ -1016,7 +956,8 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 {/* Why this match? */}
                 {(() => {
                   const drivers: string[] = [];
-                  const matchedSkill = drawerDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name;
+                  const rawMatchedSkill = drawerDetails.matched_skills?.[0] || rec.job_profile?.skills?.[0]?.skill_name;
+                  const matchedSkill = typeof rawMatchedSkill === 'string' ? rawMatchedSkill : rawMatchedSkill?.skill ?? rawMatchedSkill?.skill_name ?? rawMatchedSkill?.name;
                   if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
                   const yoe = rec.job_profile?.years_of_experience;
                   if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);

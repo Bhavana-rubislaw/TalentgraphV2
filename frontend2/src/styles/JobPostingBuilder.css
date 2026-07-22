@@ -2,6 +2,175 @@
    JOB POSTING BUILDER — Enterprise SaaS Styling
    ============================================ */
 
+/* Override the shared .cp-page fixed-height + internal-scroll shell
+   (height:100vh + overflow:hidden, with .cp-page-body as the only scrolling
+   region) for the job postings list specifically. That pattern squeezes the
+   card grid down to almost nothing once the header grows tall (breadcrumb +
+   title + 3 stat cards + permissions banner + filters), especially on
+   narrow screens. Use natural page scroll instead — simpler and avoids
+   nested scrolling. Scoped to .jpb-list-page only so candidate pages that
+   still use plain .cp-page are unaffected. */
+.jpb-list-page {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+
+.jpb-list-page .cp-page-body {
+  flex: none;
+  overflow: visible;
+  padding-bottom: 24px;
+}
+
+/* Page subtitle under the "Job Postings" h1 */
+.jpb-page-subtitle {
+  font-size: 14px;
+  color: var(--cp-text-secondary, #64748b);
+  margin: 4px 0 0;
+}
+
+/* Summary stat cards (Active Jobs / Total Applicants / AI Matches).
+   Reuses .kpi-card(-green|-blue|-purple) from AIRecommendations.css so the
+   styling matches the rest of the app. */
+.jpb-summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .jpb-summary-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Filter bar: search + status chips + live result count, all in one row */
+.jpb-filter-bar-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.jpb-filter-bar-inline .cp-search-box {
+  flex: 1 1 220px;
+}
+
+.jpb-filter-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cp-text-secondary, #64748b);
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .jpb-filter-bar-inline {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* .cp-search-box's flex:1 1 220px means grow-along-the-main-axis; once the
+     container switches to flex-direction:column that axis is vertical, so
+     it was stretching the search box's height and pushing the absolutely
+     positioned search icon down to the middle of the inflated box. Reset to
+     a fixed-height row now that width is unconstrained (full column width). */
+  .jpb-filter-bar-inline .cp-search-box {
+    flex: none;
+  }
+  .jpb-filter-count {
+    margin-left: 0;
+  }
+}
+
+/* Recruiter Permissions — narrow right-hand sidebar column (uses the
+   existing .cp-sidebar-col / .cp-page-layout / .cp-main-col grid pattern
+   already defined in CandidatePages.css: 1fr 340px, sticky sidebar,
+   collapses to a single column at <=1024px). */
+.jpb-permissions-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #10b981;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.jpb-permissions-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.jpb-permissions-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jpb-permissions-section {
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.jpb-permissions-section + .jpb-permissions-section {
+  margin-top: 12px;
+}
+
+.jpb-permissions-full {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.jpb-permissions-hr {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 1024px) {
+  .jpb-permissions-col {
+    max-width: 480px;
+  }
+}
+
+/* Per-job stats row (Applicants / AI Matches / Match Rate / Avg Match Score) */
+.cp-posting-card-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+  padding: 10px 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cp-posting-card-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cp-posting-card-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.cp-posting-card-stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 :root {
   --jpb-primary: #2563eb;
   --jpb-primary-hover: #2563eb;

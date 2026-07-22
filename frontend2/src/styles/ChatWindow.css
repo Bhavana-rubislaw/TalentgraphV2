@@ -376,7 +376,7 @@
 }
 
 .message-bubble-v2.mine {
-  background: #111827;
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
   color: white;
   border-bottom-right-radius: 4px;
 }

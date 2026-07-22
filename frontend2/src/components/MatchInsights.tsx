@@ -269,20 +269,16 @@ export const TopSkillMatches: React.FC<TopSkillMatchesProps> = ({
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
         {displayed.map((skill, idx) => (
           <span key={idx} style={{
-            fontSize: '11px',
+            fontSize: '12px',
             padding: '4px 10px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #10B98120, #05966920)',
-            border: '1px solid #10B981',
-            color: '#047857',
-            fontWeight: 600,
+            borderRadius: '6px',
+            background: '#F8FAFC',
+            border: '1px solid #E2E8F0',
+            color: '#475569',
+            fontWeight: 500,
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
           }}>
-            <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
-              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
             {skill}
           </span>
         ))}

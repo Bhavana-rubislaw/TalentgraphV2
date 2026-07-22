@@ -1,4 +1,45 @@
 /* ========================================
+   Recommendations header: title (left) + job/work-type filters (right),
+   in one row like the reference mockup. Wraps on narrow screens.
+   ======================================== */
+.ai-recs-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ai-recs-header-title {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.ai-recs-header-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
+}
+
+.ai-recs-header-filters .job-select-modern {
+  min-width: 200px;
+  max-width: 280px;
+}
+
+@media (max-width: 640px) {
+  .ai-recs-header-filters {
+    width: 100%;
+  }
+  .ai-recs-header-filters select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+/* ========================================
    KPI Banner
    ======================================== */
 .kpi-banner-container {
@@ -38,6 +79,14 @@
   box-shadow: var(--entity-card-shadow-hover, 0 8px 20px rgba(15, 23, 42, 0.08));
   border-color: #d1d5db;
 }
+
+/* Colored left-border accent per KPI type (recruiter + candidate dashboards
+   both already apply these modifier classes; they had no matching rule
+   before, so the accent never rendered). */
+.kpi-card-green { border-left: 4px solid #10b981; }
+.kpi-card-blue { border-left: 4px solid #3b82f6; }
+.kpi-card-purple { border-left: 4px solid #8b5cf6; }
+.kpi-card-orange { border-left: 4px solid #f59e0b; }
 
 .kpi-card-top {
   display: flex;
@@ -571,6 +620,7 @@
 /* Company Header */
 .ai-job-card-header {
   display: flex;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -633,6 +683,80 @@
 .ai-match-badge svg {
   width: 14px;
   height: 14px;
+}
+
+/* Circular match-percentage ring (recruiter recommendations card only —
+   a separate class from .ai-match-badge so the candidate-side recommendations
+   tab, which also uses .ai-match-badge, is left untouched). */
+.ai-match-ring {
+  /* A flex item within .ai-job-card-header (pushed to the far right via
+     margin-left: auto) rather than absolutely positioned, so the header
+     row's flex layout reserves space for it and it can never overlap the
+     candidate name/role text next to it, at any card width. */
+  position: relative;
+  margin-left: auto;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: conic-gradient(#2563eb calc(var(--pct, 0) * 1%), #e5e7eb 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+  flex-shrink: 0;
+}
+
+.ai-match-ring::before {
+  content: '';
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.ai-match-ring-value {
+  position: relative;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.2px;
+}
+
+/* Recommendations card: match breakdown bars (left) next to the AI match
+   reason + why-this-match callouts (right). Stacks to one column on narrow
+   cards so long reason text never gets cramped. */
+.ai-match-breakdown-reason-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin: 16px 0;
+  min-width: 0;
+}
+
+.ai-match-breakdown-col {
+  min-width: 0;
+}
+
+.ai-match-reason-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-match-breakdown-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 640px) {
+  .ai-match-breakdown-reason-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Job Title */
@@ -1136,37 +1260,30 @@
   }
 }
 
-/* ====== RECRUITER RECOMMENDATIONS FIT-TO-SCREEN BOARD ====== */
-.recruiter-dashboard .content-panel-horizontal > div[style*="display: block"] {
-  height: 100%;
-  min-height: 0;
-}
-
+/* ====== RECRUITER RECOMMENDATIONS BOARD ======
+   Normal document flow — the page scrolls, nothing is clamped to the
+   viewport height, and the right sidebar only reduces width / goes sticky
+   at fixed breakpoints (never via vw or browser zoom). */
 .recruiter-dashboard .ai-recommendations-container {
-  height: calc(100% - 86px);
   max-width: none;
   margin: 0;
   padding: 12px 16px 10px;
-  gap: 16px;
-  min-height: 0;
+  gap: 20px;
+  align-items: flex-start;
 }
 
 .recruiter-dashboard .ai-recs-main {
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  min-width: 0;
 }
 
 .recruiter-dashboard .ai-job-card {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   border-radius: 18px;
   border: 1px solid rgba(226, 232, 240, 0.96);
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.86);
   backdrop-filter: blur(14px);
-  scrollbar-width: thin;
 }
 
 .recruiter-dashboard .ai-job-card:hover {
@@ -1197,28 +1314,40 @@
   box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255,255,255,0.28);
 }
 
-.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] {
-  width: min(320px, 24vw) !important;
-  height: 100%;
+/* Right sidebar (rendered inline with style={{ width: '320px', flexShrink: 0 }}) —
+   sticky only on large/laptop screens, disabled once the layout stacks. */
+.recruiter-dashboard .ai-recommendations-container > div[style*="width: 320px"] {
+  position: sticky;
+  top: 140px; /* sticky topnav (64px) + sticky tabs bar (~76px) */
+  max-height: calc(100vh - 156px);
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-width: thin;
 }
 
-.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] > div {
+.recruiter-dashboard .ai-recommendations-container > div[style*="width: 320px"] > div {
   background: rgba(255, 255, 255, 0.84) !important;
   border: 1px solid rgba(226, 232, 240, 0.94) !important;
   box-shadow: 0 16px 38px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255,255,255,0.82);
   backdrop-filter: blur(14px);
 }
 
-.recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] > div:nth-child(2) {
-  max-height: 260px;
-  overflow-y: auto;
+/* ---- Standard laptop: reduce sidebar width with a fixed value, not vw/zoom-based ---- */
+@media (max-width: 1400px) {
+  .recruiter-dashboard .ai-recommendations-container > div[style*="width: 320px"] {
+    width: 280px !important;
+  }
 }
 
+/* ---- Tablet / zoom > ~125%: stack sidebar below main content, sticky disabled ---- */
 @media (max-width: 1100px) {
-  .recruiter-dashboard .ai-recommendations-container { height: auto; flex-direction: column; }
-  .recruiter-dashboard .ai-recommendations-container > div[style*="width: '320px'"] { width: 100% !important; height: auto; }
-  .recruiter-dashboard .ai-job-card { max-height: none; }
+  .recruiter-dashboard .ai-recommendations-container {
+    flex-direction: column;
+  }
+  .recruiter-dashboard .ai-recommendations-container > div[style*="width: 320px"] {
+    width: 100% !important;
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
