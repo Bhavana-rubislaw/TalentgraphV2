@@ -205,7 +205,7 @@ const JobPostingListView: React.FC<JobPostingListViewProps> = ({
                                 <span className="cp-posting-card-stat-label">Applicants</span>
                               </div>
                               <div className="cp-posting-card-stat">
-                                <span className="cp-posting-card-stat-value">{stats.aiMatches}</span>
+                                <span className="cp-posting-card-stat-value accent-blue">{stats.aiMatches}</span>
                                 <span className="cp-posting-card-stat-label">AI Matches</span>
                               </div>
                               <div className="cp-posting-card-stat">
