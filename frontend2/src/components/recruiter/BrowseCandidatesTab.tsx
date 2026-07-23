@@ -86,12 +86,6 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
   return (
     <>
       <div className="purple-section-wrapper">
-      {/* Page Header Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Browse Candidates</h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Review and engage with candidate profiles across the platform</p>
-      </div>
-
       {/* Enhanced Filter Toolbar */}
       <div style={{
         background: 'white',
@@ -223,271 +217,113 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
         </div>
       )}
 
-      {/* Enhanced Candidates Grid */}
+      {/* Candidates Grid */}
       {filteredCandidates.length > 0 && (
-        <div className="candidates-grid-modern" style={{ gap: '20px' }}>
+        <div className="cgc-grid">
           {filteredCandidates.map((candidate: any, index) => (
-            <div
-              key={`browse-${candidate.candidate_id}-${index}`}
-              className="candidate-card-modern"
-              style={{
-                border: '1px solid var(--border-color, #e2e8f0)',
-                borderRadius: '12px',
-                padding: '20px',
-                background: 'white',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-                position: 'relative'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              {/* Card Header with Avatar and Basic Info */}
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
-                }}>
+            <div key={`browse-${candidate.candidate_id}-${index}`} className="cgc-card">
+              {/* Like toggle (star) — top right */}
+              <button
+                className={`cgc-top-badge ${candidate.already_liked ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!candidate.already_liked && candidate.job_profiles && candidate.job_profiles.length > 0) {
+                    handleRecruiterLike(candidate.candidate_id, candidate.job_profiles[0].id);
+                  }
+                }}
+                disabled={candidate.already_liked}
+                title={candidate.already_liked ? 'Already liked this candidate' : 'Like this candidate'}
+              >
+                <svg viewBox="0 0 24 24" fill={candidate.already_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </button>
+
+              <div className="cgc-header">
+                <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                   {candidate.full_name.charAt(0).toUpperCase()}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary, #1e293b)', marginBottom: '4px', lineHeight: 1.3 }}>
-                    {candidate.full_name}
-                  </h3>
-                  {candidate.headline && (
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary, #3b82f6)', marginBottom: '6px', lineHeight: 1.4 }}>
-                      {candidate.headline}
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '13px', color: 'var(--text-muted, #94a3b8)' }}>
-                    {candidate.location && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                          <circle cx="12" cy="10" r="3"/>
-                        </svg>
-                        {candidate.location}
-                      </span>
-                    )}
-                    {candidate.years_experience && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <svg style={{ width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                        </svg>
-                        {candidate.years_experience} years
-                      </span>
-                    )}
-                  </div>
+                <div className="cgc-name-block">
+                  <div className="cgc-name">{candidate.full_name}</div>
+                  <div className="cgc-title">{candidate.headline || 'Professional'}</div>
                 </div>
               </div>
 
-              {/* Work Type Badge */}
-              {candidate.work_type && (
-                <div style={{ marginBottom: '12px' }}>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    background: candidate.work_type === 'Remote' ? '#dbeafe' : candidate.work_type === 'Hybrid' ? '#fef3c7' : '#e0e7ff',
-                    color: candidate.work_type === 'Remote' ? '#1e40af' : candidate.work_type === 'Hybrid' ? '#92400e' : '#3730a3'
-                  }}>
-                    {candidate.work_type}
-                  </span>
+              <div className="cgc-meta-row">
+                <div className="cgc-meta-left">
+                  {candidate.location && (
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {candidate.location}
+                    </span>
+                  )}
+                  {candidate.years_experience ? (
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                      {candidate.years_experience} yrs
+                    </span>
+                  ) : null}
                 </div>
-              )}
+                {candidate.availability && <span className="cgc-status-pill">{candidate.availability}</span>}
+              </div>
 
-              {/* Skills Section */}
               {candidate.skills && candidate.skills.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '8px' }}>Top Skills</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                    {candidate.skills.slice(0, 6).map((skill: any, idx: number) => (
-                      <span
-                        key={idx}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          background: 'var(--bg-light, #f8fafc)',
-                          color: 'var(--text-secondary, #64748b)',
-                          border: '1px solid var(--border-color, #e2e8f0)'
-                        }}
-                      >
-                        {skill.skill_name}
-                      </span>
-                    ))}
-                    {candidate.skills.length > 6 && (
-                      <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        color: 'var(--primary, #3b82f6)'
-                      }}>
-                        +{candidate.skills.length - 6} more
-                      </span>
-                    )}
-                  </div>
+                <div className="cgc-skills">
+                  {candidate.skills.slice(0, 4).map((skill: any, idx: number) => (
+                    <span key={idx} className="cgc-skill-tag">{skill.skill_name}</span>
+                  ))}
+                  {candidate.skills.length > 4 && (
+                    <span className="cgc-skill-tag">+{candidate.skills.length - 4} more</span>
+                  )}
                 </div>
               )}
 
-              {/* Job Profiles Section */}
-              {candidate.job_profiles && candidate.job_profiles.length > 0 && (
-                <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color, #e2e8f0)' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-muted, #94a3b8)', marginBottom: '6px' }}>Roles</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary, #64748b)', lineHeight: 1.6 }}>
-                    {candidate.job_profiles.slice(0, 2).map((jp: any, idx: number) => (
-                      <span key={idx}>
-                        {jp.profile_name || jp.job_role}
-                        {idx < Math.min(candidate.job_profiles.length - 1, 1) && ', '}
-                      </span>
-                    ))}
-                    {candidate.job_profiles.length > 2 && (
-                      <span style={{ color: 'var(--text-muted, #94a3b8)' }}> +{candidate.job_profiles.length - 2} more</span>
-                    )}
-                  </div>
+              {/* No job-specific match score exists for browse candidates
+                  (this is a cross-platform search, not tied to one job posting) —
+                  omitted rather than fabricated. */}
+              <div className="cgc-footer">
+                <div className="cgc-footer-actions">
+                  <button
+                    className="cgc-icon-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (candidate.user_id) {
+                        handleStartDirectMessage(candidate.user_id);
+                      } else {
+                        alert('Cannot message this candidate');
+                      }
+                    }}
+                    title="Send a message to this candidate"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </button>
+                  <button
+                    className="cgc-icon-btn"
+                    onClick={(e) => { e.stopPropagation(); setViewCandidateProfile(candidate); }}
+                    title="View full profile"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                      <polyline points="15 3 21 3 21 9"/>
+                      <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                  </button>
+                  <button
+                    className="cgc-apply-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!candidate.already_invited && candidate.job_profiles && candidate.job_profiles.length > 0) {
+                        handleAskToApply(candidate.candidate_id, candidate.job_profiles[0].id);
+                      }
+                    }}
+                    disabled={candidate.already_invited}
+                    title={candidate.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
+                  >
+                    {candidate.already_invited ? '✓ Invited' : 'Ask to Apply'}
+                  </button>
                 </div>
-              )}
-
-              {/* Enhanced CTA Buttons */}
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  className="btn-primary"
-                  style={{
-                    flex: 1,
-                    minWidth: '140px',
-                    height: '40px',
-                    padding: '0 20px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setViewCandidateProfile(candidate);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.2)';
-                  }}
-                >
-                  View Profile
-                </button>
-                <button
-                  className={`action-btn ${candidate.already_liked ? 'liked' : 'secondary'}`}
-                  style={{
-                    padding: '0 16px',
-                    height: '40px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease',
-                    opacity: candidate.already_liked ? 0.6 : 1,
-                    cursor: candidate.already_liked ? 'not-allowed' : 'pointer'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!candidate.already_liked && candidate.job_profiles && candidate.job_profiles.length > 0) {
-                      handleRecruiterLike(candidate.candidate_id, candidate.job_profiles[0].id);
-                    }
-                  }}
-                  disabled={candidate.already_liked}
-                  title={candidate.already_liked ? 'Already liked this candidate' : 'Like this candidate'}
-                >
-                  <svg viewBox="0 0 24 24" fill={candidate.already_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                  </svg>
-                  {candidate.already_liked ? 'Liked' : 'Like'}
-                </button>
-                <button
-                  className="action-btn secondary"
-                  style={{
-                    padding: '0 16px',
-                    height: '40px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (candidate.user_id) {
-                      handleStartDirectMessage(candidate.user_id);
-                    } else {
-                      alert('Cannot message this candidate');
-                    }
-                  }}
-                  title="Send a message to this candidate"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                  </svg>
-                  Message
-                </button>
-                <button
-                  className={`action-btn ${candidate.already_invited ? 'success' : 'primary'}`}
-                  style={{
-                    padding: '0 16px',
-                    height: '40px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    borderRadius: '8px',
-                    transition: 'all 0.2s ease',
-                    opacity: candidate.already_invited ? 0.6 : 1,
-                    cursor: candidate.already_invited ? 'not-allowed' : 'pointer',
-                    background: candidate.already_invited ? '#10b981' : 'var(--primary, #3b82f6)',
-                    color: 'white',
-                    border: 'none'
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!candidate.already_invited && candidate.job_profiles && candidate.job_profiles.length > 0) {
-                      handleAskToApply(candidate.candidate_id, candidate.job_profiles[0].id);
-                    }
-                  }}
-                  disabled={candidate.already_invited}
-                  title={candidate.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
-                >
-                  {candidate.already_invited ? '✓ Asked to Apply' : 'Ask to Apply'}
-                </button>
               </div>
             </div>
           ))}

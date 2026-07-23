@@ -145,247 +145,97 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 1400px) {
-          .shortlist-grid { grid-template-columns: repeat(3, 1fr) !important; }
-        }
-        @media (max-width: 1200px) {
-          .shortlist-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-        @media (max-width: 768px) {
-          .shortlist-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-      <div className="shortlist-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', padding: '0' }}>
+      <div className="cgc-grid">
       {filteredShortlist.map((item: any, index) => {
         const candidateInitial = item.candidate.name?.charAt(0).toUpperCase() || 'C';
+        const skills: any[] = item.job_profile?.skills || [];
         return (
-          <div
-            key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`}
-            style={{
-              background: 'white',
-              border: '1px solid #E2E4EC',
-              borderRadius: '16px',
-              padding: '24px',
-              transition: 'all 0.2s',
-              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              position: 'relative'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = '#60a5fa';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#E2E4EC';
-            }}
-          >
-            {/* Shortlisted Badge - Top Right */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              padding: '6px 12px',
-              background: item.already_invited
-                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              borderRadius: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          <div key={`shortlist-${index}-${item.candidate.id}-${item.job_posting?.id ?? 'x'}`} className="cgc-card">
+            {/* Already-shortlisted indicator — top right (static, not a toggle;
+                turns green once the candidate has also been invited to apply) */}
+            <div
+              className={`cgc-top-badge checked ${item.already_invited ? 'active' : ''}`}
+              title={item.already_invited ? 'Invited to apply' : 'Shortlisted'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12"/>
               </svg>
-              <span>{item.already_invited ? 'Invited' : 'Shortlisted'}</span>
             </div>
 
-            {/* Header: Candidate Avatar */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#2563eb',
-                marginBottom: '8px'
-              }}>
+            <div className="cgc-header">
+              <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                 {candidateInitial}
               </div>
-              <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-                {item.candidate.name}
-              </div>
-              <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                Shortlisted {new Date(item.shortlisted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <div className="cgc-name-block">
+                <div className="cgc-name">{item.candidate.name}</div>
+                <div className="cgc-title">{item.job_posting?.job_title || item.job_profile?.profile_name || 'Open Role'}</div>
               </div>
             </div>
 
-            {/* Target Role / Job Title */}
-            <h3 style={{
-              fontSize: '20px',
-              fontWeight: '700',
-              color: '#111827',
-              marginBottom: '6px',
-              lineHeight: '1.3',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
-            }}>
-              {item.job_posting?.job_title || item.job_profile?.profile_name || 'Open Role'}
-            </h3>
-
-            {/* Job Role / Category */}
-            <p style={{
-              fontSize: '14px',
-              color: '#6b7280',
-              marginBottom: '20px',
-              fontWeight: '500'
-            }}>
-              {item.job_profile?.job_role || item.job_profile?.product_type || 'Professional'}
-            </p>
-
-            {/* Details Grid (2x2) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px',
-              marginBottom: '20px',
-              paddingBottom: '20px',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+            <div className="cgc-meta-row">
+              <div className="cgc-meta-left">
+                <span className="cgc-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   {item.candidate.location_state || 'Remote'}
                 </span>
+                {item.job_profile?.years_of_experience ? (
+                  <span className="cgc-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    {item.job_profile.years_of_experience} yrs
+                  </span>
+                ) : null}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {item.job_profile?.years_of_experience ? `${item.job_profile.years_of_experience} yrs exp` : 'N/A'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {item.job_posting?.seniority_level || item.job_profile?.seniority_level || 'Any level'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {item.match_percentage != null ? `${item.match_percentage}% match` : 'Shortlisted'}
-                </span>
-              </div>
+              <span className="cgc-status-pill">
+                {item.already_invited ? 'Invited' : 'Shortlisted'} · {new Date(item.shortlisted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </span>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
-              <button
-                onClick={() => setViewShortlistItem(item)}
-                style={{
-                  flex: 1,
-                  padding: '10px 20px',
-                  border: '1.5px solid #e5e7eb',
-                  background: 'white',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: '#374151',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                  e.currentTarget.style.background = '#f9fafb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#e5e7eb';
-                  e.currentTarget.style.background = 'white';
-                }}
-              >
-                Details
-              </button>
-              <button
-                onClick={() => {
-                  if (!item.already_invited) {
-                    handleAskToApply(item.candidate.id, item.job_profile?.id);
-                  }
-                }}
-                disabled={item.already_invited}
-                style={{
-                  flex: 1,
-                  padding: '10px 20px',
-                  border: 'none',
-                  background: item.already_invited
-                    ? '#10b981'
-                    : '#111827',
-                  borderRadius: '10px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  color: 'white',
-                  cursor: item.already_invited ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  if (!item.already_invited) {
-                    e.currentTarget.style.background = '#1f2937';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!item.already_invited) {
-                    e.currentTarget.style.background = '#111827';
-                  }
-                }}
-              >
-                {item.already_invited ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5"/>
-                    </svg>
-                    Invited
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                    Invite
-                  </>
-                )}
-              </button>
+            {skills.length > 0 && (
+              <div className="cgc-skills">
+                {skills.slice(0, 4).map((sk: any, idx: number) => (
+                  <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+                ))}
+                {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
+              </div>
+            )}
+
+            {/* No match_percentage exists on the shortlist API response — omitted
+                rather than fabricated (same gap as the Browse tab). */}
+            <div className="cgc-footer">
+              <div className="cgc-footer-actions">
+                <button
+                  className="cgc-icon-btn"
+                  onClick={() => handleStartMessage(item.candidate.user_id || item.candidate.id)}
+                  title="Send a message to this candidate"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                <button
+                  className="cgc-icon-btn"
+                  onClick={() => setViewShortlistItem(item)}
+                  title="View full profile"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/>
+                    <line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                </button>
+                <button
+                  className="cgc-apply-btn"
+                  onClick={() => {
+                    if (!item.already_invited) {
+                      handleAskToApply(item.candidate.id, item.job_profile?.id);
+                    }
+                  }}
+                  disabled={item.already_invited}
+                  title={item.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
+                >
+                  {item.already_invited ? '✓ Invited' : 'Ask to Apply'}
+                </button>
+              </div>
             </div>
           </div>
         );
