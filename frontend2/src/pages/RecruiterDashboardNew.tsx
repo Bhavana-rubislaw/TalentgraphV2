@@ -619,7 +619,14 @@ const RecruiterDashboard: React.FC = () => {
             </div>
 
             <div style={{ display: activeTab === 'messages' ? 'block' : 'none' }}>
-              <ChatWindow />
+              <ChatWindow
+                matches={matches}
+                applications={applications}
+                onScheduleInterview={(app) => {
+                  setSelectedAppForSchedule(app);
+                  setIsScheduleInterviewModalOpen(true);
+                }}
+              />
             </div>
 
             <div

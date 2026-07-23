@@ -69,7 +69,17 @@ function formatMessageTime(iso: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ChatWindow() {
+export interface ChatWindowProps {
+  /** Recruiter-only: real mutual-match data, used to enrich the thread header
+      (match %, role, location, "Matched for") when the other party in this
+      conversation happens to also be a match. Omitted entirely for
+      candidate/HR usage of this shared component. */
+  matches?: import('../../types/match').RecruiterMatch[];
+  applications?: import('../../types/application').Application[];
+  onScheduleInterview?: (application: any) => void;
+}
+
+export default function ChatWindow({ matches, applications, onScheduleInterview }: ChatWindowProps = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -96,6 +106,14 @@ export default function ChatWindow() {
   // ─── Get Selected Conversation (must be before useEffects that depend on it) ──
 
   const selectedConv = conversations.find(c => c.id === selectedConvId);
+
+  // Real match data for the other party in this thread, if any (recruiter only).
+  const selectedMatch = selectedConv && matches
+    ? matches.find(m => m.candidate.user_id === selectedConv.other_user_id)
+    : undefined;
+  const selectedMatchApplication = selectedMatch && applications
+    ? applications.find(a => a.candidate.id === selectedMatch.candidate.id && a.job_posting.id === selectedMatch.job_posting.id)
+    : undefined;
 
   // ─── Load Conversations ───────────────────────────────────────────────────────
 
@@ -418,8 +436,21 @@ export default function ChatWindow() {
                   {selectedConv.other_user_name.charAt(0).toUpperCase()}
                 </div>
                 <div className="chat-header-info-v2">
-                  <h3 className="chat-title">{selectedConv.other_user_name}</h3>
-                  {selectedConv.other_user_id && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 className="chat-title">{selectedConv.other_user_name}</h3>
+                    {selectedMatch && (
+                      <span className="chat-match-pill">{selectedMatch.match_percentage}% match</span>
+                    )}
+                  </div>
+                  {selectedMatch ? (
+                    <span className="chat-status" style={{ gap: '10px' }}>
+                      {(selectedMatch.job_profile?.job_role || selectedMatch.job_profile?.profile_name) && (
+                        <span>{selectedMatch.job_profile.job_role || selectedMatch.job_profile.profile_name}</span>
+                      )}
+                      {selectedMatch.job_posting?.location && <span>{selectedMatch.job_posting.location}</span>}
+                      {selectedMatch.job_posting?.job_title && <span>⚡ Matched for {selectedMatch.job_posting.job_title}</span>}
+                    </span>
+                  ) : selectedConv.other_user_id && (
                     <span className="chat-status">
                       <span className={`status-dot ${onlineStatus[selectedConv.other_user_id] ? 'online' : 'offline'}`}></span>
                       {onlineStatus[selectedConv.other_user_id] ? 'Online' : 'Offline'}
@@ -427,6 +458,17 @@ export default function ChatWindow() {
                   )}
                 </div>
               </div>
+              {onScheduleInterview && selectedMatchApplication && (
+                <button
+                  className="chat-header-icon-btn"
+                  title="Schedule an interview with this candidate"
+                  onClick={() => onScheduleInterview(selectedMatchApplication)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </button>
+              )}
             </div>
 
             {/* Messages */}
