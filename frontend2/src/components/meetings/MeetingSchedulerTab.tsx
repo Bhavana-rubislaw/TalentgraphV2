@@ -9,6 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api/client';
 import { Meeting, MeetingStatus } from '../../types/meeting';
 import { CreateMeetingModal, MeetingDetailsModal, AvailabilitySelectorModal } from './index';
+import '../../styles/MeetingScheduler.css';
 
 type FilterStatus = MeetingStatus | 'all';
 type DateRange = 'today' | 'thisWeek' | 'thisMonth' | 'all';
@@ -455,143 +456,102 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                     )}
                   </div>
 
-                  {/* Meeting cards */}
+                  {/* Meeting cards — two per row */}
+                  <div className="mtg-card-grid">
                   {dayMeetings.map(meeting => {
                     const st = STATUS_STYLES[meeting.status] || STATUS_STYLES.scheduled;
                     const pv = providerIcon(meeting.video_provider, meeting.video_meeting_url);
                     const parts = meeting.participants || [];
+                    // The candidate is whichever participant isn't the organizer (recruiter).
+                    const candidateParticipant = parts.find(p => p.user_id !== meeting.organizer_user_id) || parts[0];
+                    // meeting.title is often "Interview: {candidate} - {job title}" — split it
+                    // to get a real job title when present, rather than inventing one.
+                    const titleParts = meeting.title.split(' - ');
+                    const jobTitleFromTitle = titleParts.length > 1 ? titleParts.slice(1).join(' - ') : null;
+                    const meetingTypeLabel = meeting.meeting_type
+                      ? meeting.meeting_type.charAt(0).toUpperCase() + meeting.meeting_type.slice(1).replace('_', ' ')
+                      : 'Interview';
                     return (
                       <div
                         key={meeting.id}
-                        style={{
-                          margin: '0 16px 12px',
-                          padding: '16px',
-                          borderRadius: '12px',
-                          border: '1px solid #e2e8f0',
-                          background: '#fafbff',
-                          display: 'grid',
-                          gridTemplateColumns: '68px 1fr auto',
-                          gap: '12px',
-                          alignItems: 'start',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#60a5fa'; (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(37, 99, 235,0.1)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0'; (e.currentTarget as HTMLElement).style.boxShadow = 'none'; }}
+                        className="mtg-card"
+                        onClick={() => setSelectedMeeting(meeting)}
                       >
-                        {/* Time column */}
-                        <div style={{ textAlign: 'right', paddingTop: '2px' }}>
-                          <div style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>{fmtTime(meeting.scheduled_start)}</div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{meeting.duration_minutes} min</div>
-                        </div>
-
-                        {/* Content column */}
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                            <span style={{ fontWeight: 600, fontSize: '14px', color: '#1e293b' }}>{meeting.title}</span>
+                        <div className="mtg-card-header">
+                          <div className="mtg-avatar" style={{ background: avatarColor(meeting.id) }}>
+                            {initials(candidateParticipant?.participant_name)}
                           </div>
-
-                          {/* Avatars + platform */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
-                            {/* Participant avatars */}
-                            <div style={{ display: 'flex' }}>
-                              {parts.slice(0, 3).map((p, i) => (
-                                <div
-                                  key={i}
-                                  title={p.participant_name || `User ${p.user_id}`}
-                                  style={{
-                                    width: 26, height: 26, borderRadius: '50%',
-                                    background: avatarColor(i),
-                                    color: 'white', fontSize: '10px', fontWeight: 700,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '2px solid white',
-                                    marginLeft: i > 0 ? -8 : 0,
-                                    zIndex: 3 - i,
-                                    position: 'relative',
-                                  }}
-                                >
-                                  {initials(p.participant_name)}
-                                </div>
-                              ))}
-                            </div>
-
-                            {/* Platform chip */}
-                            {(meeting.video_meeting_url || meeting.video_provider) && (
-                              <span style={{
-                                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                                padding: '3px 10px', borderRadius: '6px',
-                                background: '#f1f5f9', fontSize: '12px', color: '#475569', fontWeight: 500,
-                              }}>
-                                {pv.icon} {pv.label}
-                              </span>
-                            )}
-
-                            {/* Copy link icon */}
-                            {meeting.video_meeting_url && (
-                              <button
-                                title="Copy meeting link"
-                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(meeting.video_meeting_url!); }}
-                                style={{
-                                  background: 'none', border: 'none', cursor: 'pointer',
-                                  color: '#94a3b8', display: 'flex', padding: '0',
-                                }}
-                              >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 14, height: 14 }}>
-                                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                                </svg>
-                              </button>
-                            )}
+                          <div className="mtg-name-block">
+                            <div className="mtg-name">{candidateParticipant?.participant_name || meeting.title}</div>
+                            {jobTitleFromTitle && <div className="mtg-title">{jobTitleFromTitle}</div>}
+                          </div>
+                          <div className="mtg-header-badges">
+                            {isToday(meeting.scheduled_start) && <span className="mtg-today-badge">Today</span>}
+                            <span className="mtg-status-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
                           </div>
                         </div>
 
-                        {/* Action column */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
-                          <span style={{
-                            padding: '4px 10px', borderRadius: '6px',
-                            background: st.bg, color: st.color,
-                            fontSize: '11px', fontWeight: 700,
-                            marginBottom: '4px', whiteSpace: 'nowrap',
-                          }}>
-                            {st.label}
-                          </span>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setSelectedMeeting(meeting); }}
-                            style={{
-                              padding: '6px 12px', borderRadius: '7px',
-                              border: '1px solid #e2e8f0', background: 'white',
-                              fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                              color: '#374151', whiteSpace: 'nowrap',
-                            }}
-                          >
-                            View Details
-                          </button>
-                          {meeting.video_meeting_url && meeting.status === 'scheduled' && (
+                        <div className="mtg-meta-row">
+                          <span>{fmtShortDate(meeting.scheduled_start)}</span>
+                          <span>·</span>
+                          <span>{fmtTime(meeting.scheduled_start)}</span>
+                          <span>·</span>
+                          <span>{meeting.duration_minutes} min</span>
+                          {(meeting.video_meeting_url || meeting.video_provider) && (
+                            <>
+                              <span>·</span>
+                              <span>{pv.icon} {pv.label}</span>
+                            </>
+                          )}
+                          {meeting.video_meeting_url && (
+                            <button
+                              title="Copy meeting link"
+                              onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(meeting.video_meeting_url!); }}
+                              className="mtg-copy-link-btn"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="mtg-stage-row">
+                          <span className="mtg-stage-pill">{meetingTypeLabel}</span>
+                          {jobTitleFromTitle && <> for <strong>{jobTitleFromTitle}</strong></>}
+                        </div>
+
+                        {meeting.description && (
+                          <div className="mtg-notes">{meeting.description}</div>
+                        )}
+
+                        <div className="mtg-card-footer">
+                          {meeting.video_meeting_url && meeting.status === 'scheduled' ? (
                             <a
                               href={meeting.video_meeting_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              style={{
-                                padding: '6px 12px', borderRadius: '7px',
-                                border: 'none',
-                                background: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
-                                fontSize: '12px', fontWeight: 700, cursor: 'pointer',
-                                color: 'white', textDecoration: 'none',
-                                display: 'flex', alignItems: 'center', gap: '4px',
-                                whiteSpace: 'nowrap',
-                                boxShadow: '0 2px 6px rgba(29, 78, 216,0.3)',
-                              }}
+                              className="mtg-join-btn"
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12 }}>
                                 <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>
                               </svg>
-                              Join Meeting
+                              Join
                             </a>
-                          )}
+                          ) : <span />}
+                          <button
+                            className="mtg-reschedule-link"
+                            onClick={(e) => { e.stopPropagation(); setSelectedMeeting(meeting); }}
+                          >
+                            Reschedule
+                          </button>
                         </div>
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               ))}
               {/* ── Scroll footer ── */}
