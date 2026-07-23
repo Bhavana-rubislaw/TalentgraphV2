@@ -73,15 +73,10 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
           : null;
         return (
           <div key={`match-${match.match_id}-${index}`} className="cgc-card">
-            <div
-              className="ai-match-ring"
-              style={{ '--pct': match.match_percentage } as React.CSSProperties}
-              title={`${match.match_percentage}% match`}
-            >
-              <span className="ai-match-ring-value">{match.match_percentage}%</span>
-            </div>
-
-            <div className="cgc-header">
+            {/* No absolutely-positioned top-right badge here (unlike Browse/Shortlist),
+                since the match ring sits in-flow inside the header row instead —
+                cancel out .cgc-header's reserved padding-right for that badge. */}
+            <div className="cgc-header" style={{ paddingRight: 0 }}>
               <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                 {candidateInitial}
               </div>
@@ -91,6 +86,13 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
                   {isNew && <span className="cgc-status-pill" style={{ background: '#dbeafe', color: '#1d4ed8' }}>New</span>}
                 </div>
                 <div className="cgc-title">{match.job_profile?.job_role || match.job_profile?.profile_name || 'Professional'}</div>
+              </div>
+              <div
+                className="ai-match-ring"
+                style={{ '--pct': match.match_percentage } as React.CSSProperties}
+                title={`${match.match_percentage}% match`}
+              >
+                <span className="ai-match-ring-value">{match.match_percentage}%</span>
               </div>
             </div>
 
