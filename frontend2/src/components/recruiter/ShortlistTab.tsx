@@ -23,6 +23,8 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
 }) => {
   const [shortlistRoleFilter, setShortlistRoleFilter] = useState<string>('all');
   const [viewShortlistItem, setViewShortlistItem] = useState<any | null>(null);
+  const [shortlistPage, setShortlistPage] = useState(1);
+  const SHORTLIST_PAGE_SIZE = 8;
 
   if (shortlist.length === 0) {
     return (
@@ -65,15 +67,25 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
         return role === shortlistRoleFilter;
       });
 
+  const totalShortlistPages = Math.max(1, Math.ceil(filteredShortlist.length / SHORTLIST_PAGE_SIZE));
+  const currentShortlistPage = Math.min(shortlistPage, totalShortlistPages);
+  const paginatedShortlist = filteredShortlist.slice(
+    (currentShortlistPage - 1) * SHORTLIST_PAGE_SIZE,
+    currentShortlistPage * SHORTLIST_PAGE_SIZE
+  );
+
+  const getShortlistPageNumbers = (): (number | string)[] => {
+    if (totalShortlistPages <= 7) return Array.from({ length: totalShortlistPages }, (_, i) => i + 1);
+    const pages: (number | string)[] = [];
+    if (currentShortlistPage <= 4) { pages.push(1, 2, 3, 4, 5, '...', totalShortlistPages); }
+    else if (currentShortlistPage >= totalShortlistPages - 3) { pages.push(1, '...', totalShortlistPages - 4, totalShortlistPages - 3, totalShortlistPages - 2, totalShortlistPages - 1, totalShortlistPages); }
+    else { pages.push(1, '...', currentShortlistPage - 1, currentShortlistPage, currentShortlistPage + 1, '...', totalShortlistPages); }
+    return pages;
+  };
+
   return (
     <>
       <div className="purple-section-wrapper">
-      {/* Page Header Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Shortlist</h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Review and manage your shortlisted candidates</p>
-      </div>
-
       {/* Enhanced Filter Toolbar */}
       <div style={{
         background: 'white',
@@ -91,7 +103,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               className="job-select-modern"
               style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px', paddingRight: '32px' }}
               value={shortlistRoleFilter}
-              onChange={(e) => setShortlistRoleFilter(e.target.value)}
+              onChange={(e) => { setShortlistRoleFilter(e.target.value); setShortlistPage(1); }}
             >
               <option value="all">All Roles</option>
               {shortlistRoleOptions.map(role => (
@@ -119,7 +131,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
             }}>
               Role: {shortlistRoleFilter}
               <button
-                onClick={() => setShortlistRoleFilter('all')}
+                onClick={() => { setShortlistRoleFilter('all'); setShortlistPage(1); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center', color: '#2563eb', lineHeight: 1 }}
                 title="Remove filter"
               >
@@ -127,7 +139,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               </button>
             </span>
             <button
-              onClick={() => setShortlistRoleFilter('all')}
+              onClick={() => { setShortlistRoleFilter('all'); setShortlistPage(1); }}
               style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: '20px', padding: '5px 12px', cursor: 'pointer', fontWeight: 500 }}
             >
               Clear All
@@ -146,7 +158,7 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
       </div>
 
       <div className="cgc-grid">
-      {filteredShortlist.map((item: any, index) => {
+      {paginatedShortlist.map((item: any, index) => {
         const candidateInitial = item.candidate.name?.charAt(0).toUpperCase() || 'C';
         const skills: any[] = item.job_profile?.skills || [];
         return (
@@ -241,6 +253,26 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
         );
       })}
     </div>
+
+    {/* Pagination */}
+    {filteredShortlist.length > 0 && (
+      <div className="cp-pagination-footer" style={{ marginTop: '28px', borderRadius: 12 }}>
+        <span className="cp-pagination-info">
+          Showing {(currentShortlistPage - 1) * SHORTLIST_PAGE_SIZE + 1}–{Math.min(currentShortlistPage * SHORTLIST_PAGE_SIZE, filteredShortlist.length)} of {filteredShortlist.length} candidates
+        </span>
+        <div className="cp-pagination-buttons">
+          <button className="cp-pag-btn" disabled={currentShortlistPage === 1} onClick={() => setShortlistPage(p => p - 1)}>← Prev</button>
+          {getShortlistPageNumbers().map((pn, i) =>
+            pn === '...' ? (
+              <span key={`e${i}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
+            ) : (
+              <button key={pn} className={`cp-pag-btn${currentShortlistPage === pn ? ' active' : ''}`} onClick={() => setShortlistPage(pn as number)}>{pn}</button>
+            )
+          )}
+          <button className="cp-pag-btn" disabled={currentShortlistPage >= totalShortlistPages} onClick={() => setShortlistPage(p => p + 1)}>Next →</button>
+        </div>
+      </div>
+    )}
 
     {/* ── View Details Modal (Shortlist) ── */}
     {viewShortlistItem && (() => {
