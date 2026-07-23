@@ -317,24 +317,26 @@
 /* ====== TWO-COLUMN LAYOUT (Enhanced) ====== */
 .ra-split {
   display: grid;
-  /* List is now the main content (fluid); the fixed-width column on the
-     right is the new Pipeline overview / This week / Recruiter tip sidebar,
-     not the old always-visible detail panel (that's an overlay drawer now,
-     see .ra-detail-panel / .ra-detail-overlay below). */
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 20px;
-  align-items: start;
+  grid-template-columns: 320px 1fr;
+  gap: 0;
+  border: 1px solid var(--ra-border);
+  border-radius: var(--ra-radius-lg);
+  background: var(--ra-surface);
+  overflow: hidden;
+  height: calc(100vh - 290px);
+  min-height: 480px;
+  box-shadow: var(--ra-shadow-card);
 }
 
 /* -- LEFT: Application List (Enhanced) -- */
 .ra-list-panel {
+  border-right: 1px solid var(--ra-border);
   display: flex;
   flex-direction: column;
-  background: var(--ra-surface);
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-lg);
-  box-shadow: var(--ra-shadow-card);
+  background: #F9FAFB;
+  height: 100%;
   min-height: 0;
+  border-radius: var(--ra-radius-lg) 0 0 var(--ra-radius-lg);
   overflow: hidden;
 }
 
@@ -492,22 +494,6 @@
   flex-wrap: wrap;
 }
 
-.ra-card-top > .ra-status-chip {
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.ra-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.ra-card-footer .cgc-apply-btn {
-  margin-left: auto;
-}
-
 .ra-status-chip {
   display: inline-flex;
   align-items: center;
@@ -588,71 +574,14 @@
 }
 
 /* -- RIGHT: Detail Panel (Enhanced) -- */
-/* New right-hand sidebar (Pipeline overview / This week / Recruiter tip),
-   replacing the old always-visible detail column. */
-.ra-app-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
-.ra-sidebar-card {
-  background: #ffffff;
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-lg);
-  padding: 20px;
-  box-shadow: var(--ra-shadow-card);
-}
-
-.ra-sidebar-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ra-text-1);
-  margin: 0 0 14px;
-}
-
-.ra-sidebar-tip {
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-  color: #ffffff;
-  border-radius: var(--ra-radius-lg);
-  padding: 18px 20px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.ra-sidebar-tip strong {
-  font-size: 13px;
-}
-
-/* Detail panel is now an overlay drawer (opened via the card's Details
-   button) instead of a permanently-visible split-pane column. Its inner
-   content is completely unchanged — only the container became fixed. */
-.ra-detail-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  z-index: 1000;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .ra-detail-panel {
   display: flex;
   flex-direction: column;
   background: #FAFBFC;
-  width: 520px;
-  max-width: 100vw;
-  height: 100vh;
+  height: 100%;
   min-height: 0;
   overflow-y: auto;
-  box-shadow: -8px 0 32px rgba(15, 23, 42, 0.18);
-}
-
-@media (max-width: 640px) {
-  .ra-detail-panel {
-    width: 100vw;
-  }
+  border-radius: 0 var(--ra-radius-lg) var(--ra-radius-lg) 0;
 }
 
 .ra-detail-panel::-webkit-scrollbar {

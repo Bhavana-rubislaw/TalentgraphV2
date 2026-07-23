@@ -484,13 +484,7 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
                   : 'No applications match your filters.'}
               </div>
             ) : (
-              filteredApplications.map((app: any) => {
-                const skills = app.job_profile?.skills || [];
-                const firstResume = app.job_profile?.resumes?.[0];
-                const salaryText = app.job_profile?.salary_min && app.job_profile?.salary_max
-                  ? `${(app.job_profile.salary_currency || 'USD').toUpperCase()} ${Math.round(app.job_profile.salary_min / 1000)}k–${Math.round(app.job_profile.salary_max / 1000)}k`
-                  : null;
-                return (
+              filteredApplications.map((app: any) => (
                 <div
                   key={app.application_id}
                   className={`ra-card ${selectedAppId === app.application_id ? 'selected' : ''}`}
@@ -502,159 +496,33 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
                       <div className="ra-card-name">{app.candidate.name}</div>
                       <div className="ra-card-role">Applied for {app.job_posting.title}</div>
                     </div>
-                    <span className={`ra-status-chip ${app.status}`}>{app.status}</span>
                   </div>
                   {(app.job_posting?.product_vendor || app.job_profile?.profile_name) && (
                     <div className="ra-card-vendor-row">
                       {[app.job_posting?.product_vendor, app.job_profile?.profile_name].filter(Boolean).join(' · ')}
                     </div>
                   )}
-                  {skills.length > 0 && (
-                    <div className="cgc-skills" style={{ marginBottom: 0 }}>
-                      {skills.slice(0, 4).map((sk: any, idx: number) => (
-                        <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
-                      ))}
-                      {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
-                    </div>
-                  )}
                   <div className="ra-card-meta">
-                    {salaryText && <span className="ra-card-date">{salaryText}</span>}
+                    <span className={`ra-status-chip ${app.status}`}>{app.status}</span>
                     <span className="ra-card-date">{timeAgo(app.applied_at)}</span>
                   </div>
-                  <div className="ra-card-footer" onClick={(e) => e.stopPropagation()}>
-                    {firstResume && (
-                      <button
-                        className="cgc-icon-btn"
-                        onClick={() => downloadResume(app.application_id, firstResume.id, firstResume.filename)}
-                        title="Download resume"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                      </button>
-                    )}
-                    <button
-                      className="cgc-icon-btn"
-                      onClick={() => {
-                        if (app.candidate.user_id) {
-                          handleStartDirectMessage(app.candidate.user_id);
-                        } else {
-                          alert(`Cannot message this candidate - user_id is missing. Candidate ID: ${app.candidate.id}`);
-                        }
-                      }}
-                      title="Send a message to this candidate"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      </svg>
-                    </button>
-                    <button
-                      className="cgc-icon-btn"
-                      onClick={() => {
-                        setSelectedAppForSchedule({ ...app, id: app.application_id });
-                        setIsScheduleInterviewModalOpen(true);
-                      }}
-                      title="Schedule an interview with this candidate"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                    </button>
-                    <button
-                      className="cgc-apply-btn"
-                      onClick={() => setSelectedAppId(app.application_id)}
-                    >
-                      Details →
-                    </button>
-                  </div>
                 </div>
-                );
-              })
+              ))
             )}
           </div>
         </div>
 
-        {/* RIGHT: Pipeline overview / This week / Recruiter tip — replaces the old
-            always-visible detail column. Clicking a card now opens the full detail
-            content (unchanged below) in an overlay drawer instead. */}
-        <div className="ra-app-sidebar">
-          {(() => {
-            const stageOf = (status: string) => {
-              if (status === 'applied') return 'applied';
-              if (['scheduled', 'under_review'].includes(status)) return 'reviewing';
-              if (status === 'shortlisted') return 'interview';
-              if (status === 'selected') return 'offer';
-              return null; // rejected/withdrawn don't count toward the funnel
-            };
-            const counts = { applied: 0, reviewing: 0, interview: 0, offer: 0 };
-            applications.forEach((a: any) => {
-              const s = stageOf(a.status);
-              if (s) counts[s as keyof typeof counts] += (s === 'applied' ? 1 : 0) || 1;
-            });
-            // "Applied" is the total pipeline size (every application starts here);
-            // the others are mutually-exclusive current stages.
-            const totalApplied = applications.length;
-            const maxCount = Math.max(totalApplied, 1);
-            const stages = [
-              { label: 'Applied', count: totalApplied, color: '#2563eb' },
-              { label: 'Reviewing', count: counts.reviewing, color: '#f59e0b' },
-              { label: 'Interview', count: counts.interview, color: '#8b5cf6' },
-              { label: 'Offer', count: counts.offer, color: '#10b981' },
-            ];
-            const now = Date.now();
-            const withinDays = (iso: string, days: number) => (now - new Date(iso).getTime()) < days * 24 * 60 * 60 * 1000;
-            const newThisWeek = applications.filter((a: any) => withinDays(a.applied_at, 7)).length;
-            const interviewsThisWeek = applications.filter((a: any) => a.status === 'shortlisted' && withinDays(a.applied_at, 7)).length;
-            const offersThisWeek = applications.filter((a: any) => a.status === 'selected' && withinDays(a.applied_at, 7)).length;
-            return (
-              <>
-                <div className="ra-sidebar-card">
-                  <h3 className="ra-sidebar-title">Pipeline overview</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {stages.map(s => (
-                      <div key={s.label}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151', marginBottom: '4px' }}>
-                          <span>{s.label}</span>
-                          <span style={{ fontWeight: 700 }}>{s.count}</span>
-                        </div>
-                        <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{ width: `${Math.min((s.count / maxCount) * 100, 100)}%`, height: '100%', background: s.color, borderRadius: '3px' }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="ra-sidebar-card">
-                  <h3 className="ra-sidebar-title">This week</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151' }}>
-                      <span>New applications</span><span style={{ fontWeight: 700 }}>{newThisWeek}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151' }}>
-                      <span>Interviews scheduled</span><span style={{ fontWeight: 700 }}>{interviewsThisWeek}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#374151' }}>
-                      <span>Offers extended</span><span style={{ fontWeight: 700 }}>{offersThisWeek}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ra-sidebar-tip">
-                  <strong>Recruiter tip</strong>
-                  <p style={{ margin: '6px 0 0' }}>Candidates in the Interview stage respond 3× faster when messaged within 24 hours.</p>
-                </div>
-              </>
-            );
-          })()}
-        </div>
-
-        {selectedApp && (
-          <DetailDrawer
-            onClose={() => setSelectedAppId(null)}
-            overlayClassName="ra-detail-overlay"
-            modalClassName="ra-detail-panel"
-          >
+        {/* RIGHT: Detail Panel */}
+        <div className="ra-detail-panel">
+          {!selectedApp ? (
+            <div className="ra-detail-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/>
+              </svg>
+              <h3>Select an Application</h3>
+              <p>Click on an application from the list to view detailed candidate information.</p>
+            </div>
+          ) : (
             <>
               {/* Detail Header */}
               <div className="ra-detail-header">
@@ -1258,8 +1126,8 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
                 </div>
               </div>
             </>
-          </DetailDrawer>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ─── Email Composer Modal ─── */}
