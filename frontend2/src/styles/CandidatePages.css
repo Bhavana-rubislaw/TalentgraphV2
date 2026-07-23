@@ -3065,7 +3065,7 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  border-radius: 5px;
+  border-radius: 20px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -3264,6 +3264,20 @@
 .cp-posting-action-btn.primary:hover {
   background: var(--cp-accent-hover, var(--cp-accent));
   filter: brightness(1.05);
+}
+
+/* Distinct from .primary (solid CTA used elsewhere) — matches the reference
+   mockup's lighter "View applicants" treatment. */
+.cp-posting-action-btn.view-applicants {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.cp-posting-action-btn.view-applicants:hover {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1e3a8a;
 }
 
 .cp-posting-card-apps {

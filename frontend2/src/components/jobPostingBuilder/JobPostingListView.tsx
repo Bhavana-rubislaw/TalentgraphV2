@@ -222,7 +222,7 @@ const JobPostingListView: React.FC<JobPostingListViewProps> = ({
                         <div className="cp-posting-card-footer">
                           <div className="cp-posting-card-action-btns">
                             <button
-                              className="cp-posting-action-btn primary"
+                              className="cp-posting-action-btn view-applicants"
                               onClick={(e) => { e.stopPropagation(); navigate(`/recruiter-dashboard?tab=applications&job=${p.id}`); }}
                             >
                               View Applicants

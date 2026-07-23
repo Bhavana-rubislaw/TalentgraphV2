@@ -65,6 +65,21 @@
   margin-left: auto;
 }
 
+/* Reference mockup's active filter pill is solid blue with white text, not
+   .cp-filter-chip's shared light-tint active style — scoped to this page
+   only since that class is also used by HR's job postings tab and the
+   candidate job-preferences filter, which keep the original treatment. */
+.jpb-list-page .cp-filter-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+.jpb-list-page .cp-filter-chip.active:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
 @media (max-width: 640px) {
   .jpb-filter-bar-inline {
     flex-direction: column;
