@@ -65,225 +65,93 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
     }}>
       {matches.map((match, index) => {
         const candidateInitial = match.candidate.name?.charAt(0).toUpperCase() || 'C';
+        const skills = match.job_profile?.skills || [];
+        const isNew = Date.now() - new Date(match.matched_at).getTime() < 3 * 24 * 60 * 60 * 1000;
+        const jp = match.job_profile as any;
+        const salaryText = jp?.salary_min && jp?.salary_max
+          ? `${(jp.salary_currency || 'USD').toUpperCase()} ${Math.round(jp.salary_min / 1000)}k–${Math.round(jp.salary_max / 1000)}k`
+          : null;
         return (
-          <div key={`match-${match.match_id}-${index}`} style={{
-            background: 'white',
-            border: '1px solid #E2E4EC',
-            borderRadius: '16px',
-            padding: '24px',
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.borderColor = '#60a5fa';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = '#E2E4EC';
-          }}>
-            {/* Mutual Match Badge - Top Right */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              padding: '6px 12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              borderRadius: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span>{match.match_percentage}%</span>
+          <div key={`match-${match.match_id}-${index}`} className="cgc-card">
+            <div
+              className="ai-match-ring"
+              style={{ '--pct': match.match_percentage } as React.CSSProperties}
+              title={`${match.match_percentage}% match`}
+            >
+              <span className="ai-match-ring-value">{match.match_percentage}%</span>
             </div>
 
-            {/* Header: Candidate Avatar */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#2563eb',
-                marginBottom: '8px'
-              }}>
+            <div className="cgc-header">
+              <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                 {candidateInitial}
               </div>
-              <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-                {match.candidate.name}
-              </div>
-              <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                Matched {new Date(match.matched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <div className="cgc-name-block">
+                <div className="cgc-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {match.candidate.name}
+                  {isNew && <span className="cgc-status-pill" style={{ background: '#dbeafe', color: '#1d4ed8' }}>New</span>}
+                </div>
+                <div className="cgc-title">{match.job_profile?.job_role || match.job_profile?.profile_name || 'Professional'}</div>
               </div>
             </div>
 
-            {/* Job Title */}
-            <h3 style={{
-              fontSize: '20px',
-              fontWeight: '700',
-              color: '#111827',
-              marginBottom: '6px',
-              lineHeight: '1.3',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
-            }}>
-              {match.job_posting.job_title}
-            </h3>
-
-            {/* Job Role / Category */}
-            <p style={{
-              fontSize: '14px',
-              color: '#6b7280',
-              marginBottom: '20px',
-              fontWeight: '500'
-            }}>
-              {match.job_profile?.job_role || match.job_profile?.profile_name || 'Professional'}
-            </p>
-
-            {/* Details Grid (2x2) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px',
-              marginBottom: '20px',
-              paddingBottom: '20px',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+            <div className="cgc-meta-row">
+              <div className="cgc-meta-left">
+                <span className="cgc-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   {match.job_posting.location || 'Remote'}
                 </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {match.job_profile?.years_of_experience ? `${match.job_profile.years_of_experience} yrs exp` : match.job_posting.seniority_level || 'N/A'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
-                  {match.candidate.email}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {match.candidate.phone || 'No phone'}
-                </span>
+                {match.job_profile?.years_of_experience ? (
+                  <span className="cgc-meta-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    {match.job_profile.years_of_experience} yrs
+                  </span>
+                ) : null}
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
-              <button
-                onClick={() => setViewProfileMatch(match)}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '2px solid #E2E4EC',
-                  background: 'white',
-                  color: '#111827',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.color = '#2563eb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#E2E4EC';
-                  e.currentTarget.style.color = '#111827';
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
-                </svg>
-                View Profile
-              </button>
-              <button
-                onClick={() => {
-                  if (match.candidate.user_id) {
-                    handleStartDirectMessage(match.candidate.user_id);
-                  } else {
-                    alert('Cannot message this candidate: User ID not available');
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: '#111827',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-1px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(17, 24, 39, 0.4)';
-                  e.currentTarget.style.background = '#1f2937';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                  e.currentTarget.style.background = '#111827';
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                Message
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#2563eb', fontWeight: 600, marginBottom: '14px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-8z"/></svg>
+              Matched for <span style={{ color: '#111827' }}>{match.job_posting.job_title}</span>
+            </div>
+
+            {skills.length > 0 && (
+              <div className="cgc-skills">
+                {skills.slice(0, 4).map((sk: any, idx: number) => (
+                  <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+                ))}
+                {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
+              </div>
+            )}
+
+            {/* No curated "achievement" tags (e.g. "React expert", "AWS certified") or
+                candidate status (New/Liked/Viewed) exist in the matches API response —
+                omitted rather than fabricated, except "New" above which is derived
+                honestly from matched_at recency. */}
+            <div className="cgc-footer">
+              {salaryText && <span className="cgc-match-pill">{salaryText}</span>}
+              <div className="cgc-footer-actions">
+                <button
+                  className="cgc-icon-btn"
+                  onClick={() => {
+                    if (match.candidate.user_id) {
+                      handleStartDirectMessage(match.candidate.user_id);
+                    } else {
+                      alert('Cannot message this candidate: User ID not available');
+                    }
+                  }}
+                  title="Send a message to this candidate"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                <button
+                  className="cgc-apply-btn"
+                  onClick={() => setViewProfileMatch(match)}
+                >
+                  View
+                </button>
+              </div>
             </div>
           </div>
         );
