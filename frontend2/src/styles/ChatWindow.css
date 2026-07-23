@@ -8,6 +8,7 @@
 .chat-window-v2 {
   display: grid;
   grid-template-columns: 340px 1fr;
+  flex: 1;
   height: 100%;
   min-height: 700px;
   max-height: calc(100vh - 140px);

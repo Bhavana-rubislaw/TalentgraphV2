@@ -825,6 +825,72 @@
   backdrop-filter: blur(14px);
 }
 
+/* Messages tab only. NOTE: ChatWindow stays mounted (just hidden via
+   inline display:none) even when other tabs are active, so a naive
+   :has(.chat-window-v2) matches unconditionally on every tab and silently
+   strips/reflows things it shouldn't touch. RecruiterDashboardNew.tsx adds
+   a real "messages-tab-active" class to .content-panel-horizontal only
+   when activeTab === 'messages' — every selector below keys off that
+   class (or a :has() that requires it), never off .chat-window-v2's mere
+   existence, so other tabs (Browse, Shortlisted, Applications, Matches,
+   Meetings) are genuinely untouched. */
+.recruiter-dashboard .content-panel-horizontal.messages-tab-active {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Let the chat window fill all the way to the bottom of the viewport
+   instead of stopping at its own min-height. .chat-window-v2's
+   `height: 100%` never resolved because every ancestor above it (the tab
+   stack, the content panel, the display:block/none tab wrapper) was a plain
+   auto-height block that just shrink-wraps its child — so the box only
+   ever grew as tall as its 700px min-height. Turning that ancestor chain
+   into a real flex column gives it something definite to fill. min-height: 0
+   on each link is required — without it, flex items default to refusing to
+   shrink below their content size, which would stop the chain from ever
+   compressing down to fill the space.
+   .talentgraph-main-content only ever gets its height from flex-grow
+   (flex: 1 in the outer .horizontal-dashboard column) — it never has an
+   explicit `height` value. Per spec, a percentage-height child can't
+   reliably resolve against a parent whose height comes from flex-grow
+   rather than a specified height/height-percentage chain, so `height: 100%`
+   further down would silently fail and collapse back to shrink-wrapping the
+   child's min-height. Using flex: 1 the whole way down sidesteps that. */
+.recruiter-dashboard .talentgraph-main-content:has(.content-panel-horizontal.messages-tab-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.recruiter-dashboard .recruiter-dashboard-stack:has(.content-panel-horizontal.messages-tab-active) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.recruiter-dashboard .content-panel-horizontal.messages-tab-active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* This wrapper div is the one RecruiterDashboardNew.tsx toggles via an
+   inline style={{ display: activeTab === 'messages' ? 'block' : 'none' }}
+   for tab show/hide — inline styles always win over stylesheet rules
+   regardless of selector specificity, so display: flex here needs
+   !important to take over once the tab is visible. It only overrides the
+   one conflicting property (display); the tab-switching logic itself is
+   untouched. */
+.recruiter-dashboard .content-panel-horizontal.messages-tab-active > div:has(.chat-window-v2) {
+  display: flex !important;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .recruiter-dashboard .content-panel-horizontal {
   padding: 0;
   min-width: 0;
