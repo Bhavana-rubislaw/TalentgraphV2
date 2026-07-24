@@ -691,14 +691,14 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               const weekStart = new Date(todayStart);
               weekStart.setDate(todayStart.getDate() - todayStart.getDay());
               const upcomingList = allMeetings
-                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
+                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled')
                 .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
               const UPCOMING_PAGE_SIZE = 2;
               const totalUpcomingPages = Math.ceil(upcomingList.length / UPCOMING_PAGE_SIZE);
               const safeUpcomingPage = upcomingList.length === 0 ? 0 : Math.min(upcomingInterviewPage, totalUpcomingPages - 1);
               const upcomingPageItems = upcomingList.slice(safeUpcomingPage * UPCOMING_PAGE_SIZE, safeUpcomingPage * UPCOMING_PAGE_SIZE + UPCOMING_PAGE_SIZE);
               const pastList = allMeetings
-                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
+                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < now)
                 .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
                 .slice(0, 3);
               const pastThisWeek = allMeetings.filter((m: any) => {

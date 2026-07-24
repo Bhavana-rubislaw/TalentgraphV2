@@ -646,12 +646,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
           {/* Upcoming Interviews */}
           {(() => {
             const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const upcomingList = allMeetings
-              .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= todayStart && m.status !== 'cancelled')
+              .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled')
               .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
             const pastList = allMeetings
-              .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < todayStart)
+              .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < now)
               .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
               .slice(0, 3);
             const interviewCards = [
