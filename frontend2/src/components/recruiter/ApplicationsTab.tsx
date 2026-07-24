@@ -271,59 +271,7 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
 
   return (
     <div className="ra-wrapper" style={{ background: 'transparent', padding: '0', gap: '16px' }}>
-      {/* ─── Recruiter Applications Responsibilities Banner ─── */}
-      <div style={{
-        background: '#ffffff',
-        border: '1px solid #e5e7eb',
-        borderLeft: '4px solid #10b981',
-        borderRadius: 10,
-        padding: '16px 20px',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #10b981, #34d399)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 16, height: 16 }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#111827', letterSpacing: '-0.1px' }}>Applications — Recruiter Permissions</span>
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.3px' }}>RECRUITER</span>
-            </div>
-            <div style={{ fontSize: 12, color: '#6b7280', marginTop: 1 }}>Full ownership of the hiring pipeline</div>
-          </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" style={{ width: 10, height: 10 }}><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Full Pipeline Access</span>
-            </div>
-            {['Review & move all application stages', 'Applied → Scheduled → Under Review', 'Shortlisted → Selected / Rejected', 'Schedule interviews', 'Message candidates', 'Add recruiter notes'].map(item => (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                <span style={{ fontSize: 12, color: '#166534' }}>{item}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-              <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{ width: 10, height: 10 }}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-              </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>HR Can Also</span>
-            </div>
-            {['View all applications', 'Schedule interviews', 'Download resumes & certifications', 'Message candidates', 'Add HR notes', 'Set Selected / Rejected'].map(item => (
-              <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2.5" style={{ width: 12, height: 12, flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span style={{ fontSize: 12, color: '#475569' }}>{item}</span>
-              </div>
-            ))}
-            <div style={{ marginTop: 8, fontSize: 11, color: '#9ca3af', borderTop: '1px dashed #e2e8f0', paddingTop: 6 }}>HR cannot move applications through all pipeline stages.</div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* ─── Toolbar: Search + Filters + Sort ─── */}
       <div className="ra-toolbar">
@@ -1130,6 +1078,45 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
         </div>
       </div>
 
+        {/* RIGHT: Permissions Guide */}
+        <aside className="ra-permissions-panel" aria-label="Applications permissions guide">
+          <div className="ra-permissions-header">
+            <div className="ra-permissions-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div>
+              <div className="ra-permissions-title">Applications</div>
+              <div className="ra-permissions-subtitle">Recruiter permissions</div>
+            </div>
+          </div>
+
+          <div className="ra-permission-card recruiter">
+            <div className="ra-permission-card-title">
+              <span className="ra-permission-badge recruiter">Recruiter</span>
+              <span>Full pipeline access</span>
+            </div>
+            <ul className="ra-permission-list recruiter">
+              {['Review and move all stages', 'Applied → Scheduled → Under Review', 'Shortlisted → Selected / Rejected', 'Schedule interviews', 'Message candidates', 'Add recruiter notes'].map(item => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="ra-permission-card hr">
+            <div className="ra-permission-card-title">
+              <span className="ra-permission-badge hr">HR</span>
+              <span>Can also</span>
+            </div>
+            <ul className="ra-permission-list hr">
+              {['View all applications', 'Schedule interviews', 'Download resumes and certifications', 'Message candidates', 'Add HR notes', 'Set Selected / Rejected'].map(item => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <div className="ra-permission-note">HR cannot move applications through every pipeline stage.</div>
+          </div>
+        </aside>
+      
+      
       {/* ─── Email Composer Modal ─── */}
       {/* NOTE: no button in this UI currently calls setShowEmailComposer(true) (pre-existing —
           not introduced by this extraction), so this modal is presently unreachable. */}
@@ -1208,5 +1195,4 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
     </div>
   );
 };
-
 export default ApplicationsTab;
