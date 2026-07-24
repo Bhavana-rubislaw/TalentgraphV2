@@ -708,7 +708,7 @@ const CandidateDashboard: React.FC = () => {
         )}
 
         {/* Tab Content */}
-        <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}`}>
+        <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}${activeTab === 'recommendations' ? ' recommendations-tab-active' : ''}`}>
           {renderActiveTab()}
         </div>
         </div>

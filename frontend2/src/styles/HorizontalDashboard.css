@@ -1090,6 +1090,19 @@
   min-width: 0;
 }
 
+/* Recommendations tab only — matches the recruiter panel's actual padding
+   (0). The recruiter's .content-panel-horizontal never gets the generic
+   32px value at all; the Recommendations board supplies its own spacing
+   via .ai-recommendations-container (12px 16px 10px) and the header div's
+   own padding (16px 20px 0 20px), so the outer 32px here was pure extra
+   gap on top of that — pushing the title down and widening the border
+   gap around the card. Scoped to this tab only so Invites/Available/
+   Applied/Matches/Messages/Meetings — which do rely on the 32px — are
+   untouched. */
+.candidate-dashboard .content-panel-horizontal.recommendations-tab-active {
+  padding: 0;
+}
+
 /* Messages tab only — mirrors the recruiter fix (0536d38) that lets the
    chat window fill to the bottom of the viewport instead of stopping at
    its own min-height. The Messages tab always renders through
