@@ -898,18 +898,15 @@
 
 .recruiter-dashboard .kpi-banner-container {
   grid-template-columns: 1fr;
-  gap: 14px;
-  /* On the recommendations tab the rail is stretched (see
-     .recruiter-kpi-rail / .recruiter-dashboard-grid) to match the
-     recommendation card's height; distribute the 4 KPI cards across that
-     full height so the rail's own background doesn't end early and leave
-     empty space below it. flex overrides the grid display; grid-template-
-     columns above has no effect once flex wins, kept only as the fallback
-     used elsewhere (stacked tab / narrower screens). */
-  flex: 1;
+  gap: 10px;
+  /* Pack the 4 KPI cards at a fixed, tight gap rather than distributing
+     them across the rail's full stretched height (see .recruiter-kpi-rail
+     / .recruiter-dashboard-grid) — space-between read as too much air
+     between cards. The rail box itself still stretches to match the
+     recommendation card's height, so there's no dead page background
+     below it, just blank rail surface past the last card. */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .recruiter-dashboard .kpi-card {
