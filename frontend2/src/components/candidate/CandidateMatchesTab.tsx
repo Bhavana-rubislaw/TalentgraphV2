@@ -82,7 +82,7 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
   };
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div className="cgc-grid">
       {paginatedMatches.map((match) => {
         const companyInitial = match.company?.company_name?.charAt(0).toUpperCase() || 'C';
@@ -175,9 +175,11 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
       })}
     </div>
 
-    {/* Pagination Footer for Matches */}
-    {matches.length > 0 && totalMatchPages > 1 && (
-      <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+    {/* Pagination Footer for Matches — always pinned to the bottom of the
+        tab panel (marginTop: 'auto'), even with a single page, same
+        treatment as the Invites tab. */}
+    {matches.length > 0 && (
+      <div className="cp-pagination-footer" style={{ marginTop: 'auto', paddingTop: '24px' }}>
         <span className="cp-pagination-info">
           Showing {startMatchIndex + 1}–{Math.min(endMatchIndex, matches.length)} of {matches.length} matches
         </span>
@@ -452,7 +454,7 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
           </div>
         </DetailDrawer>
     )}
-  </>
+  </div>
   );
 };
 
