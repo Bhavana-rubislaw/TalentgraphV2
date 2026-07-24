@@ -608,9 +608,10 @@ const CandidateDashboard: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="talentgraph-main-content">
+        <div className={activeTab === 'recommendations' ? 'candidate-dashboard-grid' : 'candidate-dashboard-stack'}>
         {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
         {activeTab === 'recommendations' && (
-          <div className="welcome-banner-modern">
+          <aside className="welcome-banner-modern candidate-kpi-rail" aria-label="Candidate KPI summary">
             <div className="welcome-header-compact">
               <div className="welcome-avatar-compact">
                 <div className="avatar-circle-compact">{userInitial}</div>
@@ -691,12 +692,13 @@ const CandidateDashboard: React.FC = () => {
               </p>
             </div>
             </div>
-          </div>
+          </aside>
         )}
 
         {/* Tab Content */}
         <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}`}>
           {renderActiveTab()}
+        </div>
         </div>
       </div>
 

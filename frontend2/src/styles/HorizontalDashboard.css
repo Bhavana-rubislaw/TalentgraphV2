@@ -1051,6 +1051,30 @@
   padding: 20px 24px 40px;
 }
 
+.candidate-dashboard .candidate-dashboard-stack {
+  display: block;
+  min-width: 0;
+}
+
+/* Three-area layout, same shape as .recruiter-dashboard-grid: KPI rail
+   (left) + content panel. Main content always receives the largest share
+   via minmax(0, 1fr). */
+.candidate-dashboard .candidate-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.candidate-dashboard .candidate-kpi-rail {
+  margin: 0;
+  padding: 16px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .candidate-dashboard .welcome-banner-modern,
 .candidate-dashboard .content-panel-horizontal,
 .candidate-dashboard .kpi-card,
@@ -1061,10 +1085,6 @@
   backdrop-filter: blur(14px);
 }
 
-.candidate-dashboard .welcome-banner-modern {
-  margin-bottom: 20px;
-}
-
 .candidate-dashboard .content-panel-horizontal {
   padding: 32px;
   min-width: 0;
@@ -1072,9 +1092,9 @@
 
 /* Messages tab only — mirrors the recruiter fix (0536d38) that lets the
    chat window fill to the bottom of the viewport instead of stopping at
-   its own min-height. See the matching recruiter block above for the full
-   rationale; the candidate page has no intermediate stack/grid wrapper, so
-   the chain here is one link shorter (main-content -> content-panel -> chat). */
+   its own min-height. The Messages tab always renders through
+   .candidate-dashboard-stack (never the KPI-rail grid, since the banner
+   only shows on Recommendations), so only the stack variant needs the fix. */
 .candidate-dashboard .content-panel-horizontal.messages-tab-active {
   background: none;
   border: none;
@@ -1092,9 +1112,25 @@
   flex-direction: column;
 }
 
+.candidate-dashboard .candidate-dashboard-stack:has(.content-panel-horizontal.messages-tab-active) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .candidate-dashboard .kpi-card {
   min-height: 112px;
   justify-content: center;
+}
+
+.candidate-dashboard .kpi-banner-container {
+  grid-template-columns: 1fr;
+  gap: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .candidate-dashboard .kpi-card.kpi-card-green { border-left: 4px solid #10b981; }
@@ -1102,8 +1138,31 @@
 .candidate-dashboard .kpi-card.kpi-card-purple { border-left: 4px solid #8b5cf6; }
 .candidate-dashboard .kpi-card.kpi-card-orange { border-left: 4px solid #f59e0b; }
 
+/* ---- Standard laptop: narrower rail, content stays readable ---- */
+@media (max-width: 1400px) {
+  .candidate-dashboard .candidate-dashboard-grid {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+/* ---- Tablet / narrow desktop: stack KPI rail above content, KPI cards go 2-column ---- */
+@media (max-width: 1100px) {
+  .candidate-dashboard .candidate-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .candidate-dashboard .kpi-banner-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .candidate-dashboard .talentgraph-main-content {
     padding: 16px 16px 32px;
+  }
+  .candidate-dashboard .kpi-banner-container {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
