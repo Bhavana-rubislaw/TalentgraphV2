@@ -264,25 +264,19 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
 
   if (jobProfiles.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <div className="empty-state-modern">
+        <div className="empty-icon-professional">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/>
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800">Create your job preferences</h3>
-        <p className="mt-2 text-sm text-gray-500">Define your role, location, and compensation preferences to receive personalized job recommendations.</p>
-        <div className="mt-6 space-x-3">
-          <button
-            onClick={() => navigate('/candidate/job-preferences')}
-            className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
+        <h3 className="empty-title">Create your job preferences</h3>
+        <p className="empty-subtitle">Define your role, location, and compensation preferences to receive personalized job recommendations.</p>
+        <div className="empty-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button onClick={() => navigate('/candidate/job-preferences')} className="btn btn-primary">
             Create Job Preferences
           </button>
-          <button
-            onClick={() => setActiveTab('available')}
-            className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
+          <button onClick={() => setActiveTab('available')} className="btn btn-secondary">
             Browse Jobs
           </button>
         </div>
@@ -292,18 +286,38 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
 
   return (
     <>
-      {/* ── Header - matches recruiter dashboard layout ── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <div>
-            <h2 style={{ fontSize: '28px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '4px' }}>
+      {/* Header — mirrors RecruiterRecommendationsTab.tsx's single-row layout */}
+      <div style={{ marginBottom: '16px', padding: '16px 20px 0 20px' }}>
+        <div className="ai-recs-header-row">
+          <div className="ai-recs-header-title">
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#1F2937', margin: 0, marginBottom: '2px' }}>
               AI Job Recommendations
             </h2>
-            <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>
-              Curated roles matched to your profile by our AI engine • Updated live
+            <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>
+              Curated roles matched to your profile by our AI engine
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+          <div className="ai-recs-header-filters">
+            {/* Profile Selector */}
+            <select
+              className="job-select-modern"
+              style={{ padding: '7px 12px', fontSize: '13px' }}
+              value={selectedProfileId || ''}
+              onChange={(e) => setSelectedProfileId(parseInt(e.target.value))}
+            >
+              <option value="" disabled>Choose a job preference profile...</option>
+              {jobProfiles.map((profile: any) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.profile_name}
+                  {profile.product_vendor ? ` • ${profile.product_vendor}` : ''}
+                  {profile.product_type ? ` — ${profile.product_type}` : ''}
+                  {profile.worktype ? ` • ${typeof profile.worktype === 'object' ? profile.worktype.value ?? profile.worktype : profile.worktype}` : ''}
+                </option>
+              ))}
+            </select>
+
+            {/* Match Score Filter */}
             <FilterPill
               id="rec-match-filter-header"
               icon={
@@ -323,45 +337,20 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               onChange={(val) => setRecommendationsMatchFilter(val as string)}
               ariaLabel="Filter by match score"
             />
-            <button className="talentgraph-btn-secondary" onClick={() => fetchRecommendations()}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+
+            <button className="cgc-icon-btn" onClick={() => fetchRecommendations()} title="Refresh recommendations">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                 <path d="M1 4v6h6M23 20v-6h-6"/>
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
               </svg>
-              Refresh
             </button>
-            <button
-              onClick={() => navigate('/candidate/job-preferences')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '7px 14px', borderRadius: '8px', fontSize: '13px', fontWeight: 500,
-                background: 'white', border: '1px solid #D1D5DB', color: '#374151', cursor: 'pointer'
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <button className="cgc-icon-btn" onClick={() => navigate('/candidate/job-preferences')} title="Manage job preferences">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                 <path d="M12 5v14M5 12h14"/>
               </svg>
-              Manage Preferences
             </button>
           </div>
         </div>
-        {/* Profile Selector */}
-        <select
-          className="job-select-modern"
-          style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
-          value={selectedProfileId || ''}
-          onChange={(e) => setSelectedProfileId(parseInt(e.target.value))}
-        >
-          <option value="" disabled>Choose a job preference profile...</option>
-          {jobProfiles.map((profile: any) => (
-            <option key={profile.id} value={profile.id}>
-              {profile.profile_name}
-              {profile.product_vendor ? ` • ${profile.product_vendor}` : ''}
-              {profile.product_type ? ` — ${profile.product_type}` : ''}
-              {profile.worktype ? ` • ${typeof profile.worktype === 'object' ? profile.worktype.value ?? profile.worktype : profile.worktype}` : ''}
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading ? (
@@ -370,29 +359,26 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
           <p>Loading recommendations...</p>
         </div>
       ) : recommendations.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <div className="empty-state-modern">
+          <div className="empty-icon-professional">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="8"/>
               <path d="M21 21l-4.35-4.35"/>
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-800">No recommendations yet</h3>
-          <p className="mt-2 text-sm text-gray-500">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
+          <h3 className="empty-title">No recommendations yet</h3>
+          <p className="empty-subtitle">We're analyzing your profile to find the best matching opportunities. Check back soon.</p>
         </div>
       ) : filteredRecommendations.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="empty-state-modern">
+          <div className="empty-icon-professional">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.586a1 1 0 0 1-.293.707l-6.414 6.414a1 1 0 0 0-.293.707V17l-4 4v-6.586a1 1 0 0 0-.293-.707L3.293 7.293A1 1 0 0 1 3 6.586V4z"/>
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-800">No matches for this filter</h3>
-          <p className="mt-2 text-sm text-gray-500">Try adjusting your match score filter to see more recommendations.</p>
-          <button
-            onClick={() => setRecommendationsMatchFilter('all')}
-            className="mt-4 inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-          >
+          <h3 className="empty-title">No matches for this filter</h3>
+          <p className="empty-subtitle">Try adjusting your match score filter to see more recommendations.</p>
+          <button onClick={() => setRecommendationsMatchFilter('all')} className="btn btn-primary">
             Clear Filter
           </button>
         </div>
@@ -430,7 +416,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                     matched_skills: rawDetails.matched_skills || [],
                   };
 
-              // Log match details for debugging
               return (
                 <div
                   className="ai-job-card"
@@ -438,14 +423,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                   onTouchMove={onTouchMove}
                   onTouchEnd={onTouchEnd}
                 >
-                  {/* Match Badge */}
-                  <div className="ai-match-badge">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    {matchPercentage}% Match
-                  </div>
-
                   {/* Company Header */}
                   <div className="ai-job-card-header">
                     <div className="ai-company-logo">
@@ -457,17 +434,24 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        Verified company
+                        {jobPosting.seniority_level || 'Open Position'}
                       </div>
+                    </div>
+                    {/* Match Badge */}
+                    <div
+                      className="ai-match-ring"
+                      style={{ '--pct': matchPercentage } as React.CSSProperties}
+                      title={`${matchPercentage}% Match`}
+                    >
+                      <span className="ai-match-ring-value">{matchPercentage}%</span>
                     </div>
                   </div>
 
                   {/* Job Title */}
                   <h3 className="ai-job-title">{jobPosting.job_title}</h3>
-                  {/* NOTE: job_role was never part of the /candidate/recommendations response —
-                      this has always rendered the literal fallback below. Flagging, not fixing:
-                      deciding what should actually show here is a product call, not a type fix. */}
-                  <p className="ai-job-team">Design Systems Team</p>
+                  <p className="ai-job-team">
+                    {jobPosting.seniority_level || 'Professional'} • {jobPosting.location || 'Remote'}
+                  </p>
 
                   {/* Job Details Grid */}
                   <div className="ai-job-details">
@@ -501,69 +485,49 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                           <circle cx="12" cy="10" r="3"/>
                         </svg>
-                        Location
+                        Work Type
                       </div>
-                      <div className="ai-job-detail-value">{jobPosting.worktype || jobPosting.location || 'Remote'}</div>
+                      <div className="ai-job-detail-value">{jobPosting.worktype || 'Remote'}</div>
                     </div>
                   </div>
 
-                  {/* AI Match Reason + Match Breakdown */}
-                  <div className="ai-match-reason">
-                    <AIMatchReasonBox
-                      variant="candidate"
-                      reason={generateCandidateMatchReason(
-                        displayDetails,
-                        {
-                          productVendor: rec.job_posting?.product_vendor,
-                          topSkill: displayDetails.matched_skills?.[0],
-                          jobTitle: jobPosting.job_title,
-                          yearsExp: selectedProfile?.years_of_experience,
-                        }
-                      )}
-                    />
-                    {/* Match Score Breakdown */}
-                    <div style={{ marginTop: '12px' }}>
+                  {/* Match Breakdown + Top Matched Skills (left) / AI Match Reason (right) —
+                      mirrors RecruiterRecommendationsTab.tsx's 2-column layout */}
+                  <div className="ai-match-breakdown-reason-grid">
+                    <div className="ai-match-breakdown-col">
+                      <div className="ai-match-breakdown-heading">Match Breakdown</div>
                       <MatchBreakdownBars details={displayDetails} compact />
+                      {((displayDetails.matched_skills?.length ?? 0) > 0 || skillTags.length > 0) && (
+                        <div style={{ marginTop: '16px' }}>
+                          <TopSkillMatches
+                            matchedSkills={
+                              (displayDetails.matched_skills?.length ?? 0) > 0
+                                ? displayDetails.matched_skills!
+                                : skillTags
+                            }
+                            maxSkills={6}
+                          />
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Top Matched Skills */}
-                  {((displayDetails.matched_skills?.length ?? 0) > 0 || skillTags.length > 0) && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <TopSkillMatches
-                        matchedSkills={
-                          (displayDetails.matched_skills?.length ?? 0) > 0
-                            ? displayDetails.matched_skills!
-                            : skillTags
-                        }
-                        maxSkills={6}
+                    <div className="ai-match-reason-col">
+                      <AIMatchReasonBox
+                        variant="candidate"
+                        reason={generateCandidateMatchReason(
+                          displayDetails,
+                          {
+                            productVendor: rec.job_posting?.product_vendor,
+                            topSkill: displayDetails.matched_skills?.[0],
+                            jobTitle: jobPosting.job_title,
+                            yearsExp: selectedProfile?.years_of_experience,
+                          }
+                        )}
                       />
                     </div>
-                  )}
-
-                  {/* Why this match? */}
-                  {(() => {
-                    const drivers: string[] = [];
-                    const matchedSkill = displayDetails.matched_skills?.[0];
-                    if (matchedSkill) drivers.push(`Skill match: ${matchedSkill}`);
-                    const vendor = rec.job_posting?.product_vendor;
-                    if (vendor && (displayDetails.product_match ?? 0) > 0) drivers.push(`Product expertise: ${vendor}`);
-                    const yoe = selectedProfile?.years_of_experience;
-                    if (yoe && yoe >= 1) drivers.push(`${yoe}+ years of experience`);
-                    if ((displayDetails.salary_match ?? 0) > 0 && drivers.length < 3) drivers.push('Salary range aligned');
-                    if ((displayDetails.location_match ?? 0) > 0 && drivers.length < 3) drivers.push('Location preference matched');
-                    return <WhyThisMatch drivers={drivers} />;
-                  })()}
-
-                  {/* Skill Tags */}
-                  <div className="ai-skill-tags">
-                    {skillTags.map((skill: string, idx: number) => (
-                      <span key={idx} className="ai-skill-tag">{skill}</span>
-                    ))}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="ai-action-buttons">
+                  <div className="ai-action-buttons" style={{ marginTop: '20px' }}>
                     <button
                       className="ai-action-btn pass"
                       onClick={() => handleSwipePass(jobPosting.id)}
@@ -585,16 +549,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                       {rec.already_swiped && rec.swipe_action === 'like' ? 'Liked' : 'Like'}
                     </button>
                     <button
-                      className="ai-action-btn apply"
-                      onClick={() => handleApply(jobPosting.id)}
-                      disabled={rec.already_applied || applyingJobId === jobPosting.id}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      {rec.already_applied ? 'Applied' : (applyingJobId === jobPosting.id ? 'Applying...' : 'Apply')}
-                    </button>
-                    <button
                       className="ai-action-btn view-details"
                       onClick={() => setViewRecommendationJob(rec)}
                     >
@@ -604,6 +558,35 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                       </svg>
                     </button>
                   </div>
+
+                  {/* Apply Button (prominent primary action) */}
+                  <button
+                    className="ai-action-btn-primary"
+                    onClick={() => handleApply(jobPosting.id)}
+                    disabled={rec.already_applied || applyingJobId === jobPosting.id}
+                    style={{
+                      width: '100%',
+                      marginTop: '20px',
+                      padding: '12px',
+                      background: rec.already_applied ? '#10B981' : 'linear-gradient(135deg, #2563eb, #60a5fa)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      cursor: rec.already_applied ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    {rec.already_applied ? 'Applied' : (applyingJobId === jobPosting.id ? 'Applying...' : 'Apply Now')}
+                  </button>
                 </div>
               );
             })()}
