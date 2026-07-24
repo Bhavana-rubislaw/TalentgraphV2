@@ -649,14 +649,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             const upcomingList = allMeetings
               .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled')
               .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
-            const pastList = allMeetings
-              .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < now)
-              .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
-              .slice(0, 3);
-            const interviewCards = [
-              ...upcomingList.map((m: any) => ({ meeting: m, dimmed: false })),
-              ...pastList.map((m: any) => ({ meeting: m, dimmed: true })),
-            ];
+            const interviewCards = upcomingList;
             const cardIndex = interviewCards.length ? Math.min(interviewCardIndex, interviewCards.length - 1) : 0;
             const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -681,13 +674,10 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
             };
             const getInitials = (name: string) =>
               name ? name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
-            const renderCard = (m: any, dimmed: boolean) => (
-              <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+            const renderCard = (m: any) => (
+              <div style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '3px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', lineHeight: '1.35', flex: 1 }}>{m.title || 'Interview'}</span>
-                  {dimmed && (
-                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#9CA3AF', background: '#F3F4F6', padding: '2px 6px', borderRadius: '8px', textTransform: 'uppercase' as const, letterSpacing: '0.4px', flexShrink: 0 }}>Past</span>
-                  )}
                 </div>
                 {m.description && (
                   <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px', lineHeight: '1.3' }}>{m.description}</div>
@@ -739,7 +729,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                   <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
                 )}
 
-                {interviewCards.length > 0 && renderCard(interviewCards[cardIndex].meeting, interviewCards[cardIndex].dimmed)}
+                {interviewCards.length > 0 && renderCard(interviewCards[cardIndex])}
 
                 {interviewCards.length > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px' }}>

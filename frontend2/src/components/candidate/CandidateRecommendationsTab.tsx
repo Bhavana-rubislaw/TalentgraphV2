@@ -697,10 +697,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               const totalUpcomingPages = Math.ceil(upcomingList.length / UPCOMING_PAGE_SIZE);
               const safeUpcomingPage = upcomingList.length === 0 ? 0 : Math.min(upcomingInterviewPage, totalUpcomingPages - 1);
               const upcomingPageItems = upcomingList.slice(safeUpcomingPage * UPCOMING_PAGE_SIZE, safeUpcomingPage * UPCOMING_PAGE_SIZE + UPCOMING_PAGE_SIZE);
-              const pastList = allMeetings
-                .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) < now)
-                .sort((a: any, b: any) => new Date(b.scheduled_start).getTime() - new Date(a.scheduled_start).getTime())
-                .slice(0, 3);
               const pastThisWeek = allMeetings.filter((m: any) => {
                 const d = m.scheduled_start ? new Date(m.scheduled_start) : null;
                 return d && d >= weekStart && d < todayStart;
@@ -728,8 +724,8 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               };
               const getInitials = (name: string) =>
                 name ? name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
-              const renderCard = (m: any, dimmed: boolean) => (
-                <div key={m.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', opacity: dimmed ? 0.75 : 1, boxShadow: dimmed ? 'none' : '0 1px 3px rgba(0,0,0,0.05)' }}>
+              const renderCard = (m: any) => (
+                <div key={m.id} style={{ background: 'white', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '6px', marginBottom: '3px' }}>
                     <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', lineHeight: '1.35', flex: 1 }}>{m.title || 'Interview'}</span>
                     <span style={{ color: '#9CA3AF', fontSize: '18px', lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋮</span>
@@ -779,10 +775,10 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                     </div>
                     <button onClick={() => setActiveTab('meetings')} style={{ fontSize: '12px', color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>View All →</button>
                   </div>
-                  {upcomingList.length === 0 && pastList.length === 0 && (
+                  {upcomingList.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '16px 0', color: '#9CA3AF', fontSize: '13px' }}>No upcoming interviews scheduled</div>
                   )}
-                  {upcomingPageItems.map((m: any) => renderCard(m, false))}
+                  {upcomingPageItems.map((m: any) => renderCard(m))}
                   {/* Pagination footer — only shown when there are more than 2 upcoming interviews */}
                   {totalUpcomingPages > 1 && (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '6px 0 2px 0' }}>
