@@ -221,6 +221,20 @@ const CandidateDashboard: React.FC = () => {
     }
   };
 
+  // Records a real like/swipe for a mutual match's job posting (some seeded
+  // matches don't have a backing Swipe row), so it reliably shows up in the
+  // Applied tab's Liked section. apiClient.swipeLike is idempotent — a
+  // match is already candidate_liked=True, so this just backfills or no-ops.
+  const handleLikeFromMatch = async (jobPostingId: number, jobProfileId: number) => {
+    try {
+      await apiClient.swipeLike(jobProfileId, jobPostingId);
+      fetchAppliedLiked();
+    } catch (error) {
+      console.error('[API ERROR] Failed to like job:', error);
+      alert('Failed to like job');
+    }
+  };
+
   const handleApplyFromInvite = async (jobPostingId: number, _jobProfileId: number) => {
     // Check if already applied - if so, withdraw instead
     const appliedJob = appliedLiked.applied_jobs?.find((job: any) => job.job_id === jobPostingId);
@@ -434,6 +448,7 @@ const CandidateDashboard: React.FC = () => {
             applyingJobId={applyingJobId}
             withdrawingJobId={withdrawingJobId}
             handleApplyFromMatch={handleApplyFromMatch}
+            handleLikeFromMatch={handleLikeFromMatch}
           />
         );
       case 'messages':

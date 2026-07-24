@@ -16,6 +16,7 @@ export interface CandidateMatchesTabProps {
   applyingJobId: number | null;
   withdrawingJobId: number | null;
   handleApplyFromMatch: (jobPostingId: number, jobProfileId: number) => void;
+  handleLikeFromMatch: (jobPostingId: number, jobProfileId: number) => void;
 }
 
 const MATCHES_PER_PAGE = 6;
@@ -26,6 +27,7 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
   applyingJobId,
   withdrawingJobId,
   handleApplyFromMatch,
+  handleLikeFromMatch,
 }) => {
   const [currentMatchPage, setCurrentMatchPage] = useState(1);
   const [viewMatchJob, setViewMatchJob] = useState<CandidateMatch | null>(null);
@@ -142,18 +144,29 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
               <div className="cgc-footer-actions">
                 <button
                   className="cgc-icon-btn"
-                  onClick={() => setActiveTab('messages')}
-                  title="Message the recruiter for this job"
+                  onClick={() => handleLikeFromMatch(match.job_posting.id, match.job_profile_id)}
+                  title="Like this job"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </button>
+                <button
+                  className="cgc-icon-btn"
+                  onClick={() => setViewMatchJob(match)}
+                  title="View job details"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
                   </svg>
                 </button>
                 <button
                   className="cgc-apply-btn"
-                  onClick={() => setViewMatchJob(match)}
+                  onClick={() => handleApplyFromMatch(match.job_posting.id, match.job_profile_id)}
+                  disabled={match.already_applied || applyingJobId === match.job_posting.id || withdrawingJobId === match.job_posting.id}
                 >
-                  View
+                  {applyingJobId === match.job_posting.id ? 'Applying…' : withdrawingJobId === match.job_posting.id ? 'Withdrawing…' : match.already_applied ? 'Applied' : 'Apply Now'}
                 </button>
               </div>
             </div>
