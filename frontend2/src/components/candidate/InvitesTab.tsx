@@ -309,7 +309,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
   };
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Invites Section Header */}
       <div className="section-header mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Recruiter Invites</h2>
@@ -402,9 +402,12 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
         })}
       </div>
 
-      {/* Pagination Footer for Invites */}
-      {filteredInvites.length > 0 && totalInvitePages > 1 && (
-        <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+      {/* Pagination Footer for Invites — always pinned to the bottom of the tab
+          panel (marginTop: 'auto' inside the flex column wrapper above), even
+          when there's only one page, so the footer never floats right under
+          a short list — the remaining space stays empty above it instead. */}
+      {filteredInvites.length > 0 && (
+        <div className="cp-pagination-footer" style={{ marginTop: 'auto', paddingTop: '24px' }}>
           <span className="cp-pagination-info">
             Showing {(currentInvitePage - 1) * INVITES_PER_PAGE + 1}–{Math.min(currentInvitePage * INVITES_PER_PAGE, filteredInvites.length)} of {filteredInvites.length} invites
           </span>
@@ -423,7 +426,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
       )}
 
       {renderInviteDrawer()}
-    </>
+    </div>
   );
 };
 

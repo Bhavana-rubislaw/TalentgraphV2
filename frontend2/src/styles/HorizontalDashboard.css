@@ -1103,6 +1103,30 @@
   padding: 0;
 }
 
+/* Invites tab only — pins the pagination footer to the bottom of the
+   panel (via InvitesTab.tsx's flex column + marginTop: 'auto' on the
+   footer) instead of letting it float directly under a short card grid.
+   Unlike the Messages fix below, this keeps the panel's normal
+   background/border/padding — only the flex-fill chain is added. */
+.candidate-dashboard .content-panel-horizontal.invites-tab-active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.candidate-dashboard .talentgraph-main-content:has(.content-panel-horizontal.invites-tab-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-dashboard .candidate-dashboard-stack:has(.content-panel-horizontal.invites-tab-active) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Messages tab only — mirrors the recruiter fix (0536d38) that lets the
    chat window fill to the bottom of the viewport instead of stopping at
    its own min-height. The Messages tab always renders through
