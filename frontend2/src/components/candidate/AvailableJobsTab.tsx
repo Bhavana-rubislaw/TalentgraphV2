@@ -10,7 +10,7 @@ export interface AvailableJobsTabProps {
   handleSwipeLike: (jobPostingId: number) => Promise<void>;
 }
 
-const JOBS_PER_PAGE = 10;
+const JOBS_PER_PAGE = 8;
 
 const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
   availableJobs,
@@ -627,7 +627,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
       {/* Jobs Grid - Match Style */}
       {filteredJobs.length > 0 && (
-        <div className="cgc-grid">
+        <div className="cgc-grid cgc-grid-4col">
           {paginatedJobs.map((job) => {
             const companyInitial = job.company_name?.charAt(0).toUpperCase() || 'C';
             const salary = job.salary_min && job.salary_max
