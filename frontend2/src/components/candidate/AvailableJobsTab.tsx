@@ -10,7 +10,7 @@ export interface AvailableJobsTabProps {
   handleSwipeLike: (jobPostingId: number) => Promise<void>;
 }
 
-const JOBS_PER_PAGE = 6;
+const JOBS_PER_PAGE = 10;
 
 const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
   availableJobs,
