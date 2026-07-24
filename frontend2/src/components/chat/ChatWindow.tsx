@@ -442,33 +442,36 @@ export default function ChatWindow({ matches, applications, onScheduleInterview 
                       <span className="chat-match-pill">{selectedMatch.match_percentage}% match</span>
                     )}
                   </div>
-                  {selectedMatch ? (
-                    <span className="chat-status" style={{ gap: '10px' }}>
-                      {(selectedMatch.job_profile?.job_role || selectedMatch.job_profile?.profile_name) && (
-                        <span>{selectedMatch.job_profile.job_role || selectedMatch.job_profile.profile_name}</span>
-                      )}
-                      {selectedMatch.job_posting?.location && <span>{selectedMatch.job_posting.location}</span>}
-                      {selectedMatch.job_posting?.job_title && <span>⚡ Matched for {selectedMatch.job_posting.job_title}</span>}
-                    </span>
-                  ) : selectedConv.other_user_id && (
+                  {selectedMatch && (
                     <span className="chat-status">
-                      <span className={`status-dot ${onlineStatus[selectedConv.other_user_id] ? 'online' : 'offline'}`}></span>
-                      {onlineStatus[selectedConv.other_user_id] ? 'Online' : 'Offline'}
+                      {[
+                        selectedMatch.job_profile?.job_role || selectedMatch.job_profile?.profile_name,
+                        selectedMatch.job_posting?.location,
+                        selectedMatch.job_posting?.job_title && `Matched for ${selectedMatch.job_posting.job_title}`,
+                      ].filter(Boolean).join(' · ')}
                     </span>
                   )}
                 </div>
               </div>
-              {onScheduleInterview && selectedMatchApplication && (
-                <button
-                  className="chat-header-icon-btn"
-                  title="Schedule an interview with this candidate"
-                  onClick={() => onScheduleInterview(selectedMatchApplication)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </button>
-              )}
+              <div className="chat-header-right">
+                {onScheduleInterview && selectedMatchApplication && (
+                  <button
+                    className="chat-header-icon-btn"
+                    title="Schedule an interview with this candidate"
+                    onClick={() => onScheduleInterview(selectedMatchApplication)}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </button>
+                )}
+                {selectedConv.other_user_id && (
+                  <span className="chat-presence">
+                    <span className={`status-dot ${onlineStatus[selectedConv.other_user_id] ? 'online' : 'offline'}`}></span>
+                    {onlineStatus[selectedConv.other_user_id] ? 'Online' : 'Offline'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Messages */}
