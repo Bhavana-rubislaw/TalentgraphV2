@@ -330,218 +330,72 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
       </div>
 
       {/* Invites Grid */}
-      <div className="jobs-grid-modern">
+      <div className="cgc-grid">
         {paginatedInvites.map((invite) => {
           const jp = invite.job_posting;
           const company = invite.company;
           const salary = jp.salary_min && jp.salary_max
             ? `${(jp.salary_currency || 'USD').toUpperCase()} ${jp.salary_min.toLocaleString()} – ${jp.salary_max.toLocaleString()}`
             : null;
+          const skills = jp.posting_skills || [];
+          const isBusy = applyingJobId === jp.id || withdrawingJobId === jp.id;
 
           return (
-            <div key={invite.invite_id} className="job-card-modern">
-              {/* Professional Invitation Badge */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                  borderRadius: '6px',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: 'white',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  Recruiter Invitation
+            <div key={invite.invite_id} className="cgc-card">
+              <div className="cgc-header">
+                <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
+                  {company.company_name?.charAt(0).toUpperCase() || 'C'}
+                </div>
+                <div className="cgc-name-block">
+                  <div className="cgc-name">{jp.job_title}</div>
+                  <div className="cgc-title">{company.company_name}</div>
                 </div>
               </div>
 
-              {/* Job Header */}
-              <div className="job-card-header" style={{ marginBottom: '12px' }}>
-                <h3 style={{
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  color: '#1a202c',
-                  marginBottom: '6px',
-                  lineHeight: '1.4'
-                }}>
-                  {jp.job_title}
-                </h3>
-                <p style={{
-                  fontSize: '14px',
-                  color: '#64748b',
-                  fontWeight: '500',
-                  margin: 0
-                }}>
-                  {company.company_name}
-                </p>
-              </div>
-
-              {/* Professional Job Details */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: '12px',
-                padding: '16px 0',
-                borderTop: '1px solid #e2e8f0',
-                borderBottom: '1px solid #e2e8f0',
-                marginBottom: '16px'
-              }}>
-                {jp.location && (
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location</div>
-                      <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{jp.location}</div>
-                    </div>
-                  </div>
-                )}
-                {jp.worktype && (
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-                      <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                      <path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>
-                    </svg>
-                    <div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Work Type</div>
-                      <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{jp.worktype}</div>
-                    </div>
-                  </div>
-                )}
-                {salary && (
-                  <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-                      <line x1="12" y1="1" x2="12" y2="23"/>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                    <div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Salary</div>
-                      <div style={{ fontSize: '13px', color: '#334155', fontWeight: '500', marginTop: '2px' }}>{salary}</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  onClick={() => setViewInviteJob(invite)}
-                  style={{
-                    flex: 1,
-                    padding: '10px 16px',
-                    border: '1.5px solid #e2e8f0',
-                    background: 'white',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: '#475569',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#cbd5e1';
-                    e.currentTarget.style.background = '#f8fafc';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                    e.currentTarget.style.background = 'white';
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  View Details
-                </button>
-                <button
-                  onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
-                  disabled={applyingJobId === jp.id || withdrawingJobId === jp.id}
-                  style={{
-                    flex: 1,
-                    padding: '10px 16px',
-                    border: 'none',
-                    background: invite.already_applied ? '#10b981' : ((applyingJobId === jp.id || withdrawingJobId === jp.id) ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'),
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    color: 'white',
-                    cursor: (applyingJobId === jp.id || withdrawingJobId === jp.id) ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '6px',
-                    opacity: ((applyingJobId === jp.id || withdrawingJobId === jp.id) && !invite.already_applied) ? 1 : (invite.already_applied ? 1 : 1)
-                  }}
-                  onMouseEnter={(e) => {
-                    if (applyingJobId !== jp.id && withdrawingJobId !== jp.id) {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  {applyingJobId === jp.id ? (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                        <line x1="12" y1="2" x2="12" y2="6"/>
-                        <line x1="12" y1="18" x2="12" y2="22"/>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                        <line x1="2" y1="12" x2="6" y2="12"/>
-                        <line x1="18" y1="12" x2="22" y2="12"/>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                      </svg>
-                      Applying...
-                    </>
-                  ) : withdrawingJobId === jp.id ? (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                        <line x1="12" y1="2" x2="12" y2="6"/>
-                        <line x1="12" y1="18" x2="12" y2="22"/>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                        <line x1="2" y1="12" x2="6" y2="12"/>
-                        <line x1="18" y1="12" x2="22" y2="12"/>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                      </svg>
-                      Withdrawing...
-                    </>
-                  ) : invite.already_applied ? (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                      Applied
-                    </>
-                  ) : (
-                    <>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                        <polyline points="22,6 12,13 2,6"/>
-                      </svg>
-                      Apply Now
-                    </>
+              <div className="cgc-meta-row">
+                <div className="cgc-meta-left">
+                  {jp.location && (
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {jp.location}
+                    </span>
                   )}
-                </button>
+                  {jp.worktype && (
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                      {jp.worktype}
+                    </span>
+                  )}
+                </div>
+                <span className="cgc-status-pill">Invited</span>
+              </div>
+
+              {skills.length > 0 && (
+                <div className="cgc-skills">
+                  {skills.slice(0, 4).map((sk, idx: number) => (
+                    <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+                  ))}
+                  {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
+                </div>
+              )}
+
+              <div className="cgc-footer">
+                {salary && <span className="cgc-match-pill">{salary}</span>}
+                <div className="cgc-footer-actions">
+                  <button className="cgc-icon-btn" onClick={() => setViewInviteJob(invite)} title="View job details">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                  <button
+                    className="cgc-apply-btn"
+                    onClick={() => handleApplyFromInvite(jp.id, invite.job_profile_id)}
+                    disabled={invite.already_applied || isBusy}
+                  >
+                    {applyingJobId === jp.id ? 'Applying…' : withdrawingJobId === jp.id ? 'Withdrawing…' : invite.already_applied ? 'Applied' : 'Apply Now'}
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -550,90 +404,21 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
 
       {/* Pagination Footer for Invites */}
       {filteredInvites.length > 0 && totalInvitePages > 1 && (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginTop: '24px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <button
-            disabled={currentInvitePage === 1}
-            onClick={() => setCurrentInvitePage(prev => Math.max(1, prev - 1))}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              background: currentInvitePage === 1 ? '#f8fafc' : 'white',
-              color: currentInvitePage === 1 ? '#94a3b8' : '#475569',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: currentInvitePage === 1 ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-            Previous
-          </button>
-
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-            {getInvitePageNumbers().map((pageNum, idx) => (
+        <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+          <span className="cp-pagination-info">
+            Showing {(currentInvitePage - 1) * INVITES_PER_PAGE + 1}–{Math.min(currentInvitePage * INVITES_PER_PAGE, filteredInvites.length)} of {filteredInvites.length} invites
+          </span>
+          <div className="cp-pagination-buttons">
+            <button className="cp-pag-btn" disabled={currentInvitePage === 1} onClick={() => setCurrentInvitePage(p => p - 1)}>← Prev</button>
+            {getInvitePageNumbers().map((pageNum, idx) =>
               pageNum === '...' ? (
-                <span key={`ellipsis-${idx}`} style={{ padding: '8px 4px', color: '#94a3b8', fontSize: '14px' }}>…</span>
+                <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
               ) : (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentInvitePage(pageNum as number)}
-                  style={{
-                    minWidth: '40px',
-                    height: '40px',
-                    border: currentInvitePage === pageNum ? 'none' : '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    background: currentInvitePage === pageNum ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'white',
-                    color: currentInvitePage === pageNum ? 'white' : '#475569',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}>
-                  {pageNum}
-                </button>
+                <button key={pageNum} className={`cp-pag-btn${currentInvitePage === pageNum ? ' active' : ''}`} onClick={() => setCurrentInvitePage(pageNum as number)}>{pageNum}</button>
               )
-            ))}
+            )}
+            <button className="cp-pag-btn" disabled={currentInvitePage === totalInvitePages} onClick={() => setCurrentInvitePage(p => p + 1)}>Next →</button>
           </div>
-
-          <button
-            disabled={currentInvitePage === totalInvitePages}
-            onClick={() => setCurrentInvitePage(prev => Math.min(totalInvitePages, prev + 1))}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              background: currentInvitePage === totalInvitePages ? '#f8fafc' : 'white',
-              color: currentInvitePage === totalInvitePages ? '#94a3b8' : '#475569',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: currentInvitePage === totalInvitePages ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-            Next
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-          </button>
         </div>
       )}
 

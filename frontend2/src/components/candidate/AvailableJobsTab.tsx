@@ -633,396 +633,80 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
       {/* Jobs Grid - Match Style */}
       {filteredJobs.length > 0 && (
-        <>
-          <style>{`
-            @media (max-width: 1400px) {
-              .available-jobs-grid { grid-template-columns: repeat(3, 1fr) !important; }
-            }
-            @media (max-width: 1200px) {
-              .available-jobs-grid { grid-template-columns: repeat(2, 1fr) !important; }
-            }
-            @media (max-width: 768px) {
-              .available-jobs-grid { grid-template-columns: 1fr !important; }
-            }
-          `}</style>
-          <div className="available-jobs-grid" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '20px',
-            padding: '0'
-          }}>
+        <div className="cgc-grid">
           {paginatedJobs.map((job) => {
             const companyInitial = job.company_name?.charAt(0).toUpperCase() || 'C';
             const salary = job.salary_min && job.salary_max
               ? `${job.salary_currency?.toUpperCase() || 'USD'} ${job.salary_min.toLocaleString()} – ${job.salary_max.toLocaleString()}`
               : null;
+            const isBusy = applyingJobId === job.id || withdrawingJobId === job.id;
 
             return (
-              <div key={job.id} style={{
-                background: 'white',
-                border: '1px solid #E2E4EC',
-                borderRadius: '16px',
-                padding: '24px',
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = '#60a5fa';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = '#E2E4EC';
-              }}>
-                {/* Header: Company Logo */}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '24px',
-                    fontWeight: '700',
-                    color: '#2563eb',
-                    marginBottom: '8px'
-                  }}>
+              <div key={job.id} className="cgc-card">
+                <div className="cgc-header">
+                  <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                     {companyInitial}
                   </div>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-                    {job.company_name || 'Company'}
+                  <div className="cgc-name-block">
+                    <div className="cgc-name">{job.job_title}</div>
+                    <div className="cgc-title">{job.company_name || 'Company'}</div>
                   </div>
-                  {/* NOTE: end_date is not part of the /candidate/available-jobs response — this
-                      has always been hidden. Flagging, not fixing: showing a real apply-by date
-                      needs a backend change, a product call outside this refactor. */}
-                  {(job as { end_date?: string }).end_date && (
-                    <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                      Apply by {new Date((job as { end_date?: string }).end_date!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </div>
-                  )}
                 </div>
 
-                {/* Job Title */}
-                <h3 style={{
-                  fontSize: '20px',
-                  fontWeight: '700',
-                  color: '#111827',
-                  marginBottom: '6px',
-                  lineHeight: '1.3',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical'
-                }}>
-                  {job.job_title}
-                </h3>
-
-                {/* Department/Category */}
-                <p style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '20px',
-                  fontWeight: '500'
-                }}>
-                  {job.job_role || 'Platform & Tools'}
-                </p>
-                {/* Job Details Grid (2x2) */}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '12px',
-                  marginBottom: '20px',
-                  paddingBottom: '20px',
-                  borderBottom: '1px solid #f3f4f6'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                <div className="cgc-meta-row">
+                  <div className="cgc-meta-left">
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                       {job.location || 'Remote'}
                     </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <path d="M12 6v6l4 2"/>
-                    </svg>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                    <span className="cgc-meta-item">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                       {job.employment_type || 'Full-time'}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                      <line x1="12" y1="1" x2="12" y2="23"/>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {salary || 'Competitive'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                      <rect x="2" y="7" width="20" height="14" rx="2"/>
-                      <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-                    </svg>
-                    <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {job.worktype || 'Onsite'}
-                    </span>
-                  </div>
+                  <span className="cgc-status-pill">{job.worktype || 'Onsite'}</span>
                 </div>
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
-                  <button
-                    onClick={() => setViewAvailableJob(job)}
-                    style={{
-                      flex: 1,
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: '1px solid #E2E4EC',
-                      background: 'white',
-                      color: '#111827',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f9fafb';
-                      e.currentTarget.style.borderColor = '#2563eb';
-                      e.currentTarget.style.color = '#2563eb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'white';
-                      e.currentTarget.style.borderColor = '#E2E4EC';
-                      e.currentTarget.style.color = '#111827';
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    View Details
-                  </button>
-                  <button
-                    onClick={() => handleApply(job.id)}
-                    disabled={job.already_applied || applyingJobId === job.id || withdrawingJobId === job.id}
-                    style={{
-                      flex: 1,
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      border: 'none',
-                      background: job.already_applied
-                        ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                        : '#111827',
-                      color: 'white',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: (job.already_applied || applyingJobId === job.id || withdrawingJobId === job.id) ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px',
-                      opacity: (job.already_applied || applyingJobId === job.id || withdrawingJobId === job.id) ? 0.9 : 1
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!job.already_applied && applyingJobId !== job.id && withdrawingJobId !== job.id) {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(17, 24, 39, 0.4)';
-                        e.currentTarget.style.background = '#1f2937';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!job.already_applied) {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                        e.currentTarget.style.background = '#111827';
-                      }
-                    }}
-                  >
-                    {applyingJobId === job.id ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                          <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        Applying...
-                      </>
-                    ) : withdrawingJobId === job.id ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                          <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        Withdrawing...
-                      </>
-                    ) : job.already_applied ? (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M20 6L9 17l-5-5"/>
-                        </svg>
-                        Applied
-                      </>
-                    ) : (
-                      <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                          <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                        Apply Now
-                      </>
-                    )}
-                  </button>
+
+                <div className="cgc-footer">
+                  {salary && <span className="cgc-match-pill">{salary}</span>}
+                  <div className="cgc-footer-actions">
+                    <button className="cgc-icon-btn" onClick={() => setViewAvailableJob(job)} title="View job details">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    </button>
+                    <button
+                      className="cgc-apply-btn"
+                      onClick={() => handleApply(job.id)}
+                      disabled={job.already_applied || isBusy}
+                    >
+                      {applyingJobId === job.id ? 'Applying…' : withdrawingJobId === job.id ? 'Withdrawing…' : job.already_applied ? 'Applied' : 'Apply Now'}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
-        </>
       )}
 
       {/* Pagination Footer */}
       {filteredJobs.length > 0 && totalPages > 1 && (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '16px 20px',
-          marginTop: '24px',
-          border: '1px solid var(--border-color, #e2e8f0)',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)' }}>
-            Showing <strong>{startIndex + 1}–{Math.min(endIndex, filteredJobs.length)}</strong> of <strong>{filteredJobs.length}</strong> jobs
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Previous Button */}
-            <button
-              onClick={() => setCurrentJobPage(prev => Math.max(1, prev - 1))}
-              disabled={currentJobPage === 1}
-              style={{
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                background: currentJobPage === 1 ? '#f8fafc' : 'white',
-                cursor: currentJobPage === 1 ? 'not-allowed' : 'pointer',
-                opacity: currentJobPage === 1 ? 0.5 : 1,
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                if (currentJobPage !== 1) {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentJobPage !== 1) {
-                  e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                }
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6"/>
-              </svg>
-            </button>
-
-            {/* Page Numbers */}
-            {getPageNumbers().map((page, index) => (
+        <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+          <span className="cp-pagination-info">
+            Showing {startIndex + 1}–{Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
+          </span>
+          <div className="cp-pagination-buttons">
+            <button className="cp-pag-btn" disabled={currentJobPage === 1} onClick={() => setCurrentJobPage(p => p - 1)}>← Prev</button>
+            {getPageNumbers().map((page, index) =>
               page === '...' ? (
-                <span key={`ellipsis-${index}`} style={{ padding: '0 4px', color: '#94a3b8' }}>...</span>
+                <span key={`ellipsis-${index}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
               ) : (
-                <button
-                  key={page}
-                  onClick={() => setCurrentJobPage(page as number)}
-                  style={{
-                    minWidth: '36px',
-                    height: '36px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: currentJobPage === page ? 'none' : '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    background: currentJobPage === page ? '#2563eb' : 'white',
-                    color: currentJobPage === page ? 'white' : '#475569',
-                    fontSize: '14px',
-                    fontWeight: currentJobPage === page ? 600 : 500,
-                    cursor: 'pointer',
-                    padding: '0 12px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (currentJobPage !== page) {
-                      e.currentTarget.style.background = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#cbd5e1';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (currentJobPage !== page) {
-                      e.currentTarget.style.background = 'white';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }
-                  }}
-                >
-                  {page}
-                </button>
+                <button key={page} className={`cp-pag-btn${currentJobPage === page ? ' active' : ''}`} onClick={() => setCurrentJobPage(page as number)}>{page}</button>
               )
-            ))}
-
-            {/* Next Button */}
-            <button
-              onClick={() => setCurrentJobPage(prev => Math.min(totalPages, prev + 1))}
-              disabled={currentJobPage === totalPages}
-              style={{
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                background: currentJobPage === totalPages ? '#f8fafc' : 'white',
-                cursor: currentJobPage === totalPages ? 'not-allowed' : 'pointer',
-                opacity: currentJobPage === totalPages ? 0.5 : 1,
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                if (currentJobPage !== totalPages) {
-                  e.currentTarget.style.background = '#f8fafc';
-                  e.currentTarget.style.borderColor = '#cbd5e1';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentJobPage !== totalPages) {
-                  e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                }
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </button>
+            )}
+            <button className="cp-pag-btn" disabled={currentJobPage === totalPages} onClick={() => setCurrentJobPage(p => p + 1)}>Next →</button>
           </div>
         </div>
       )}

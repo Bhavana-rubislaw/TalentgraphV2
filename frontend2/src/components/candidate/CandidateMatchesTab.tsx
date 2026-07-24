@@ -81,273 +81,81 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
 
   return (
     <>
-      <style>{`
-        @media (max-width: 1400px) {
-          .matches-grid { grid-template-columns: repeat(3, 1fr) !important; }
-        }
-        @media (max-width: 1200px) {
-          .matches-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
-        @media (max-width: 768px) {
-          .matches-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-      <div className="matches-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '20px',
-        padding: '0'
-      }}>
+      <div className="cgc-grid">
       {paginatedMatches.map((match) => {
         const companyInitial = match.company?.company_name?.charAt(0).toUpperCase() || 'C';
         const salary = formatSalary(match.job_posting.salary_min, match.job_posting.salary_max, match.job_posting.salary_currency);
+        const isNew = Date.now() - new Date(match.matched_at).getTime() < 3 * 24 * 60 * 60 * 1000;
+        const skills = match.job_posting.posting_skills || [];
 
         return (
-          <div key={match.match_id} style={{
-            background: 'white',
-            border: '1px solid #E2E4EC',
-            borderRadius: '16px',
-            padding: '24px',
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            position: 'relative'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.borderColor = '#60a5fa';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = '#E2E4EC';
-          }}>
-            {/* Mutual Match Badge - Top Right */}
-            <div style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              padding: '6px 12px',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-              borderRadius: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: 'white',
-              fontSize: '12px',
-              fontWeight: '600',
-              boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-              <span>{match.match_percentage}%</span>
-            </div>
-
-            {/* Header: Company Logo */}
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#2563eb',
-                marginBottom: '8px'
-              }}>
+          <div key={match.match_id} className="cgc-card">
+            <div className="cgc-header" style={{ paddingRight: 0 }}>
+              <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                 {companyInitial}
               </div>
-              <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-                {match.company?.company_name || 'Company'}
+              <div className="cgc-name-block">
+                <div className="cgc-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {match.company?.company_name || 'Company'}
+                  {isNew && <span className="cgc-status-pill" style={{ background: '#dbeafe', color: '#1d4ed8' }}>New</span>}
+                </div>
+                <div className="cgc-title">{match.job_posting.job_role || 'Professional'}</div>
               </div>
-              <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                Matched {new Date(match.matched_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              <div
+                className="ai-match-ring"
+                style={{ '--pct': match.match_percentage } as React.CSSProperties}
+                title={`${match.match_percentage}% match`}
+              >
+                <span className="ai-match-ring-value">{match.match_percentage}%</span>
               </div>
             </div>
 
-            {/* Job Title */}
-            <h3 style={{
-              fontSize: '20px',
-              fontWeight: '700',
-              color: '#111827',
-              marginBottom: '6px',
-              lineHeight: '1.3',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical'
-            }}>
-              {match.job_posting.job_title}
-            </h3>
-
-            {/* Department/Category */}
-            <p style={{
-              fontSize: '14px',
-              color: '#6b7280',
-              marginBottom: '20px',
-              fontWeight: '500'
-            }}>
-              {match.job_posting.job_role || 'Platform & Tools'}
-            </p>
-
-            {/* Job Details Grid (2x2) */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px',
-              marginBottom: '20px',
-              paddingBottom: '20px',
-              borderBottom: '1px solid #f3f4f6'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+            <div className="cgc-meta-row">
+              <div className="cgc-meta-left">
+                <span className="cgc-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                   {match.job_posting.location || 'Remote'}
                 </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 6v6l4 2"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
+                <span className="cgc-meta-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                   {match.job_posting.employment_type || 'Full-time'}
                 </span>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <line x1="12" y1="1" x2="12" y2="23"/>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {salary || 'Competitive'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                  <circle cx="9" cy="7" r="4"/>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                {/* NOTE: applicants_count is not part of the /candidate/matches response —
-                    this has always rendered "0 applied". Flagging, not fixing: showing a
-                    real count needs a backend change, a product call outside this refactor. */}
-                <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                  {(match.job_posting as { applicants_count?: number }).applicants_count || '0'} applied
-                </span>
-              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
-              <button
-                onClick={() => setViewMatchJob(match)}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: '1px solid #E2E4EC',
-                  background: 'white',
-                  color: '#111827',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#2563eb';
-                  e.currentTarget.style.color = '#2563eb';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#E2E4EC';
-                  e.currentTarget.style.color = '#111827';
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                View Details
-              </button>
-              <button
-                onClick={() => handleApplyFromMatch(match.job_posting.id, match.job_profile_id)}
-                disabled={match.already_applied || applyingJobId === match.job_posting.id}
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: match.already_applied
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : '#111827',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: (match.already_applied || applyingJobId === match.job_posting.id) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '6px',
-                  opacity: (match.already_applied || applyingJobId === match.job_posting.id) ? 0.9 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (!match.already_applied && applyingJobId !== match.job_posting.id) {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(17, 24, 39, 0.4)';
-                    e.currentTarget.style.background = '#1f2937';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!match.already_applied) {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.background = '#111827';
-                  }
-                }}
-              >
-                {applyingJobId === match.job_posting.id ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon">
-                      <circle cx="12" cy="12" r="10"/>
-                    </svg>
-                    Applying...
-                  </>
-                ) : match.already_applied ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5"/>
-                    </svg>
-                    Applied
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                    Apply Now
-                  </>
-                )}
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#2563eb', fontWeight: 600, marginBottom: '14px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h7l-1 8 11-14h-7l1-8z"/></svg>
+              Matched for <span style={{ color: '#111827' }}>{match.job_posting.job_title}</span>
+            </div>
+
+            {skills.length > 0 && (
+              <div className="cgc-skills">
+                {skills.slice(0, 4).map((sk, idx: number) => (
+                  <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+                ))}
+                {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
+              </div>
+            )}
+
+            <div className="cgc-footer">
+              {salary && <span className="cgc-match-pill">{salary}</span>}
+              <div className="cgc-footer-actions">
+                <button
+                  className="cgc-icon-btn"
+                  onClick={() => setActiveTab('messages')}
+                  title="Message the recruiter for this job"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                <button
+                  className="cgc-apply-btn"
+                  onClick={() => setViewMatchJob(match)}
+                >
+                  View
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -356,90 +164,21 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
 
     {/* Pagination Footer for Matches */}
     {matches.length > 0 && totalMatchPages > 1 && (
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        padding: '16px 20px',
-        marginTop: '24px',
-        border: '1px solid #e2e8f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <button
-          disabled={currentMatchPage === 1}
-          onClick={() => setCurrentMatchPage(prev => Math.max(1, prev - 1))}
-          style={{
-            padding: '8px 16px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            background: currentMatchPage === 1 ? '#f8fafc' : 'white',
-            color: currentMatchPage === 1 ? '#94a3b8' : '#475569',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: currentMatchPage === 1 ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-          Previous
-        </button>
-
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
-          {getMatchPageNumbers().map((pageNum, idx) => (
+      <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+        <span className="cp-pagination-info">
+          Showing {startMatchIndex + 1}–{Math.min(endMatchIndex, matches.length)} of {matches.length} matches
+        </span>
+        <div className="cp-pagination-buttons">
+          <button className="cp-pag-btn" disabled={currentMatchPage === 1} onClick={() => setCurrentMatchPage(p => p - 1)}>← Prev</button>
+          {getMatchPageNumbers().map((pageNum, idx) =>
             pageNum === '...' ? (
-              <span key={`ellipsis-${idx}`} style={{ padding: '8px 4px', color: '#94a3b8', fontSize: '14px' }}>…</span>
+              <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
             ) : (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentMatchPage(pageNum as number)}
-                style={{
-                  minWidth: '40px',
-                  height: '40px',
-                  border: currentMatchPage === pageNum ? 'none' : '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  background: currentMatchPage === pageNum ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : 'white',
-                  color: currentMatchPage === pageNum ? 'white' : '#475569',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}>
-                {pageNum}
-              </button>
+              <button key={pageNum} className={`cp-pag-btn${currentMatchPage === pageNum ? ' active' : ''}`} onClick={() => setCurrentMatchPage(pageNum as number)}>{pageNum}</button>
             )
-          ))}
+          )}
+          <button className="cp-pag-btn" disabled={currentMatchPage === totalMatchPages} onClick={() => setCurrentMatchPage(p => p + 1)}>Next →</button>
         </div>
-
-        <button
-          disabled={currentMatchPage === totalMatchPages}
-          onClick={() => setCurrentMatchPage(prev => Math.min(totalMatchPages, prev + 1))}
-          style={{
-            padding: '8px 16px',
-            border: '1px solid #e2e8f0',
-            borderRadius: '8px',
-            background: currentMatchPage === totalMatchPages ? '#f8fafc' : 'white',
-            color: currentMatchPage === totalMatchPages ? '#94a3b8' : '#475569',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: currentMatchPage === totalMatchPages ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}>
-          Next
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
       </div>
     )}
 
