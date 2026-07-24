@@ -407,7 +407,7 @@ export default function ChatWindow({ matches, applications, onScheduleInterview 
                       )}
                     </div>
                     <div className="conv-subtitle">
-                      {user?.role === 'candidate' ? 'Stripe · Senior Recruiter' : 'Candidate'}
+                      {user?.role === 'candidate' ? 'Recruiter' : 'Candidate'}
                     </div>
                     <div className="conv-preview-row-v2">
                       <span className="conv-preview-v2">{conv.last_message_preview || 'No messages yet'}</span>
