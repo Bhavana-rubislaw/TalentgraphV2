@@ -384,7 +384,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                 }
               }}
             >
-              {isApplying ? 'Applying…' : withdrawingJobId === job.job_id ? 'Withdrawing…' : isApplied ? 'Applied ✓' : 'Apply'}
+              {isApplying ? 'Applying…' : withdrawingJobId === job.job_id ? 'Withdrawing…' : isApplied ? 'Applied' : 'Apply'}
             </button>
           </div>
         </div>
@@ -493,7 +493,9 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {stage >= 1 ? '✓' : '1'}
+                  {stage >= 1 ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ width: 14, height: 14 }}><path d="M20 6L9 17l-5-5"/></svg>
+                  ) : '1'}
                 </div>
                 <span style={{ fontSize: '11px', color: stage >= 1 ? '#475569' : '#94a3b8', fontWeight: 500 }}>
                   Submitted
@@ -513,7 +515,9 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {stage >= 2 ? '✓' : '2'}
+                  {stage >= 2 ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ width: 14, height: 14 }}><path d="M20 6L9 17l-5-5"/></svg>
+                  ) : '2'}
                 </div>
                 <span style={{ fontSize: '11px', color: stage >= 2 ? '#475569' : '#94a3b8', fontWeight: 500 }}>
                   In Review
@@ -533,7 +537,9 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {stage >= 3 ? '✓' : '3'}
+                  {stage >= 3 ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ width: 14, height: 14 }}><path d="M20 6L9 17l-5-5"/></svg>
+                  ) : '3'}
                 </div>
                 <span style={{ fontSize: '11px', color: stage >= 3 ? '#475569' : '#94a3b8', fontWeight: 500 }}>
                   Interview
@@ -553,7 +559,9 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
                   fontSize: '12px',
                   fontWeight: '600'
                 }}>
-                  {stage >= 4 ? '✓' : '4'}
+                  {stage >= 4 ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ width: 14, height: 14 }}><path d="M20 6L9 17l-5-5"/></svg>
+                  ) : '4'}
                 </div>
                 <span style={{ fontSize: '11px', color: stage >= 4 ? '#475569' : '#94a3b8', fontWeight: 500 }}>
                   Offer
@@ -679,7 +687,7 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
             ) : isApplied ? (
               <>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"/></svg>
-                Applied ✓
+                Applied
               </>
             ) : (
               <>

@@ -959,3 +959,151 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ====== CANDIDATE DASHBOARD LAYOUT ======
+   Same glass-panel skin as .recruiter-dashboard above, ported so the
+   candidate dashboard matches the recruiter redesign. The candidate page
+   has no grid/stack wrapper around its KPI banner + content (the banner
+   always stacks above the content panel, never beside it), so the
+   grid/rail rules from the recruiter block are intentionally omitted here. */
+.candidate-dashboard.horizontal-dashboard {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(37, 99, 235, 0.10) 1px, transparent 0) 0 0/24px 24px,
+    linear-gradient(135deg, #f8fafc 0%, #eff6ff 52%, #ffffff 100%);
+}
+
+.candidate-dashboard .talentgraph-topnav {
+  height: 64px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.candidate-dashboard .talentgraph-logo-icon,
+.candidate-dashboard .talentgraph-user-avatar,
+.candidate-dashboard .avatar-circle-compact {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.24), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.candidate-dashboard .talentgraph-user-btn,
+.candidate-dashboard .notif-bell-wrapper .icon-btn.notification-btn {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.candidate-dashboard .talentgraph-user-btn:hover,
+.candidate-dashboard .notif-bell-wrapper .icon-btn.notification-btn:hover {
+  background: #ffffff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.candidate-dashboard .talentgraph-tabs-container {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.86);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+  overflow-x: auto;
+  position: sticky;
+  top: 64px;
+  z-index: 90;
+}
+
+.candidate-dashboard .talentgraph-tab {
+  padding: 13px 18px;
+  border-radius: 12px 12px 0 0;
+}
+
+.candidate-dashboard .talentgraph-tab:hover,
+.candidate-dashboard .talentgraph-tab.active {
+  background: rgba(239, 246, 255, 0.82);
+  color: #2563eb;
+}
+
+.candidate-dashboard .talentgraph-tab-create,
+.candidate-dashboard .talentgraph-btn-primary,
+.candidate-dashboard .ai-action-btn.apply,
+.candidate-dashboard .ai-action-btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+}
+
+.candidate-dashboard .talentgraph-tab-create:hover,
+.candidate-dashboard .talentgraph-btn-primary:hover,
+.candidate-dashboard .ai-action-btn.apply:hover,
+.candidate-dashboard .ai-action-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.32), inset 0 1px 0 rgba(255,255,255,0.32) !important;
+}
+
+.candidate-dashboard .talentgraph-main-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding: 20px 24px 40px;
+}
+
+.candidate-dashboard .welcome-banner-modern,
+.candidate-dashboard .content-panel-horizontal,
+.candidate-dashboard .kpi-card,
+.candidate-dashboard .profile-menu {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.85);
+  backdrop-filter: blur(14px);
+}
+
+.candidate-dashboard .welcome-banner-modern {
+  margin-bottom: 20px;
+}
+
+.candidate-dashboard .content-panel-horizontal {
+  padding: 32px;
+  min-width: 0;
+}
+
+/* Messages tab only — mirrors the recruiter fix (0536d38) that lets the
+   chat window fill to the bottom of the viewport instead of stopping at
+   its own min-height. See the matching recruiter block above for the full
+   rationale; the candidate page has no intermediate stack/grid wrapper, so
+   the chain here is one link shorter (main-content -> content-panel -> chat). */
+.candidate-dashboard .content-panel-horizontal.messages-tab-active {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.candidate-dashboard .talentgraph-main-content:has(.content-panel-horizontal.messages-tab-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-dashboard .kpi-card {
+  min-height: 112px;
+  justify-content: center;
+}
+
+.candidate-dashboard .kpi-card.kpi-card-green { border-left: 4px solid #10b981; }
+.candidate-dashboard .kpi-card.kpi-card-blue { border-left: 4px solid #3b82f6; }
+.candidate-dashboard .kpi-card.kpi-card-purple { border-left: 4px solid #8b5cf6; }
+.candidate-dashboard .kpi-card.kpi-card-orange { border-left: 4px solid #f59e0b; }
+
+@media (max-width: 640px) {
+  .candidate-dashboard .talentgraph-main-content {
+    padding: 16px 16px 32px;
+  }
+}

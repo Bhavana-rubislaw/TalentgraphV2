@@ -92,14 +92,14 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
   if (availableJobs.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <div className="empty-state-modern">
+        <div className="empty-icon-professional">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M20 7h-4V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM10 5h4v2h-4V5z"/>
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800">No jobs available</h3>
-        <p className="mt-2 text-sm text-gray-500">New opportunities are posted regularly. Check back soon or create job preferences for personalized recommendations.</p>
+        <h3 className="empty-title">No jobs available</h3>
+        <p className="empty-subtitle">New opportunities are posted regularly. Check back soon or create job preferences for personalized recommendations.</p>
       </div>
     );
   }
@@ -616,23 +616,18 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
       {/* Empty State for Filtered Results */}
       {filteredJobs.length === 0 && hasActiveFilters && (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-          <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <div className="empty-state-modern">
+          <div className="empty-icon-professional">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="8"/>
               <path d="m21 21-4.35-4.35"/>
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-800">No jobs match your filters</h3>
-          <p className="mt-2 text-sm text-gray-500">Try adjusting your search criteria or clearing filters to see more results.</p>
-          <div className="mt-6">
-            <button
-              onClick={clearAllJobFilters}
-              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Clear All Filters
-            </button>
-          </div>
+          <h3 className="empty-title">No jobs match your filters</h3>
+          <p className="empty-subtitle">Try adjusting your search criteria or clearing filters to see more results.</p>
+          <button onClick={clearAllJobFilters} className="btn btn-primary">
+            Clear All Filters
+          </button>
         </div>
       )}
 
@@ -1216,7 +1211,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                     <path d="M20 6L9 17l-5-5"/>
                   </svg>
-                  Applied ✓
+                  Applied
                 </>
               ) : (
                 <>

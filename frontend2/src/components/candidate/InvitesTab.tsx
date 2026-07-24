@@ -34,14 +34,14 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
 
   if (invites.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <div className="mx-auto mb-4 h-16 w-16 text-gray-400">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <div className="empty-state-modern">
+        <div className="empty-icon-professional">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-gray-800">No invites yet</h3>
-        <p className="mt-2 text-sm text-gray-500">Recruiters will send you invitations when they identify you as a strong match for their opportunities.</p>
+        <h3 className="empty-title">No invites yet</h3>
+        <p className="empty-subtitle">Recruiters will send you invitations when they identify you as a strong match for their opportunities.</p>
       </div>
     );
   }
@@ -530,7 +530,7 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
-                      Applied ✓
+                      Applied
                     </>
                   ) : (
                     <>

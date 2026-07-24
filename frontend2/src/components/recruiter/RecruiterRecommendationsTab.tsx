@@ -469,16 +469,16 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
                             <div style={{ color: '#6B7280' }}>
-                              <span style={{ fontWeight: 500 }}>📍 Location:</span> {rec.job_posting.location_city || 'Remote'}
+                              <span style={{ fontWeight: 500 }}>Location:</span> {rec.job_posting.location_city || 'Remote'}
                             </div>
                             <div style={{ color: '#6B7280' }}>
-                              <span style={{ fontWeight: 500 }}>💰 Salary:</span> ${rec.job_posting.salary_min || 0}k-${rec.job_posting.salary_max || 0}k
+                              <span style={{ fontWeight: 500 }}>Salary:</span> ${rec.job_posting.salary_min || 0}k-${rec.job_posting.salary_max || 0}k
                             </div>
                             <div style={{ color: '#6B7280' }}>
-                              <span style={{ fontWeight: 500 }}>🏢 Type:</span> {rec.job_posting.worktype || 'Full-time'}
+                              <span style={{ fontWeight: 500 }}>Type:</span> {rec.job_posting.worktype || 'Full-time'}
                             </div>
                             <div style={{ color: '#6B7280' }}>
-                              <span style={{ fontWeight: 500 }}>📊 Experience:</span> {rec.job_posting.years_of_experience || 0}+ yrs
+                              <span style={{ fontWeight: 500 }}>Experience:</span> {rec.job_posting.years_of_experience || 0}+ yrs
                             </div>
                           </div>
                         </div>
@@ -554,7 +554,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                         <polyline points="22,6 12,13 2,6"/>
                       </svg>
-                      {rec.action_taken === 'ask_to_apply' ? '✓ Invitation Sent' : 'Invite to Apply'}
+                      {rec.action_taken === 'ask_to_apply' ? 'Invitation Sent' : 'Invite to Apply'}
                     </button>
                   </div>
                 );
@@ -759,7 +759,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
           {/* Recruiter Tip */}
           <div className="ai-pro-tip-card" style={{ background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)', borderRadius: '12px', padding: '16px', border: '1px solid #FCD34D' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-              <div style={{ fontSize: '20px' }}>💡</div>
+              <div style={{ flexShrink: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2" width="20" height="20">
+                  <path d="M9 18h6M10 22h4M15 2a6 6 0 0 1 3 11.24V16a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.76A6 6 0 0 1 9 2z"/>
+                </svg>
+              </div>
               <div>
                 <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#92400E', margin: 0, marginBottom: '6px' }}>
                   Recruiter Tip
@@ -1305,7 +1309,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
-                  {rec.action_taken === 'pass' ? 'Passed ✓' : 'Pass'}
+                  {rec.action_taken === 'pass' ? 'Passed' : 'Pass'}
                 </button>
                 <button
                   className={`vp-btn ${rec.action_taken === 'like' ? 'vp-btn-done-like' : 'vp-btn-primary'}`}
@@ -1315,7 +1319,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                   <svg viewBox="0 0 24 24" fill={rec.action_taken === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                   </svg>
-                  {rec.action_taken === 'like' ? 'Shortlisted ✓' : 'Like'}
+                  {rec.action_taken === 'like' ? 'Shortlisted' : 'Like'}
                 </button>
                 <button
                   className={`vp-btn ${rec.action_taken === 'ask_to_apply' ? 'vp-btn-done-invite' : 'vp-btn-success'}`}
@@ -1326,7 +1330,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
-                  {rec.action_taken === 'ask_to_apply' ? '✓ Asked to Apply' : 'Ask to Apply'}
+                  {rec.action_taken === 'ask_to_apply' ? 'Asked to Apply' : 'Ask to Apply'}
                 </button>
                 <button
                   className="vp-btn vp-btn-message"

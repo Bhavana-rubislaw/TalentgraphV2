@@ -1109,7 +1109,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
-                {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass' ? 'Passed ✓' : 'Pass'}
+                {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'pass' ? 'Passed' : 'Pass'}
               </button>
               <button
                 className="cal-btn cal-btn-primary"
@@ -1122,7 +1122,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                 <svg viewBox="0 0 24 24" fill={viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                 </svg>
-                {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'Liked ✓' : 'Like'}
+                {viewRecommendationJob.already_swiped && viewRecommendationJob.swipe_action === 'like' ? 'Liked' : 'Like'}
               </button>
               <button
                 className="cal-btn cal-btn-primary"
@@ -1146,7 +1146,7 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                 {withdrawingJobId === viewRecommendationJob.job_posting.id
                   ? 'Withdrawing...'
                   : viewRecommendationJob.already_applied
-                    ? 'Applied ✓'
+                    ? 'Applied'
                     : (applyingJobId === viewRecommendationJob.job_posting.id ? 'Applying...' : 'Apply Now')
                 }
               </button>

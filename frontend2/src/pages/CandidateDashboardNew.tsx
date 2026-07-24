@@ -448,22 +448,8 @@ const CandidateDashboard: React.FC = () => {
   const userName = userProfile?.name || 'User';
   const userInitial = userName.charAt(0).toUpperCase();
 
-  // Get tab display name
-  const getTabDisplayName = (tab: string) => {
-    const names: Record<string, string> = {
-      recommendations: 'Recommendations',
-      invites: 'Invites',
-      available: 'Available',
-      applied: 'Applied',
-      matches: 'Matches',
-      messages: 'Messages',
-      meetings: 'Meetings'
-    };
-    return names[tab] || tab;
-  };
-
   return (
-    <div className="horizontal-dashboard">
+    <div className="horizontal-dashboard candidate-dashboard">
       {/* Top Navigation Bar */}
       <div className="talentgraph-topnav">
         <div className="talentgraph-topnav-left">
@@ -622,15 +608,6 @@ const CandidateDashboard: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="talentgraph-main-content">
-        {/* Breadcrumb */}
-        <div className="talentgraph-breadcrumb">
-          <a href="#" className="talentgraph-breadcrumb-link">Dashboard</a>
-          <span className="talentgraph-breadcrumb-separator">›</span>
-          <span className="talentgraph-breadcrumb-current">{getTabDisplayName(activeTab)}</span>
-        </div>
-
-
-
         {/* Welcome Banner with KPI Cards — only on Recommendations tab */}
         {activeTab === 'recommendations' && (
           <div className="welcome-banner-modern">
@@ -718,7 +695,7 @@ const CandidateDashboard: React.FC = () => {
         )}
 
         {/* Tab Content */}
-        <div className="content-section">
+        <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}`}>
           {renderActiveTab()}
         </div>
       </div>
