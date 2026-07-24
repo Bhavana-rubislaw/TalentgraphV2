@@ -24,6 +24,8 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
   setIsScheduleInterviewModalOpen,
 }) => {
   const [viewProfileMatch, setViewProfileMatch] = useState<RecruiterMatch | null>(null);
+  const [matchesPage, setMatchesPage] = useState(1);
+  const MATCHES_PAGE_SIZE = 9;
 
   if (matches.length === 0) {
     return (
@@ -42,6 +44,22 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
       </div>
     );
   }
+
+  const totalMatchesPages = Math.max(1, Math.ceil(matches.length / MATCHES_PAGE_SIZE));
+  const currentMatchesPage = Math.min(matchesPage, totalMatchesPages);
+  const paginatedMatches = matches.slice(
+    (currentMatchesPage - 1) * MATCHES_PAGE_SIZE,
+    currentMatchesPage * MATCHES_PAGE_SIZE
+  );
+
+  const getMatchesPageNumbers = (): (number | string)[] => {
+    if (totalMatchesPages <= 7) return Array.from({ length: totalMatchesPages }, (_, i) => i + 1);
+    const pages: (number | string)[] = [];
+    if (currentMatchesPage <= 4) { pages.push(1, 2, 3, 4, 5, '...', totalMatchesPages); }
+    else if (currentMatchesPage >= totalMatchesPages - 3) { pages.push(1, '...', totalMatchesPages - 4, totalMatchesPages - 3, totalMatchesPages - 2, totalMatchesPages - 1, totalMatchesPages); }
+    else { pages.push(1, '...', currentMatchesPage - 1, currentMatchesPage, currentMatchesPage + 1, '...', totalMatchesPages); }
+    return pages;
+  };
 
   return (
     <>
@@ -63,7 +81,7 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
       gap: '20px',
       padding: '0'
     }}>
-      {matches.map((match, index) => {
+      {paginatedMatches.map((match, index) => {
         const candidateInitial = match.candidate.name?.charAt(0).toUpperCase() || 'C';
         const skills = match.job_profile?.skills || [];
         const isNew = Date.now() - new Date(match.matched_at).getTime() < 3 * 24 * 60 * 60 * 1000;
@@ -159,6 +177,24 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
         );
       })}
     </div>
+
+      {/* Pagination */}
+      <div className="cp-pagination-footer" style={{ marginTop: '28px', borderRadius: 12 }}>
+        <span className="cp-pagination-info">
+          Showing {(currentMatchesPage - 1) * MATCHES_PAGE_SIZE + 1}–{Math.min(currentMatchesPage * MATCHES_PAGE_SIZE, matches.length)} of {matches.length} matches
+        </span>
+        <div className="cp-pagination-buttons">
+          <button className="cp-pag-btn" disabled={currentMatchesPage === 1} onClick={() => setMatchesPage(p => p - 1)}>← Prev</button>
+          {getMatchesPageNumbers().map((pn, i) =>
+            pn === '...' ? (
+              <span key={`e${i}`} style={{ padding: '0 4px', color: '#9ca3af' }}>…</span>
+            ) : (
+              <button key={pn} className={`cp-pag-btn${currentMatchesPage === pn ? ' active' : ''}`} onClick={() => setMatchesPage(pn as number)}>{pn}</button>
+            )
+          )}
+          <button className="cp-pag-btn" disabled={currentMatchesPage >= totalMatchesPages} onClick={() => setMatchesPage(p => p + 1)}>Next →</button>
+        </div>
+      </div>
 
       {/* ── View Profile Modal ── */}
       {viewProfileMatch && (() => {

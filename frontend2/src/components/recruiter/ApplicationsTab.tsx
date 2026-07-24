@@ -1077,45 +1077,7 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
           )}
         </div>
       </div>
-
-        {/* RIGHT: Permissions Guide */}
-        <aside className="ra-permissions-panel" aria-label="Applications permissions guide">
-          <div className="ra-permissions-header">
-            <div className="ra-permissions-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <div>
-              <div className="ra-permissions-title">Applications</div>
-              <div className="ra-permissions-subtitle">Recruiter permissions</div>
-            </div>
-          </div>
-
-          <div className="ra-permission-card recruiter">
-            <div className="ra-permission-card-title">
-              <span className="ra-permission-badge recruiter">Recruiter</span>
-              <span>Full pipeline access</span>
-            </div>
-            <ul className="ra-permission-list recruiter">
-              {['Review and move all stages', 'Applied → Scheduled → Under Review', 'Shortlisted → Selected / Rejected', 'Schedule interviews', 'Message candidates', 'Add recruiter notes'].map(item => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="ra-permission-card hr">
-            <div className="ra-permission-card-title">
-              <span className="ra-permission-badge hr">HR</span>
-              <span>Can also</span>
-            </div>
-            <ul className="ra-permission-list hr">
-              {['View all applications', 'Schedule interviews', 'Download resumes and certifications', 'Message candidates', 'Add HR notes', 'Set Selected / Rejected'].map(item => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <div className="ra-permission-note">HR cannot move applications through every pipeline stage.</div>
-          </div>
-        </aside>
-      
+        
       
       {/* ─── Email Composer Modal ─── */}
       {/* NOTE: no button in this UI currently calls setShowEmailComposer(true) (pre-existing —

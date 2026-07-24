@@ -54,7 +54,7 @@
   width: 100%;
   padding: 0 0 16px 0;
   background: var(--ra-bg);
-  min-height: 0;
+  min-height: 90vh;
 }
 
 /* Section headings (for visual hierarchy) */
@@ -323,7 +323,7 @@
   border-radius: var(--ra-radius-lg);
   background: var(--ra-surface);
   overflow: hidden;
-  height: calc(100vh - 290px);
+  height: calc(100vh - 170px);
   min-height: 480px;
   box-shadow: var(--ra-shadow-card);
 }
@@ -2060,192 +2060,6 @@
   padding: 0 20px;
 }
 
-/* ====== THREE-COLUMN APPLICATIONS WORKSPACE ====== */
-.ra-split {
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(220px, 260px);
-  height: calc(100vh - 235px);
-  min-height: 520px;
-}
-
-.ra-list-panel {
-  border-radius: var(--ra-radius-lg) 0 0 var(--ra-radius-lg);
-}
-
-.ra-detail-panel {
-  border-right: 1px solid var(--ra-border);
-  border-radius: 0;
-}
-
-.ra-permissions-panel {
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border-radius: 0 var(--ra-radius-lg) var(--ra-radius-lg) 0;
-}
-
-.ra-permissions-panel::-webkit-scrollbar {
-  width: 6px;
-}
-
-.ra-permissions-panel::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ra-permissions-panel::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-
-.ra-permissions-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--ra-border);
-}
-
-.ra-permissions-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #5b8def 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
-  flex-shrink: 0;
-}
-
-.ra-permissions-icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.ra-permissions-title {
-  font-size: 14px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: var(--ra-text-1);
-}
-
-.ra-permissions-subtitle {
-  margin-top: 2px;
-  font-size: 11px;
-  line-height: 1.2;
-  color: var(--ra-text-3);
-}
-
-.ra-permission-card {
-  border: 1px solid var(--ra-border);
-  border-radius: var(--ra-radius-md);
-  padding: 14px;
-  box-shadow: var(--ra-shadow-sm);
-}
-
-.ra-permission-card.recruiter {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-}
-
-.ra-permission-card.hr {
-  background: #f8fafc;
-  border-color: #e2e8f0;
-}
-
-.ra-permission-card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ra-text-2);
-}
-
-.ra-permission-badge {
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.ra-permission-badge.recruiter {
-  color: #047857;
-  background: #d1fae5;
-}
-
-.ra-permission-badge.hr {
-  color: #475569;
-  background: #e2e8f0;
-}
-
-.ra-permission-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.ra-permission-list li {
-  position: relative;
-  padding-left: 20px;
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--ra-text-2);
-}
-
-.ra-permission-list li::before {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.ra-permission-list.recruiter li::before {
-  content: '✓';
-  color: #ffffff;
-  background: #16a34a;
-}
-
-.ra-permission-list.hr li::before {
-  content: 'i';
-  color: #ffffff;
-  background: #64748b;
-  font-family: Georgia, serif;
-  font-style: italic;
-}
-
-.ra-permission-note {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px dashed #cbd5e1;
-  font-size: 11px;
-  line-height: 1.4;
-  color: #94a3b8;
-}
-
 @media (max-width: 1280px) {
   .ra-split {
     grid-template-columns: minmax(240px, 285px) minmax(0, 1fr) minmax(200px, 230px);
@@ -2271,3 +2085,49 @@
     border-top: 1px solid var(--ra-border);
   }
 }
+
+/* Keep the permissions guide visibly split into two role-specific blocks in the right column. */
+.ra-permissions-panel {
+  align-self: stretch;
+}
+
+.ra-permission-card {
+  width: 100%;
+}
+
+.ra-permission-card-title {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ra-permission-card-title > span:last-child {
+  font-size: 12px;
+  line-height: 1.25;
+}
+/* 
+@media (max-width: 1280px) {
+  .ra-split {
+    grid-template-columns: minmax(240px, 285px) minmax(0, 1fr) minmax(220px, 230px);
+  }
+}
+
+@media (max-width: 1024px) {
+  .ra-split {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+
+  .ra-list-panel,
+  .ra-detail-panel,
+  .ra-permissions-panel {
+    border-radius: 0;
+    border-right: none;
+  }
+
+  .ra-permissions-panel {
+    max-height: 360px;
+    border-top: 1px solid var(--ra-border);
+  }
+} */
