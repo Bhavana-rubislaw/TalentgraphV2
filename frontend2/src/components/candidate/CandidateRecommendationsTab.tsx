@@ -687,9 +687,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
             {/* Upcoming Interviews Card */}
             {(() => {
               const now = new Date();
-              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-              const weekStart = new Date(todayStart);
-              weekStart.setDate(todayStart.getDate() - todayStart.getDay());
               const upcomingList = allMeetings
                 .filter((m: any) => m.scheduled_start && new Date(m.scheduled_start) >= now && m.status !== 'cancelled')
                 .sort((a: any, b: any) => new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime());
@@ -697,10 +694,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               const totalUpcomingPages = Math.ceil(upcomingList.length / UPCOMING_PAGE_SIZE);
               const safeUpcomingPage = upcomingList.length === 0 ? 0 : Math.min(upcomingInterviewPage, totalUpcomingPages - 1);
               const upcomingPageItems = upcomingList.slice(safeUpcomingPage * UPCOMING_PAGE_SIZE, safeUpcomingPage * UPCOMING_PAGE_SIZE + UPCOMING_PAGE_SIZE);
-              const pastThisWeek = allMeetings.filter((m: any) => {
-                const d = m.scheduled_start ? new Date(m.scheduled_start) : null;
-                return d && d >= weekStart && d < todayStart;
-              }).length;
               const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
               const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
               const statusColor: Record<string, string> = { scheduled: '#10B981', completed: '#6B7280', cancelled: '#EF4444', rescheduled: '#F59E0B' };
@@ -804,17 +797,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                         aria-label="Next"
                       >›</button>
                     </div>
-                  )}
-                  {pastList.length > 0 && (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0 10px 0' }}>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.7px' }}>Recent Past</span>
-                        {pastThisWeek > 0 && (
-                          <span style={{ fontSize: '10px', fontWeight: 600, color: '#6B7280', background: '#F3F4F6', padding: '2px 8px', borderRadius: '10px' }}>{pastThisWeek} this week</span>
-                        )}
-                      </div>
-                      {pastList.map((m: any) => renderCard(m, true))}
-                    </>
                   )}
                 </div>
               );
