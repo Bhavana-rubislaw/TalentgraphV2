@@ -1129,6 +1129,30 @@
   min-height: 0;
 }
 
+/* Matches tab only — nudges the outer box down slightly (matching
+   available-tab-active) and stretches it to fill the remaining viewport
+   height, so the box itself reaches the bottom of the page instead of
+   leaving a large stretch of bare page background below a short card
+   grid. The grid still sits at its natural height at the top of the
+   box — any leftover space is blank box background, not blank page. */
+.candidate-dashboard .content-panel-horizontal.matches-tab-active {
+  margin-top: 38px;
+  flex: 1;
+  min-height: 0;
+}
+
+.candidate-dashboard .talentgraph-main-content:has(.content-panel-horizontal.matches-tab-active) {
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-dashboard .candidate-dashboard-stack:has(.content-panel-horizontal.matches-tab-active) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* Messages tab only — mirrors the recruiter fix (0536d38) that lets the
    chat window fill to the bottom of the viewport instead of stopping at
    its own min-height. The Messages tab always renders through
