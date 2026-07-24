@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import ReactDOM from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import DetailDrawer from '../common/DetailDrawer';
-import { useOutsideClick } from '../../hooks/useOutsideClick';
 import { useSwipeCarousel } from '../../hooks/useSwipeCarousel';
 import {
   MatchBreakdownBars,
@@ -14,151 +12,6 @@ import {
 } from '../MatchInsights';
 import type { CandidateRecommendation } from '../../types/recommendation';
 import type { Meeting } from '../../types/meeting';
-
-// ── FilterPill: fully custom accessible dropdown ──────────────────────────────
-interface FilterPillOption {
-  value: string | number;
-  label: string;
-}
-interface FilterPillProps {
-  id: string;
-  icon: React.ReactNode;
-  options: FilterPillOption[];
-  value: string | number;
-  onChange: (val: string | number) => void;
-  ariaLabel?: string;
-}
-const FilterPill: React.FC<FilterPillProps> = ({ id, icon, options, value, onChange, ariaLabel }) => {
-  const [open, setOpen] = React.useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const menuRef = React.useRef<HTMLUListElement>(null);
-  const [focusedIdx, setFocusedIdx] = React.useState(0);
-  const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0, width: 0 });
-
-  const selectedOption = options.find(o => o.value === value) ?? options[0];
-  const isActive = value !== options[0]?.value;
-
-  // Calculate menu position when opening
-  React.useEffect(() => {
-    if (open && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + 7,
-        left: rect.left,
-        width: Math.max(rect.width, 190)
-      });
-    }
-  }, [open]);
-
-  // Close on outside click
-  useOutsideClick(open, () => setOpen(false), [containerRef, menuRef]);
-
-  // Sync focused index to current value when opening
-  React.useEffect(() => {
-    if (open) {
-      const idx = options.findIndex(o => o.value === value);
-      setFocusedIdx(idx >= 0 ? idx : 0);
-    }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Scroll focused item into view
-  React.useEffect(() => {
-    if (open && menuRef.current && focusedIdx >= 0) {
-      const item = menuRef.current.children[focusedIdx] as HTMLElement;
-      item?.scrollIntoView({ block: 'nearest' });
-    }
-  }, [focusedIdx, open]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!open) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(true); }
-      return;
-    }
-    if      (e.key === 'Escape')    { setOpen(false); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIdx(i => Math.min(i + 1, options.length - 1)); }
-    else if (e.key === 'ArrowUp')   { e.preventDefault(); setFocusedIdx(i => Math.max(i - 1, 0)); }
-    else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onChange(options[focusedIdx].value);
-      setOpen(false);
-    }
-    else if (e.key === 'Tab') { setOpen(false); }
-  };
-
-  // Render dropdown menu
-  const renderMenu = () => {
-    if (!open) return null;
-
-    return ReactDOM.createPortal(
-      <ul
-        ref={menuRef}
-        className="rec-filter-menu"
-        role="listbox"
-        aria-label={ariaLabel}
-        style={{
-          position: 'fixed',
-          top: `${menuPosition.top}px`,
-          left: `${menuPosition.left}px`,
-          minWidth: `${menuPosition.width}px`,
-        }}
-      >
-        {options.map((opt, i) => (
-          <li
-            key={String(opt.value)}
-            className={[
-              'rec-filter-menu__option',
-              opt.value === value ? 'rec-filter-menu__option--selected'  : '',
-              i === focusedIdx    ? 'rec-filter-menu__option--focused'   : '',
-            ].filter(Boolean).join(' ')}
-            role="option"
-            aria-selected={opt.value === value}
-            onMouseEnter={() => setFocusedIdx(i)}
-            onMouseDown={(e) => { e.stopPropagation(); onChange(opt.value); setOpen(false); }}
-          >
-            <span className="rec-filter-menu__option-text">{opt.label}</span>
-            {opt.value === value && (
-              <svg className="rec-filter-menu__checkmark" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-              </svg>
-            )}
-          </li>
-        ))}
-      </ul>,
-      document.body
-    );
-  };
-
-  return (
-    <>
-      <div
-        ref={containerRef}
-        id={id}
-        className={[
-          'rec-filter-pill',
-          isActive ? 'rec-filter-pill--active' : '',
-          open    ? 'rec-filter-pill--open'   : '',
-        ].filter(Boolean).join(' ')}
-        role="combobox"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={ariaLabel}
-        tabIndex={0}
-        onClick={() => setOpen(o => !o)}
-        onKeyDown={handleKeyDown}
-      >
-        <span className="rec-filter-pill__icon-wrap" aria-hidden="true">{icon}</span>
-        <span className="rec-filter-pill__label">{selectedOption?.label}</span>
-        <svg
-          className={`rec-filter-pill__chevron${open ? ' rec-filter-pill__chevron--open' : ''}`}
-          viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"
-        >
-          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
-        </svg>
-      </div>
-      {renderMenu()}
-    </>
-  );
-};
 
 export interface CandidateRecommendationsTabProps {
   jobProfiles: any[];
@@ -317,26 +170,28 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
               ))}
             </select>
 
-            {/* Match Score Filter */}
-            <FilterPill
-              id="rec-match-filter-header"
-              icon={
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 4a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v2.586a1 1 0 0 1-.293.707l-6.414 6.414a1 1 0 0 0-.293.707V17l-4 4v-6.586a1 1 0 0 0-.293-.707L3.293 7.293A1 1 0 0 1 3 6.586V4z"/>
-                </svg>
-              }
-              options={[
-                { value: 'all', label: 'All Matches' },
-                { value: '90+', label: '90%+ Match' },
-                { value: '80-89', label: '80-89% Match' },
-                { value: '70-79', label: '70-79% Match' },
-                { value: '60-69', label: '60-69% Match' },
-                { value: 'below-60', label: 'Below 60%' }
-              ]}
+            {/* Match Score Filter — plain select, matching the recruiter's Work Type filter exactly */}
+            <select
               value={recommendationsMatchFilter}
-              onChange={(val) => setRecommendationsMatchFilter(val as string)}
-              ariaLabel="Filter by match score"
-            />
+              onChange={(e) => setRecommendationsMatchFilter(e.target.value)}
+              aria-label="Filter by match score"
+              style={{
+                padding: '7px 12px',
+                border: '1px solid #E5E7EB',
+                borderRadius: '8px',
+                fontSize: '13px',
+                background: 'white',
+                cursor: 'pointer',
+                color: '#374151',
+              }}
+            >
+              <option value="all">All Matches</option>
+              <option value="90+">90%+ Match</option>
+              <option value="80-89">80-89% Match</option>
+              <option value="70-79">70-79% Match</option>
+              <option value="60-69">60-69% Match</option>
+              <option value="below-60">Below 60%</option>
+            </select>
 
             <button className="cgc-icon-btn" onClick={() => fetchRecommendations()} title="Refresh recommendations">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
