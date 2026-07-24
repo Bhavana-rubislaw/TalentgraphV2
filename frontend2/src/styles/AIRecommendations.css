@@ -1351,3 +1351,61 @@
     overflow-y: visible;
   }
 }
+
+/* ====== CANDIDATE RECOMMENDATIONS BOARD ======
+   Mirrors the .recruiter-dashboard block above exactly, so the swipe
+   card and its sidebar are the same width/height/border/shadow on both
+   dashboards. (The recruiter sidebar's own glass/sticky treatment above
+   is driven by a `div[style*="width: 320px"]` attribute selector, which
+   never actually matches — React serializes inline styles without a
+   space after the colon, so that rule is dead in practice on the
+   recruiter side too. Candidate's sidebar uses a real .ai-recs-sidebar
+   class already at the same 320px width, which is what actually renders
+   for both dashboards — nothing extra needed here for the sidebar.) */
+.candidate-dashboard .ai-recommendations-container {
+  max-width: none;
+  margin: 0;
+  padding: 12px 16px 10px;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.candidate-dashboard .ai-recs-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.candidate-dashboard .ai-job-card {
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.96);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255,255,255,0.86);
+  backdrop-filter: blur(14px);
+}
+
+.candidate-dashboard .ai-job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 54px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+.candidate-dashboard .ai-pagination {
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+.candidate-dashboard .ai-pagination-arrow,
+.candidate-dashboard .ai-action-btn,
+.candidate-dashboard .job-select-modern,
+.candidate-dashboard select {
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+.candidate-dashboard .ai-action-btn {
+  border-radius: 999px;
+}
+
+.candidate-dashboard .ai-pagination-dot.active {
+  background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22), inset 0 1px 0 rgba(255,255,255,0.28);
+}
