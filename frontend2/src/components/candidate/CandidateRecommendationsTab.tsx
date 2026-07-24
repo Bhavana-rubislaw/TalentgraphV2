@@ -344,11 +344,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
               </svg>
             </button>
-            <button className="cgc-icon-btn" onClick={() => navigate('/candidate/job-preferences')} title="Manage job preferences">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
           </div>
         </div>
       </div>
@@ -453,6 +448,41 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                     {jobPosting.seniority_level || 'Professional'} • {jobPosting.location || 'Remote'}
                   </p>
 
+                  {/* Match Breakdown + Top Matched Skills (left) / AI Match Reason (right) —
+                      mirrors RecruiterRecommendationsTab.tsx's 2-column layout */}
+                  <div className="ai-match-breakdown-reason-grid">
+                    <div className="ai-match-breakdown-col">
+                      <div className="ai-match-breakdown-heading">Match Breakdown</div>
+                      <MatchBreakdownBars details={displayDetails} compact />
+                      {((displayDetails.matched_skills?.length ?? 0) > 0 || skillTags.length > 0) && (
+                        <div style={{ marginTop: '16px' }}>
+                          <TopSkillMatches
+                            matchedSkills={
+                              (displayDetails.matched_skills?.length ?? 0) > 0
+                                ? displayDetails.matched_skills!
+                                : skillTags
+                            }
+                            maxSkills={6}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <div className="ai-match-reason-col">
+                      <AIMatchReasonBox
+                        variant="candidate"
+                        reason={generateCandidateMatchReason(
+                          displayDetails,
+                          {
+                            productVendor: rec.job_posting?.product_vendor,
+                            topSkill: displayDetails.matched_skills?.[0],
+                            jobTitle: jobPosting.job_title,
+                            yearsExp: selectedProfile?.years_of_experience,
+                          }
+                        )}
+                      />
+                    </div>
+                  </div>
+
                   {/* Job Details Grid */}
                   <div className="ai-job-details">
                     <div className="ai-job-detail">
@@ -488,41 +518,6 @@ const CandidateRecommendationsTab: React.FC<CandidateRecommendationsTabProps> = 
                         Work Type
                       </div>
                       <div className="ai-job-detail-value">{jobPosting.worktype || 'Remote'}</div>
-                    </div>
-                  </div>
-
-                  {/* Match Breakdown + Top Matched Skills (left) / AI Match Reason (right) —
-                      mirrors RecruiterRecommendationsTab.tsx's 2-column layout */}
-                  <div className="ai-match-breakdown-reason-grid">
-                    <div className="ai-match-breakdown-col">
-                      <div className="ai-match-breakdown-heading">Match Breakdown</div>
-                      <MatchBreakdownBars details={displayDetails} compact />
-                      {((displayDetails.matched_skills?.length ?? 0) > 0 || skillTags.length > 0) && (
-                        <div style={{ marginTop: '16px' }}>
-                          <TopSkillMatches
-                            matchedSkills={
-                              (displayDetails.matched_skills?.length ?? 0) > 0
-                                ? displayDetails.matched_skills!
-                                : skillTags
-                            }
-                            maxSkills={6}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    <div className="ai-match-reason-col">
-                      <AIMatchReasonBox
-                        variant="candidate"
-                        reason={generateCandidateMatchReason(
-                          displayDetails,
-                          {
-                            productVendor: rec.job_posting?.product_vendor,
-                            topSkill: displayDetails.matched_skills?.[0],
-                            jobTitle: jobPosting.job_title,
-                            yearsExp: selectedProfile?.years_of_experience,
-                          }
-                        )}
-                      />
                     </div>
                   </div>
 
