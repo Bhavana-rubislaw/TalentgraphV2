@@ -273,7 +273,12 @@ def get_available_jobs(
                 )
             ).first()
             already_applied = existing_app is not None
-        
+
+        posting_skills = [
+            {"skill_name": sk.skill_name, "rating": sk.rating}
+            for sk in job.posting_skills
+        ]
+
         result.append({
             "id": job.id,
             "job_title": job.job_title,
@@ -288,6 +293,7 @@ def get_available_jobs(
             "product_vendor": job.product_vendor,
             "product_type": job.product_type,
             "job_role": job.job_role,
+            "posting_skills": posting_skills,
             "created_at": job.created_at.isoformat(),
             "already_applied": already_applied
         })

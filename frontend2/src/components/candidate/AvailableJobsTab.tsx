@@ -165,13 +165,13 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
       <div style={{
         background: 'white',
         borderRadius: '16px',
-        padding: '24px',
+        padding: '14px 16px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        marginBottom: '24px',
+        marginBottom: '16px',
         border: '1px solid #E5E7EB'
       }}>
         {/* Top Row: Search + Dropdowns */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {/* Search Input */}
           <div style={{ flex: '1 1 350px', minWidth: '280px' }}>
             <div style={{ position: 'relative' }}>
@@ -185,7 +185,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                   width: '100%',
                   paddingLeft: '46px',
                   paddingRight: '16px',
-                  height: '48px',
+                  height: '38px',
                   fontSize: '15px',
                   borderRadius: '12px',
                   border: '1px solid #E5E7EB',
@@ -213,7 +213,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <select
               style={{
                 width: '100%',
-                height: '48px',
+                height: '38px',
                 fontSize: '14px',
                 borderRadius: '12px',
                 padding: '0 16px',
@@ -243,7 +243,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <select
               style={{
                 width: '100%',
-                height: '48px',
+                height: '38px',
                 fontSize: '14px',
                 borderRadius: '12px',
                 padding: '0 16px',
@@ -279,7 +279,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <button
               onClick={() => setSelectedJobWorkType('')}
               style={{
-                padding: '10px 20px',
+                padding: '7px 16px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === '' ? 'none' : '1px solid #E5E7EB',
                 background: selectedJobWorkType === '' ? '#2563eb' : 'white',
@@ -305,7 +305,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <button
               onClick={() => setSelectedJobWorkType('Remote')}
               style={{
-                padding: '10px 20px',
+                padding: '7px 16px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Remote' ? 'none' : '1px solid #E5E7EB',
                 background: selectedJobWorkType === 'Remote' ? '#2563eb' : 'white',
@@ -331,7 +331,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <button
               onClick={() => setSelectedJobWorkType('Hybrid')}
               style={{
-                padding: '10px 20px',
+                padding: '7px 16px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Hybrid' ? 'none' : '1px solid #E5E7EB',
                 background: selectedJobWorkType === 'Hybrid' ? '#2563eb' : 'white',
@@ -357,7 +357,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <button
               onClick={() => setSelectedJobWorkType('Onsite')}
               style={{
-                padding: '10px 20px',
+                padding: '7px 16px',
                 borderRadius: '10px',
                 border: selectedJobWorkType === 'Onsite' ? 'none' : '1px solid #E5E7EB',
                 background: selectedJobWorkType === 'Onsite' ? '#2563eb' : 'white',
@@ -386,7 +386,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             <button
               onClick={clearAllJobFilters}
               style={{
-                padding: '10px 16px',
+                padding: '7px 14px',
                 borderRadius: '10px',
                 border: 'none',
                 background: 'transparent',
@@ -661,6 +661,17 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                   <span className="cgc-status-pill">{job.worktype || 'Onsite'}</span>
                 </div>
 
+                {job.posting_skills && job.posting_skills.length > 0 && (
+                  <div className="cgc-skills">
+                    {job.posting_skills.slice(0, 4).map((sk, idx) => (
+                      <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+                    ))}
+                    {job.posting_skills.length > 4 && (
+                      <span className="cgc-skill-tag">+{job.posting_skills.length - 4} more</span>
+                    )}
+                  </div>
+                )}
+
                 <div className="cgc-footer">
                   {salary && <span className="cgc-match-pill">{salary}</span>}
                   <div className="cgc-footer-actions">
@@ -687,7 +698,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
       {/* Pagination Footer */}
       {filteredJobs.length > 0 && totalPages > 1 && (
-        <div className="cp-pagination-footer" style={{ marginTop: '24px', maxWidth: '75%', marginLeft: 'auto', marginRight: 'auto' }}>
+        <div className="cp-pagination-footer" style={{ marginTop: '16px', padding: '8px 20px' }}>
           <span className="cp-pagination-info">
             Showing {startIndex + 1}–{Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
           </span>

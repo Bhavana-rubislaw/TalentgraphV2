@@ -1,5 +1,10 @@
-// Grounded in backend2/app/routers/dashboard.py: get_available_jobs
+// Grounded in backend2/app/routers/dashboard_candidate.py: get_available_jobs
 // (GET /dashboard/candidate/available-jobs)
+
+export interface AvailableJobPostingSkill {
+  skill_name: string;
+  rating: number | null;
+}
 
 export interface AvailableJob {
   id: number;
@@ -15,6 +20,7 @@ export interface AvailableJob {
   product_vendor: string;
   product_type: string;
   job_role: string;
+  posting_skills: AvailableJobPostingSkill[];
   created_at: string;
   already_applied: boolean;
 }
