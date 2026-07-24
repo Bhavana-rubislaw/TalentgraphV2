@@ -248,6 +248,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
           </button>
         </div>
 
+        <div className="schedule-interview-scroll-body">
         {/* Success State */}
         {submitSuccess && (
           <div className="schedule-interview-success">
@@ -620,6 +621,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );
