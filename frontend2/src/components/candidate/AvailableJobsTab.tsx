@@ -161,12 +161,6 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
   return (
     <>
-      {/* Page Header Section */}
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary, #1e293b)', marginBottom: '8px' }}>Browse Jobs</h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary, #64748b)', margin: 0 }}>Browse and filter open roles that match your interests</p>
-      </div>
-
       {/* Modern Filter Section */}
       <div style={{
         background: 'white',
