@@ -636,7 +636,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
             const isBusy = applyingJobId === job.id || withdrawingJobId === job.id;
 
             return (
-              <div key={job.id} className="cgc-card">
+              <div key={job.id} className="cgc-card" style={{ minHeight: '320px' }}>
                 <div className="cgc-header">
                   <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
                     {companyInitial}
@@ -687,7 +687,7 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
 
       {/* Pagination Footer */}
       {filteredJobs.length > 0 && totalPages > 1 && (
-        <div className="cp-pagination-footer" style={{ marginTop: '24px' }}>
+        <div className="cp-pagination-footer" style={{ marginTop: '24px', maxWidth: '75%', marginLeft: 'auto', marginRight: 'auto' }}>
           <span className="cp-pagination-info">
             Showing {startIndex + 1}–{Math.min(endIndex, filteredJobs.length)} of {filteredJobs.length} jobs
           </span>

@@ -10,6 +10,7 @@ import '../styles/PremiumModals.css';
 import '../styles/CandidateApplied.css';
 import '../styles/AIRecommendations.css';
 import '../styles/HorizontalDashboard.css';
+import '../styles/CandidatePages.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import { MeetingSchedulerTab } from '../components/meetings';
@@ -708,7 +709,7 @@ const CandidateDashboard: React.FC = () => {
         )}
 
         {/* Tab Content */}
-        <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}${activeTab === 'recommendations' ? ' recommendations-tab-active' : ''}${activeTab === 'invites' ? ' invites-tab-active' : ''}`}>
+        <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}${activeTab === 'recommendations' ? ' recommendations-tab-active' : ''}${activeTab === 'invites' ? ' invites-tab-active' : ''}${activeTab === 'available' ? ' available-tab-active' : ''}`}>
           {renderActiveTab()}
         </div>
         </div>

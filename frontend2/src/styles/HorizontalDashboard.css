@@ -1103,6 +1103,11 @@
   padding: 0;
 }
 
+/* Available Jobs tab only — nudges the outer box down slightly on the page. */
+.candidate-dashboard .content-panel-horizontal.available-tab-active {
+  margin-top: 38px;
+}
+
 /* Invites tab only — pins the pagination footer to the bottom of the
    panel (via InvitesTab.tsx's flex column + marginTop: 'auto' on the
    footer) instead of letting it float directly under a short card grid.
