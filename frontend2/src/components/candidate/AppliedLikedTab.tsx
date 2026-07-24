@@ -173,219 +173,71 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
 
     const stage = type === 'applied' ? getApplicationStage() : 0;
 
-    // LIKED JOBS - Professional Card Design (3 per row)
+    // LIKED JOBS - same .cgc-card system as the Matches tab
     if (type === 'liked') {
       const companyInitial = job.company_name?.charAt(0).toUpperCase() || 'C';
+      const skills = job.posting_skills || [];
 
       return (
-        <div key={key} style={{
-          background: 'white',
-          border: '1px solid #E2E4EC',
-          borderRadius: '16px',
-          padding: '24px',
-          transition: 'all 0.2s',
-          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.14)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.borderColor = '#60a5fa';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.06)';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.borderColor = '#E2E4EC';
-        }}>
-          {/* Header: Company Logo */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px',
-              fontWeight: '700',
-              color: '#2563eb',
-              marginBottom: '8px'
-            }}>
+        <div key={key} className="cgc-card">
+          <div className="cgc-header">
+            <div className="cgc-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}>
               {companyInitial}
             </div>
-            <div style={{ fontSize: '15px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-              {job.company_name}
-            </div>
-            <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-              Posted {new Date(job.liked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            <div className="cgc-name-block">
+              <div className="cgc-name">{job.company_name || 'Company'}</div>
+              <div className="cgc-title">{job.job_role || 'Professional'}</div>
             </div>
           </div>
 
-          {/* Job Title */}
-          <h3 style={{
-            fontSize: '20px',
-            fontWeight: '700',
-            color: '#111827',
-            marginBottom: '6px',
-            lineHeight: '1.3',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical'
-          }}>
-            {job.job_title}
-          </h3>
-
-          {/* Department/Category */}
-          <p style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '20px',
-            fontWeight: '500'
-          }}>
-            {job.job_role || 'Platform & Tools'}
-          </p>
-
-          {/* Job Details Grid (2x2) */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
-            marginBottom: '20px',
-            paddingBottom: '20px',
-            borderBottom: '1px solid #f3f4f6'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
-                <circle cx="12" cy="10" r="3"/>
-              </svg>
-              <span style={{ fontSize: '14px', color: '#6b7280' }}>
+          <div className="cgc-meta-row">
+            <div className="cgc-meta-left">
+              <span className="cgc-meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 {job.location || 'Remote'}
               </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v6l4 2"/>
-              </svg>
-              <span style={{ fontSize: '14px', color: '#6b7280' }}>
+              <span className="cgc-meta-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                 {job.employment_type || 'Full-time'}
               </span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                <line x1="12" y1="1" x2="12" y2="23"/>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-              </svg>
-              <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                {salary || '$180-240k'}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-              </svg>
-              {/* NOTE: applicants_count is not part of the /candidate/applied-liked-jobs response —
-                  this has always rendered the hardcoded "87 applied" fallback. Flagging, not
-                  fixing: showing a real count needs a backend change, a product call. */}
-              <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                {job.applicants_count || '87'} applied
-              </span>
-            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', alignItems: 'center' }}>
-            <button
-              onClick={() => setDrawerJob({ ...job, _type: type })}
-              style={{
-                width: '40px',
-                height: '40px',
-                border: '1.5px solid #e5e7eb',
-                background: 'white',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#10b981';
-                e.currentTarget.style.background = '#f0fdf4';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e7eb';
-                e.currentTarget.style.background = 'white';
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill={job.already_applied ? '#10b981' : 'none'} stroke={job.already_applied ? '#10b981' : '#9ca3af'} strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-              </svg>
-            </button>
-            <button
-              onClick={() => setDrawerJob({ ...job, _type: type })}
-              style={{
-                flex: 1,
-                padding: '10px 20px',
-                border: '1.5px solid #e5e7eb',
-                background: 'white',
-                borderRadius: '10px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#374151',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#d1d5db';
-                e.currentTarget.style.background = '#f9fafb';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#e5e7eb';
-                e.currentTarget.style.background = 'white';
-              }}
-            >
-              Details
-            </button>
-            <button
-              onClick={() => handleApply(job.job_id)}
-              disabled={isApplying || withdrawingJobId === job.job_id}
-              style={{
-                flex: 1,
-                padding: '10px 20px',
-                border: 'none',
-                background: isApplied ? '#10b981' : ((isApplying || withdrawingJobId === job.job_id) ? '#9ca3af' : '#111827'),
-                borderRadius: '10px',
-                fontSize: '14px',
-                fontWeight: '600',
-                color: 'white',
-                cursor: (isApplying || withdrawingJobId === job.job_id) ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={(e) => {
-                if (!isApplying && withdrawingJobId !== job.job_id && !isApplied) {
-                  e.currentTarget.style.background = '#1f2937';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isApplied && !isApplying && withdrawingJobId !== job.job_id) {
-                  e.currentTarget.style.background = '#111827';
-                }
-              }}
-            >
-              {isApplying ? 'Applying…' : withdrawingJobId === job.job_id ? 'Withdrawing…' : isApplied ? 'Applied' : 'Apply'}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#2563eb', fontWeight: 600, marginBottom: '14px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <span style={{ color: '#111827' }}>{job.job_title}</span>
+          </div>
+
+          {skills.length > 0 && (
+            <div className="cgc-skills">
+              {skills.slice(0, 4).map((sk: any, idx: number) => (
+                <span key={idx} className="cgc-skill-tag">{sk.skill_name}</span>
+              ))}
+              {skills.length > 4 && <span className="cgc-skill-tag">+{skills.length - 4} more</span>}
+            </div>
+          )}
+
+          <div className="cgc-footer">
+            {salary && <span className="cgc-match-pill">{salary}</span>}
+            <div className="cgc-footer-actions">
+              <button
+                className="cgc-icon-btn"
+                onClick={() => setDrawerJob({ ...job, _type: type })}
+                title="View job details"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+              <button
+                className="cgc-apply-btn"
+                onClick={() => handleApply(job.job_id)}
+                disabled={isApplied || isApplying || withdrawingJobId === job.job_id}
+              >
+                {isApplying ? 'Applying…' : withdrawingJobId === job.job_id ? 'Withdrawing…' : isApplied ? 'Applied' : 'Apply Now'}
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -1198,12 +1050,10 @@ const AppliedLikedTab: React.FC<AppliedLikedTabProps> = ({
         </div>
       ) : (
         <>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: jobListTab === 'applied' ? '1fr' : 'repeat(3, 1fr)',
-            gap: jobListTab === 'applied' ? '0' : '20px',
-            padding: '0'
-          }}>
+          <div
+            className={jobListTab === 'liked' ? 'cgc-grid' : undefined}
+            style={jobListTab === 'applied' ? { display: 'grid', gridTemplateColumns: '1fr', gap: 0, padding: 0 } : undefined}
+          >
             {paginatedItems.map((job: any) => renderCard(job, jobListTab))}
           </div>
 
