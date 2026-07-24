@@ -1166,18 +1166,17 @@
   justify-content: center;
 }
 
-/* Byte-identical to .recruiter-dashboard .kpi-banner-container above:
-   the rail is stretched to match the content panel's height
-   (.candidate-dashboard-grid's align-items: stretch), and the 4 cards are
-   distributed across that full height so the rail's own background never
-   ends early and leaves empty page background beneath it. */
+/* Deliberately diverges from .recruiter-dashboard .kpi-banner-container
+   here: space-between stretches the 4 cards across the full rail height,
+   which reads as too much air between cards. Pack them at a fixed, tight
+   gap instead — the rail box itself still stretches via
+   .candidate-dashboard-grid's align-items: stretch, so there's no dead
+   page background below it, just blank rail surface past the last card. */
 .candidate-dashboard .kpi-banner-container {
   grid-template-columns: 1fr;
-  gap: 14px;
-  flex: 1;
+  gap: 10px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .candidate-dashboard .kpi-card.kpi-card-green { border-left: 4px solid #10b981; }
