@@ -226,7 +226,14 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         
         {/* Header */}
         <div className="schedule-interview-header">
-          <div className="schedule-interview-header-icon">📅</div>
+          <div className="schedule-interview-header-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
           <div className="schedule-interview-header-text">
             <h2>Schedule Interview</h2>
             <p>Send interview invitation to candidate and recruiter from TalentGraph</p>
@@ -244,7 +251,11 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
         {/* Success State */}
         {submitSuccess && (
           <div className="schedule-interview-success">
-            <div className="schedule-interview-success-icon">✓</div>
+            <div className="schedule-interview-success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
             <h3>Interview Scheduled Successfully!</h3>
             <p>Confirmation emails sent to candidate and recruiter from TalentGraph Interviews. Both parties have been notified with interview details.</p>
             
@@ -256,15 +267,21 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                 borderRadius: '8px',
                 borderLeft: '4px solid #10b981'
               }}>
-                <div style={{ 
-                  fontSize: '13px', 
-                  fontWeight: 700, 
-                  color: '#065f46', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: '#065f46',
                   marginBottom: '8px',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px'
                 }}>
-                  🎥 Auto-Generated Meeting Link
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                  </svg>
+                  Auto-Generated Meeting Link
                 </div>
                 <div style={{ fontSize: '14px', color: '#047857', marginBottom: '6px', fontWeight: 600 }}>
                   Provider: {responseData.video_provider === 'microsoft_teams' ? 'Microsoft Teams' : 
@@ -298,7 +315,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             {/* Candidate Context Section */}
             <div className="schedule-interview-section">
               <h3 className="schedule-interview-section-title">
-                <span className="schedule-interview-section-icon">👤</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
                 Candidate Information
               </h3>
               <div className="schedule-interview-context">
@@ -338,7 +355,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             {/* Interview Details Section */}
             <div className="schedule-interview-section">
               <h3 className="schedule-interview-section-title">
-                <span className="schedule-interview-section-icon">📆</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Interview Details
               </h3>
               <p style={{ fontSize: '13px', color: '#64748b', marginTop: '-8px', marginBottom: '16px' }}>
@@ -431,11 +448,14 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🎥 Zoom</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Zoom
+                      </div>
                       <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Zoom meeting link</div>
                     </div>
                   </label>
-                  
+
                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'google_meet' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'google_meet' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
@@ -447,11 +467,14 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>📹 Google Meet</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        Google Meet
+                      </div>
                       <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Google Meet link</div>
                     </div>
                   </label>
-                  
+
                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'microsoft_teams' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'microsoft_teams' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
@@ -463,11 +486,14 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>👥 Microsoft Teams</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Microsoft Teams
+                      </div>
                       <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Auto-generate Teams meeting link</div>
                     </div>
                   </label>
-                  
+
                   <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '12px', border: '2px solid', borderColor: formData.meetingProvider === 'manual' ? '#1d4ed8' : '#e2e8f0', borderRadius: '8px', background: formData.meetingProvider === 'manual' ? '#eff6ff' : 'white', transition: 'all 0.2s' }}>
                     <input
                       type="radio"
@@ -479,7 +505,10 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                       style={{ width: '18px', height: '18px', accentColor: '#1d4ed8' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>🔗 Manual Link</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontWeight: 600, color: '#1e293b', fontSize: '15px' }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                        Manual Link
+                      </div>
                       <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Provide your own meeting link</div>
                     </div>
                   </label>
@@ -510,7 +539,7 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             {/* Optional Details Section */}
             <div className="schedule-interview-section">
               <h3 className="schedule-interview-section-title">
-                <span className="schedule-interview-section-icon">📝</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Additional Details (Optional)
               </h3>
               
@@ -549,7 +578,11 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
             {/* Error Message */}
             {submitError && (
               <div className="schedule-interview-error-banner">
-                <span className="schedule-interview-error-icon">⚠️</span>
+                <svg className="schedule-interview-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
                 <span>{submitError}</span>
               </div>
             )}
@@ -576,7 +609,10 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <span>📧</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
                     Send Interview Invite
                   </>
                 )}

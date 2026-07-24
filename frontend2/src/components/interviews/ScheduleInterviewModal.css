@@ -57,9 +57,20 @@
 }
 
 .schedule-interview-header-icon {
-  font-size: 32px;
   flex-shrink: 0;
-  line-height: 1;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-interview-header-icon svg {
+  width: 24px;
+  height: 24px;
+  color: #1d4ed8;
 }
 
 .schedule-interview-header-text {
@@ -120,12 +131,16 @@
   margin: 0 auto 20px;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
-  font-size: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   animation: successPop 0.4s ease-out;
+}
+
+.schedule-interview-success-icon svg {
+  width: 30px;
+  height: 30px;
 }
 
 @keyframes successPop {
@@ -178,8 +193,11 @@
   color: #374151;
 }
 
-.schedule-interview-section-icon {
-  font-size: 18px;
+.schedule-interview-section-title svg {
+  width: 16px;
+  height: 16px;
+  stroke: #9ca3af;
+  flex-shrink: 0;
 }
 
 /* Candidate Context */
@@ -326,8 +344,10 @@
 }
 
 .schedule-interview-error-icon {
-  font-size: 20px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
+  color: #dc2626;
 }
 
 /* Footer Actions */
