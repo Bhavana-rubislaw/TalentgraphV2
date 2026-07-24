@@ -437,7 +437,7 @@ const CandidateDashboard: React.FC = () => {
           />
         );
       case 'messages':
-        return <ChatWindow />;
+        return <ChatWindow candidateMatches={matches} />;
       case 'meetings':
         return <MeetingSchedulerTab role="candidate" />;
       default:

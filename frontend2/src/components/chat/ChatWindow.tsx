@@ -72,14 +72,20 @@ function formatMessageTime(iso: string): string {
 export interface ChatWindowProps {
   /** Recruiter-only: real mutual-match data, used to enrich the thread header
       (match %, role, location, "Matched for") when the other party in this
-      conversation happens to also be a match. Omitted entirely for
-      candidate/HR usage of this shared component. */
+      conversation happens to also be a match. Schedule-interview stays
+      recruiter-only too — candidates have no equivalent action anywhere
+      else in the app (MeetingSchedulerTab gates it on role !== 'candidate'). */
   matches?: import('../../types/match').RecruiterMatch[];
   applications?: import('../../types/application').Application[];
   onScheduleInterview?: (application: any) => void;
+  /** Candidate-only equivalent of `matches` — same header enrichment
+      (match %, role, location, "Matched for"), just keyed off
+      company.user_id instead of candidate.user_id since the other party
+      in a candidate's conversation is a recruiter, not a candidate. */
+  candidateMatches?: import('../../types/match').CandidateMatch[];
 }
 
-export default function ChatWindow({ matches, applications, onScheduleInterview }: ChatWindowProps = {}) {
+export default function ChatWindow({ matches, applications, onScheduleInterview, candidateMatches }: ChatWindowProps = {}) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -113,6 +119,28 @@ export default function ChatWindow({ matches, applications, onScheduleInterview 
     : undefined;
   const selectedMatchApplication = selectedMatch && applications
     ? applications.find(a => a.candidate.id === selectedMatch.candidate.id && a.job_posting.id === selectedMatch.job_posting.id)
+    : undefined;
+
+  // Candidate-side equivalent — the other party is a recruiter (company),
+  // matched via company.user_id instead of candidate.user_id.
+  const selectedCandidateMatch = selectedConv && candidateMatches
+    ? candidateMatches.find(m => m.company.user_id === selectedConv.other_user_id)
+    : undefined;
+
+  // Normalized header fields, whichever side actually has match data.
+  const headerMatchPercentage = selectedMatch?.match_percentage ?? selectedCandidateMatch?.match_percentage;
+  const headerStatusLine = selectedMatch
+    ? [
+        selectedMatch.job_profile?.job_role || selectedMatch.job_profile?.profile_name,
+        selectedMatch.job_posting?.location,
+        selectedMatch.job_posting?.job_title && `Matched for ${selectedMatch.job_posting.job_title}`,
+      ].filter(Boolean).join(' · ')
+    : selectedCandidateMatch
+    ? [
+        selectedCandidateMatch.job_posting?.job_role,
+        selectedCandidateMatch.job_posting?.location,
+        selectedCandidateMatch.job_posting?.job_title && `Matched for ${selectedCandidateMatch.job_posting.job_title}`,
+      ].filter(Boolean).join(' · ')
     : undefined;
 
   // ─── Load Conversations ───────────────────────────────────────────────────────
@@ -438,18 +466,12 @@ export default function ChatWindow({ matches, applications, onScheduleInterview 
                 <div className="chat-header-info-v2">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <h3 className="chat-title">{selectedConv.other_user_name}</h3>
-                    {selectedMatch && (
-                      <span className="chat-match-pill">{selectedMatch.match_percentage}% match</span>
+                    {headerMatchPercentage != null && (
+                      <span className="chat-match-pill">{headerMatchPercentage}% match</span>
                     )}
                   </div>
-                  {selectedMatch && (
-                    <span className="chat-status">
-                      {[
-                        selectedMatch.job_profile?.job_role || selectedMatch.job_profile?.profile_name,
-                        selectedMatch.job_posting?.location,
-                        selectedMatch.job_posting?.job_title && `Matched for ${selectedMatch.job_posting.job_title}`,
-                      ].filter(Boolean).join(' · ')}
-                    </span>
+                  {headerStatusLine && (
+                    <span className="chat-status">{headerStatusLine}</span>
                   )}
                 </div>
               </div>

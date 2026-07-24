@@ -34,6 +34,7 @@ export interface CandidateMatchCompany {
   id: number;
   company_name: string;
   email: string | null;
+  user_id: number;
 }
 
 export interface CandidateMatch {

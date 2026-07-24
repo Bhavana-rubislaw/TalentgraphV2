@@ -509,7 +509,8 @@ def get_candidate_matches(
             "company": {
                 "id": company.id,
                 "company_name": company.company_name,
-                "email": company_user.email if company_user else None
+                "email": company_user.email if company_user else None,
+                "user_id": company.user_id
             },
             "match_percentage": match.match_percentage,
             "matched_at": match.created_at.isoformat(),
