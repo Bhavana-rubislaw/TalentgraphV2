@@ -1137,6 +1137,8 @@
    box — any leftover space is blank box background, not blank page. */
 .candidate-dashboard .content-panel-horizontal.matches-tab-active {
   margin-top: 38px;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
 }
