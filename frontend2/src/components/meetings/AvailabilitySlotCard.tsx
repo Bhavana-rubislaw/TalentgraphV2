@@ -75,7 +75,9 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
         background: 'white',
         borderRadius: '8px',
       }}>
-        <span style={{ fontSize: '20px' }}>🕐</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" width="20" height="20">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
         <div>
           <div style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>
             {start.time} - {end.time}
@@ -110,7 +112,12 @@ export function AvailabilitySlotCard({ slot, onSelect }: AvailabilitySlotCardPro
           e.currentTarget.style.boxShadow = 'none';
         }}
       >
-        ✅ Select This Time
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center', width: '100%' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Select This Time
+        </span>
       </button>
     </div>
   );

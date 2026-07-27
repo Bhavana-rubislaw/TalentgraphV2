@@ -504,14 +504,6 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
                       </div>
                     )}
                   </div>
-                  {/* NOTE: notes is not part of the /recruiter/shortlist response — this "Recruiter
-                      Notes" block has always been hidden. Flagging, not fixing: needs a backend change. */}
-                  {itm.notes && (
-                    <div style={{ marginTop: '10px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', borderLeft: '3px solid #2563eb' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter Notes</div>
-                      <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{itm.notes}</div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>

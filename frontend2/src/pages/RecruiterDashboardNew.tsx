@@ -13,7 +13,7 @@ import '../styles/CandidatePages.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
-import { MeetingSchedulerTab } from '../components/meetings';
+import { MeetingSchedulerTab, AvailabilitySelectorModal } from '../components/meetings';
 import { useMeetingsData } from '../hooks/useMeetingsData';
 import { useQueryState, parseEnumParam } from '../hooks/useQueryState';
 import { useApplications } from '../hooks/useApplications';
@@ -48,6 +48,8 @@ const RecruiterDashboard: React.FC = () => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isScheduleInterviewModalOpen, setIsScheduleInterviewModalOpen] = useState(false);
   const [selectedAppForSchedule, setSelectedAppForSchedule] = useState<any | null>(null);
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const [selectedAppForAvailability, setSelectedAppForAvailability] = useState<any | null>(null);
 
   // ── Selected job: driven from ?job= URL param ─────────────────
   // Start as null; fetchJobPostings() validates the URL param against actual jobs
@@ -317,6 +319,13 @@ const RecruiterDashboard: React.FC = () => {
                 </svg>
                 Meetings
               </button>
+              <button onClick={() => { setShowProfileMenu(false); navigate('/settings/calendar'); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+                </svg>
+                Calendar Settings
+              </button>
               <div className="menu-divider"></div>
               <button className="logout-btn" onClick={() => { localStorage.clear(); navigate('/'); }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -570,8 +579,6 @@ const RecruiterDashboard: React.FC = () => {
                 applications={applications}
                 applicationsLoading={applicationsLoading}
                 jobPostings={jobPostings}
-                companyName={companyName}
-                userName={userName}
                 getParam={getParam}
                 setParam={setParam}
                 updateApplicationStatus={updateApplicationStatus}
@@ -581,6 +588,8 @@ const RecruiterDashboard: React.FC = () => {
                 handleStartDirectMessage={handleStartDirectMessage}
                 setSelectedAppForSchedule={setSelectedAppForSchedule}
                 setIsScheduleInterviewModalOpen={setIsScheduleInterviewModalOpen}
+                setSelectedAppForAvailability={setSelectedAppForAvailability}
+                setIsAvailabilityModalOpen={setIsAvailabilityModalOpen}
                 toast={toast}
                 showToast={showToast}
               />
@@ -659,6 +668,24 @@ const RecruiterDashboard: React.FC = () => {
             // Refresh applications list
             fetchApplications();
             showToast('Interview scheduled successfully!');
+          }}
+        />
+      )}
+
+      {/* Propose Interview Times Modal */}
+      {isAvailabilityModalOpen && selectedAppForAvailability && (
+        <AvailabilitySelectorModal
+          candidateUserId={selectedAppForAvailability.candidate.user_id}
+          jobPostingId={selectedAppForAvailability.job_posting.id}
+          applicationId={selectedAppForAvailability.application_id}
+          onClose={() => {
+            setIsAvailabilityModalOpen(false);
+            setSelectedAppForAvailability(null);
+          }}
+          onSuccess={() => {
+            setIsAvailabilityModalOpen(false);
+            setSelectedAppForAvailability(null);
+            showToast('Time slots proposed to candidate!');
           }}
         />
       )}

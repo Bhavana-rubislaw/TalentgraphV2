@@ -211,13 +211,19 @@ export function MeetingsPage() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <h1 style={{ 
-                fontSize: '32px', 
-                fontWeight: 800, 
-                color: '#1e293b', 
-                margin: '0 0 8px 0' 
+              <h1 style={{
+                fontSize: '32px',
+                fontWeight: 800,
+                color: '#1e293b',
+                margin: '0 0 8px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
               }}>
-                📅 Meeting Scheduler
+                <svg viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" width="28" height="28">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Meeting Scheduler
               </h1>
               <p style={{ color: '#64748b', margin: 0 }}>
                 Manage your interviews and meetings
@@ -237,9 +243,15 @@ export function MeetingsPage() {
                   cursor: 'pointer',
                   fontSize: '14px',
                   boxShadow: '0 4px 12px rgba(29, 78, 216, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
                 }}
               >
-                ➕ Schedule Meeting
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Schedule Meeting
               </button>
             </div>
           </div>
@@ -340,9 +352,16 @@ export function MeetingsPage() {
                     fontWeight: 600,
                     fontSize: '13px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}
                 >
-                  📋 List
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                  List
                 </button>
                 <button
                   onClick={() => setViewMode('timeline')}
@@ -356,9 +375,16 @@ export function MeetingsPage() {
                     fontWeight: 600,
                     fontSize: '13px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
                   }}
                 >
-                  📍 Timeline
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                    <line x1="4" y1="12" x2="20" y2="12"/><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/>
+                  </svg>
+                  Timeline
                 </button>
               </div>
             </div>
@@ -386,9 +412,27 @@ export function MeetingsPage() {
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
                 }}
               >
-                {upcomingOnly ? '⏭️ Upcoming' : '📅 All'}
+                {upcomingOnly ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                      <polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>
+                    </svg>
+                    Upcoming
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    All
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -463,13 +507,19 @@ export function MeetingsPage() {
             marginBottom: '24px',
             boxShadow: '0 4px 24px rgba(0,0,0,0.1)' 
           }}>
-            <h2 style={{ 
-              fontSize: '20px', 
-              fontWeight: 700, 
-              color: '#1e293b', 
-              margin: '0 0 16px 0' 
+            <h2 style={{
+              fontSize: '20px',
+              fontWeight: 700,
+              color: '#1e293b',
+              margin: '0 0 16px 0',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
             }}>
-              ⏰ Proposed Interview Times ({availabilitySlots.length})
+              <svg viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" width="20" height="20">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              Proposed Interview Times ({availabilitySlots.length})
             </h2>
             <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '20px' }}>
               Select a time slot to confirm your interview
@@ -516,7 +566,9 @@ export function MeetingsPage() {
               padding: '60px 20px',
               color: '#94a3b8' 
             }}>
-              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="48" height="48" style={{ marginBottom: '16px' }}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="16" x2="15" y2="16"/>
+              </svg>
               <div style={{ fontSize: '18px', fontWeight: 600, marginBottom: '8px' }}>
                 No meetings found
               </div>
@@ -638,16 +690,16 @@ export function MeetingsPage() {
                                 marginLeft: '72px'
                               }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b' }}>
-                                  <span>⏱️</span>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                   <span>{meeting.duration_minutes} min</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748b' }}>
-                                  <span>👥</span>
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                                   <span>{meeting.participants.length} participants</span>
                                 </div>
                                 {meeting.video_meeting_url && (
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#1d4ed8' }}>
-                                    <span>🎥</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                                     <span>Video call</span>
                                   </div>
                                 )}
@@ -729,20 +781,20 @@ export function MeetingsPage() {
 
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '14px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                          <span>📅</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                           <span>{formatDateTime(meeting.scheduled_start)}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                          <span>⏱️</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <span>{meeting.duration_minutes} min</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b' }}>
-                          <span>👥</span>
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                           <span>{meeting.participants.length} participants</span>
                         </div>
                         {meeting.video_meeting_url && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1d4ed8' }}>
-                            <span>🎥</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
                             <span>Video call</span>
                           </div>
                         )}

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import DetailDrawer from '../common/DetailDrawer';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import type { Application } from '../../types/application';
 import type { JobPosting } from '../../types/jobPosting';
@@ -8,8 +7,6 @@ export interface ApplicationsTabProps {
   applications: Application[];
   applicationsLoading: boolean;
   jobPostings: JobPosting[];
-  companyName: string | null;
-  userName: string;
   getParam: (name: string, defaultValue?: string) => string;
   setParam: (name: string, value: string | null | undefined, options?: { replace?: boolean }) => void;
   updateApplicationStatus: (applicationId: number, status: string) => Promise<void>;
@@ -19,36 +16,16 @@ export interface ApplicationsTabProps {
   handleStartDirectMessage: (candidateUserId: number) => void;
   setSelectedAppForSchedule: (app: any) => void;
   setIsScheduleInterviewModalOpen: (open: boolean) => void;
+  setSelectedAppForAvailability: (app: any) => void;
+  setIsAvailabilityModalOpen: (open: boolean) => void;
   toast: string | null;
   showToast: (msg: string) => void;
 }
-
-const EMAIL_TEMPLATES: Record<string, { subject: string; body: string }> = {
-  '': { subject: '', body: '' },
-  interview: {
-    subject: 'Interview Invitation — {{job_title}} at {{company}}',
-    body: 'Hi {{name}},\n\nThank you for your interest in the {{job_title}} position. We were impressed by your background and would love to invite you for an interview.\n\nPlease let us know your availability for the coming week.\n\nBest regards,\n{{recruiter}}'
-  },
-  followup: {
-    subject: 'Following Up — {{job_title}} Application',
-    body: 'Hi {{name}},\n\nI wanted to follow up regarding your application for the {{job_title}} role. We are currently reviewing candidates and will have an update for you shortly.\n\nThank you for your patience.\n\nBest,\n{{recruiter}}'
-  },
-  rejection: {
-    subject: 'Update on Your Application — {{job_title}}',
-    body: 'Hi {{name}},\n\nThank you for taking the time to apply for the {{job_title}} position. After careful consideration, we have decided to move forward with other candidates at this time.\n\nWe truly appreciate your interest and encourage you to apply for future openings.\n\nWarm regards,\n{{recruiter}}'
-  },
-  offer: {
-    subject: 'Congratulations! Offer for {{job_title}}',
-    body: 'Hi {{name}},\n\nWe are delighted to extend an offer for the {{job_title}} position! We believe your skills and experience will be an excellent addition to our team.\n\nPlease find the offer details attached. Let us know if you have any questions.\n\nBest regards,\n{{recruiter}}'
-  }
-};
 
 const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   applications,
   applicationsLoading,
   jobPostings,
-  companyName,
-  userName,
   getParam,
   setParam,
   updateApplicationStatus,
@@ -58,6 +35,8 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   handleStartDirectMessage,
   setSelectedAppForSchedule,
   setIsScheduleInterviewModalOpen,
+  setSelectedAppForAvailability,
+  setIsAvailabilityModalOpen,
   toast,
   showToast,
 }) => {
@@ -94,35 +73,6 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
   const comboRef = useRef<HTMLDivElement>(null);
   const comboSearchRef = useRef<HTMLInputElement>(null);
   const [appNotes, setAppNotes] = useState<Record<number, string>>({});
-  const [showEmailComposer, setShowEmailComposer] = useState(false);
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
-  const [emailTemplate, setEmailTemplate] = useState('');
-
-  const fillTemplate = (text: string, app: any) => {
-    return text
-      .replace(/\{\{name\}\}/g, app.candidate?.name || '')
-      .replace(/\{\{job_title\}\}/g, app.job_posting?.title || '')
-      .replace(/\{\{company\}\}/g, companyName || 'Our Company')
-      .replace(/\{\{recruiter\}\}/g, userName || '');
-  };
-
-  const applyEmailTemplate = (key: string, app: any) => {
-    setEmailTemplate(key);
-    const tpl = EMAIL_TEMPLATES[key];
-    if (tpl) {
-      setEmailSubject(fillTemplate(tpl.subject, app));
-      setEmailBody(fillTemplate(tpl.body, app));
-    }
-  };
-
-  const sendEmail = () => {
-    if (!selectedApp?.candidate.email || !emailSubject) return;
-    const mailto = `mailto:${selectedApp.candidate.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-    window.open(mailto, '_blank');
-    setShowEmailComposer(false);
-    showToast('Email draft opened in your mail client');
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -540,6 +490,20 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
                     <line x1="3" y1="10" x2="21" y2="10"/>
                   </svg>
                   Schedule Interview
+                </button>
+                <button
+                  className="ra-btn ra-btn-outline"
+                  onClick={() => {
+                    setSelectedAppForAvailability(selectedApp);
+                    setIsAvailabilityModalOpen(true);
+                  }}
+                  title="Propose a few interview times and let the candidate pick one"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  Propose Times
                 </button>
                 <select
                   className="ra-detail-status-select"
@@ -1078,74 +1042,6 @@ const ApplicationsTab: React.FC<ApplicationsTabProps> = ({
         </div>
       </div>
         
-      
-      {/* ─── Email Composer Modal ─── */}
-      {/* NOTE: no button in this UI currently calls setShowEmailComposer(true) (pre-existing —
-          not introduced by this extraction), so this modal is presently unreachable. */}
-      {showEmailComposer && selectedApp && (
-        <DetailDrawer onClose={() => setShowEmailComposer(false)} overlayClassName="ra-modal-overlay" modalClassName="ra-modal">
-            <div className="ra-modal-header">
-              <div className="ra-modal-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                Compose Email
-              </div>
-              <button className="ra-modal-close" onClick={() => setShowEmailComposer(false)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
-            <div className="ra-modal-body">
-              <div className="ra-field">
-                <div className="ra-field-row">
-                  <span className="ra-field-label">To</span>
-                  <input className="ra-field-input" value={selectedApp?.candidate.email || ''} readOnly />
-                </div>
-              </div>
-              <div className="ra-field">
-                <div className="ra-field-row">
-                  <span className="ra-field-label">Template</span>
-                  <select
-                    className="ra-template-select"
-                    value={emailTemplate}
-                    onChange={e => applyEmailTemplate(e.target.value, selectedApp)}
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">— Custom —</option>
-                    <option value="interview">Interview Invitation</option>
-                    <option value="followup">Follow-Up</option>
-                    <option value="rejection">Rejection</option>
-                    <option value="offer">Offer Letter</option>
-                  </select>
-                </div>
-              </div>
-              <div className="ra-field">
-                <div className="ra-field-row">
-                  <span className="ra-field-label">Subject</span>
-                  <input
-                    className="ra-field-input"
-                    placeholder="Email subject…"
-                    value={emailSubject}
-                    onChange={e => setEmailSubject(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="ra-field">
-                <textarea
-                  className="ra-email-body"
-                  placeholder="Write your message…"
-                  value={emailBody}
-                  onChange={e => setEmailBody(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="ra-modal-footer">
-              <button className="ra-btn ra-btn-outline" onClick={() => setShowEmailComposer(false)}>Cancel</button>
-              <button className="ra-btn ra-btn-primary ra-btn-lg" onClick={sendEmail}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                Send Email
-              </button>
-            </div>
-        </DetailDrawer>
-      )}
 
       {/* ─── Toast ─── */}
       {toast && (

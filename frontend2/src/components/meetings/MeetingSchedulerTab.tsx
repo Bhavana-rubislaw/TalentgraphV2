@@ -44,13 +44,19 @@ const initials = (name?: string) =>
 const AVATAR_COLORS = ['#7c3aed', '#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed'];
 const avatarColor = (i: number) => AVATAR_COLORS[i % AVATAR_COLORS.length];
 
+const VideoCameraIcon = ({ color }: { color: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" width="14" height="14">
+    <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+  </svg>
+);
+
 const providerIcon = (provider?: string, url?: string) => {
   const p = (provider || url || '').toLowerCase();
-  if (p.includes('zoom')) return { label: 'Zoom', icon: '📹' };
-  if (p.includes('teams') || p.includes('microsoft')) return { label: 'Microsoft Teams', icon: '🟦' };
-  if (p.includes('meet') || p.includes('google')) return { label: 'Google Meet', icon: '🟢' };
-  if (p.includes('jitsi')) return { label: 'Jitsi', icon: '🔵' };
-  return { label: 'Video Call', icon: '🎥' };
+  if (p.includes('zoom')) return { label: 'Zoom', icon: <VideoCameraIcon color="#2563eb"/> };
+  if (p.includes('teams') || p.includes('microsoft')) return { label: 'Microsoft Teams', icon: <VideoCameraIcon color="#4338ca"/> };
+  if (p.includes('meet') || p.includes('google')) return { label: 'Google Meet', icon: <VideoCameraIcon color="#059669"/> };
+  if (p.includes('jitsi')) return { label: 'Jitsi', icon: <VideoCameraIcon color="#7c3aed"/> };
+  return { label: 'Video Call', icon: <VideoCameraIcon color="#64748b"/> };
 };
 
 const STATUS_STYLES: Record<string, { bg: string; color: string; label: string }> = {
@@ -428,12 +434,16 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
           <div className="meeting-list-scroll" style={{ flex: 1, overflowY: 'auto', padding: '0 0 0' }}>
             {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-                <div style={{ fontSize: '32px', marginBottom: '12px' }}>📅</div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="32" height="32" style={{ marginBottom: '12px' }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
                 Loading meetings...
               </div>
             ) : Object.keys(grouped).length === 0 ? (
               <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8' }}>
-                <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="40" height="40" style={{ marginBottom: '12px' }}>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="16" x2="15" y2="16"/>
+                </svg>
                 <div style={{ fontWeight: 600, marginBottom: '6px', color: '#64748b' }}>No meetings found</div>
                 <div style={{ fontSize: '13px' }}>Try a different filter or schedule a new meeting</div>
               </div>
@@ -500,7 +510,7 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                           {(meeting.video_meeting_url || meeting.video_provider) && (
                             <>
                               <span>·</span>
-                              <span>{pv.icon} {pv.label}</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>{pv.icon} {pv.label}</span>
                             </>
                           )}
                           {meeting.video_meeting_url && (
