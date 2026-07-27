@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api/client';
 import DetailDrawer from '../common/DetailDrawer';
 import { useSwipeCarousel } from '../../hooks/useSwipeCarousel';
 import {
@@ -119,6 +120,42 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
       name: sk.skill_name,
       level: sk.proficiency_level || 3
     }));
+  };
+
+  const downloadCandidateResume = async (candidateId: number, resumeId: number, filename: string) => {
+    try {
+      const response = await apiClient.downloadRecruiterCandidateResume(candidateId, resumeId);
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('[RESUME DOWNLOAD] Failed:', error);
+      alert(error.response?.data?.detail || 'Failed to download resume');
+    }
+  };
+
+  const downloadCandidateCertification = async (candidateId: number, certificationId: number, filename: string) => {
+    try {
+      const response = await apiClient.downloadRecruiterCandidateCertification(candidateId, certificationId);
+      const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('[CERTIFICATION DOWNLOAD] Failed:', error);
+      alert(error.response?.data?.detail || 'Failed to download certification');
+    }
   };
 
   if (jobPostings.length === 0) {
@@ -1150,10 +1187,10 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {rec.candidate.resumes.map((resume: any) => (
-                      <a
+                      <button
                         key={resume.id}
-                        href={`http://127.0.0.1:8001/uploads/resumes/${resume.storage_path}`}
-                        download
+                        type="button"
+                        onClick={() => downloadCandidateResume(rec.candidate.id, resume.id, resume.filename)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -1164,7 +1201,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                           textDecoration: 'none',
                           color: '#111827',
                           border: '1px solid #E5E7EB',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          width: '100%',
+                          textAlign: 'left',
+                          font: 'inherit',
+                          cursor: 'pointer'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#E5E7EB';
@@ -1187,7 +1228,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                         <svg style={{ width: '18px', height: '18px', color: '#1d4ed8', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
-                      </a>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1206,9 +1247,9 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                     {rec.candidate.certifications.map((cert: any) => (
                       <div key={cert.id}>
                         {cert.storage_path ? (
-                          <a
-                            href={`http://127.0.0.1:8001/uploads/certifications/${cert.storage_path}`}
-                            download
+                          <button
+                            type="button"
+                            onClick={() => downloadCandidateCertification(rec.candidate.id, cert.id, cert.filename || cert.name)}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -1219,7 +1260,11 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                               textDecoration: 'none',
                               color: '#111827',
                               border: '1px solid #86EFAC',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.2s',
+                              width: '100%',
+                              textAlign: 'left',
+                              font: 'inherit',
+                              cursor: 'pointer'
                             }}
                             onMouseEnter={(e) => {
                               e.currentTarget.style.background = '#DCFCE7';
@@ -1247,7 +1292,7 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                             <svg style={{ width: '18px', height: '18px', color: '#10B981', flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
-                          </a>
+                          </button>
                         ) : (
                           <div style={{
                             display: 'flex',
@@ -1334,7 +1379,8 @@ const RecruiterRecommendationsTab: React.FC<RecruiterRecommendationsTabProps> = 
                 </button>
                 <button
                   className="vp-btn vp-btn-message"
-                  onClick={() => { handleStartMessage(rec.candidate.id); setViewRecommendationProfile(null); }}
+                  onClick={() => { handleStartMessage(rec.candidate.user_id); setViewRecommendationProfile(null); }}
+                  disabled={!rec.candidate.user_id}
                   aria-label={`Message ${rec.candidate.name}`}
                   title="Start conversation with candidate"
                 >

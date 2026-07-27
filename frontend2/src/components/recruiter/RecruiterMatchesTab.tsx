@@ -433,7 +433,14 @@ const RecruiterMatchesTab: React.FC<RecruiterMatchesTabProps> = ({
                 <div className="vp-actions">
                   <button
                     className="action-btn secondary"
-                    onClick={() => { handleStartMessage(c.user_id || c.id); setViewProfileMatch(null); }}
+                    onClick={() => {
+                      if (c.user_id) {
+                        handleStartMessage(c.user_id);
+                        setViewProfileMatch(null);
+                      } else {
+                        alert(`Cannot message this candidate - user_id is missing. Candidate ID: ${c.id}`);
+                      }
+                    }}
                     title="Message this candidate"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>

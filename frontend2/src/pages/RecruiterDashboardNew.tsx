@@ -138,19 +138,21 @@ const RecruiterDashboard: React.FC = () => {
 
   // ── Fetch Data Functions ─────────────────────────────────────
 
-  const handleRecruiterLike = async (candidateId: number, jobProfileId: number) => {
-    if (!selectedJobId) return;
+  const handleRecruiterLike = async (candidateId: number, jobProfileId: number, jobPostingId?: number) => {
+    const targetJobId = jobPostingId ?? selectedJobId;
+    if (!targetJobId) return;
     try {
-      await apiClient.recruiterLike(candidateId, jobProfileId, selectedJobId);
-      // Optimistic update — card stays with Shortlisted badge
-      setRecommendations((prev: any) => ({
+      await apiClient.recruiterLike(candidateId, jobProfileId, targetJobId);
+      // Optimistic update — card stays with Shortlisted badge (only applies
+      // when the Recommendations tab's own list is loaded)
+      setRecommendations((prev: any) => prev ? ({
         ...prev,
         recommendations: prev.recommendations.map((r: any) =>
           r.candidate.id === candidateId && r.job_profile.id === jobProfileId
             ? { ...r, already_actioned: true, action_taken: 'like' }
             : r
         )
-      }));
+      }) : prev);
       fetchShortlist();
       fetchMatches();
     } catch (error: any) {
@@ -178,11 +180,12 @@ const RecruiterDashboard: React.FC = () => {
     }
   };
 
-  const handleAskToApply = async (candidateId: number, jobProfileId: number) => {
-    if (!selectedJobId) return;
+  const handleAskToApply = async (candidateId: number, jobProfileId: number, jobPostingId?: number) => {
+    const targetJobId = jobPostingId ?? selectedJobId;
+    if (!targetJobId) return;
     try {
       // Send invitation
-      await apiClient.recruiterAskToApply(candidateId, jobProfileId, selectedJobId);
+      await apiClient.recruiterAskToApply(candidateId, jobProfileId, targetJobId);
       // Optimistic update — recommendation cards
       setRecommendations((prev: any) => {
         if (!prev || !prev.recommendations) return prev;
@@ -611,6 +614,7 @@ const RecruiterDashboard: React.FC = () => {
                 setBrowseWorkType={setBrowseWorkType}
                 browseLocation={browseLocation}
                 setBrowseLocation={setBrowseLocation}
+                jobPostings={jobPostings}
                 handleRecruiterLike={handleRecruiterLike}
                 handleAskToApply={handleAskToApply}
                 handleStartDirectMessage={handleStartDirectMessage}

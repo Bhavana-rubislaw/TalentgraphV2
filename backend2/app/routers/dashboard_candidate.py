@@ -194,11 +194,44 @@ def get_recruiter_invites(
         posting_skills = session.exec(
             select(JobPostingSkill).where(JobPostingSkill.job_posting_id == job_posting.id)
         ).all()
-        
+
+        # Who sent the invite (older rows created before recruiter_user_id
+        # existed will have it as None — falls back to just the company name,
+        # already shown separately).
+        recruiter_name = None
+        if invite.recruiter_user_id:
+            recruiter_user = session.get(User, invite.recruiter_user_id)
+            if recruiter_user:
+                recruiter_name = recruiter_user.full_name
+
+        # Why this invite: reuse the same match a recruiter_ask_to_apply
+        # always creates/updates, recomputed live so it's a real score.
+        match_percentage = None
+        match_details = None
+        match = session.exec(
+            select(Match)
+            .where(Match.candidate_id == candidate.id)
+            .where(Match.company_id == invite.company_id)
+            .where(Match.job_posting_id == invite.job_posting_id)
+        ).first()
+        if match:
+            job_profile = session.get(JobProfile, invite.job_profile_id)
+            match_percentage = match.match_percentage
+            if job_profile:
+                try:
+                    scored = calculate_job_match_score(job_posting, job_profile, session)
+                    match_percentage = scored["score"]
+                    match_details = scored["details"]
+                except Exception as e:
+                    logger.debug(f"Match score recompute failed for invite {invite.id}: {e}")
+
         result.append({
             "invite_id": invite.id,
             "job_profile_id": invite.job_profile_id,
             "already_applied": already_applied,
+            "recruiter_name": recruiter_name,
+            "match_percentage": match_percentage,
+            "match_details": match_details,
             "job_posting": {
                 "id": job_posting.id,
                 "job_title": job_posting.job_title,
@@ -480,7 +513,22 @@ def get_candidate_matches(
         posting_skills = session.exec(
             select(JobPostingSkill).where(JobPostingSkill.job_posting_id == job_posting.id)
         ).all()
-        
+
+        # match.match_percentage may be a stale hardcoded placeholder from
+        # before real scoring was wired in — recompute live from the same
+        # scoring function the Recommendations tab uses, so this always
+        # reflects an actual comparison rather than a fixed 80/85.
+        job_profile = session.get(JobProfile, match.job_profile_id)
+        match_percentage = match.match_percentage
+        match_details = None
+        if job_profile:
+            try:
+                scored = calculate_job_match_score(job_posting, job_profile, session)
+                match_percentage = scored["score"]
+                match_details = scored["details"]
+            except Exception as e:
+                logger.debug(f"Match score recompute failed for match {match.id}: {e}")
+
         result.append({
             "match_id": match.id,
             "job_profile_id": match.job_profile_id,
@@ -512,7 +560,8 @@ def get_candidate_matches(
                 "email": company_user.email if company_user else None,
                 "user_id": company.user_id
             },
-            "match_percentage": match.match_percentage,
+            "match_percentage": match_percentage,
+            "match_details": match_details,
             "matched_at": match.created_at.isoformat(),
             "already_applied": already_applied
         })

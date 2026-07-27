@@ -102,7 +102,7 @@ export function CreateMeetingModal({
       setShowDropdown(true); // Show dropdown while searching
       
       try {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem('token');
         const response = await fetch(
           `${API_BASE}/auth/users/search?q=${encodeURIComponent(searchQuery)}`,
           {

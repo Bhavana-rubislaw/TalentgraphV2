@@ -149,8 +149,6 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                     <span className="cal-drawer-field-value">{new Date(viewInviteJob.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                 )}
-                {/* NOTE: recruiter_name is not part of the /candidate/recruiter-invites response —
-                    "Invited By" has always been hidden. Flagging, not fixing: needs a backend change. */}
                 {(viewInviteJob as any).recruiter_name && (
                   <div className="cal-drawer-field">
                     <span className="cal-drawer-field-label">Invited By</span>
@@ -158,8 +156,9 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
                   </div>
                 )}
               </div>
-              {/* NOTE: message is not part of the /candidate/recruiter-invites response — this
-                  "Recruiter's Message" block has always been hidden. Flagging, not fixing. */}
+              {/* message is not part of the /candidate/recruiter-invites response — recruiters
+                  have no UI to compose one when sending an invite, so this never renders.
+                  Would need a new compose field on the recruiter's Ask-to-Apply flow. */}
               {(viewInviteJob as any).message && (
                 <div style={{ marginTop: '12px', padding: '12px', background: '#f8f9ff', borderRadius: '8px', borderLeft: '3px solid #2563eb' }}>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: '#2563eb', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recruiter's Message</div>
@@ -169,9 +168,6 @@ const InvitesTab: React.FC<InvitesTabProps> = ({
             </div>
 
             {/* AI Match Insights (if match data available) */}
-            {/* NOTE: match_percentage/match_details are not part of the /candidate/recruiter-invites
-                response — invites are one-sided recruiter actions, not mutual matches, so this
-                section has always been hidden. Flagging, not fixing: needs a backend change. */}
             {(viewInviteJob as any).match_percentage && (() => {
               const inviteDetails = (viewInviteJob as any).match_details || {};
               const inviteDisplayDetails: MatchDetails = {

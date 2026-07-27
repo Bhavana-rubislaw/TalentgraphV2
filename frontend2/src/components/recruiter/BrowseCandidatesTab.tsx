@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import DetailDrawer from '../common/DetailDrawer';
 import type { BrowseCandidate } from '../../types/browseCandidate';
+import type { JobPosting } from '../../types/jobPosting';
 
 export interface BrowseCandidatesTabProps {
   browseCandidates: BrowseCandidate[];
@@ -17,8 +18,9 @@ export interface BrowseCandidatesTabProps {
   setBrowseWorkType: (value: string) => void;
   browseLocation: string;
   setBrowseLocation: (value: string) => void;
-  handleRecruiterLike: (candidateId: number, jobProfileId: number) => Promise<void>;
-  handleAskToApply: (candidateId: number, jobProfileId: number) => Promise<void>;
+  jobPostings: JobPosting[];
+  handleRecruiterLike: (candidateId: number, jobProfileId: number, jobPostingId?: number) => Promise<void>;
+  handleAskToApply: (candidateId: number, jobProfileId: number, jobPostingId?: number) => Promise<void>;
   handleStartDirectMessage: (candidateUserId: number) => Promise<void>;
   handleStartMessage: (candidateUserId: number) => Promise<void>;
 }
@@ -38,12 +40,29 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
   setBrowseWorkType,
   browseLocation,
   setBrowseLocation,
+  jobPostings,
   handleRecruiterLike,
   handleAskToApply,
   handleStartDirectMessage,
   handleStartMessage,
 }) => {
   const [viewCandidateProfile, setViewCandidateProfile] = useState<any | null>(null);
+  const [browseJobPostingId, setBrowseJobPostingId] = useState<number | null>(null);
+
+  // Browse is a cross-platform search, not tied to one job posting the way
+  // Recommendations is — so Like/Ask-to-Apply here need their own explicit
+  // job-posting target instead of borrowing whatever the Recommendations tab
+  // happens to have selected. Default to the first active posting and let
+  // the recruiter change it.
+  useEffect(() => {
+    if (jobPostings.length === 0) {
+      setBrowseJobPostingId(null);
+      return;
+    }
+    if (!browseJobPostingId || !jobPostings.some((j) => j.id === browseJobPostingId)) {
+      setBrowseJobPostingId(jobPostings[0].id);
+    }
+  }, [jobPostings]);
 
   // Derive available roles from candidate data
   const availableRoles = useMemo(() => {
@@ -86,6 +105,64 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
   return (
     <>
       <div className="purple-section-wrapper">
+      {/* Attach-to-job-posting selector — Browse isn't scoped to one job posting like
+          Recommendations is, so Like/Ask-to-Apply need an explicit target here. */}
+      <div style={{
+        background: 'white',
+        borderRadius: '12px',
+        padding: '16px 20px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        marginBottom: '16px',
+        border: '1px solid var(--border-color, #e2e8f0)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+        flexWrap: 'wrap'
+      }}>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '10px',
+          background: '#eff6ff',
+          color: '#2563eb',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+        </div>
+
+        <div style={{ flex: '0 1 420px', minWidth: '260px' }}>
+          <label htmlFor="browse-job-posting-target" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #64748b)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            Attach Actions to Job Posting
+          </label>
+          <select
+            id="browse-job-posting-target"
+            className="job-select-modern"
+            style={{ width: '100%', height: '40px', fontSize: '14px', borderRadius: '8px', padding: '0 12px' }}
+            value={browseJobPostingId ?? ''}
+            onChange={(e) => setBrowseJobPostingId(parseInt(e.target.value, 10))}
+            disabled={jobPostings.length === 0}
+          >
+            {jobPostings.length === 0 ? (
+              <option value="">No active job postings</option>
+            ) : (
+              jobPostings.map((job) => (
+                <option key={job.id} value={job.id}>{job.job_title} • {job.location || 'Remote'}</option>
+              ))
+            )}
+          </select>
+        </div>
+
+        <span style={{ fontSize: '12px', color: 'var(--text-muted, #94a3b8)', flex: '0 1 auto' }}>
+          Like and Ask-to-Apply below will be recorded against this posting
+        </span>
+      </div>
+
       {/* Enhanced Filter Toolbar */}
       <div style={{
         background: 'white',
@@ -227,12 +304,12 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                 className={`cgc-top-badge ${candidate.already_liked ? 'active' : ''}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!candidate.already_liked && candidate.job_profiles && candidate.job_profiles.length > 0) {
-                    handleRecruiterLike(candidate.candidate_id, candidate.job_profiles[0].id);
+                  if (!candidate.already_liked && candidate.job_profiles && candidate.job_profiles.length > 0 && browseJobPostingId) {
+                    handleRecruiterLike(candidate.candidate_id, candidate.job_profiles[0].id, browseJobPostingId);
                   }
                 }}
-                disabled={candidate.already_liked}
-                title={candidate.already_liked ? 'Already liked this candidate' : 'Like this candidate'}
+                disabled={candidate.already_liked || !browseJobPostingId}
+                title={candidate.already_liked ? 'Already liked this candidate' : !browseJobPostingId ? 'Select a job posting above first' : 'Like this candidate'}
               >
                 <svg viewBox="0 0 24 24" fill={candidate.already_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" width="16" height="16">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -314,12 +391,12 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                     className="cgc-apply-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!candidate.already_invited && candidate.job_profiles && candidate.job_profiles.length > 0) {
-                        handleAskToApply(candidate.candidate_id, candidate.job_profiles[0].id);
+                      if (!candidate.already_invited && candidate.job_profiles && candidate.job_profiles.length > 0 && browseJobPostingId) {
+                        handleAskToApply(candidate.candidate_id, candidate.job_profiles[0].id, browseJobPostingId);
                       }
                     }}
-                    disabled={candidate.already_invited}
-                    title={candidate.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
+                    disabled={candidate.already_invited || !browseJobPostingId}
+                    title={candidate.already_invited ? 'Already invited this candidate' : !browseJobPostingId ? 'Select a job posting above first' : 'Ask candidate to apply'}
                   >
                     {candidate.already_invited ? '✓ Invited' : 'Ask to Apply'}
                   </button>
@@ -489,12 +566,12 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                   className={`action-btn ${viewCandidateProfile.already_liked ? 'liked' : 'secondary'}`}
                   style={{ flex: 1, minWidth: '120px' }}
                   onClick={() => {
-                    if (!viewCandidateProfile.already_liked && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
-                      handleRecruiterLike(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
+                    if (!viewCandidateProfile.already_liked && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0 && browseJobPostingId) {
+                      handleRecruiterLike(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id, browseJobPostingId);
                       setViewCandidateProfile({ ...viewCandidateProfile, already_liked: true });
                     }
                   }}
-                  disabled={viewCandidateProfile.already_liked}
+                  disabled={viewCandidateProfile.already_liked || !browseJobPostingId}
                 >
                   <svg viewBox="0 0 24 24" fill={viewCandidateProfile.already_liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
@@ -505,20 +582,27 @@ const BrowseCandidatesTab: React.FC<BrowseCandidatesTabProps> = ({
                   className={`action-btn ${viewCandidateProfile.already_invited ? 'success' : 'primary'}`}
                   style={{ flex: 1, minWidth: '120px' }}
                   onClick={() => {
-                    if (!viewCandidateProfile.already_invited && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0) {
-                      handleAskToApply(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id);
+                    if (!viewCandidateProfile.already_invited && viewCandidateProfile.job_profiles && viewCandidateProfile.job_profiles.length > 0 && browseJobPostingId) {
+                      handleAskToApply(viewCandidateProfile.candidate_id, viewCandidateProfile.job_profiles[0].id, browseJobPostingId);
                       setViewCandidateProfile({ ...viewCandidateProfile, already_invited: true });
                     }
                   }}
-                  disabled={viewCandidateProfile.already_invited}
-                  title={viewCandidateProfile.already_invited ? 'Already invited this candidate' : 'Ask candidate to apply'}
+                  disabled={viewCandidateProfile.already_invited || !browseJobPostingId}
+                  title={viewCandidateProfile.already_invited ? 'Already invited this candidate' : !browseJobPostingId ? 'Select a job posting above first' : 'Ask candidate to apply'}
                 >
                   {viewCandidateProfile.already_invited ? '✓ Invited' : 'Ask to Apply'}
                 </button>
                 <button
                   className="action-btn secondary"
                   style={{ flex: 1, minWidth: '120px' }}
-                  onClick={() => { handleStartMessage(viewCandidateProfile.user_id || viewCandidateProfile.candidate_id); setViewCandidateProfile(null); }}
+                  onClick={() => {
+                    if (viewCandidateProfile.user_id) {
+                      handleStartMessage(viewCandidateProfile.user_id);
+                      setViewCandidateProfile(null);
+                    } else {
+                      alert(`Cannot message this candidate - user_id is missing. Candidate ID: ${viewCandidateProfile.candidate_id}`);
+                    }
+                  }}
                   title="Message this candidate"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>

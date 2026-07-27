@@ -833,6 +833,80 @@ def download_application_certification(
     )
 
 
+@router.get("/recruiter/candidates/{candidate_id}/resumes/{resume_id}/download")
+def download_candidate_resume(
+    candidate_id: int,
+    resume_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """
+    Securely download a candidate's resume from the AI Recommendations tab,
+    where the candidate hasn't necessarily applied yet (no Application row to
+    scope the existing /applications/{id}/resumes/{id}/download endpoint by).
+    Replaces a plain <a href="http://127.0.0.1:8001/uploads/..."> link that
+    pointed at storage that was never actually served as static files.
+    """
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Access denied. Recruiters only.")
+
+    resume = session.get(Resume, resume_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    if resume.candidate_id != candidate_id:
+        raise HTTPException(status_code=403, detail="Resume does not belong to this candidate")
+
+    file_path = Path(resume.storage_path)
+    if not file_path.exists() or not file_path.is_file():
+        logger.error(f"Resume file not found at path: {resume.storage_path}")
+        raise HTTPException(status_code=404, detail="Resume file not found on server")
+
+    logger.info(f"Recruiter {user.email} downloading resume {resume_id} for candidate {candidate_id}")
+    return FileResponse(
+        path=str(file_path),
+        filename=resume.filename,
+        media_type="application/octet-stream"
+    )
+
+
+@router.get("/recruiter/candidates/{candidate_id}/certifications/{certification_id}/download")
+def download_candidate_certification(
+    candidate_id: int,
+    certification_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Certification counterpart to download_candidate_resume above."""
+    user = session.exec(select(User).where(User.email == current_user["email"])).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found. Please log in again.")
+    if user.role == UserRole.CANDIDATE:
+        raise HTTPException(status_code=403, detail="Access denied. Recruiters only.")
+
+    certification = session.get(Certification, certification_id)
+    if not certification:
+        raise HTTPException(status_code=404, detail="Certification not found")
+    if certification.candidate_id != candidate_id:
+        raise HTTPException(status_code=403, detail="Certification does not belong to this candidate")
+    if not certification.filename or not certification.storage_path:
+        raise HTTPException(status_code=404, detail="This certification does not have an attached file")
+
+    file_path = Path(certification.storage_path)
+    if not file_path.exists() or not file_path.is_file():
+        logger.error(f"Certification file not found at path: {certification.storage_path}")
+        raise HTTPException(status_code=404, detail="Certification file not found on server")
+
+    logger.info(f"Recruiter {user.email} downloading certification {certification_id} for candidate {candidate_id}")
+    return FileResponse(
+        path=str(file_path),
+        filename=certification.filename,
+        media_type="application/octet-stream"
+    )
+
+
 @router.get("/recruiter/matches", response_model=List[Dict[str, Any]])
 def get_recruiter_matches(
     current_user: dict = Depends(get_current_user),
@@ -922,6 +996,19 @@ def get_recruiter_matches(
         # Get taxonomy names for display
         taxonomy = get_taxonomy_names(job_profile, session)
 
+        # match.match_percentage may be a stale hardcoded placeholder from
+        # before real scoring was wired in — recompute live from the same
+        # scoring function the Recommendations tab uses.
+        match_percentage = match.match_percentage
+        match_details = None
+        if job_profile and job_posting:
+            try:
+                scored = calculate_job_match_score(job_posting, job_profile, session)
+                match_percentage = scored["score"]
+                match_details = scored["details"]
+            except Exception as e:
+                logger.debug(f"Match score recompute failed for match {match.id}: {e}")
+
         result.append({
             "match_id": match.id,
             "candidate": {
@@ -973,10 +1060,11 @@ def get_recruiter_matches(
                 "location": job_posting.location,
                 "seniority_level": job_posting.seniority_level
             },
-            "match_percentage": match.match_percentage,
+            "match_percentage": match_percentage,
+            "match_details": match_details,
             "matched_at": match.created_at.isoformat()
         })
-    
+
     return result
 
 

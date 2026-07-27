@@ -13,9 +13,23 @@ from app.security import get_current_user
 from app.routers.notifications import push_notification
 from app.services.audit import log_activity_event, snap_swipe
 from app.services.user_service import UserService
+from app.services.job_match_scoring import calculate_job_match_score
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/swipes", tags=["Swipes"])
+
+
+def _match_percentage(job_posting: JobPosting, job_profile: JobProfile | None, session: Session, fallback: float) -> float:
+    """Real match score for a newly-created Match row, instead of a hardcoded
+    placeholder. Falls back to the historical constant if scoring can't run
+    (e.g. job_profile missing/mismatched) so a Match row is never blocked."""
+    if not job_profile:
+        return fallback
+    try:
+        return calculate_job_match_score(job_posting, job_profile, session)["score"]
+    except Exception as e:
+        logger.debug(f"Match score calculation failed, using fallback: {e}")
+        return fallback
 
 
 class CandidateSwipeRequest(BaseModel):
@@ -95,7 +109,7 @@ def swipe_like(
             job_profile_id=job_profile_id,
             job_posting_id=job_posting_id,
             candidate_liked=True,
-            match_percentage=80
+            match_percentage=_match_percentage(job_posting, job_profile, session, fallback=80)
         )
         session.add(match)
     
@@ -321,7 +335,7 @@ def ask_to_apply(
             job_profile_id=job_profile_id,
             job_posting_id=job_posting_id,
             candidate_asked_to_apply=True,
-            match_percentage=85
+            match_percentage=_match_percentage(job_posting, job_profile, session, fallback=85)
         )
         session.add(match)
     
@@ -367,11 +381,13 @@ def recruiter_like(
     candidate = session.get(Candidate, data.candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
-    
+
     job_posting = session.get(JobPosting, data.job_posting_id)
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
-    
+
+    job_profile = session.get(JobProfile, data.job_profile_id)
+
     # Duplicate protection: Check if already liked
     existing_like = session.exec(
         select(Swipe)
@@ -390,7 +406,8 @@ def recruiter_like(
         job_profile_id=data.job_profile_id,
         job_posting_id=data.job_posting_id,
         action="like",
-        action_by="recruiter"
+        action_by="recruiter",
+        recruiter_user_id=user.id
     )
     
     # Create or update match
@@ -410,7 +427,7 @@ def recruiter_like(
             job_profile_id=data.job_profile_id,
             job_posting_id=data.job_posting_id,
             company_liked=True,
-            match_percentage=80
+            match_percentage=_match_percentage(job_posting, job_profile, session, fallback=80)
         )
         session.add(match)
     
@@ -488,7 +505,8 @@ def recruiter_pass(
         job_profile_id=data.job_profile_id,
         job_posting_id=data.job_posting_id,
         action="pass",
-        action_by="recruiter"
+        action_by="recruiter",
+        recruiter_user_id=user.id
     )
     
     session.add(swipe)
@@ -535,7 +553,9 @@ def recruiter_ask_to_apply(
     job_posting = session.get(JobPosting, data.job_posting_id)
     if not job_posting or job_posting.company_id not in company_ids:
         raise HTTPException(status_code=404, detail="Job posting not found")
-    
+
+    job_profile = session.get(JobProfile, data.job_profile_id)
+
     # Check if already invited this candidate for this job (prevent duplicates)
     existing_invite = session.exec(
         select(Swipe)
@@ -560,7 +580,8 @@ def recruiter_ask_to_apply(
         job_profile_id=data.job_profile_id,
         job_posting_id=data.job_posting_id,
         action="ask_to_apply",
-        action_by="recruiter"
+        action_by="recruiter",
+        recruiter_user_id=user.id
     )
     
     # Create or update match
@@ -580,7 +601,7 @@ def recruiter_ask_to_apply(
             job_profile_id=data.job_profile_id,
             job_posting_id=data.job_posting_id,
             company_asked_to_apply=True,
-            match_percentage=85
+            match_percentage=_match_percentage(job_posting, job_profile, session, fallback=85)
         )
         session.add(match)
     

@@ -293,7 +293,19 @@ export const apiClient = {
   getRecruiterApplications: applicationsClient.getRecruiterApplications,
   downloadRecruiterApplicationResume: applicationsClient.downloadRecruiterApplicationResume,
   downloadRecruiterApplicationCertification: applicationsClient.downloadRecruiterApplicationCertification,
-  
+
+  // Candidate document downloads from the AI Recommendations tab, where the
+  // candidate hasn't necessarily applied yet (no application_id to scope by).
+  downloadRecruiterCandidateResume: (candidateId: number, resumeId: number) =>
+    api.get(`/dashboard/recruiter/candidates/${candidateId}/resumes/${resumeId}/download`, {
+      responseType: 'blob'
+    }),
+  downloadRecruiterCandidateCertification: (candidateId: number, certificationId: number) =>
+    api.get(`/dashboard/recruiter/candidates/${candidateId}/certifications/${certificationId}/download`, {
+      responseType: 'blob'
+    }),
+
+
   getRecruiterMatches: () =>
     api.get('/dashboard/recruiter/matches'),
   

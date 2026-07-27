@@ -366,9 +366,6 @@ const CandidateMatchesTab: React.FC<CandidateMatchesTabProps> = ({
 
             {/* AI Match Insights */}
             {(() => {
-              // NOTE: match_details was never part of the /candidate/matches response — this
-              // has always fallen through to an all-zero breakdown here. Flagging, not fixing:
-              // showing a real per-category breakdown needs a backend change, a product call.
               const matchDetails = (viewMatchJob as { match_details?: Partial<MatchDetails> }).match_details || {};
               const displayDetails: MatchDetails = {
                 product_match: matchDetails.product_match ?? 0,

@@ -654,8 +654,9 @@ class Swipe(SQLModel, table=True):
     job_posting_id: int = Field(foreign_key="jobposting.id")
     action: str  # "like", "pass", "ask_to_apply"
     action_by: str  # "candidate" or "recruiter"
+    recruiter_user_id: Optional[int] = Field(default=None, foreign_key="user.id")  # who performed it, when action_by == "recruiter"
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    
+
     # Relationships
     candidate: Candidate = Relationship(back_populates="swipes")
     company: Company = Relationship(back_populates="swipes")

@@ -217,7 +217,13 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               <div className="cgc-footer-actions">
                 <button
                   className="cgc-icon-btn"
-                  onClick={() => handleStartMessage(item.candidate.user_id || item.candidate.id)}
+                  onClick={() => {
+                    if (item.candidate.user_id) {
+                      handleStartMessage(item.candidate.user_id);
+                    } else {
+                      alert(`Cannot message this candidate - user_id is missing. Candidate ID: ${item.candidate.id}`);
+                    }
+                  }}
                   title="Send a message to this candidate"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
@@ -514,7 +520,14 @@ const ShortlistTab: React.FC<ShortlistTabProps> = ({
               <div className="vp-actions">
                 <button
                   className="action-btn secondary"
-                  onClick={() => { handleStartMessage(c.user_id || c.id); setViewShortlistItem(null); }}
+                  onClick={() => {
+                    if (c.user_id) {
+                      handleStartMessage(c.user_id);
+                      setViewShortlistItem(null);
+                    } else {
+                      alert(`Cannot message this candidate - user_id is missing. Candidate ID: ${c.id}`);
+                    }
+                  }}
                   title="Message this candidate"
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 16, height: 16 }}>

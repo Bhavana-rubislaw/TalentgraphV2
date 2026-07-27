@@ -541,12 +541,14 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
                               Join
                             </a>
                           ) : <span />}
-                          <button
-                            className="mtg-reschedule-link"
-                            onClick={(e) => { e.stopPropagation(); setSelectedMeeting(meeting); }}
-                          >
-                            Reschedule
-                          </button>
+                          {role !== 'candidate' && (
+                            <button
+                              className="mtg-reschedule-link"
+                              onClick={(e) => { e.stopPropagation(); setSelectedMeeting(meeting); }}
+                            >
+                              Reschedule
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
