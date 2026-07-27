@@ -52,6 +52,7 @@ export function CreateMeetingModal({
     location: '',
     videoMeetingUrl: '',
     videoProvider: '',
+    videoLinkMode: 'auto' as 'auto' | 'manual',
   });
 
   const [selectedParticipants, setSelectedParticipants] = useState<SelectedParticipant[]>([]);
@@ -191,8 +192,9 @@ export function CreateMeetingModal({
         match_id: matchId,
         application_id: applicationId,
         location: formData.location || undefined,
-        video_meeting_url: formData.videoMeetingUrl || undefined,
-        video_provider: formData.videoProvider || undefined,
+        video_meeting_url: formData.videoLinkMode === 'manual' ? (formData.videoMeetingUrl || undefined) : undefined,
+        video_provider: formData.videoLinkMode === 'auto' ? 'zoom' : (formData.videoProvider || undefined),
+        auto_generate_video_link: formData.videoLinkMode === 'auto',
       };
 
       await apiClient.createMeeting(meetingData);
@@ -606,7 +608,7 @@ export function CreateMeetingModal({
             />
           </div>
 
-          {/* Video Meeting URL */}
+          {/* Video Meeting Link */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{
               display: 'block',
@@ -615,21 +617,63 @@ export function CreateMeetingModal({
               color: '#1e293b',
               marginBottom: '8px',
             }}>
-              Video Meeting URL
+              Video Meeting Link
             </label>
-            <input
-              type="url"
-              value={formData.videoMeetingUrl}
-              onChange={(e) => handleChange('videoMeetingUrl', e.target.value)}
-              placeholder="https://zoom.us/j/... or Teams link"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                fontSize: '14px',
-              }}
-            />
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+              <button
+                type="button"
+                onClick={() => handleChange('videoLinkMode', 'auto')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: formData.videoLinkMode === 'auto' ? '2px solid #1d4ed8' : '1px solid #e2e8f0',
+                  background: formData.videoLinkMode === 'auto' ? '#eff6ff' : 'white',
+                  color: formData.videoLinkMode === 'auto' ? '#1d4ed8' : '#64748b',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Auto-generate Zoom link
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('videoLinkMode', 'manual')}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: formData.videoLinkMode === 'manual' ? '2px solid #1d4ed8' : '1px solid #e2e8f0',
+                  background: formData.videoLinkMode === 'manual' ? '#eff6ff' : 'white',
+                  color: formData.videoLinkMode === 'manual' ? '#1d4ed8' : '#64748b',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                I'll provide my own link
+              </button>
+            </div>
+            {formData.videoLinkMode === 'manual' ? (
+              <input
+                type="url"
+                value={formData.videoMeetingUrl}
+                onChange={(e) => handleChange('videoMeetingUrl', e.target.value)}
+                placeholder="https://zoom.us/j/... or Teams link"
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '14px',
+                }}
+              />
+            ) : (
+              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+                A Zoom meeting will be created automatically when you save — nothing to fill in.
+              </p>
+            )}
           </div>
 
           {/* Error Message */}

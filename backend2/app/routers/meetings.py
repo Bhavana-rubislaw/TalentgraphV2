@@ -4,6 +4,7 @@ First-class Meeting domain with database persistence, scheduling engine, and ava
 Enhanced with comprehensive cancellation, rescheduling, and tokenized email actions (Option 3)
 """
 
+import os
 from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -17,7 +18,7 @@ from app.database import get_session
 from app.security import get_current_user
 from app.models import (
     User, Meeting, MeetingParticipant, MeetingAvailabilitySlot,
-    MeetingStatus, MeetingType, CalendarAccount, VideoProviderAccount, CalendarProvider,
+    MeetingStatus, MeetingType, CalendarAccount, CalendarProvider, VideoProvider,
 )
 from app.schemas import (
     MeetingCreate, MeetingRead, MeetingUpdate, MeetingCancelRequest, MeetingRescheduleRequest,
@@ -42,6 +43,13 @@ from app.services.meeting_conflict_service import MeetingConflictService
 from app.services.meeting_token_action_service import MeetingTokenActionService
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
+
+# App-level Zoom Server-to-Server OAuth credentials — one company-wide Zoom
+# app, not a per-user connection. Never exposed to the frontend; recruiters
+# just toggle "auto-generate" and this is what actually creates the meeting.
+ZOOM_ACCOUNT_ID = os.getenv("ZOOM_ACCOUNT_ID")
+ZOOM_CLIENT_ID = os.getenv("ZOOM_CLIENT_ID")
+ZOOM_CLIENT_SECRET = os.getenv("ZOOM_CLIENT_SECRET")
 
 
 # ============ SCHEDULING ENGINE ============
@@ -116,43 +124,39 @@ async def create_meeting(
                 detail=f"User {user_id} has a scheduling conflict at this time"
             )
     
-    # Auto-generate video meeting link if configured
+    # Video meeting link: either the recruiter's own manually-pasted link,
+    # or a real Zoom meeting auto-generated via the app-level Zoom account
+    # (never a per-user API key — see ZOOM_* constants above).
     video_meeting_url = meeting_data.video_meeting_url
     video_provider = meeting_data.video_provider
-    
-    if not video_meeting_url and meeting_data.video_provider:
-        # Check if user has video provider configured
-        video_account = session.exec(
-            select(VideoProviderAccount).where(
-                VideoProviderAccount.user_id == current_user["user_id"],
-                VideoProviderAccount.provider == meeting_data.video_provider,
-                VideoProviderAccount.auto_generate_links == True
+
+    if meeting_data.auto_generate_video_link and not video_meeting_url:
+        if not (ZOOM_ACCOUNT_ID and ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET):
+            raise HTTPException(
+                status_code=503,
+                detail="Auto-generate is unavailable: Zoom is not configured on this server."
             )
-        ).first()
-        
-        if video_account:
-            try:
-                provider = VideoProviderFactory.get_provider(
-                    provider=video_account.provider,
-                    api_key=video_account.api_key,
-                    api_secret=video_account.api_secret,
-                    access_token=video_account.access_token
-                )
-                
-                if provider:
-                    meeting_result = provider.create_meeting(
-                        title=meeting_data.title,
-                        start_time=meeting_data.scheduled_start,
-                        duration_minutes=meeting_data.duration_minutes,
-                        description=meeting_data.description,
-                        waiting_room=video_account.waiting_room_enabled,
-                        timezone=meeting_data.timezone
-                    )
-                    video_meeting_url = meeting_result["meeting_url"]
-                    video_provider = video_account.provider
-            except VideoProviderError as e:
-                # Log error but don't fail meeting creation
-                logger.warning(f"Failed to generate video link: {str(e)}")
+        try:
+            provider = VideoProviderFactory.get_provider(
+                provider=VideoProvider.ZOOM,
+                api_key=ZOOM_CLIENT_ID,
+                api_secret=ZOOM_CLIENT_SECRET,
+                account_id=ZOOM_ACCOUNT_ID
+            )
+            meeting_result = provider.create_meeting(
+                title=meeting_data.title,
+                start_time=meeting_data.scheduled_start,
+                duration_minutes=meeting_data.duration_minutes,
+                description=meeting_data.description,
+                waiting_room=False,
+                timezone=meeting_data.timezone
+            )
+            video_meeting_url = meeting_result["meeting_url"]
+            video_provider = VideoProvider.ZOOM.value
+        except VideoProviderError as e:
+            # Auto-generate was explicitly requested — surface the failure
+            # rather than silently creating a meeting with no link.
+            raise HTTPException(status_code=502, detail=f"Failed to auto-generate Zoom link: {str(e)}")
     
     # Create meeting
     meeting = Meeting(

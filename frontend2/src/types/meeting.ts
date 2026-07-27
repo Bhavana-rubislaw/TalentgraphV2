@@ -90,6 +90,7 @@ export interface CreateMeetingRequest {
   location?: string;
   video_meeting_url?: string;
   video_provider?: string;
+  auto_generate_video_link?: boolean;
 }
 
 export interface UpdateMeetingRequest {

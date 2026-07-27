@@ -663,6 +663,10 @@ class MeetingCreate(MeetingBase):
     participant_user_ids: Optional[List[int]] = None  # Legacy support
     participants: Optional[List[MeetingParticipantSpec]] = None  # New method
 
+    # If true, ignore video_meeting_url and generate a real Zoom link
+    # using the app-level ZOOM_* credentials instead of a per-user account.
+    auto_generate_video_link: bool = False
+
 
 class MeetingUpdate(BaseModel):
     title: Optional[str] = None

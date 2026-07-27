@@ -446,32 +446,6 @@ export const apiClient = {
   disconnectCalendar: (accountId: number) =>
     api.delete(`/calendar/accounts/${accountId}`),
 
-  // Video Provider Account Management
-  createVideoProviderAccount: (data: {
-    provider: 'zoom' | 'microsoft_teams' | 'google_meet' | 'other';
-    api_key?: string;
-    api_secret?: string;
-    access_token?: string;
-    refresh_token?: string;
-    auto_generate_links?: boolean;
-    waiting_room_enabled?: boolean;
-  }) =>
-    api.post('/calendar/video-providers', data),
-
-  getVideoProviderAccounts: () =>
-    api.get('/calendar/video-providers'),
-
-  updateVideoProviderAccount: (accountId: number, data: {
-    api_key?: string;
-    api_secret?: string;
-    auto_generate_links?: boolean;
-    waiting_room_enabled?: boolean;
-  }) =>
-    api.patch(`/calendar/video-providers/${accountId}`, data),
-
-  deleteVideoProviderAccount: (accountId: number) =>
-    api.delete(`/calendar/video-providers/${accountId}`),
-
   // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
   
   // Get overview metrics
