@@ -18,7 +18,7 @@ from app.database import get_session
 from app.security import get_current_user
 from app.models import (
     User, Meeting, MeetingParticipant, MeetingAvailabilitySlot,
-    MeetingStatus, MeetingType, CalendarAccount, CalendarProvider, VideoProvider,
+    MeetingStatus, MeetingType, VideoProvider,
 )
 from app.schemas import (
     MeetingCreate, MeetingRead, MeetingUpdate, MeetingCancelRequest, MeetingRescheduleRequest,
@@ -28,7 +28,6 @@ from app.schemas import (
 )
 from app.routers.notifications import push_notification
 from app.services.video_providers import VideoProviderFactory, VideoProviderError
-from app.services.calendar_providers import CalendarProviderFactory, CalendarProviderError
 from app.services.user_context_service import UserContextService
 
 logger = logging.getLogger(__name__)
@@ -180,51 +179,6 @@ async def create_meeting(
     session.add(meeting)
     session.commit()
     session.refresh(meeting)
-    
-    # Sync to calendar providers if configured
-    calendar_accounts = session.exec(
-        select(CalendarAccount).where(
-            CalendarAccount.user_id == current_user["user_id"],
-            CalendarAccount.sync_enabled == True
-        )
-    ).all()
-    
-    for cal_account in calendar_accounts:
-        try:
-            provider = CalendarProviderFactory.get_provider(
-                provider=cal_account.provider,
-                access_token=cal_account.access_token,
-                refresh_token=cal_account.refresh_token
-            )
-            
-            # Get participant emails
-            participant_users = session.exec(
-                select(User).where(User.id.in_(all_participant_ids))
-            ).all()
-            attendee_emails = [user.email for user in participant_users if user.id != current_user["user_id"]]
-            
-            event_result = provider.create_event(
-                title=meeting_data.title,
-                start_time=meeting_data.scheduled_start,
-                end_time=meeting_data.scheduled_end,
-                description=meeting_data.description,
-                location=meeting_data.location or video_meeting_url,
-                attendees=attendee_emails,
-                timezone=meeting_data.timezone
-            )
-            
-            # Store calendar event ID
-            if cal_account.provider == CalendarProvider.GOOGLE:
-                meeting.google_calendar_event_id = event_result["event_id"]
-            else:  # Microsoft
-                meeting.microsoft_calendar_event_id = event_result["event_id"]
-            
-            session.add(meeting)
-        except CalendarProviderError as e:
-            # Log error but don't fail meeting creation
-            logger.warning(f"Failed to sync to {cal_account.provider.value} calendar: {str(e)}")
-    
-    session.commit()
     session.refresh(meeting)
     
     # Create participant records

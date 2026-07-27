@@ -5,10 +5,9 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session
 
-from app.models import CalendarAccount, CalendarProvider, Meeting, MeetingStatus
-from app.services.calendar_providers import CalendarProviderError, CalendarProviderFactory
+from app.models import Meeting, MeetingStatus
 from app.services.meeting_dispatch_service import MeetingDispatchService
 from app.services.meeting_email_service import MeetingEmailService
 from app.services.meeting_conflict_service import MeetingConflictService
@@ -112,40 +111,6 @@ class MeetingRescheduleService:
             new_meeting_status=MeetingStatus.SCHEDULED,
             actor_user_id=current_user["user_id"],
         )
-
-        # Update in synced calendars
-        calendar_accounts = session.exec(
-            select(CalendarAccount).where(
-                CalendarAccount.user_id == current_user["user_id"],
-                CalendarAccount.sync_enabled == True,
-            )
-        ).all()
-
-        for cal_account in calendar_accounts:
-            try:
-                provider = CalendarProviderFactory.get_provider(
-                    provider=cal_account.provider,
-                    access_token=cal_account.access_token,
-                    refresh_token=cal_account.refresh_token,
-                )
-
-                event_id = None
-                if cal_account.provider == CalendarProvider.GOOGLE:
-                    event_id = meeting.google_calendar_event_id
-                else:
-                    event_id = meeting.microsoft_calendar_event_id
-
-                if event_id:
-                    provider.update_event(
-                        event_id=event_id,
-                        start_time=reschedule_data.scheduled_start,
-                        end_time=reschedule_data.scheduled_end,
-                    )
-            except CalendarProviderError as e:
-                logger.warning(
-                    "[MEETING_RESCHEDULE] calendar_update_failed meeting_id=%s provider=%s error=%s request_id=%s",
-                    meeting.id, cal_account.provider.value, e, request_id,
-                )
 
         # Notify ALL participants including organizer
         all_reschedule_notify_ids = {p.user_id for p in meeting.participants}

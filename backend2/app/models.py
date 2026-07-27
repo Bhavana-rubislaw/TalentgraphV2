@@ -107,12 +107,6 @@ class MeetingType(str, Enum):
     OTHER = "other"
 
 
-class CalendarProvider(str, Enum):
-    """Calendar provider types"""
-    GOOGLE = "google"
-    MICROSOFT = "microsoft"
-
-
 class VideoProvider(str, Enum):
     """Video conferencing provider types"""
     ZOOM = "zoom"
@@ -1289,79 +1283,6 @@ class MeetingAvailabilitySlot(SQLModel, table=True):
     expired_at: Optional[datetime] = None  # Slots can have expiration
 
 
-# ============ CALENDAR & VIDEO INTEGRATION MODELS (Phase 2) ============
-
-class CalendarAccount(SQLModel, table=True):
-    """
-    External calendar account connections (Google Calendar, Microsoft Calendar)
-    Stores OAuth tokens and sync settings per user
-    """
-    __tablename__ = "calendar_account"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
-    
-    # Provider info
-    provider: CalendarProvider = Field(index=True)  # "google" or "microsoft"
-    provider_account_id: str = Field(index=True)  # External account ID
-    provider_email: str  # Email associated with calendar
-    
-    # OAuth credentials (ENCRYPTED in production)
-    access_token: str  # Encrypted access token
-    refresh_token: Optional[str] = None  # Encrypted refresh token
-    token_expires_at: Optional[datetime] = None
-    
-    # Sync settings
-    is_primary: bool = Field(default=False)  # Primary calendar for this user
-    sync_enabled: bool = Field(default=True)  # Auto-sync meetings to this calendar
-    last_synced_at: Optional[datetime] = None
-    
-    # Calendar metadata
-    calendar_name: Optional[str] = None
-    calendar_timezone: str = Field(default="UTC")
-    
-    # Timestamps
-    connected_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Unique constraint: one account per user-provider-email combo
-    __table_args__ = (UniqueConstraint("user_id", "provider", "provider_email", name="unique_calendar_account"),)
-
-
-class VideoProviderAccount(SQLModel, table=True):
-    """
-    Video conferencing provider connections (Zoom, Microsoft Teams, Google Meet)
-    Stores API keys and default meeting settings
-    """
-    __tablename__ = "video_provider_account"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", index=True)
-    
-    # Provider info
-    provider: VideoProvider = Field(index=True)  # "zoom", "microsoft_teams", "google_meet"
-    provider_account_id: Optional[str] = None  # External account ID
-    provider_email: Optional[str] = None
-    
-    # OAuth/API credentials (ENCRYPTED in production)
-    access_token: Optional[str] = None  # Encrypted access token
-    refresh_token: Optional[str] = None  # Encrypted refresh token
-    api_key: Optional[str] = None  # For Zoom SDK/API
-    api_secret: Optional[str] = None  # For Zoom SDK/API
-    token_expires_at: Optional[datetime] = None
-    
-    # Meeting defaults
-    is_primary: bool = Field(default=False)  # Primary video provider for this user
-    auto_generate_links: bool = Field(default=True)  # Auto-create meeting links
-    default_meeting_password: Optional[str] = None  # Default password for meetings
-    waiting_room_enabled: bool = Field(default=True)
-    
-    # Timestamps
-    connected_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    
-    # Unique constraint: one account per user-provider combo
-    __table_args__ = (UniqueConstraint("user_id", "provider", name="unique_video_provider_account"),)
 
 
 class EmailThreadLink(SQLModel, table=True):

@@ -7,7 +7,7 @@ import re
 from typing import Optional, List, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 from datetime import datetime
-from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, CalendarProvider, VideoProvider
+from app.models import WorkType, EmploymentType, VisaStatus, CurrencyType, UserRole, JobPostingStatus, MeetingStatus, MeetingType, VideoProvider
 from app.security import validate_password_strength
 
 
@@ -858,59 +858,4 @@ class SlotSelectionRequest(BaseModel):
     title: str = "Interview Meeting"
     description: Optional[str] = None
 
-
-# ============ CALENDAR & VIDEO INTEGRATION SCHEMAS (Phase 2) ============
-
-# Calendar Account Schemas
-class CalendarAccountBase(BaseModel):
-    provider: CalendarProvider
-    provider_email: str
-    is_primary: bool = False
-    sync_enabled: bool = True
-
-
-class CalendarAccountCreate(CalendarAccountBase):
-    access_token: str
-    refresh_token: Optional[str] = None
-    provider_account_id: str
-    token_expires_at: Optional[datetime] = None
-
-
-class CalendarAccountRead(CalendarAccountBase):
-    id: int
-    user_id: int
-    provider_account_id: str
-    calendar_name: Optional[str] = None
-    calendar_timezone: str
-    last_synced_at: Optional[datetime] = None
-    connected_at: datetime
-    updated_at: datetime
-
-
-# Video Provider Account Schemas
-class VideoProviderAccountBase(BaseModel):
-    provider: VideoProvider
-    is_primary: bool = False
-    auto_generate_links: bool = True
-    waiting_room_enabled: bool = True
-
-
-class VideoProviderAccountCreate(VideoProviderAccountBase):
-    access_token: Optional[str] = None
-    refresh_token: Optional[str] = None
-    api_key: Optional[str] = None
-    api_secret: Optional[str] = None
-    provider_account_id: Optional[str] = None
-    provider_email: Optional[str] = None
-    token_expires_at: Optional[datetime] = None
-
-
-class VideoProviderAccountRead(VideoProviderAccountBase):
-    id: int
-    user_id: int
-    provider_account_id: Optional[str] = None
-    provider_email: Optional[str] = None
-    default_meeting_password: Optional[str] = None
-    connected_at: datetime
-    updated_at: datetime
 

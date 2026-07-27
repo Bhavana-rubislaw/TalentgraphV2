@@ -17,7 +17,6 @@ def register_api_routers(app, logger, log_change_func) -> None:
         activity_feed,
         messages,
         meetings,
-        calendar,
         analytics,
         logs,
         notification_preferences,
@@ -63,7 +62,6 @@ def register_api_routers(app, logger, log_change_func) -> None:
     app.include_router(activity_feed.router)
     app.include_router(messages.router)  # Direct messaging system
     app.include_router(meetings.router)  # Meeting scheduler with email notifications
-    app.include_router(calendar.router)  # Calendar & video provider OAuth integration
     app.include_router(analytics.router)  # Analytics & funnel metrics (no external deps)
     app.include_router(logs.router)  # Comprehensive logging system
     app.include_router(product_taxonomy.router)  # Product taxonomy for job postings/preferences

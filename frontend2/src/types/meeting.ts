@@ -121,37 +121,3 @@ export interface SelectSlotRequest {
   description?: string;
 }
 
-// Calendar Provider types (Phase 2)
-export type CalendarProvider = 'google' | 'microsoft';
-
-export interface CalendarAccount {
-  id: number;
-  user_id: number;
-  provider: CalendarProvider;
-  provider_account_id: string;
-  provider_email: string;
-  is_primary: boolean;
-  sync_enabled: boolean;
-  last_synced_at?: string;
-  calendar_name?: string;
-  calendar_timezone: string;
-  connected_at: string;
-  updated_at: string;
-}
-
-// Video Provider types (Phase 2)
-export type VideoProvider = 'zoom' | 'microsoft_teams' | 'google_meet' | 'other';
-
-export interface VideoProviderAccount {
-  id: number;
-  user_id: number;
-  provider: VideoProvider;
-  provider_account_id?: string;
-  provider_email?: string;
-  is_primary: boolean;
-  auto_generate_links: boolean;
-  default_meeting_password?: string;
-  waiting_room_enabled: boolean;
-  connected_at: string;
-  updated_at: string;
-}

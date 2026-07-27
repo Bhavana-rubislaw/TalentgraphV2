@@ -15,7 +15,6 @@ import HRDashboard from './pages/HRDashboard';
 import JobPostingForm from './pages/JobPostingForm';
 import JobPostingBuilder from './pages/JobPostingBuilder';
 import { MeetingsPage } from './pages/MeetingsPage';
-import { CalendarSettingsPage } from './pages/CalendarSettingsPage';
 import AcceptInvitePage from './pages/AcceptInvitePage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -333,17 +332,6 @@ const App: React.FC = () => {
               }
             />
 
-            {/* Calendar & Video Provider Settings */}
-            <Route
-              path="/settings/calendar"
-              element={
-                <ProtectedRoute allowedRoles={[...RECRUITER_ROLES, ...CANDIDATE_ROLES]}>
-                  <ErrorBoundary>
-                    <CalendarSettingsPage />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              }
-            />
 
             {/* Candidate Routes */}
             <Route

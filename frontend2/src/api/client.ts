@@ -424,28 +424,6 @@ export const apiClient = {
   checkAvailability: meetingsClient.checkAvailability,
   findCommonSlots: meetingsClient.findCommonSlots,
 
-  // ── Calendar Integration (Phase 2) ──────────────────────────────────────────
-  
-  // Calendar OAuth
-  initiateGoogleCalendarAuth: () =>
-    api.get('/calendar/google/authorize'),
-
-  initiateMicrosoftCalendarAuth: () =>
-    api.get('/calendar/microsoft/authorize'),
-
-  // Calendar Account Management
-  getCalendarAccounts: () =>
-    api.get('/calendar/accounts'),
-
-  toggleCalendarSync: (accountId: number, enabled: boolean) =>
-    api.post(`/calendar/accounts/${accountId}/sync`, null, { params: { enabled } }),
-
-  setPrimaryCalendar: (accountId: number) =>
-    api.post(`/calendar/accounts/${accountId}/primary`),
-
-  disconnectCalendar: (accountId: number) =>
-    api.delete(`/calendar/accounts/${accountId}`),
-
   // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
   
   // Get overview metrics
