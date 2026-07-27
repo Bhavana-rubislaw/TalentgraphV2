@@ -124,20 +124,44 @@ export const CalendarSettingsPage: React.FC = () => {
     }
   };
 
-  const getProviderIcon = (provider: string) => {
+  const ProviderIcon = ({ provider }: { provider: string }) => {
     switch (provider) {
       case 'google':
-        return '📅';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" width="24" height="24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        );
       case 'microsoft':
-        return '📆';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0078D4" strokeWidth="2" width="24" height="24">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        );
       case 'zoom':
-        return '🎥';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2D8CFF" strokeWidth="2" width="24" height="24">
+            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        );
       case 'microsoft_teams':
-        return '👥';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4338ca" strokeWidth="2" width="24" height="24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        );
       case 'google_meet':
-        return '📹';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" width="24" height="24">
+            <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+          </svg>
+        );
       default:
-        return '⚙️';
+        return (
+          <svg viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" width="24" height="24">
+            <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+          </svg>
+        );
     }
   };
 
@@ -171,8 +195,16 @@ export const CalendarSettingsPage: React.FC = () => {
             margin: '0 0 10px 0',
             fontSize: '28px',
             color: '#1f2937',
-            fontWeight: '600'
-          }}>⚙️ Calendar & Video Settings</h1>
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" width="26" height="26">
+              <circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+            </svg>
+            Calendar & Video Settings
+          </h1>
           <p style={{
             margin: 0,
             color: '#6b7280',
@@ -207,8 +239,16 @@ export const CalendarSettingsPage: React.FC = () => {
             margin: '0 0 20px 0',
             fontSize: '20px',
             color: '#1f2937',
-            fontWeight: '600'
-          }}>📅 Calendar Connections</h2>
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="2" width="20" height="20">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Calendar Connections
+          </h2>
 
           {/* Connect Buttons */}
           <div style={{
@@ -228,12 +268,18 @@ export const CalendarSettingsPage: React.FC = () => {
                 fontSize: '15px',
                 fontWeight: '500',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              📅 Connect Google Calendar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              Connect Google Calendar
             </button>
 
             <button
@@ -247,12 +293,18 @@ export const CalendarSettingsPage: React.FC = () => {
                 fontSize: '15px',
                 fontWeight: '500',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
             >
-              📆 Connect Microsoft Calendar
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              Connect Microsoft Calendar
             </button>
           </div>
 
@@ -285,8 +337,8 @@ export const CalendarSettingsPage: React.FC = () => {
                         gap: '10px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ fontSize: '24px' }}>
-                          {getProviderIcon(account.provider)}
+                        <span style={{ display: 'flex' }}>
+                          <ProviderIcon provider={account.provider} />
                         </span>
                         <span style={{
                           fontSize: '18px',
@@ -328,10 +380,16 @@ export const CalendarSettingsPage: React.FC = () => {
                             border: 'none',
                             borderRadius: '6px',
                             fontSize: '13px',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
                           }}
                         >
-                          {account.sync_enabled ? '✓ Sync Enabled' : '✗ Sync Disabled'}
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+                            {account.sync_enabled ? <polyline points="20 6 9 17 4 12"/> : <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}
+                          </svg>
+                          {account.sync_enabled ? 'Sync Enabled' : 'Sync Disabled'}
                         </button>
 
                         {!account.is_primary && (
@@ -385,8 +443,16 @@ export const CalendarSettingsPage: React.FC = () => {
             margin: '0 0 20px 0',
             fontSize: '20px',
             color: '#1f2937',
-            fontWeight: '600'
-          }}>🎥 Video Meeting Providers</h2>
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+          }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1f2937" strokeWidth="2" width="20" height="20">
+              <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+            Video Meeting Providers
+          </h2>
 
           {/* Add Zoom Button */}
           {!videoProviders.some(vp => vp.provider === 'zoom') && !showZoomForm && (
@@ -401,10 +467,16 @@ export const CalendarSettingsPage: React.FC = () => {
                 fontSize: '15px',
                 fontWeight: '500',
                 cursor: 'pointer',
-                marginBottom: '20px'
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
               }}
             >
-              🎥 Add Zoom Integration
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+              Add Zoom Integration
             </button>
           )}
 
@@ -592,8 +664,8 @@ export const CalendarSettingsPage: React.FC = () => {
                         gap: '10px',
                         marginBottom: '8px'
                       }}>
-                        <span style={{ fontSize: '24px' }}>
-                          {getProviderIcon(provider.provider)}
+                        <span style={{ display: 'flex' }}>
+                          <ProviderIcon provider={provider.provider} />
                         </span>
                         <span style={{
                           fontSize: '18px',
@@ -610,9 +682,21 @@ export const CalendarSettingsPage: React.FC = () => {
                         fontSize: '14px',
                         marginBottom: '12px'
                       }}>
-                        <div>Auto-generate links: {provider.auto_generate_links ? '✓ Yes' : '✗ No'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          Auto-generate links:
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+                            {provider.auto_generate_links ? <polyline points="20 6 9 17 4 12"/> : <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}
+                          </svg>
+                          {provider.auto_generate_links ? 'Yes' : 'No'}
+                        </div>
                         {provider.provider === 'zoom' && (
-                          <div>Waiting room: {provider.waiting_room_enabled ? '✓ Enabled' : '✗ Disabled'}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Waiting room:
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="13" height="13">
+                              {provider.waiting_room_enabled ? <polyline points="20 6 9 17 4 12"/> : <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>}
+                            </svg>
+                            {provider.waiting_room_enabled ? 'Enabled' : 'Disabled'}
+                          </div>
                         )}
                       </div>
 
