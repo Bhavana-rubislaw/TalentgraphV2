@@ -8,6 +8,9 @@ import {
   exportUsersCSV,
   createUser,
   createInvitation,
+  listInvitations,
+  resendInvitation,
+  InvitationSummary,
   listCompanies,
   CompanySummary,
 } from '../api/client';
@@ -16,7 +19,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   IconShield, IconBuilding, IconBriefcase, IconTarget,
   IconTrash, IconCheck, IconAlertTriangle, IconDownload,
-  IconUserPlus, IconSearch, IconX,
+  IconUserPlus, IconSearch, IconX, IconRefreshCw, IconClock,
 } from '../components/Icons';
 
 interface User {
@@ -36,6 +39,15 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const ROLES = ['candidate', 'recruiter', 'hr', 'admin'];
+
+const INVITATION_STATUS_COLORS: Record<string, string> = {
+  pending:  'badge-blue',
+  accepted: 'badge-green',
+  expired:  'badge-gray',
+  revoked:  'badge-red',
+};
+
+const INVITATION_STATUSES = ['pending', 'accepted', 'expired', 'revoked'];
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -220,11 +232,23 @@ function InviteUserDialog({
 
 const UsersPage: React.FC = () => {
   const { user: currentAdmin } = useAuth();
+  const [view, setView] = useState<'users' | 'invitations'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Invitations tab
+  const [invitations, setInvitations] = useState<InvitationSummary[]>([]);
+  const [invTotal, setInvTotal] = useState(0);
+  const [invLoading, setInvLoading] = useState(false);
+  const [invError, setInvError] = useState('');
+  const [invSearch, setInvSearch] = useState('');
+  const [invStatusFilter, setInvStatusFilter] = useState('');
+  const [invOffset, setInvOffset] = useState(0);
+  const [resendingId, setResendingId] = useState<number | null>(null);
+  const INV_LIMIT = 10;
 
   // Filters
   const [search, setSearch] = useState('');
@@ -287,6 +311,46 @@ const UsersPage: React.FC = () => {
   }, [search, roleFilter, activeFilter, offset]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
+
+  // ── Invitations ──────────────────────────────────────────────────────────
+
+  const fetchInvitations = useCallback(() => {
+    setInvLoading(true);
+    setInvError('');
+    const params: Record<string, unknown> = { limit: INV_LIMIT, offset: invOffset };
+    if (invSearch) params.search = invSearch;
+    if (invStatusFilter) params.status = invStatusFilter;
+
+    listInvitations(params as Parameters<typeof listInvitations>[0])
+      .then((res) => {
+        setInvitations(res.data.invitations);
+        setInvTotal(res.data.total);
+      })
+      .catch((err: unknown) => {
+        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to load invitations.';
+        setInvError(String(msg));
+      })
+      .finally(() => setInvLoading(false));
+  }, [invSearch, invStatusFilter, invOffset]);
+
+  useEffect(() => { if (view === 'invitations') fetchInvitations(); }, [view, fetchInvitations]);
+
+  const handleResend = async (invite: InvitationSummary) => {
+    setResendingId(invite.id);
+    setInvError('');
+    try {
+      await resendInvitation(invite.id);
+      flash(`Invitation resent to ${invite.email}.`);
+      fetchInvitations();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to resend invitation.';
+      setInvError(String(msg));
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const formatExpiry = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   // â”€â”€ Selection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -396,167 +460,280 @@ const UsersPage: React.FC = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Users</h1>
-          <p className="page-subtitle">{total} registered users on the platform</p>
+          <p className="page-subtitle">
+            {view === 'users' ? `${total} registered users on the platform` : `${invTotal} invitations sent`}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={exporting}>
-            <IconDownload size={14} /> {exporting ? 'Exporting…' : 'Export CSV'}
-          </button>
+          {view === 'users' && (
+            <button className="btn btn-ghost btn-sm" onClick={handleExport} disabled={exporting}>
+              <IconDownload size={14} /> {exporting ? 'Exporting…' : 'Export CSV'}
+            </button>
+          )}
           <button className="btn btn-secondary btn-sm" onClick={() => setShowInvite(true)}>
             <IconUserPlus size={14} /> Invite User
           </button>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
-            <IconUserPlus size={14} /> Create User
-          </button>
+          {view === 'users' && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+              <IconUserPlus size={14} /> Create User
+            </button>
+          )}
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="tab-bar" style={{ display: 'flex', gap: 4, borderBottom: '1px solid var(--border)' }}>
+        <button
+          className={`btn btn-sm ${view === 'users' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: '8px 8px 0 0' }}
+          onClick={() => setView('users')}
+        >
+          Users
+        </button>
+        <button
+          className={`btn btn-sm ${view === 'invitations' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: '8px 8px 0 0' }}
+          onClick={() => setView('invitations')}
+        >
+          Invitations
+        </button>
       </div>
 
       {success && <div className="alert alert-success"><IconCheck size={15} style={{ marginRight: 6 }} />{success}</div>}
-      {error   && <div className="alert alert-error"><IconAlertTriangle size={15} style={{ marginRight: 6 }} />{error}</div>}
+      {view === 'users' && error && <div className="alert alert-error"><IconAlertTriangle size={15} style={{ marginRight: 6 }} />{error}</div>}
+      {view === 'invitations' && invError && <div className="alert alert-error"><IconAlertTriangle size={15} style={{ marginRight: 6 }} />{invError}</div>}
 
-      {/* Filters */}
-      <div className="filter-bar">
-        <div className="search-box">
-          <IconSearch size={15} />
-          <input
-            className="search-input"
-            placeholder="Search by name or email…"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setOffset(0); }}
-          />
-          {search && <button className="icon-btn" onClick={() => { setSearch(''); setOffset(0); }}><IconX size={14} /></button>}
-        </div>
-        <select
-          className="filter-select"
-          value={roleFilter}
-          onChange={(e) => { setRoleFilter(e.target.value); setOffset(0); }}
-        >
-          <option value="">All Roles</option>
-          {ROLES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-        </select>
-        <select
-          className="filter-select"
-          value={activeFilter}
-          onChange={(e) => { setActiveFilter(e.target.value as '' | 'true' | 'false'); setOffset(0); }}
-        >
-          <option value="">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-      </div>
-
-      {/* Bulk action bar */}
-      {selected.size > 0 && (
-        <div className="bulk-action-bar">
-          <span className="bulk-count">{selected.size} selected</span>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-sm btn-secondary" onClick={() => setConfirmBulkAction('activate')} disabled={bulkLoading}>
-              <IconCheck size={13} /> Activate
-            </button>
-            <button className="btn btn-sm btn-secondary" onClick={() => setConfirmBulkAction('deactivate')} disabled={bulkLoading}>
-              Deactivate
-            </button>
-            <button className="btn btn-sm btn-danger" onClick={() => setConfirmBulkAction('delete')} disabled={bulkLoading}>
-              <IconTrash size={13} /> Delete
-            </button>
-            <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>
-              <IconX size={13} /> Clear
-            </button>
+      {view === 'users' && (
+        <>
+          {/* Filters */}
+          <div className="filter-bar">
+            <div className="search-box">
+              <IconSearch size={15} />
+              <input
+                className="search-input"
+                placeholder="Search by name or email…"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setOffset(0); }}
+              />
+              {search && <button className="icon-btn" onClick={() => { setSearch(''); setOffset(0); }}><IconX size={14} /></button>}
+            </div>
+            <select
+              className="filter-select"
+              value={roleFilter}
+              onChange={(e) => { setRoleFilter(e.target.value); setOffset(0); }}
+            >
+              <option value="">All Roles</option>
+              {ROLES.map((r) => <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
+            </select>
+            <select
+              className="filter-select"
+              value={activeFilter}
+              onChange={(e) => { setActiveFilter(e.target.value as '' | 'true' | 'false'); setOffset(0); }}
+            >
+              <option value="">All Status</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
           </div>
-        </div>
+
+          {/* Bulk action bar */}
+          {selected.size > 0 && (
+            <div className="bulk-action-bar">
+              <span className="bulk-count">{selected.size} selected</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn btn-sm btn-secondary" onClick={() => setConfirmBulkAction('activate')} disabled={bulkLoading}>
+                  <IconCheck size={13} /> Activate
+                </button>
+                <button className="btn btn-sm btn-secondary" onClick={() => setConfirmBulkAction('deactivate')} disabled={bulkLoading}>
+                  Deactivate
+                </button>
+                <button className="btn btn-sm btn-danger" onClick={() => setConfirmBulkAction('delete')} disabled={bulkLoading}>
+                  <IconTrash size={13} /> Delete
+                </button>
+                <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>
+                  <IconX size={13} /> Clear
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}>
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </th>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && <tr><td colSpan={8} className="table-empty">Loading…</td></tr>}
+                {!loading && users.length === 0 && <tr><td colSpan={8} className="table-empty">No users found.</td></tr>}
+                {!loading && users.map((u) => (
+                  <tr key={u.id} className={selected.has(u.id) ? 'row-selected' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(u.id)}
+                        onChange={() => toggleSelect(u.id)}
+                        disabled={u.id === currentAdmin?.user_id}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    </td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>#{u.id}</td>
+                    <td>
+                      <div className="user-cell">
+                        <div className="user-avatar">{(u.full_name || u.email).charAt(0).toUpperCase()}</div>
+                        <span className="user-name">{u.full_name || '—'}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{u.email}</td>
+                    <td><span className={`badge ${ROLE_COLORS[u.role] || 'badge-gray'}`}>{u.role}</span></td>
+                    <td>
+                      <span className={`badge ${u.is_active ? 'badge-green' : 'badge-gray'}`}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_active ? 'var(--success-500)' : 'var(--text-muted)', display: 'inline-block', marginRight: 4 }} />
+                        {u.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(u.created_at)}</td>
+                    <td>
+                      <div className="action-row">
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleToggleActive(u)}
+                          disabled={u.id === currentAdmin?.user_id}
+                        >
+                          {u.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => { setRoleTarget(u); setNewRole(u.role); }}
+                          disabled={u.id === currentAdmin?.user_id}
+                        >
+                          Role
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => setDeleteTarget(u)}
+                          disabled={u.id === currentAdmin?.user_id}
+                        >
+                          <IconTrash size={14} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {total > LIMIT && (
+              <div className="pagination">
+                <button className="btn btn-secondary btn-sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - LIMIT))}>&larr; Prev</button>
+                <span className="pagination-info">Showing {offset + 1}&ndash;{Math.min(offset + LIMIT, total)} of {total}</span>
+                <button className="btn btn-secondary btn-sm" disabled={offset + LIMIT >= total} onClick={() => setOffset(offset + LIMIT)}>Next &rarr;</button>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
-      {/* Table */}
-      <div className="table-container">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th style={{ width: 40 }}>
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  style={{ cursor: 'pointer' }}
-                />
-              </th>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Joined</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && <tr><td colSpan={8} className="table-empty">Loading…</td></tr>}
-            {!loading && users.length === 0 && <tr><td colSpan={8} className="table-empty">No users found.</td></tr>}
-            {!loading && users.map((u) => (
-              <tr key={u.id} className={selected.has(u.id) ? 'row-selected' : ''}>
-                <td>
-                  <input
-                    type="checkbox"
-                    checked={selected.has(u.id)}
-                    onChange={() => toggleSelect(u.id)}
-                    disabled={u.id === currentAdmin?.user_id}
-                    style={{ cursor: 'pointer' }}
-                  />
-                </td>
-                <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>#{u.id}</td>
-                <td>
-                  <div className="user-cell">
-                    <div className="user-avatar">{(u.full_name || u.email).charAt(0).toUpperCase()}</div>
-                    <span className="user-name">{u.full_name || '—'}</span>
-                  </div>
-                </td>
-                <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{u.email}</td>
-                <td><span className={`badge ${ROLE_COLORS[u.role] || 'badge-gray'}`}>{u.role}</span></td>
-                <td>
-                  <span className={`badge ${u.is_active ? 'badge-green' : 'badge-gray'}`}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_active ? 'var(--success-500)' : 'var(--text-muted)', display: 'inline-block', marginRight: 4 }} />
-                    {u.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(u.created_at)}</td>
-                <td>
-                  <div className="action-row">
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => handleToggleActive(u)}
-                      disabled={u.id === currentAdmin?.user_id}
-                    >
-                      {u.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => { setRoleTarget(u); setNewRole(u.role); }}
-                      disabled={u.id === currentAdmin?.user_id}
-                    >
-                      Role
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => setDeleteTarget(u)}
-                      disabled={u.id === currentAdmin?.user_id}
-                    >
-                      <IconTrash size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Pagination */}
-        {total > LIMIT && (
-          <div className="pagination">
-            <button className="btn btn-secondary btn-sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - LIMIT))}>&larr; Prev</button>
-            <span className="pagination-info">Showing {offset + 1}&ndash;{Math.min(offset + LIMIT, total)} of {total}</span>
-            <button className="btn btn-secondary btn-sm" disabled={offset + LIMIT >= total} onClick={() => setOffset(offset + LIMIT)}>Next &rarr;</button>
+      {view === 'invitations' && (
+        <>
+          {/* Filters */}
+          <div className="filter-bar">
+            <div className="search-box">
+              <IconSearch size={15} />
+              <input
+                className="search-input"
+                placeholder="Search by name or email…"
+                value={invSearch}
+                onChange={(e) => { setInvSearch(e.target.value); setInvOffset(0); }}
+              />
+              {invSearch && <button className="icon-btn" onClick={() => { setInvSearch(''); setInvOffset(0); }}><IconX size={14} /></button>}
+            </div>
+            <select
+              className="filter-select"
+              value={invStatusFilter}
+              onChange={(e) => { setInvStatusFilter(e.target.value); setInvOffset(0); }}
+            >
+              <option value="">All Statuses</option>
+              {INVITATION_STATUSES.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
           </div>
-        )}
-      </div>
+
+          {/* Table */}
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Expires</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invLoading && <tr><td colSpan={7} className="table-empty">Loading…</td></tr>}
+                {!invLoading && invitations.length === 0 && <tr><td colSpan={7} className="table-empty">No invitations found.</td></tr>}
+                {!invLoading && invitations.map((inv) => (
+                  <tr key={inv.id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>#{inv.id}</td>
+                    <td>
+                      <div className="user-cell">
+                        <div className="user-avatar">{(inv.full_name || inv.email).charAt(0).toUpperCase()}</div>
+                        <span className="user-name">{inv.full_name || '—'}</span>
+                      </div>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{inv.email}</td>
+                    <td><span className={`badge ${ROLE_COLORS[inv.role] || 'badge-gray'}`}>{inv.role}</span></td>
+                    <td><span className={`badge ${INVITATION_STATUS_COLORS[inv.status] || 'badge-gray'}`}>{inv.status}</span></td>
+                    <td style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <IconClock size={12} /> {formatExpiry(inv.expires_at)}
+                    </td>
+                    <td>
+                      <div className="action-row">
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleResend(inv)}
+                          disabled={inv.status !== 'pending' || resendingId === inv.id}
+                        >
+                          <IconRefreshCw size={13} /> {resendingId === inv.id ? 'Resending…' : 'Resend'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {invTotal > INV_LIMIT && (
+              <div className="pagination">
+                <button className="btn btn-secondary btn-sm" disabled={invOffset === 0} onClick={() => setInvOffset(Math.max(0, invOffset - INV_LIMIT))}>&larr; Prev</button>
+                <span className="pagination-info">Showing {invOffset + 1}&ndash;{Math.min(invOffset + INV_LIMIT, invTotal)} of {invTotal}</span>
+                <button className="btn btn-secondary btn-sm" disabled={invOffset + INV_LIMIT >= invTotal} onClick={() => setInvOffset(invOffset + INV_LIMIT)}>Next &rarr;</button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* â”€â”€ Bulk confirm dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {confirmBulkAction && (
@@ -639,7 +816,11 @@ const UsersPage: React.FC = () => {
         <InviteUserDialog
           orgs={orgs}
           onClose={() => setShowInvite(false)}
-          onSent={() => { setShowInvite(false); flash('Invitation sent successfully.'); }}
+          onSent={() => {
+            setShowInvite(false);
+            flash('Invitation sent successfully.');
+            if (view === 'invitations') fetchInvitations();
+          }}
         />
       )}
     </div>
