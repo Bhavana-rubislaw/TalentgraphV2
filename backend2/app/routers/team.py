@@ -600,13 +600,13 @@ def remove_member(
     session: Session = Depends(get_session),
 ):
     """
-    Deactivate a team member (Admin only).
+    Deactivate a team member (Admin or HR).
 
     Does not hard-delete the user — sets is_active=False so historical
     data (job postings, applications) is preserved.
     """
-    if (current_user.get("role") or "").lower() != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if (current_user.get("role") or "").lower() not in {"admin", "hr"}:
+        raise HTTPException(status_code=403, detail="Admin or HR access required")
 
     if user_id == current_user["user_id"]:
         raise HTTPException(status_code=400, detail="Cannot remove yourself")
@@ -632,7 +632,7 @@ def remove_member(
     session.commit()
 
     logger.info(
-        f"[TEAM] User {user_id} deactivated by admin {current_user['user_id']}"
+        f"[TEAM] User {user_id} deactivated by {current_user.get('role')} {current_user['user_id']}"
     )
     return {"ok": True, "user_id": user_id, "message": "Team member deactivated"}
 

@@ -67,6 +67,10 @@ const RecruiterProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [showInviteForm, setShowInviteForm] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('recruiter');
+  const [inviting, setInviting] = useState(false);
   const [userRole, setUserRole] = useState<string>('recruiter');
   const [companyName, setCompanyName] = useState<string>('');
   const [openSections, setOpenSections] = useState<Set<string>>(new Set(['personal', 'company']));
@@ -134,6 +138,22 @@ const RecruiterProfilePage: React.FC = () => {
         setCompanyName(res.data.company_name);
       }
     } catch (err) {
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInviting(true);
+    try {
+      await apiClient.inviteTeamMember({ email: inviteEmail, role: inviteRole });
+      showToast(`Invitation sent to ${inviteEmail}`);
+      setInviteEmail('');
+      setShowInviteForm(false);
+      fetchTeamMembers();
+    } catch (error: any) {
+      showToast(error?.response?.data?.detail || 'Failed to send invitation', 'error');
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -474,10 +494,42 @@ const RecruiterProfilePage: React.FC = () => {
         {teamMembers.length === 0 && (
           <p style={{ fontSize: 13, color: 'var(--cp-text-tertiary)', textAlign: 'center', padding: '12px 0' }}>No team members yet.</p>
         )}
-        {canManageTeam && (
-          <button className="cp-sidebar-upload-btn" style={{ marginTop: 8 }}>
+        {canManageTeam && !showInviteForm && (
+          <button className="cp-sidebar-upload-btn" style={{ marginTop: 8 }} onClick={() => setShowInviteForm(true)}>
             {Icons.userPlus} Invite Member
           </button>
+        )}
+        {canManageTeam && showInviteForm && (
+          <form onSubmit={handleInvite} style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              placeholder="Email address"
+              required
+              style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13 }}
+            />
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value)}
+              style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid #cbd5e1', fontSize: 13, background: '#fff' }}
+            >
+              {userRole === 'admin' && <option value="hr">HR</option>}
+              <option value="recruiter">Recruiter</option>
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="cp-sidebar-upload-btn" style={{ flex: 1 }} disabled={inviting}>
+                {inviting ? 'Sending…' : 'Send Invite'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowInviteForm(false); setInviteEmail(''); }}
+                style={{ padding: '8px 14px', background: 'none', border: '1px solid #cbd5e1', borderRadius: 6, fontSize: 13, cursor: 'pointer', color: '#64748b' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         )}
       </div>
     </div>

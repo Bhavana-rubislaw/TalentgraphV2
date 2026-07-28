@@ -17,6 +17,12 @@ export interface AvailableJob {
   salary_max: number;
   salary_currency: string;
   job_description: string;
+  seniority_level: string | null;
+  start_date: string | null;
+  travel_requirements: string | null;
+  visa_info: string | null;
+  education_qualifications: string | null;
+  certifications_required: string | null;
   product_vendor: string;
   product_type: string;
   job_role: string;

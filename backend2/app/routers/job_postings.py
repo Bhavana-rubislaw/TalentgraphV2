@@ -175,10 +175,10 @@ def get_job_posting(
 def update_job_posting(
     job_id: int,
     job_data: JobPostingCreate,
-    current_user: dict = Depends(require_recruiter_role),
+    current_user: dict = Depends(require_company_role),
     session: Session = Depends(get_session)
 ):
-    """Update a job posting with skills (Recruiter or Admin only)"""
+    """Update a job posting with skills (Recruiter, HR, or Admin)"""
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

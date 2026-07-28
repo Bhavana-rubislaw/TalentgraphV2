@@ -116,7 +116,10 @@ const CandidateDashboard: React.FC = () => {
   }, [activeTab]);
 
   const handleSwipeLike = async (jobPostingId: number) => {
-    if (!selectedProfileId) return;
+    if (!selectedProfileId) {
+      alert('Select or create a job profile first to like a job.');
+      return;
+    }
     
     // Check if already liked - if so, undo instead
     const alreadyLiked = recommendations.find(r => r.job_posting.id === jobPostingId && r.already_swiped && r.swipe_action === 'like');
@@ -157,7 +160,10 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const handleSwipePass = async (jobPostingId: number) => {
-    if (!selectedProfileId) return;
+    if (!selectedProfileId) {
+      alert('Select or create a job profile first to pass on a job.');
+      return;
+    }
     
     // Check if already passed - if so, undo instead
     const alreadyPassed = recommendations.find(r => r.job_posting.id === jobPostingId && r.already_swiped && r.swipe_action === 'pass');

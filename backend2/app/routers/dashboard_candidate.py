@@ -122,7 +122,12 @@ def get_candidate_recommendations(
                 "seniority_level": job.seniority_level,
                 "required_skills": job.required_skills,
                 "product_vendor": job.product_vendor,
-                "product_type": job.product_type
+                "product_type": job.product_type,
+                "job_role": job.job_role,
+                "posting_skills": [
+                    {"skill_name": s.skill_name, "skill_category": s.skill_category, "rating": s.rating}
+                    for s in job.posting_skills
+                ]
             },
             "match_percentage": match_info["score"],
             "match_details": match_info["details"],
@@ -312,6 +317,7 @@ def get_available_jobs(
             for sk in job.posting_skills
         ]
 
+        description = job.job_description or ""
         result.append({
             "id": job.id,
             "job_title": job.job_title,
@@ -322,7 +328,13 @@ def get_available_jobs(
             "salary_min": job.salary_min,
             "salary_max": job.salary_max,
             "salary_currency": job.salary_currency,
-            "job_description": job.job_description[:200] + "...",  # Preview
+            "job_description": description[:200] + ("..." if len(description) > 200 else ""),  # Preview
+            "seniority_level": job.seniority_level,
+            "start_date": job.start_date,
+            "travel_requirements": job.travel_requirements,
+            "visa_info": job.visa_info,
+            "education_qualifications": job.education_qualifications,
+            "certifications_required": job.certifications_required,
             "product_vendor": job.product_vendor,
             "product_type": job.product_type,
             "job_role": job.job_role,

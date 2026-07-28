@@ -757,12 +757,10 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                     <span className="cal-drawer-field-value">{viewAvailableJob.employment_type}</span>
                   </div>
                 )}
-                {/* NOTE: seniority_level and start_date are not part of the /candidate/available-jobs
-                    response — these have always been hidden. Flagging, not fixing: needs a backend change. */}
-                {(viewAvailableJob as any).seniority_level && (
+                {viewAvailableJob.seniority_level && (
                   <div className="cal-drawer-field">
                     <span className="cal-drawer-field-label">Seniority</span>
-                    <span className="cal-drawer-field-value">{(viewAvailableJob as any).seniority_level}</span>
+                    <span className="cal-drawer-field-value">{viewAvailableJob.seniority_level}</span>
                   </div>
                 )}
                 {(viewAvailableJob.salary_min || viewAvailableJob.salary_max) && (
@@ -785,10 +783,10 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
                     <span className="cal-drawer-field-value">{viewAvailableJob.product_type}</span>
                   </div>
                 )}
-                {(viewAvailableJob as any).start_date && (
+                {viewAvailableJob.start_date && (
                   <div className="cal-drawer-field">
                     <span className="cal-drawer-field-label">Start Date</span>
-                    <span className="cal-drawer-field-value">{new Date((viewAvailableJob as any).start_date).toLocaleDateString()}</span>
+                    <span className="cal-drawer-field-value">{new Date(viewAvailableJob.start_date).toLocaleDateString()}</span>
                   </div>
                 )}
               </div>
@@ -804,18 +802,14 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
               </div>
             )}
 
-            {/* NOTE: posting_skills, education_qualifications, certifications_required,
-                travel_requirements, and visa_info are not part of the /candidate/available-jobs
-                response — these sections have always been hidden. Flagging, not fixing: needs a
-                backend change to include this data on the available-jobs list endpoint. */}
-            {(viewAvailableJob as any).posting_skills && (viewAvailableJob as any).posting_skills.length > 0 && (
+            {viewAvailableJob.posting_skills && viewAvailableJob.posting_skills.length > 0 && (
               <div className="cal-drawer-section">
                 <div className="cal-drawer-section-title">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                   Required Skills
                 </div>
                 <div className="cal-drawer-skills">
-                  {(viewAvailableJob as any).posting_skills.map((sk: any, i: number) => (
+                  {viewAvailableJob.posting_skills.map((sk, i) => (
                     <span key={i} className="cal-drawer-skill">
                       {sk.skill_name}
                       {sk.rating && <span className="cal-drawer-skill-level">L{sk.rating}</span>}
@@ -825,35 +819,35 @@ const AvailableJobsTab: React.FC<AvailableJobsTabProps> = ({
               </div>
             )}
 
-            {((viewAvailableJob as any).education_qualifications || (viewAvailableJob as any).certifications_required || (viewAvailableJob as any).travel_requirements || (viewAvailableJob as any).visa_info) && (
+            {(viewAvailableJob.education_qualifications || viewAvailableJob.certifications_required || viewAvailableJob.travel_requirements || viewAvailableJob.visa_info) && (
               <div className="cal-drawer-section">
                 <div className="cal-drawer-section-title">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
                   Requirements
                 </div>
                 <div className="cal-drawer-meta-grid">
-                  {(viewAvailableJob as any).education_qualifications && (
+                  {viewAvailableJob.education_qualifications && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Education</span>
-                      <span className="cal-drawer-field-value">{(viewAvailableJob as any).education_qualifications}</span>
+                      <span className="cal-drawer-field-value">{viewAvailableJob.education_qualifications}</span>
                     </div>
                   )}
-                  {(viewAvailableJob as any).certifications_required && (
+                  {viewAvailableJob.certifications_required && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Certifications</span>
-                      <span className="cal-drawer-field-value">{(viewAvailableJob as any).certifications_required}</span>
+                      <span className="cal-drawer-field-value">{viewAvailableJob.certifications_required}</span>
                     </div>
                   )}
-                  {(viewAvailableJob as any).travel_requirements && (
+                  {viewAvailableJob.travel_requirements && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Travel</span>
-                      <span className="cal-drawer-field-value">{(viewAvailableJob as any).travel_requirements}</span>
+                      <span className="cal-drawer-field-value">{viewAvailableJob.travel_requirements}</span>
                     </div>
                   )}
-                  {(viewAvailableJob as any).visa_info && (
+                  {viewAvailableJob.visa_info && (
                     <div className="cal-drawer-field">
                       <span className="cal-drawer-field-label">Visa</span>
-                      <span className="cal-drawer-field-value">{(viewAvailableJob as any).visa_info}</span>
+                      <span className="cal-drawer-field-value">{viewAvailableJob.visa_info}</span>
                     </div>
                   )}
                 </div>
