@@ -8,7 +8,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../../api/client';
 import { Meeting, MeetingStatus } from '../../types/meeting';
-import { CreateMeetingModal, MeetingDetailsModal, AvailabilitySelectorModal } from './index';
+import { CreateMeetingModal, MeetingDetailsModal } from './index';
 import '../../styles/MeetingScheduler.css';
 
 type FilterStatus = MeetingStatus | 'all';
@@ -184,7 +184,6 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
   const [subTab, setSubTab] = useState<'schedule' | 'upcoming'>('schedule');
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [selectedCalDay, setSelectedCalDay] = useState(new Date());
   const [availabilitySlots, setAvailabilitySlots] = useState<any[]>([]);
@@ -718,13 +717,6 @@ export const MeetingSchedulerTab: React.FC<MeetingSchedulerTabProps> = ({ role =
         <CreateMeetingModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => { setShowCreateModal(false); loadMeetings(); }}
-        />
-      )}
-
-      {showAvailabilityModal && (
-        <AvailabilitySelectorModal
-          onClose={() => setShowAvailabilityModal(false)}
-          onSuccess={() => { setShowAvailabilityModal(false); loadSlots(); }}
         />
       )}
 

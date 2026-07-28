@@ -84,20 +84,4 @@ export const meetingsClient = {
       title,
       description
     }),
-
-  // Scheduling Utilities
-  checkAvailability: (userId: number, startTime: string, endTime: string) =>
-    http.get('/meetings/check-availability', {
-      params: { user_id: userId, start_time: startTime, end_time: endTime }
-    }),
-
-  findCommonSlots: (userIds: number[], durationMinutes: number, startRange: string, endRange: string) =>
-    http.get('/meetings/find-slots', {
-      params: {
-        user_ids: userIds.join(','),
-        duration_minutes: durationMinutes,
-        start_range: startRange,
-        end_range: endRange
-      }
-    }),
 };

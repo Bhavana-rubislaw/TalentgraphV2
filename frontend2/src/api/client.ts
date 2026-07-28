@@ -190,9 +190,6 @@ export const apiClient = {
   
   deleteJobPosting: (id: number) =>
     api.delete(`/job-postings/${id}`),
-  
-  toggleJobPostingActive: (id: number) =>
-    api.post(`/job-postings/${id}/toggle-active`),
 
   // Job Posting Lifecycle Management
   updateJobPostingStatus: (id: number, action: 'freeze' | 'reactivate' | 'repost' | 'cancel', cancellation_reason?: string) =>
@@ -312,9 +309,6 @@ export const apiClient = {
   // Dashboard - Browse All Candidates
   browseCandidates: (params?: { page?: number; limit?: number; search?: string; work_type?: string; location?: string }) =>
     api.get('/dashboard/recruiter/candidates', { params }),
-  
-  getCandidateDetail: (candidateId: number) =>
-    api.get(`/dashboard/recruiter/candidate/${candidateId}`),
 
   // Team Management
   getTeamMembers: () =>
@@ -355,14 +349,6 @@ export const apiClient = {
     api.post('/notification-preferences/bulk', { preferences }),
   deleteNotificationPreference: (id: number) =>
     api.delete(`/notification-preferences/${id}`),
-
-  // Activity Feed (backend source-of-truth audit log)
-  getActivityFeed: (params?: {
-    category?: 'applications' | 'swipes' | 'notifications' | 'matches' | 'profile' | 'job_posting';
-    page?: number;
-    limit?: number;
-    job_id?: number;
-  }) => api.get('/activity-feed', { params }),
 
   // ── Chat / Messaging ────────────────────────────────────────────────────────
   createConversation: (candidateId: number, jobPostingId: number) =>
@@ -421,8 +407,6 @@ export const apiClient = {
   proposeAvailabilitySlots: meetingsClient.proposeAvailabilitySlots,
   getMyAvailabilitySlots: meetingsClient.getMyAvailabilitySlots,
   selectAvailabilitySlot: meetingsClient.selectAvailabilitySlot,
-  checkAvailability: meetingsClient.checkAvailability,
-  findCommonSlots: meetingsClient.findCommonSlots,
 
   // ── Analytics (Phase 4) ─────────────────────────────────────────────────────
   
@@ -459,14 +443,6 @@ export const apiClient = {
 
   getHRAnalytics: (rangeDays: number = 30) =>
     api.get('/analytics/hr', { params: { range_days: rangeDays } }),
-
-  // Team management (HR only)
-  getCompanyTeam: () =>
-    api.get('/company/team'),
-
-  removeTeamMemberHR: (memberUserId: number) =>
-    api.delete(`/company/team/${memberUserId}`),
-
 
   // ── Product Taxonomy (Vendor/Product/Role) ─────────────────────────────────
   

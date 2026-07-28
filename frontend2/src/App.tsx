@@ -12,7 +12,6 @@ import JobPreferencesPage from './pages/JobPreferencesPage';
 import CandidateDashboard from './pages/CandidateDashboardNew';
 import RecruiterDashboard from './pages/RecruiterDashboardNew';
 import HRDashboard from './pages/HRDashboard';
-import JobPostingForm from './pages/JobPostingForm';
 import JobPostingBuilder from './pages/JobPostingBuilder';
 import { MeetingsPage } from './pages/MeetingsPage';
 import AcceptInvitePage from './pages/AcceptInvitePage';
@@ -300,14 +299,6 @@ const App: React.FC = () => {
               element={
                 <RecruiterProtectedRoute>
                   <RecruiterProfilePage />
-                </RecruiterProtectedRoute>
-              }
-            />
-            <Route
-              path="/recruiter/job-posting"
-              element={
-                <RecruiterProtectedRoute>
-                  <JobPostingForm />
                 </RecruiterProtectedRoute>
               }
             />
