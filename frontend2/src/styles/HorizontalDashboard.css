@@ -896,15 +896,31 @@
   min-width: 0;
 }
 
-/* Analytics tab only — RecruiterAnalyticsTab reuses HRAnalyticsTab's own
-   markup ("content-panel-horizontal hr-tab-panel"), and HRDashboard.tsx
-   renders it under plain ".horizontal-dashboard" (no ".recruiter-dashboard"
-   glass/zero-padding overrides), so it gets the base plain white card:
-   32px padding, white background, light border, subtle shadow. Restore
-   that exact look here so the recruiter tab matches HR's Analytics page
-   instead of the glass/zero-padding treatment the rest of this dashboard
-   uses. */
+/* Analytics tab only — RecruiterAnalyticsTab renders HRAnalyticsTab
+   directly, which supplies its own full "content-panel-horizontal
+   hr-tab-panel" card. That card sits one level *inside* this dashboard's
+   shared tab wrapper (this same .content-panel-horizontal class, on the
+   outer div every tab shares) — so without this rule, both the outer
+   wrapper and the inner HRAnalyticsTab div would each try to draw a card,
+   nesting into a visible card-inside-a-card. Strip the outer wrapper down
+   to an invisible passthrough for this tab only. */
 .recruiter-dashboard .content-panel-horizontal.analytics-tab-active {
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  min-height: 0;
+}
+
+/* The inner HRAnalyticsTab card (uniquely marked by .hr-tab-panel among
+   this dashboard's tabs) gets the exact same plain white card
+   HRDashboard.tsx renders it with — 32px padding, white background,
+   light border, subtle shadow, 500px min-height — instead of the
+   glass/zero-padding look every other .content-panel-horizontal on this
+   dashboard gets. This is what actually makes the recruiter tab look
+   identical to HR's Analytics page. */
+.recruiter-dashboard .content-panel-horizontal.hr-tab-panel {
   padding: 32px;
   background: white;
   border: 1px solid #eef0f3;
