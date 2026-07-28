@@ -571,7 +571,7 @@ const RecruiterDashboard: React.FC = () => {
           )}
 
           {/* Content Panel */}
-          <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}`}>
+          <div className={`content-panel-horizontal${activeTab === 'messages' ? ' messages-tab-active' : ''}${activeTab === 'analytics' ? ' analytics-tab-active' : ''}`}>
             <div style={{ display: isRecommendationsTab ? 'block' : 'none' }}>
               <RecruiterRecommendationsTab
                 jobPostings={jobPostings}

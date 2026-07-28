@@ -896,6 +896,23 @@
   min-width: 0;
 }
 
+/* Analytics tab only — the recruiter dashboard's shared content panel is
+   zero-padding by default (other tabs supply their own inner spacing),
+   but RecruiterAnalyticsTab reuses HRAnalyticsTab's markup as-is, which
+   assumes the panel itself provides the margin. Adds 1cm of breathing
+   room on every side without introducing the glass/white card look the
+   panel normally gets (background/border/shadow/blur cleared to none,
+   same technique already used for messages-tab-active above) — the page's
+   own grey background shows through, and the content still starts at the
+   same on-screen position it always has. */
+.recruiter-dashboard .content-panel-horizontal.analytics-tab-active {
+  padding: 1cm;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
 .recruiter-dashboard .kpi-banner-container {
   grid-template-columns: 1fr;
   gap: 10px;

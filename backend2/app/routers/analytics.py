@@ -570,8 +570,8 @@ async def get_recruiter_analytics(
         )
     ).all() if job_ids else []
 
-    total_likes = sum(1 for s in swipes if s.direction == "like")
-    total_passes = sum(1 for s in swipes if s.direction == "pass")
+    total_likes = sum(1 for s in swipes if s.action == "like" and s.action_by == "candidate")
+    total_passes = sum(1 for s in swipes if s.action == "pass" and s.action_by == "candidate")
 
     status_counts: Dict[str, int] = {}
     for app in applications:
