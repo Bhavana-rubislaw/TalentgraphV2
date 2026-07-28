@@ -159,13 +159,13 @@ def log_change(
     entity_id: Optional[str] = None,
     user_id: Optional[str] = None,
     request_id: Optional[str] = None,
-    log_metadata: Optional[Dict[str, Any]] = None,
+    changes: Optional[Dict[str, Any]] = None,
     message: Optional[str] = None
 ):
     """Structured logging for changes"""
-    
+
     log_message = message or f"{action} on {entity_type}"
-    
+
     logger.info(
         log_message,
         extra={
@@ -174,6 +174,6 @@ def log_change(
             "entity_id": entity_id,
             "user_id": user_id,
             "request_id": request_id,
-            "log_metadata": log_metadata
+            "log_metadata": changes
         }
     )

@@ -13,6 +13,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, select, or_
+from sqlalchemy.exc import IntegrityError
 
 from ..database import get_session
 from ..models import Candidate, Company, Organization, User, UserRole
@@ -234,6 +235,12 @@ def bulk_user_action(
             elif body.action == "delete":
                 session.delete(user)
 
+            # Commit per-row so one failure can't silently roll back
+            # already-succeeded rows earlier in this same batch, and so
+            # a delete's FK violation is actually caught here rather than
+            # surfacing as an unhandled 500 from a single commit at the end.
+            session.commit()
+
             log_change(
                 logger,
                 action=f"bulk_user_{body.action}",
@@ -243,10 +250,16 @@ def bulk_user_action(
                 user_id=current_admin_id,
             )
             results.append(BulkResult(id=uid, ok=True))
+        except IntegrityError:
+            session.rollback()
+            results.append(BulkResult(
+                id=uid, ok=False,
+                error="This user has related records and cannot be deleted. Deactivate instead."
+            ))
         except Exception as e:
+            session.rollback()
             results.append(BulkResult(id=uid, ok=False, error=str(e)[:200]))
 
-    session.commit()
     succeeded = sum(1 for r in results if r.ok)
     return BulkActionResponse(
         requested=len(ids),

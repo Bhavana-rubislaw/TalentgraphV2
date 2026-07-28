@@ -246,6 +246,13 @@ class FrontendLogger {
       });
 
       if (!response.ok) {
+        // 401 means there's no (or no valid) session — this will keep
+        // failing until the user logs in, so don't requeue and retry
+        // forever; the batch is already in localStorage for offline
+        // persistence, just drop it from the in-memory retry queue.
+        if (response.status === 401) {
+          return;
+        }
         throw new Error(`Failed to send logs: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
@@ -256,7 +263,11 @@ class FrontendLogger {
   }
 
   private getAuthToken(): string | null {
-    return localStorage.getItem('authToken');
+    // The app stores the session JWT under 'token' everywhere else
+    // (see httpClient.ts) — this previously read a key ('authToken')
+    // nothing ever sets, so the Authorization header was silently
+    // never attached.
+    return localStorage.getItem('token');
   }
 
   private startPeriodicFlush() {

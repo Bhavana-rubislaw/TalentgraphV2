@@ -137,7 +137,8 @@ def get_vendors(
     search: Optional[str] = Query(None, description="Search vendors by name"),
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get list of product vendors
@@ -161,7 +162,8 @@ def get_vendors(
 @router.get("/vendors/{vendor_id}", response_model=VendorWithTypesResponse)
 def get_vendor_with_types(
     vendor_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get a specific vendor with all its product types
@@ -199,7 +201,8 @@ def get_vendor_with_types(
 def get_product_types_for_vendor(
     vendor_id: int,
     search: Optional[str] = Query(None, description="Search product types by name"),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all product types for a specific vendor
@@ -229,7 +232,8 @@ def get_product_types_for_vendor(
 @router.get("/product-types/{type_id}", response_model=ProductTypeWithRolesResponse)
 def get_product_type_with_roles(
     type_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get a specific product type with all its roles
@@ -268,7 +272,8 @@ def get_product_type_with_roles(
 def get_roles_for_product_type(
     type_id: int,
     search: Optional[str] = Query(None, description="Search roles by name"),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get all roles for a specific product type
@@ -299,7 +304,8 @@ def get_roles_for_product_type(
 def search_taxonomy(
     q: str = Query(..., min_length=2, description="Search query"),
     limit: int = Query(20, ge=1, le=100),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Global search across vendors, product types, and roles
@@ -345,7 +351,8 @@ def search_taxonomy(
 @router.get("/roles/{role_id}/skills", response_model=RoleSkillsResponse)
 def get_skills_for_role(
     role_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get role-specific skill taxonomy for a given ProductRole.
@@ -521,7 +528,8 @@ def create_custom_role(
 @router.post("/vendors/{vendor_id}/increment-usage")
 def increment_vendor_usage(
     vendor_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Increment usage count for a vendor (called when used in job posting/preference)
@@ -536,7 +544,8 @@ def increment_vendor_usage(
 @router.post("/product-types/{type_id}/increment-usage")
 def increment_product_type_usage(
     type_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Increment usage count for a product type
@@ -551,7 +560,8 @@ def increment_product_type_usage(
 @router.post("/roles/{role_id}/increment-usage")
 def increment_role_usage(
     role_id: int,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Increment usage count for a role

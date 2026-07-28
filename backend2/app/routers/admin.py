@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select, func, or_
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 
 from ..database import get_session
@@ -345,6 +346,20 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    try:
+        session.delete(user)
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this user: they have related records "
+                "(applications, messages, meetings, etc.). Deactivate the "
+                "account instead of deleting it."
+            ),
+        )
+
     log_change(
         logger,
         action="user_deleted",
@@ -353,9 +368,6 @@ def delete_user(
         changes={"email": user.email, "role": str(user.role)},
         user_id=current_user.get("user_id"),
     )
-
-    session.delete(user)
-    session.commit()
 
     return {"ok": True, "message": "User deleted permanently"}
 

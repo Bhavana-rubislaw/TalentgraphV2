@@ -82,11 +82,16 @@ async def receive_frontend_logs(
     log_batch: FrontendLogBatch,
     request: Request,
     background_tasks: BackgroundTasks,
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Receive and store frontend logs
-    Accepts batched logs from frontend logging service
+    Accepts batched logs from frontend logging service.
+    Requires any authenticated user — not admin-only, since every logged-in
+    role's browser session reports its own errors — but this closes the
+    previous gap where anyone, unauthenticated, could inject arbitrary rows
+    into the admin-visible log stream.
     """
     
     request_id = getattr(request.state, 'request_id', None)
