@@ -534,8 +534,11 @@ async def get_recruiter_analytics(
     session: Session = Depends(get_session)
 ):
     """
-    Personal sourcing metrics for the authenticated recruiter.
-    Accessible to Recruiter or Admin roles only.
+    Personal hiring funnel metrics for the authenticated recruiter, scoped to
+    their own job postings only (unlike /analytics/hr, this never climbs to
+    a parent_company_id — it's this recruiter's own Company row).
+    Mirrors get_hr_analytics' response shape so the same UI component can
+    render both. Accessible to Recruiter or Admin roles only.
     """
     user = session.exec(select(User).where(User.email == current_user["email"])).first()
     if not user:
@@ -547,11 +550,10 @@ async def get_recruiter_analytics(
 
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=range_days)
+    company_id = company.id
 
-    # Jobs posted by this user
-    jobs = session.exec(
-        select(JobPosting).where(JobPosting.company_id == company.id)
-    ).all()
+    # Jobs posted by this recruiter's own company row
+    jobs = session.exec(select(JobPosting).where(JobPosting.company_id == company_id)).all()
     job_ids = [j.id for j in jobs]
 
     # Applications across those jobs in date range
@@ -562,30 +564,54 @@ async def get_recruiter_analytics(
         )
     ).all() if job_ids else []
 
-    # Swipes on those jobs
-    swipes = session.exec(
-        select(Swipe).where(
-            Swipe.job_posting_id.in_(job_ids),
-            Swipe.created_at >= start_date,
-        )
-    ).all() if job_ids else []
+    # Job status breakdown
+    job_status_counts: Dict[str, int] = {}
+    for j in jobs:
+        key = (j.status or "draft").lower()
+        job_status_counts[key] = job_status_counts.get(key, 0) + 1
 
-    total_likes = sum(1 for s in swipes if s.action == "like" and s.action_by == "candidate")
-    total_passes = sum(1 for s in swipes if s.action == "pass" and s.action_by == "candidate")
-
-    status_counts: Dict[str, int] = {}
+    # Application funnel
+    funnel: Dict[str, int] = {}
     for app in applications:
         key = (app.status or "applied").lower()
-        status_counts[key] = status_counts.get(key, 0) + 1
+        funnel[key] = funnel.get(key, 0) + 1
+
+    total_apps = len(applications)
+    scheduled = funnel.get("scheduled", 0)
+    shortlisted = funnel.get("shortlisted", 0)
+    selected = funnel.get("selected", 0)
+
+    # Pending approval: jobs in draft status
+    pending_approval = job_status_counts.get("draft", 0)
+
+    # Scheduled meetings in date range
+    meetings_count = 0
+    if job_ids:
+        app_ids = [a.id for a in applications]
+        if app_ids:
+            meetings = session.exec(
+                select(Meeting).where(
+                    Meeting.application_id.in_(app_ids),
+                    Meeting.created_at >= start_date,
+                )
+            ).all()
+            meetings_count = len(meetings)
 
     return {
         "role": "recruiter",
         "period_days": range_days,
-        "total_active_jobs": len([j for j in jobs if (j.status or "").lower() in {s.value for s in ACTIVE_JOB_STATUSES}]),
-        "total_applications_received": len(applications),
-        "candidate_likes": total_likes,
-        "candidate_passes": total_passes,
-        "application_status_breakdown": status_counts,
+        "total_jobs": len(jobs),
+        "job_status_breakdown": job_status_counts,
+        "jobs_pending_approval": pending_approval,
+        "hiring_funnel": {
+            "total_applications": total_apps,
+            "scheduled_interviews": scheduled,
+            "shortlisted": shortlisted,
+            "selected": selected,
+            "interview_rate_pct": round(scheduled / total_apps * 100, 1) if total_apps else 0,
+            "selection_rate_pct": round(selected / total_apps * 100, 1) if total_apps else 0,
+        },
+        "meetings_scheduled": meetings_count,
     }
 
 

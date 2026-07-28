@@ -14,16 +14,20 @@ interface HRAnalyticsTabProps {
   analyticsRange: number;
   setAnalyticsRange: (value: number) => void;
   hrAnalytics: any;
+  title?: string;
+  subtitle?: string;
 }
 
 const HRAnalyticsTab: React.FC<HRAnalyticsTabProps> = ({
   analyticsLoading, analyticsRange, setAnalyticsRange, hrAnalytics,
+  title = 'Company-Wide Analytics',
+  subtitle = 'Hiring funnel, job performance, and team productivity metrics.',
 }) => (
     <div className="content-panel-horizontal hr-tab-panel">
       <div className="hr-panel-header">
         <div>
-          <h2 className="hr-panel-title">Company-Wide Analytics</h2>
-          <p className="hr-panel-subtitle">Hiring funnel, job performance, and team productivity metrics.</p>
+          <h2 className="hr-panel-title">{title}</h2>
+          <p className="hr-panel-subtitle">{subtitle}</p>
         </div>
         <select
           className="hr-range-select"
