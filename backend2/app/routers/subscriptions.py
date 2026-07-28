@@ -34,7 +34,16 @@ def _get_primary_company(session: Session, user_id: int) -> Company:
     """Return the primary company for this user (follows parent_company_id chain)."""
     company = session.exec(select(Company).where(Company.user_id == user_id)).first()
     if not company:
-        raise HTTPException(status_code=404, detail="Company profile not found")
+        # role=="admin" is ambiguous here: it matches both a platform admin
+        # (no Company row at all) and a company-side user. Platform admins
+        # hitting this is a real, expected case (not a data bug), so give
+        # a clear 403 instead of a bare 404 "not found".
+        raise HTTPException(
+            status_code=403,
+            detail="No company profile is associated with this account. "
+                   "Subscription management is only available to recruiter/HR "
+                   "accounts that belong to a company, not platform administrators.",
+        )
     if company.parent_company_id:
         parent = session.get(Company, company.parent_company_id)
         if parent:
