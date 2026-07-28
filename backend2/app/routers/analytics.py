@@ -28,7 +28,7 @@ from app.database import get_session
 from app.models import (
     AnalyticsEvent, AnalyticsRollupDaily,
     AnalyticsEventType, JobPosting, Company, User, Application,
-    Swipe, Meeting, MeetingStatus, JobPostingStatus
+    Swipe, Meeting, MeetingStatus, JobPostingStatus, ACTIVE_JOB_STATUSES
 )
 from app.security import get_current_user, require_recruiter_role, require_hr_role
 # from app.routers.billing import require_entitlement  # Disabled until billing is configured
@@ -164,7 +164,7 @@ async def get_overview_metrics(
     active_jobs_count = session.exec(
         select(func.count(JobPosting.id)).where(
             JobPosting.company_id == company_id,
-            JobPosting.status == JobPostingStatus.ACTIVE
+            JobPosting.status.in_(ACTIVE_JOB_STATUSES)
         )
     ).first() or 0
     
@@ -581,7 +581,7 @@ async def get_recruiter_analytics(
     return {
         "role": "recruiter",
         "period_days": range_days,
-        "total_active_jobs": len([j for j in jobs if (j.status or "").lower() == "active"]),
+        "total_active_jobs": len([j for j in jobs if (j.status or "").lower() in {s.value for s in ACTIVE_JOB_STATUSES}]),
         "total_applications_received": len(applications),
         "candidate_likes": total_likes,
         "candidate_passes": total_passes,

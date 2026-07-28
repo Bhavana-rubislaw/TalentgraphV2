@@ -14,6 +14,7 @@ from sqlmodel import Session, select, func
 
 from ..database import get_session
 from ..models import (
+    ACTIVE_JOB_STATUSES,
     Application,
     Company,
     JobPosting,
@@ -126,7 +127,7 @@ def _build_org_summary(session: Session, org: Organization) -> CompanySummary:
         active_job_count = session.exec(
             select(func.count(JobPosting.id)).where(
                 JobPosting.company_id.in_(company_ids),
-                JobPosting.status == JobPostingStatus.ACTIVE,
+                JobPosting.status.in_(ACTIVE_JOB_STATUSES),
             )
         ).one()
         total_job_count = session.exec(

@@ -75,6 +75,12 @@ class JobPostingStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+# Single source of truth for "is this job posting active" — a reposted job is a
+# reopened listing and should count the same as an active one everywhere
+# (dashboard totals, analytics breakdowns, per-company/recruiter counts).
+ACTIVE_JOB_STATUSES = {JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED}
+
+
 class MeetingStatus(str, Enum):
     """
     Meeting lifecycle status

@@ -38,7 +38,9 @@ const ROW_COLORS: Record<string, string> = {
   CRITICAL: 'log-row-critical',
 };
 
-const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
+// DEBUG is omitted: the backend DB log handler only persists INFO and above
+// (see logging_config.py), so a DEBUG filter would always return zero rows.
+const LEVELS = ['INFO', 'WARNING', 'ERROR', 'CRITICAL'];
 
 const TIME_PRESETS = [
   { label: 'Last 1 min',  minutes: 1 },
@@ -116,7 +118,7 @@ const LogsPage: React.FC = () => {
             { icon: <IconList size={18} color="#3b82f6" />,     label: 'TOTAL LOGS',     value: stats.total_logs.toLocaleString(),           iconBg: '#eff6ff' },
             { icon: <IconClock size={18} color="#2563eb" />,    label: 'LAST 24H',       value: stats.last_24h.toLocaleString(),             iconBg: '#eff6ff' },
             { icon: <IconXCircle size={18} color="#ef4444" />,  label: 'RECENT ERRORS',  value: stats.recent_errors,                         iconBg: '#fef2f2' },
-            { icon: <IconBarChart size={18} color="#f59e0b" />, label: 'ERROR RATE',     value: `${(stats.error_rate * 100).toFixed(1)}%`,   iconBg: '#fffbeb' },
+            { icon: <IconBarChart size={18} color="#f59e0b" />, label: 'ERROR RATE',     value: `${stats.error_rate.toFixed(1)}%`,   iconBg: '#fffbeb' },
           ].map((s) => (
             <div key={s.label} style={{ background: '#fff', border: '1px solid #e8eaed', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 4px rgba(0,0,0,.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>

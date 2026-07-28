@@ -22,7 +22,7 @@ from ..models import (
     User, Candidate, Company, JobPosting, Application,
     Meeting, MeetingStatus, Swipe, ProductVendor, ProductType, ProductRole,
     JobProfile, LocationPreference,
-    UserRole, JobPostingStatus,
+    UserRole, JobPostingStatus, ACTIVE_JOB_STATUSES,
     AnalyticsEvent, AnalyticsEventType,
 )
 from ..security import get_current_user
@@ -152,7 +152,7 @@ def get_overview(
     total_jobs = session.exec(select(func.count(JobPosting.id))).one()
     active_jobs = session.exec(
         select(func.count(JobPosting.id)).where(
-            JobPosting.status == JobPostingStatus.ACTIVE
+            JobPosting.status.in_(ACTIVE_JOB_STATUSES)
         )
     ).one()
 
@@ -942,13 +942,12 @@ def get_admin_analytics(
     ]
 
     # ── 4. Active vs Closed jobs (platform-wide, not date-filtered) ─
-    # Active  = ACTIVE + REPOSTED
+    # Active  = ACTIVE_JOB_STATUSES (ACTIVE + REPOSTED)
     # Closed  = FROZEN + CANCELLED
-    active_statuses = {JobPostingStatus.ACTIVE, JobPostingStatus.REPOSTED}
     closed_statuses = {JobPostingStatus.FROZEN, JobPostingStatus.CANCELLED}
 
     active_count = session.exec(
-        select(func.count(JobPosting.id)).where(JobPosting.status.in_(active_statuses))
+        select(func.count(JobPosting.id)).where(JobPosting.status.in_(ACTIVE_JOB_STATUSES))
     ).one()
     closed_count = session.exec(
         select(func.count(JobPosting.id)).where(JobPosting.status.in_(closed_statuses))
