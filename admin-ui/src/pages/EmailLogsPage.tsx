@@ -17,16 +17,17 @@ function fmtDateTime(s: string | null) {
   });
 }
 
+// 'bounced'/'suppressed' are defined in the backend EmailDeliveryStatus enum
+// but nothing currently sets a delivery to either value (no bounce-webhook
+// handling exists yet), so they're omitted here to avoid dead UI states.
 const STATUS_COLORS: Record<string, string> = {
   queued: 'badge-blue',
   sending: 'badge-purple',
   sent: 'badge-green',
   failed: 'badge-red',
-  bounced: 'badge-red',
-  suppressed: 'badge-gray',
 };
 
-const EMAIL_STATUSES = ['queued', 'sending', 'sent', 'failed', 'bounced', 'suppressed'];
+const EMAIL_STATUSES = ['queued', 'sending', 'sent', 'failed'];
 
 // ── Detail Drawer ────────────────────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ function EmailDetailDrawer({
     }
   };
 
-  const canResend = detail?.status === 'failed' || detail?.status === 'bounced';
+  const canResend = detail?.status === 'failed';
 
   return (
     <div className="drawer-overlay" onClick={onClose}>
@@ -325,7 +326,7 @@ export default function EmailLogsPage() {
                     className="btn btn-sm btn-ghost"
                     onClick={() => setSelectedId(d.id)}
                   >
-                    {d.status === 'failed' || d.status === 'bounced' ? 'View / Resend' : 'View'}
+                    {d.status === 'failed' ? 'View / Resend' : 'View'}
                   </button>
                 </td>
               </tr>
