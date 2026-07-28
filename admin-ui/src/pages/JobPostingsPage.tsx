@@ -3,7 +3,7 @@ import { listJobPostings, updateJobStatus, bulkJobAction, exportJobsCSV } from '
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
   IconSearch, IconFileList, IconBuilding, IconMapPin, IconMonitor,
-  IconDollarSign, IconClock, IconEdit, IconSnowflake, IconX,
+  IconDollarSign, IconClock, IconSnowflake, IconX,
   IconPlay, IconRefreshCw, IconCheck, IconAlertTriangle, IconBriefcase,
   IconDownload, IconTrash,
 } from '../components/Icons';
@@ -291,8 +291,6 @@ const JobPostingsPage: React.FC = () => {
               </div>
               {/* Divider */}
               <div style={{ borderTop: '1px solid #f0f1f4', paddingTop: 14, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end' }}>
-                <button className="btn btn-sm btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 5 }}
-                  onClick={() => handleStatusChange(job, job.status)}><IconEdit size={14} /> Edit</button>
                 {isActive && <>
                   <button className="btn btn-sm btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 5 }}
                     onClick={() => handleStatusChange(job, 'frozen')}><IconSnowflake size={14} /> Freeze</button>
