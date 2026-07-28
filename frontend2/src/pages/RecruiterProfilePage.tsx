@@ -193,7 +193,13 @@ const RecruiterProfilePage: React.FC = () => {
     <>
       {/* Personal Info */}
       <div className={`cp-profile-card ${openSections.has('personal') ? 'open' : ''}`}>
-        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('personal')}>
+        <div
+          className="cp-profile-card-header"
+          role="button"
+          tabIndex={0}
+          onClick={() => toggleSection('personal')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('personal'); } }}
+        >
           <span className="cp-profile-card-header-icon">{Icons.user}</span>
           <span className="cp-profile-card-header-text">Personal Information</span>
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -204,7 +210,7 @@ const RecruiterProfilePage: React.FC = () => {
             )}
             <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
           </span>
-        </button>
+        </div>
         {openSections.has('personal') && (
           <div className="cp-profile-card-body">
             {editingSection === 'personal' ? (
@@ -252,7 +258,13 @@ const RecruiterProfilePage: React.FC = () => {
 
       {/* Company Info */}
       <div className={`cp-profile-card ${openSections.has('company') ? 'open' : ''}`}>
-        <button type="button" className="cp-profile-card-header" onClick={() => toggleSection('company')}>
+        <div
+          className="cp-profile-card-header"
+          role="button"
+          tabIndex={0}
+          onClick={() => toggleSection('company')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSection('company'); } }}
+        >
           <span className="cp-profile-card-header-icon">{Icons.building}</span>
           <span className="cp-profile-card-header-text">Company Information</span>
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -263,7 +275,7 @@ const RecruiterProfilePage: React.FC = () => {
             )}
             <span className="cp-profile-card-chevron">{Icons.chevDown}</span>
           </span>
-        </button>
+        </div>
         {openSections.has('company') && (
           <div className="cp-profile-card-body">
             {editingSection === 'company' ? (
@@ -562,14 +574,14 @@ const RecruiterProfilePage: React.FC = () => {
         <div className="cp-content">
           {/* Breadcrumb */}
           <nav className="cp-breadcrumb">
-            <a onClick={() => navigate('/recruiter-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
+            <a onClick={() => navigate(userRole === 'hr' ? '/hr/dashboard' : '/recruiter-dashboard')} style={{ cursor: 'pointer' }}>Dashboard</a>
             <span className="cp-breadcrumb-sep">›</span>
             <span className="cp-breadcrumb-current">Profile</span>
           </nav>
 
           {/* Page Title */}
           <div className="cp-page-title-block">
-            <h1 className="cp-page-h1">Recruiter Profile</h1>
+            <h1 className="cp-page-h1">{userRole === 'hr' ? 'HR Profile' : 'Recruiter Profile'}</h1>
           </div>
 
           {/* Two-column layout */}

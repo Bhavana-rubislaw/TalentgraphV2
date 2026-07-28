@@ -302,6 +302,18 @@ const App: React.FC = () => {
                 </RecruiterProtectedRoute>
               }
             />
+            {/* HR's own profile page — reuses RecruiterProfilePage (its
+                Personal/Company Information, team sidebar, and invite form
+                are already role-generic), just reached via a route HR isn't
+                redirected away from. */}
+            <Route
+              path="/hr/profile"
+              element={
+                <HRProtectedRoute>
+                  <RecruiterProfilePage />
+                </HRProtectedRoute>
+              }
+            />
             <Route
               path="/recruiter/job-postings"
               element={
