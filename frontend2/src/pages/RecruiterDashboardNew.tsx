@@ -10,6 +10,7 @@ import '../styles/RecruiterApplications.css';
 import '../styles/HorizontalDashboard.css';
 import '../styles/AIRecommendations.css';
 import '../styles/CandidatePages.css';
+import '../styles/HRDashboard.css';
 import NotificationBellDrawer from '../components/notifications/NotificationBellDrawer';
 import ChatWindow from '../components/chat/ChatWindow';
 import ScheduleInterviewModal from '../components/interviews/ScheduleInterviewModal';
@@ -28,8 +29,9 @@ import RecruiterRecommendationsTab from '../components/recruiter/RecruiterRecomm
 import ShortlistTab from '../components/recruiter/ShortlistTab';
 import ApplicationsTab from '../components/recruiter/ApplicationsTab';
 import BrowseCandidatesTab from '../components/recruiter/BrowseCandidatesTab';
+import RecruiterAnalyticsTab from '../components/recruiter/RecruiterAnalyticsTab';
 
-const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'messages', 'meetings'] as const;
+const RECRUITER_TABS = ['recommendations', 'shortlist', 'applications', 'matches', 'browse', 'analytics', 'messages', 'meetings'] as const;
 
 const RecruiterDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -76,6 +78,23 @@ const RecruiterDashboard: React.FC = () => {
     downloadCertification,
   } = useApplications();
   const { matches, fetchMatches } = useRecruiterMatches();
+
+  // ── Analytics state ──────────────────────────────────────────────
+  const [recruiterAnalytics, setRecruiterAnalytics] = useState<any>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsRange, setAnalyticsRange] = useState(30);
+
+  const fetchAnalytics = useCallback(async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await apiClient.getRecruiterAnalytics(analyticsRange);
+      setRecruiterAnalytics(res.data);
+    } catch (err) {
+      console.error('[RECRUITER] Failed to fetch analytics:', err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [analyticsRange]);
 
   // ── Browse Candidates state ─────────────────────────────────────
   const { browseCandidates, setBrowseCandidates, browseTotal, browseLoading, fetchBrowseCandidates } = useBrowseCandidates();
@@ -137,6 +156,10 @@ const RecruiterDashboard: React.FC = () => {
       });
     }
   }, [activeTab, browsePage, debouncedBrowseSearch, browseRole, browseWorkType, browseLocation]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics') fetchAnalytics();
+  }, [activeTab, fetchAnalytics]);
 
   // ── Fetch Data Functions ─────────────────────────────────────
 
@@ -407,7 +430,19 @@ const RecruiterDashboard: React.FC = () => {
             )}
           </button>
 
-          <button 
+          <button
+            className={`talentgraph-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            <svg className="talentgraph-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            Analytics
+          </button>
+
+          <button
             className={`talentgraph-tab ${activeTab === 'messages' ? 'active' : ''}`}
             onClick={() => setActiveTab('messages')}
           >
@@ -621,6 +656,15 @@ const RecruiterDashboard: React.FC = () => {
                 handleAskToApply={handleAskToApply}
                 handleStartDirectMessage={handleStartDirectMessage}
                 handleStartMessage={handleStartMessage}
+              />
+            </div>
+
+            <div style={{ display: activeTab === 'analytics' ? 'block' : 'none' }}>
+              <RecruiterAnalyticsTab
+                analyticsLoading={analyticsLoading}
+                analyticsRange={analyticsRange}
+                setAnalyticsRange={setAnalyticsRange}
+                recruiterAnalytics={recruiterAnalytics}
               />
             </div>
 
